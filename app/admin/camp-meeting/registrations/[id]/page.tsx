@@ -20,9 +20,15 @@ import {
     User, Phone, Mail, Calendar, MessageSquare, ArrowLeft, 
     Download, QrCode, CheckCircle2, XCircle, Edit, DollarSign,
     UserPlus, UserMinus, FileText, MapPin, GraduationCap,
-    Heart, Shield, Clock, CreditCard, Send
+    Heart, Shield, Clock, CreditCard, Send, Cake, Sparkles
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
+import {
+    memberDobIsoFromCampRegistration,
+    MEMBER_DOB_PLACEHOLDER_YEAR,
+} from '@/lib/camp/birthday'
+
+type DirectoryRole = 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
 
 export default function RegistrationDetailPage() {
     const { id } = useParams() as { id: string }
@@ -39,6 +45,15 @@ export default function RegistrationDetailPage() {
     const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false)
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
     const [statusDialogOpen, setStatusDialogOpen] = useState(false)
+
+    const [bMonth, setBMonth] = useState('')
+    const [bDay, setBDay] = useState('')
+    const [bYear, setBYear] = useState('')
+    const [promoteRole, setPromoteRole] = useState<DirectoryRole>('member')
+    const [linkedUser, setLinkedUser] = useState<AppUser | null>(null)
+    const [promoting, setPromoting] = useState(false)
+    const [savingBirth, setSavingBirth] = useState(false)
+    const [syncingDob, setSyncingDob] = useState(false)
     
     // Payment form
     const [paymentForm, setPaymentForm] = useState({
@@ -52,6 +67,29 @@ export default function RegistrationDetailPage() {
         loadData()
         loadStaffMembers()
     }, [id])
+
+    useEffect(() => {
+        if (!data) return
+        setBMonth(data.birth_month != null ? String(data.birth_month) : '')
+        setBDay(data.birth_day != null ? String(data.birth_day) : '')
+        const iso = data.date_of_birth?.trim()
+        setBYear(iso && /^\d{4}-\d{1,2}-\d{1,2}$/.test(iso) ? iso.slice(0, 4) : '')
+    }, [data?.id, data?.birth_month, data?.birth_day, data?.date_of_birth])
+
+    useEffect(() => {
+        if (!data?.user_id) {
+            setLinkedUser(null)
+            return
+        }
+        let cancelled = false
+        ;(async () => {
+            const res = await dataService.getUserById(data.user_id!)
+            if (!cancelled && res.data) setLinkedUser(res.data)
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [data?.user_id])
 
     async function loadData() {
         const res = await campService.getRegistration(id)
@@ -209,6 +247,126 @@ export default function RegistrationDetailPage() {
         }
     }
 
+    const handleSaveRegistrationBirthday = async () => {
+        if (!data) return
+        const m = parseInt(bMonth, 10)
+        const d = parseInt(bDay, 10)
+        if (!Number.isFinite(m) || !Number.isFinite(d) || m < 1 || m > 12 || d < 1 || d > 31) {
+            toast({
+                variant: 'destructive',
+                title: 'Birthday',
+                description: 'Enter a valid month (1–12) and day (1–31).',
+            })
+            return
+        }
+        const yRaw = bYear.trim()
+        const y = yRaw ? parseInt(yRaw, 10) : undefined
+        if (yRaw && (!Number.isFinite(y) || (y ?? 0) < 1900 || (y ?? 0) > 2100)) {
+            toast({
+                variant: 'destructive',
+                title: 'Year',
+                description: 'Enter a valid year or leave it blank for recurring birthdays only.',
+            })
+            return
+        }
+        setSavingBirth(true)
+        try {
+            const iso =
+                y != null && Number.isFinite(y)
+                    ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+                    : undefined
+            const patch: Partial<CampRegistration> = {
+                birth_month: m,
+                birth_day: d,
+            }
+            if (iso) patch.date_of_birth = iso
+            const res = await campService.updateRegistration(data.id, patch)
+            if (res.error) {
+                toast({ variant: 'destructive', title: 'Error', description: res.error })
+            } else {
+                toast({
+                    title: 'Saved',
+                    description: iso
+                        ? 'Birth date saved on this registration.'
+                        : `Month and day saved. Member records use year ${MEMBER_DOB_PLACEHOLDER_YEAR} until you add a real year.`,
+                })
+                loadData()
+            }
+        } finally {
+            setSavingBirth(false)
+        }
+    }
+
+    const handlePromoteToDirectory = async () => {
+        if (!data) return
+        const m = bMonth.trim() ? parseInt(bMonth, 10) : data.birth_month
+        const d = bDay.trim() ? parseInt(bDay, 10) : data.birth_day
+        const yRaw = bYear.trim()
+        const y = yRaw ? parseInt(yRaw, 10) : undefined
+        if (m == null || d == null || !Number.isFinite(m) || !Number.isFinite(d) || m < 1 || m > 12 || d < 1 || d > 31) {
+            toast({
+                variant: 'destructive',
+                title: 'Birthday required',
+                description: 'Set month and day on the registration (or in the fields above) before promoting.',
+            })
+            return
+        }
+        const preview = memberDobIsoFromCampRegistration(
+            {
+                date_of_birth: data.date_of_birth,
+                birth_month: data.birth_month,
+                birth_day: data.birth_day,
+            },
+            { birth_month: m, birth_day: d, birth_year: y }
+        )
+        if (!preview) {
+            toast({
+                variant: 'destructive',
+                title: 'Birthday required',
+                description: 'Could not build a date of birth for the member profile.',
+            })
+            return
+        }
+        setPromoting(true)
+        try {
+            const res = await campService.promoteToDirectory(data.id, {
+                role: promoteRole,
+                birth_month: m,
+                birth_day: d,
+                birth_year: y,
+            })
+            if (res.error) {
+                toast({ variant: 'destructive', title: 'Promotion failed', description: res.error })
+            } else {
+                toast({
+                    title: 'Linked to directory',
+                    description: 'They can sign in with this phone number (direct login).',
+                })
+                loadData()
+            }
+        } finally {
+            setPromoting(false)
+        }
+    }
+
+    const handleSyncBirthToMember = async () => {
+        if (!data?.user_id) return
+        setSyncingDob(true)
+        try {
+            const res = await campService.syncRegistrationBirthdayToMember(data.id)
+            if (res.error) {
+                toast({ variant: 'destructive', title: 'Sync failed', description: res.error })
+            } else {
+                toast({
+                    title: 'Member birthday updated',
+                    description: 'Upcoming birthdays on the dashboard use the member record.',
+                })
+            }
+        } finally {
+            setSyncingDob(false)
+        }
+    }
+
     const downloadQRCode = () => {
         if (!data) return
         
@@ -360,18 +518,48 @@ export default function RegistrationDetailPage() {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <CardTitle className="text-2xl">{fullName}</CardTitle>
-                                        <CardDescription className="flex items-center gap-2 mt-2">
-                                            <Badge variant={data.is_new_registrant ? "secondary" : "outline"}>
-                                                {data.is_new_registrant ? "First Timer" : "Returning"}
+                                        <CardDescription className="flex flex-wrap items-center gap-2 mt-2">
+                                            <Badge
+                                                className={
+                                                    data.is_new_registrant
+                                                        ? 'border border-amber-200 bg-amber-50 text-amber-950 shadow-none'
+                                                        : 'border border-slate-200 bg-slate-100 text-slate-800 shadow-none'
+                                                }
+                                            >
+                                                {data.is_new_registrant ? 'First timer' : 'Returning'}
                                             </Badge>
-                                            <Badge variant={data.status === 'checked_in' ? "default" : "outline"}>
-                                                {data.status === 'checked_in' ? 'Checked In' : data.status}
+                                            <Badge
+                                                className={
+                                                    data.status === 'checked_in'
+                                                        ? 'border border-emerald-200 bg-emerald-50 text-emerald-950 shadow-none'
+                                                        : data.status === 'cancelled'
+                                                          ? 'border border-red-200 bg-red-50 text-red-900 shadow-none'
+                                                          : 'border border-blue-200 bg-blue-50 text-blue-900 shadow-none'
+                                                }
+                                            >
+                                                {data.status === 'checked_in'
+                                                    ? 'Checked in'
+                                                    : data.status === 'cancelled'
+                                                      ? 'Cancelled'
+                                                      : 'Registered'}
                                             </Badge>
                                             {data.payment_status && (
-                                                <Badge variant={data.payment_status === 'paid' || data.payment_status === 'confirmed' ? 'default' : 'outline'}>
-                                                    {data.payment_status}
+                                                <Badge
+                                                    className={
+                                                        data.payment_status === 'paid' ||
+                                                        data.payment_status === 'confirmed'
+                                                            ? 'border border-green-200 bg-green-50 text-green-900 shadow-none'
+                                                            : data.payment_status === 'refunded'
+                                                              ? 'border border-violet-200 bg-violet-50 text-violet-900 shadow-none'
+                                                              : 'border border-orange-200 bg-orange-50 text-orange-950 shadow-none'
+                                                    }
+                                                >
+                                                    Payment: {data.payment_status}
                                                 </Badge>
                                             )}
+                                            <Badge className="border border-indigo-200 bg-indigo-50 text-indigo-950 shadow-none">
+                                                {data.role}
+                                            </Badge>
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -404,12 +592,8 @@ export default function RegistrationDetailPage() {
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs text-gray-500 uppercase">Role & Registration</Label>
+                                            <Label className="text-xs text-gray-500 uppercase">Registration</Label>
                                             <div className="space-y-2 mt-2">
-                                                <div className="flex items-center text-sm">
-                                                    <User className="h-4 w-4 mr-3 text-gray-400" />
-                                                    <Badge variant="outline">{data.role}</Badge>
-                                                </div>
                                                 <div className="flex items-center text-sm">
                                                     <Calendar className="h-4 w-4 mr-3 text-gray-400" />
                                                     <span>Registered: {new Date(data.created_at).toLocaleDateString('en-US', {
@@ -497,7 +681,10 @@ export default function RegistrationDetailPage() {
                                         <div className="mt-2">
                                             <div className="flex flex-wrap gap-2">
                                                 {data.health_challenges.map((challenge, idx) => (
-                                                    <Badge key={idx} variant="outline" className="text-xs">
+                                                    <Badge
+                                                        key={idx}
+                                                        className="text-xs border-rose-200 bg-rose-50 text-rose-900"
+                                                    >
                                                         {challenge}
                                                     </Badge>
                                                 ))}
@@ -534,7 +721,10 @@ export default function RegistrationDetailPage() {
                                                     <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-gray-400" />
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <Badge variant="outline" className="text-xs">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-xs capitalize border-violet-200 bg-violet-50 text-violet-900"
+                                                            >
                                                                 {interaction.interaction_type}
                                                             </Badge>
                                                             <span className="text-xs text-gray-400">
@@ -634,6 +824,106 @@ export default function RegistrationDetailPage() {
                                         Download QR Code
                                     </Button>
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Directory & birthdays (member record for login + upcoming birthdays) */}
+                        <Card className="border-2 border-violet-100 bg-gradient-to-br from-violet-50/80 to-white shadow-sm">
+                            <CardHeader className="border-b border-violet-100 bg-violet-50/50">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <Sparkles className="h-5 w-5 text-violet-600" />
+                                    Church directory
+                                </CardTitle>
+                                <CardDescription>
+                                    Upcoming birthdays use the <strong>member</strong> date of birth. Month and day are
+                                    required; year is optional (defaults to {MEMBER_DOB_PLACEHOLDER_YEAR} for recurring
+                                    reminders until you add a real year).
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4 pt-6">
+                                {linkedUser && (
+                                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 text-sm">
+                                        <p className="font-medium text-emerald-950">Linked directory user</p>
+                                        <p className="text-emerald-900">{linkedUser.full_name}</p>
+                                        <p className="text-xs text-emerald-800">
+                                            {linkedUser.phone} · {linkedUser.membership_id} · {linkedUser.role}
+                                        </p>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <Label className="text-xs">Month</Label>
+                                        <Input
+                                            inputMode="numeric"
+                                            placeholder="1–12"
+                                            value={bMonth}
+                                            onChange={(e) => setBMonth(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs">Day</Label>
+                                        <Input
+                                            inputMode="numeric"
+                                            placeholder="1–31"
+                                            value={bDay}
+                                            onChange={(e) => setBDay(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs">Year (optional)</Label>
+                                        <Input
+                                            inputMode="numeric"
+                                            placeholder={`e.g. 1998`}
+                                            value={bYear}
+                                            onChange={(e) => setBYear(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    className="w-full border-violet-200"
+                                    onClick={handleSaveRegistrationBirthday}
+                                    disabled={savingBirth}
+                                >
+                                    <Cake className="mr-2 h-4 w-4" />
+                                    {savingBirth ? 'Saving…' : 'Save on registration'}
+                                </Button>
+                                {data.user_id && (
+                                    <Button
+                                        variant="secondary"
+                                        className="w-full"
+                                        onClick={handleSyncBirthToMember}
+                                        disabled={syncingDob}
+                                    >
+                                        {syncingDob ? 'Syncing…' : 'Copy birthday → linked member'}
+                                    </Button>
+                                )}
+                                <div className="space-y-2">
+                                    <Label className="text-xs">Role after promote</Label>
+                                    <Select
+                                        value={promoteRole}
+                                        onValueChange={(v) => setPromoteRole(v as DirectoryRole)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="member">Member</SelectItem>
+                                            <SelectItem value="visitor">Visitor</SelectItem>
+                                            <SelectItem value="elder">Elder</SelectItem>
+                                            <SelectItem value="pastor">Pastor</SelectItem>
+                                            <SelectItem value="finance_officer">Finance officer</SelectItem>
+                                            <SelectItem value="admin">Admin</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Button
+                                    className="w-full bg-violet-600 hover:bg-violet-700"
+                                    onClick={handlePromoteToDirectory}
+                                    disabled={promoting}
+                                >
+                                    {promoting ? 'Working…' : linkedUser ? 'Update & re-link directory' : 'Promote to directory (phone login)'}
+                                </Button>
                             </CardContent>
                         </Card>
 
@@ -744,8 +1034,15 @@ export default function RegistrationDetailPage() {
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm text-gray-600">Status:</span>
-                                        <Badge 
-                                            variant={data.payment_status === 'paid' || data.payment_status === 'confirmed' ? 'default' : 'outline'}
+                                        <Badge
+                                            className={
+                                                data.payment_status === 'paid' ||
+                                                data.payment_status === 'confirmed'
+                                                    ? 'border border-green-200 bg-green-50 text-green-900 shadow-none'
+                                                    : data.payment_status === 'refunded'
+                                                      ? 'border border-violet-200 bg-violet-50 text-violet-900 shadow-none'
+                                                      : 'border border-orange-200 bg-orange-50 text-orange-950 shadow-none'
+                                            }
                                         >
                                             {data.payment_status || 'pending'}
                                         </Badge>

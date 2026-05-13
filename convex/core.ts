@@ -130,6 +130,18 @@ export const getMemberWithSecret = query({
   },
 })
 
+export const getMemberByUserIdWithSecret = query({
+  args: { secret: v.string(), user_id: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { secret, user_id }) => {
+    assertServerSecret(secret)
+    return await ctx.db
+      .query('members')
+      .withIndex('by_user_id', (q) => q.eq('user_id', user_id))
+      .first()
+  },
+})
+
 export const getUserWithSecret = query({
   args: { secret: v.string(), id: v.id('users') },
   returns: v.any(),

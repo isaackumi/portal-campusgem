@@ -102,6 +102,15 @@ class DataService {
     return { data, error, loading: false }
   }
 
+  async getMemberByUserId(userId: string): Promise<ApiResponse<Member>> {
+    if (!isConvexDataSource()) {
+      return { data: null, error: notConfigured('getMemberByUserId'), loading: false }
+    }
+    const { loadMemberByUserId } = await import('@/lib/actions/core-data')
+    const { data, error } = await loadMemberByUserId(userId)
+    return { data, error, loading: false }
+  }
+
   async createMember(memberData: Partial<Member>): Promise<ApiResponse<Member>> {
     if (!isConvexDataSource()) {
       return { data: null, error: notConfigured('createMember'), loading: false }

@@ -26,12 +26,19 @@ import {
   Calendar,
   Shield,
   Crown,
-  User
+  User,
+  Cake
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAllUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/hooks/use-data'
 import { useAuth } from '@/components/providers'
 import { AppUser } from '@/lib/types'
+import { dataService } from '@/lib/services/data-service'
+import {
+  memberDobIsoFromCampRegistration,
+  parseIsoDob,
+  MEMBER_DOB_PLACEHOLDER_YEAR,
+} from '@/lib/camp/birthday'
 
 export default function UsersManagementPage() {
   const { user: currentUser } = useAuth()
@@ -60,7 +67,11 @@ export default function UsersManagementPage() {
     address: '',
     emergency_contact_name: '',
     emergency_contact_phone: '',
-    emergency_contact_relation: ''
+    emergency_contact_relation: '',
+    member_id: '',
+    dob_month: '',
+    dob_day: '',
+    dob_year: ''
   })
 
   // Data hooks
@@ -156,11 +167,55 @@ export default function UsersManagementPage() {
     
     try {
       const result = await updateUser(editingUser.id, {
-        ...formData,
+        full_name: formData.full_name,
+        phone: formData.phone,
+        email: formData.email,
         role: formData.role as 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor',
-        marital_status: formData.marital_status || undefined
+        membership_id: formData.membership_id,
+        join_year: formData.join_year,
+        marital_status: formData.marital_status || undefined,
+        occupation: formData.occupation,
+        place_of_work: formData.place_of_work,
+        emergency_contact_name: formData.emergency_contact_name,
+        emergency_contact_phone: formData.emergency_contact_phone,
+        emergency_contact_relation: formData.emergency_contact_relation
       })
       if (result) {
+        const m = parseInt(formData.dob_month, 10)
+        const d = parseInt(formData.dob_day, 10)
+        if (Number.isFinite(m) && Number.isFinite(d)) {
+          const yRaw = formData.dob_year.trim()
+          const y = yRaw ? parseInt(yRaw, 10) : undefined
+          const dob = memberDobIsoFromCampRegistration(
+            {},
+            { birth_month: m, birth_day: d, birth_year: y }
+          )
+          if (dob) {
+            if (formData.member_id) {
+              const memRes = await dataService.updateMember(formData.member_id, { dob })
+              if (memRes.error) {
+                toast({
+                  title: 'User updated; birthday not saved',
+                  description: memRes.error,
+                  variant: 'destructive'
+                })
+              }
+            } else {
+              const memRes = await dataService.createMember({
+                user_id: editingUser.id,
+                dob,
+                status: 'active'
+              })
+              if (memRes.error) {
+                toast({
+                  title: 'User updated; member profile not created',
+                  description: memRes.error,
+                  variant: 'destructive'
+                })
+              }
+            }
+          }
+        }
         toast({
           title: "User Updated",
           description: `${formData.full_name} has been successfully updated.`,
@@ -218,12 +273,20 @@ export default function UsersManagementPage() {
       address: '',
       emergency_contact_name: '',
       emergency_contact_phone: '',
-      emergency_contact_relation: ''
+      emergency_contact_relation: '',
+      member_id: '',
+      dob_month: '',
+      dob_day: '',
+      dob_year: ''
     })
   }
 
-  const openEditDialog = (user: AppUser) => {
+  const openEditDialog = async (user: AppUser) => {
     setEditingUser(user)
+    const memberRes = await dataService.getMemberByUserId(user.id)
+    const member = memberRes.data
+    const isoParts = member?.dob ? parseIsoDob(member.dob) : {}
+    const hidesPlaceholderYear = isoParts.year === MEMBER_DOB_PLACEHOLDER_YEAR
     setFormData({
       full_name: user.full_name || '',
       phone: user.phone || '',
@@ -237,7 +300,12 @@ export default function UsersManagementPage() {
       address: '',
       emergency_contact_name: user.emergency_contact_name || '',
       emergency_contact_phone: user.emergency_contact_phone || '',
-      emergency_contact_relation: user.emergency_contact_relation || ''
+      emergency_contact_relation: user.emergency_contact_relation || '',
+      member_id: member?.id ?? '',
+      dob_month: isoParts.month != null ? String(isoParts.month) : '',
+      dob_day: isoParts.day != null ? String(isoParts.day) : '',
+      dob_year:
+        isoParts.year != null && !hidesPlaceholderYear ? String(isoParts.year) : ''
     })
     setShowEditDialog(true)
   }
@@ -255,8 +323,9 @@ export default function UsersManagementPage() {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800'
       case 'pastor': return 'bg-purple-100 text-purple-800'
-      case 'elder': return 'bg-yellow-100 text-yellow-800'
-      case 'member': return 'bg-blue-100 text-blue-800'
+      case 'elder': return 'bg-amber-100 text-amber-900 border border-amber-200'
+      case 'finance_officer': return 'bg-cyan-100 text-cyan-900 border border-cyan-200'
+      case 'member': return 'bg-blue-100 text-blue-800 border border-blue-200'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -602,7 +671,9 @@ export default function UsersManagementPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openEditDialog(user)}
+                        onClick={() => {
+                          void openEditDialog(user)
+                        }}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
@@ -673,11 +744,53 @@ export default function UsersManagementPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="visitor">Visitor</SelectItem>
                       <SelectItem value="elder">Elder</SelectItem>
                       <SelectItem value="pastor">Pastor</SelectItem>
+                      <SelectItem value="finance_officer">Finance officer</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-teal-200 bg-gradient-to-br from-teal-50/90 to-white p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-teal-950">
+                  <Cake className="h-4 w-4 text-teal-700" />
+                  Member birthday
+                </div>
+                <p className="text-xs text-teal-800 leading-relaxed">
+                  Used for upcoming birthdays on the dashboard. Month and day are required; year is optional (we store{' '}
+                  {MEMBER_DOB_PLACEHOLDER_YEAR} until a real year is set).
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">Month</Label>
+                    <Input
+                      inputMode="numeric"
+                      placeholder="1–12"
+                      value={formData.dob_month}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, dob_month: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Day</Label>
+                    <Input
+                      inputMode="numeric"
+                      placeholder="1–31"
+                      value={formData.dob_day}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, dob_day: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Year (optional)</Label>
+                    <Input
+                      inputMode="numeric"
+                      placeholder="e.g. 1998"
+                      value={formData.dob_year}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, dob_year: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </div>
 

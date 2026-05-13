@@ -127,6 +127,29 @@ export async function loadMemberById(id: string): Promise<{
   }
 }
 
+export async function loadMemberByUserId(userId: string): Promise<{
+  data: Member | null
+  error: string | null
+}> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: 'Convex is not configured' }
+  }
+
+  try {
+    const { fetchMemberByUserIdFromConvex, fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
+    const member = await fetchMemberByUserIdFromConvex(userId)
+    if (!member) return { data: null, error: null }
+    const user = await fetchUserFromConvex(userId)
+    if (user) return { data: { ...member, user }, error: null }
+    return { data: member, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load member by user',
+    }
+  }
+}
+
 export async function loadDashboardStats(): Promise<{
   data: DashboardStats | null
   error: string | null

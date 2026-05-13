@@ -143,6 +143,15 @@ export async function fetchMemberFromConvex(id: string): Promise<Member | null> 
   return convexMemberDocToMember(doc)
 }
 
+export async function fetchMemberByUserIdFromConvex(userId: string): Promise<Member | null> {
+  const client = getConvexHttpClient()
+  const doc = (await client.query(api.core.getMemberByUserIdWithSecret, {
+    secret: requireCoreServerSecret(),
+    user_id: userId,
+  })) as Record<string, unknown> | null
+  return convexMemberDocToMember(doc)
+}
+
 export async function fetchUserFromConvex(id: string): Promise<AppUser | null> {
   const client = getConvexHttpClient()
   const doc = (await client.query(api.core.getUserWithSecret, {

@@ -509,3 +509,66 @@ export async function getAllCampYears(): Promise<{ data: CampYear[] | null; erro
     }
   }
 }
+
+export async function promoteCampRegistrant(
+  registrationId: string,
+  args: {
+    role: 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
+    birth_month?: number
+    birth_day?: number
+    birth_year?: number
+  }
+): Promise<{ data: CampRegistration | null; error: string | null }> {
+  requireConvexEnv()
+  try {
+    const { promoteCampRegistrantInConvex } = await import('@/lib/convex/camp-bridge')
+    const { registration } = await promoteCampRegistrantInConvex({
+      registration_id: registrationId,
+      role: args.role,
+      birth_month: args.birth_month,
+      birth_day: args.birth_day,
+      birth_year: args.birth_year,
+    })
+    revalidatePath('/admin/camp-meeting')
+    revalidatePath(`/admin/camp-meeting/registrations/${registrationId}`)
+    return { data: registration, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to promote registrant',
+    }
+  }
+}
+
+export async function syncCampRegistrationDobToMember(registrationId: string): Promise<{
+  data: boolean
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { fetchRegistrationFromConvex } = await import('@/lib/convex/camp-bridge')
+    const { fetchMemberByUserIdFromConvex, patchMemberInConvex } = await import('@/lib/convex/core-bridge')
+    const { memberDobIsoFromCampRegistration } = await import('@/lib/camp/birthday')
+    const reg = await fetchRegistrationFromConvex(registrationId)
+    if (!reg) return { data: false, error: 'Registration not found' }
+    if (!reg.user_id) return { data: false, error: 'Registration is not linked to a directory user yet.' }
+    const dob = memberDobIsoFromCampRegistration({
+      date_of_birth: reg.date_of_birth,
+      birth_month: reg.birth_month,
+      birth_day: reg.birth_day,
+    })
+    if (!dob) return { data: false, error: 'No birthday data on this registration.' }
+    const member = await fetchMemberByUserIdFromConvex(reg.user_id)
+    if (!member) return { data: false, error: 'Linked user has no member profile.' }
+    await patchMemberInConvex(member.id, { dob })
+    revalidatePath('/admin/camp-meeting')
+    revalidatePath(`/admin/camp-meeting/registrations/${registrationId}`)
+    revalidatePath('/dashboard')
+    return { data: true, error: null }
+  } catch (error: unknown) {
+    return {
+      data: false,
+      error: error instanceof Error ? error.message : 'Failed to sync birthday',
+    }
+  }
+}

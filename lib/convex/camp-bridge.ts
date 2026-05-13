@@ -375,6 +375,31 @@ export async function patchRegistrationInConvex(
   return r
 }
 
+export async function promoteCampRegistrantInConvex(args: {
+  registration_id: string
+  role: 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
+  birth_month?: number
+  birth_day?: number
+  birth_year?: number
+}): Promise<{ user: Record<string, unknown> | null; registration: CampRegistration | null }> {
+  const client = new ConvexHttpClient(requireConvexUrl())
+  const result = (await client.mutation(api.camp.promoteCampRegistrantWithSecret, {
+    secret: requireCampAdminSecret(),
+    registration_id: args.registration_id as Id<'camp_registrations'>,
+    role: args.role,
+    birth_month: args.birth_month,
+    birth_day: args.birth_day,
+    birth_year: args.birth_year,
+  })) as {
+    user: Record<string, unknown> | null
+    registration: Record<string, unknown> | null
+  }
+  return {
+    user: result.user,
+    registration: convexRegistrationDocToCampRegistration(result.registration),
+  }
+}
+
 export function convexInteractionDocToCampInteraction(
   doc: Record<string, unknown> | null | undefined
 ): CampInteraction | null {

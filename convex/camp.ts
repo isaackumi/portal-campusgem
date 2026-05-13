@@ -2,13 +2,38 @@ import { v } from 'convex/values'
 import { query, mutation, type MutationCtx } from './_generated/server'
 import { requireAuth } from './lib/access'
 import { assertServerSecret } from './lib/serverSecret'
-import { extractBirthdayParts } from './lib/birthday'
+import { extractBirthdayParts, memberDobIsoFromCampRegistration } from './lib/birthday'
 import {
   isValidGhanaPhone,
   normalizeGhanaPhone,
   phoneLookupVariants,
   sanitizePhoneInput,
 } from './lib/phone'
+
+const directoryRoleValue = v.union(
+  v.literal('admin'),
+  v.literal('pastor'),
+  v.literal('elder'),
+  v.literal('finance_officer'),
+  v.literal('member'),
+  v.literal('visitor')
+)
+
+async function findUserDocByPhone(ctx: MutationCtx, phoneRaw: string) {
+  for (const candidate of phoneLookupVariants(phoneRaw)) {
+    const byPhone = await ctx.db
+      .query('users')
+      .withIndex('by_phone', (q) => q.eq('phone', candidate))
+      .first()
+    if (byPhone) return byPhone
+  }
+  const target = normalizeGhanaPhone(phoneRaw)
+  if (!target) return null
+  for (const user of await ctx.db.query('users').collect()) {
+    if (user.phone && normalizeGhanaPhone(String(user.phone)) === target) return user
+  }
+  return null
+}
 
 /** Admin: camp years */
 export const listCampYears = query({
@@ -505,6 +530,141 @@ export const patchCampRegistrationWithSecret = mutation({
     assertServerSecret(secret)
     await ctx.db.patch(id, { ...patch, updated_at: Date.now() })
     return await ctx.db.get('camp_registrations', id)
+  },
+})
+
+/**
+ * Create or link a Convex user + member from a camp registration so they can sign in by phone.
+ * Requires month/day (or full ISO date on the registration); year defaults to 2000 on the stored DOB when omitted.
+ */
+export const promoteCampRegistrantWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    registration_id: v.id('camp_registrations'),
+    role: directoryRoleValue,
+    birth_month: v.optional(v.number()),
+    birth_day: v.optional(v.number()),
+    birth_year: v.optional(v.number()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const reg = await ctx.db.get(args.registration_id)
+    if (!reg) throw new Error('Registration not found')
+
+    const phone = normalizeGhanaPhone(String(reg.phone ?? ''))
+    if (!phone) throw new Error('Registration has no valid phone number for login.')
+
+    const dob = memberDobIsoFromCampRegistration(reg, {
+      birth_month: args.birth_month,
+      birth_day: args.birth_day,
+      birth_year: args.birth_year,
+    })
+    if (!dob) {
+      throw new Error(
+        'Add month and day of birth on the registration (or a full YYYY-MM-DD date) before promoting to the directory.'
+      )
+    }
+
+    const fullName =
+      String(reg.full_name ?? '').trim() ||
+      `${String(reg.first_name ?? '').trim()} ${String(reg.last_name ?? '').trim()}`.trim()
+    const nameParts = fullName.split(/\s+/).filter(Boolean)
+    const firstName =
+      String(reg.first_name ?? '').trim() || (nameParts[0] ?? fullName)
+    const lastName =
+      String(reg.last_name ?? '').trim() ||
+      (nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName)
+
+    const emailRaw = String(reg.email ?? '').trim()
+    const email = emailRaw && emailRaw !== ' ' ? emailRaw : undefined
+
+    const joinYear = new Date().getFullYear()
+    const digits = phone.replace(/\D/g, '').slice(-4).padStart(4, '0')
+    const membershipId = `CG${digits}${joinYear}`.toUpperCase()
+
+    const newAuthUid = (): string => {
+      const c = globalThis.crypto as Crypto | undefined
+      if (c?.randomUUID) return `cgms-${c.randomUUID()}`
+      return `cgms-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+    }
+
+    const gender =
+      reg.sex === 'Male' ? ('male' as const) : reg.sex === 'Female' ? ('female' as const) : undefined
+
+    let user = await findUserDocByPhone(ctx, String(reg.phone ?? ''))
+    const now = Date.now()
+
+    if (!user) {
+      const userId = await ctx.db.insert('users', {
+        full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        email,
+        role: args.role,
+        membership_id: membershipId,
+        auth_uid: newAuthUid(),
+        join_year: joinYear,
+        updated_at: now,
+      })
+      user = await ctx.db.get(userId)
+      if (!user) throw new Error('Failed to create user')
+      await ctx.db.insert('members', {
+        user_id: String(userId),
+        dob,
+        gender,
+        emergency_contacts: [],
+        documents: [],
+        status: 'active',
+        updated_at: now,
+      })
+    } else {
+      const uid = String(user._id)
+      const patchUser: Record<string, unknown> = {
+        full_name: fullName,
+        first_name: firstName || user.first_name,
+        last_name: lastName || user.last_name,
+        phone,
+        role: args.role,
+        updated_at: now,
+      }
+      if (email !== undefined) patchUser.email = email
+      if (!user.auth_uid) patchUser.auth_uid = newAuthUid()
+      await ctx.db.patch(user._id, patchUser)
+      user = await ctx.db.get(user._id)
+      if (!user) throw new Error('User update failed')
+
+      const member = await ctx.db
+        .query('members')
+        .withIndex('by_user_id', (q) => q.eq('user_id', uid))
+        .first()
+      if (!member) {
+        await ctx.db.insert('members', {
+          user_id: uid,
+          dob,
+          gender,
+          emergency_contacts: [],
+          documents: [],
+          status: 'active',
+          updated_at: now,
+        })
+      } else {
+        const memberPatch: Record<string, unknown> = { updated_at: now, dob }
+        if (gender && !member.gender) memberPatch.gender = gender
+        await ctx.db.patch(member._id, memberPatch)
+      }
+    }
+
+    await ctx.db.patch(args.registration_id, {
+      user_id: String(user._id),
+      updated_at: Date.now(),
+    })
+
+    return {
+      user: await ctx.db.get(user._id),
+      registration: await ctx.db.get(args.registration_id),
+    }
   },
 })
 

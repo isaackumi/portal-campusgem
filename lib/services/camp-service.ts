@@ -12,6 +12,8 @@ import {
   getCampRegistrations,
   loadCampActivitiesForYear,
   patchCampRegistration,
+  promoteCampRegistrant,
+  syncCampRegistrationDobToMember,
   updateCampActivityRecord,
 } from '@/lib/actions/camp'
 
@@ -117,6 +119,35 @@ export class CampService {
       return { data: true, error: null, loading: false }
     } catch (error) {
       return { data: false, error: this.handleError(error), loading: false }
+    }
+  }
+
+  async promoteToDirectory(
+    registrationId: string,
+    args: {
+      role: 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
+      birth_month?: number
+      birth_day?: number
+      birth_year?: number
+    }
+  ): Promise<ApiResponse<CampRegistration>> {
+    try {
+      const { data, error } = await promoteCampRegistrant(registrationId, args)
+      if (error) return { data: null, error, loading: false }
+      if (!data) return { data: null, error: 'Promotion returned no registration', loading: false }
+      return { data, error: null, loading: false }
+    } catch (error) {
+      return { data: null, error: this.handleError(error), loading: false }
+    }
+  }
+
+  async syncRegistrationBirthdayToMember(registrationId: string): Promise<ApiResponse<boolean>> {
+    try {
+      const { data, error } = await syncCampRegistrationDobToMember(registrationId)
+      if (error) return { data: null, error, loading: false }
+      return { data, error: null, loading: false }
+    } catch (error) {
+      return { data: null, error: this.handleError(error), loading: false }
     }
   }
 }
