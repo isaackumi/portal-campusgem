@@ -11,9 +11,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { createClient } from '@/lib/supabase/client'
+import { dataService } from '@/lib/services/data-service'
 import { AppUser, Group } from '@/lib/types'
-import { 
+import {
   ArrowLeft,
   Users,
   Settings,
@@ -63,13 +63,12 @@ interface GroupFormData {
 export default function CreateGroupPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-  const supabase = createClient()
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [members, setMembers] = useState<AppUser[]>([])
   const [newTag, setNewTag] = useState('')
-  
+
   const [formData, setFormData] = useState<GroupFormData>({
     name: '',
     description: '',
@@ -112,18 +111,13 @@ export default function CreateGroupPage() {
   const fetchMembers = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('app_users')
-        .select('id, full_name, membership_id, role, phone, email, join_year, created_at, updated_at')
-        .in('role', ['admin', 'pastor', 'elder', 'finance_officer', 'member'])
-        .order('full_name', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching members:', error)
+      const res = await dataService.getAllMembers()
+      if (res.error) {
+        console.error('Error fetching members:', res.error)
         return
       }
-
-      setMembers(data || [])
+      const list = (res.data ?? []).filter(u => ['admin', 'pastor', 'elder', 'finance_officer', 'member'].includes(u.role))
+      setMembers(list)
     } catch (error) {
       console.error('Error fetching members:', error)
     } finally {
@@ -177,7 +171,7 @@ export default function CreateGroupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name.trim() || !formData.leader_id) {
       alert('Please fill in all required fields')
       return
@@ -185,61 +179,34 @@ export default function CreateGroupPage() {
 
     try {
       setSaving(true)
-      
-      const { data, error } = await supabase
-        .from('groups')
-        .insert({
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          group_type: formData.group_type,
-          meeting_schedule: formData.meeting_schedule.trim(),
-          meeting_location: formData.meeting_location.trim(),
-          max_members: formData.max_members,
-          is_open: formData.is_open,
-          requires_approval: formData.requires_approval,
-          leader_id: formData.leader_id,
-          co_leader_id: formData.co_leader_id,
-          permissions: formData.permissions,
-          tags: formData.tags,
-          contact_info: formData.contact_info,
-          created_by: user?.id,
-          is_active: true
-        })
-        .select()
-        .single()
 
-      if (error) {
-        console.error('Error creating group:', error)
+      const groupRes = await dataService.createGroup({
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        group_type: formData.group_type as Group['group_type'],
+        meeting_schedule: formData.meeting_schedule.trim(),
+        meeting_location: formData.meeting_location.trim(),
+        max_members: formData.max_members ?? undefined,
+        is_open: formData.is_open,
+        requires_approval: formData.requires_approval,
+        leader_id: formData.leader_id,
+        co_leader_id: formData.co_leader_id ?? undefined,
+        is_active: true
+      })
+
+      if (groupRes.error || !groupRes.data?.id) {
+        console.error('Error creating group:', groupRes.error)
         alert('Failed to create group. Please try again.')
         return
       }
 
-      // Add leader to group memberships
-      if (data?.id && formData.leader_id) {
-        await supabase
-          .from('group_memberships')
-          .insert({
-            group_id: data.id,
-            member_id: formData.leader_id,
-            role: 'leader',
-            status: 'active',
-            joined_at: new Date().toISOString(),
-            added_by: user?.id
-          })
-      }
+      const groupId = groupRes.data.id
 
-      // Add co-leader to group memberships
-      if (data?.id && formData.co_leader_id) {
-        await supabase
-          .from('group_memberships')
-          .insert({
-            group_id: data.id,
-            member_id: formData.co_leader_id,
-            role: 'co_leader',
-            status: 'active',
-            joined_at: new Date().toISOString(),
-            added_by: user?.id
-          })
+      if (formData.leader_id) {
+        await dataService.addUserToGroup(groupId, formData.leader_id, 'leader')
+      }
+      if (formData.co_leader_id) {
+        await dataService.addUserToGroup(groupId, formData.co_leader_id, 'co_leader')
       }
 
       alert('Group created successfully!')
@@ -293,9 +260,9 @@ export default function CreateGroupPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center mb-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.push('/groups')}
                 className="mr-3 text-gray-600 hover:text-gray-900"
               >
@@ -309,8 +276,8 @@ export default function CreateGroupPage() {
             <p className="text-gray-600">Set up a new church group, ministry, or fellowship</p>
           </div>
           <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => router.push('/groups')}
               disabled={saving}
             >
@@ -601,7 +568,7 @@ export default function CreateGroupPage() {
                     type="email"
                     value={formData.contact_info.email}
                     onChange={(e) => handleContactInfoChange('email', e.target.value)}
-                    placeholder="group@emmanuelassembly.org"
+                    placeholder="group@campusgem.org"
                   />
                 </div>
                 <div className="space-y-2">

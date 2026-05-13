@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { 
+import { canAccessPath } from '@/lib/auth/roles'
+import {
   LayoutDashboard,
   Users,
   UserPlus,
@@ -36,14 +37,25 @@ import {
   Target,
   TrendingUp,
   Gift,
-  Cake
+  Cake,
+  ClipboardList,
+  Upload,
+  UserCheck
 } from 'lucide-react'
 
 interface SidebarProps {
   className?: string
 }
 
-const navigationSections = [
+type NavItem = {
+  name: string
+  href: string
+  icon: typeof LayoutDashboard
+  roles?: string[]
+  description?: string
+}
+
+const navigationSections: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'CORE MANAGEMENT',
     items: [
@@ -66,64 +78,174 @@ const navigationSections = [
         name: 'Groups',
         href: '/groups',
         icon: Group
+      }
+    ]
+  },
+  {
+    title: 'ATTENDANCE SYSTEM',
+    items: [
+      {
+        name: 'QR Scanner',
+        href: '/attendance/scanner',
+        icon: QrCode
       },
       {
-        name: 'Events',
-        href: '/events',
-        icon: Calendar
+        name: 'Kiosk Mode',
+        href: '/attendance/kiosk',
+        icon: Monitor
       },
       {
-        name: 'Ministries',
-        href: '/ministries',
+        name: 'Manual Check-in',
+        href: '/attendance/manual',
+        icon: CheckSquare
+      },
+      {
+        name: 'Bulk Attendance',
+        href: '/attendance/bulk',
+        icon: Users
+      },
+      {
+        name: 'Attendance Analytics',
+        href: '/attendance/analytics',
+        icon: BarChart3
+      }
+    ]
+  },
+  {
+    title: 'FORMS & OUTREACH',
+    items: [
+      {
+        name: 'Forms Hub',
+        href: '/admin/forms',
+        icon: ClipboardList,
+        roles: ['admin', 'pastor', 'elder']
+      }
+    ]
+  },
+  {
+    title: 'COMMUNICATIONS',
+    items: [
+      {
+        name: 'SMS Management',
+        href: '/sms',
+        icon: MessageSquare
+      },
+      {
+        name: 'Birthdays & Anniversaries',
+        href: '/celebrations',
+        icon: Cake
+      }
+    ]
+  },
+  {
+    title: 'CAMP MEETING',
+    items: [
+      {
+        name: 'Camp Dashboard',
+        href: '/admin/camp-meeting',
+        icon: Calendar,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'Camper Directory',
+        href: '/admin/camp-meeting/directory',
+        icon: Users,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'Registrations',
+        href: '/admin/camp-meeting/registrations',
+        icon: Users,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'Camp Activities',
+        href: '/admin/camp-meeting/activities',
+        icon: ClipboardList,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'Analytics',
+        href: '/admin/camp-meeting/analytics',
+        icon: BarChart3,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'Follow-up Management',
+        href: '/admin/camp-meeting/follow-up',
+        icon: UserCheck,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'My follow-ups',
+        href: '/admin/camp-meeting/follow-up?mine=1',
+        icon: UserCheck,
+        roles: ['admin', 'pastor', 'elder', 'finance_officer']
+      },
+      {
+        name: 'Bulk Communications',
+        href: '/admin/camp-meeting/communications',
+        icon: MessageSquare,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'Payment Management',
+        href: '/admin/camp-meeting/payments',
+        icon: DollarSign,
+        roles: ['admin', 'pastor', 'elder', 'finance_officer']
+      },
+      {
+        name: 'Notification Settings',
+        href: '/admin/camp-meeting/notifications',
+        icon: Bell,
+        roles: ['admin']
+      },
+      {
+        name: 'Camp Years Management',
+        href: '/admin/camp-meeting/years',
+        icon: Calendar,
+        roles: ['admin'],
+        description: 'Manage all camp years'
+      },
+      {
+        name: 'Historical Import',
+        href: '/admin/camp-meeting/import',
+        icon: Upload,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'QR Scanner',
+        href: '/admin/camp-meeting/scan',
+        icon: QrCode,
+        roles: ['admin', 'pastor', 'elder']
+      }
+    ]
+  },
+  {
+    title: 'ADMINISTRATION',
+    items: [
+      {
+        name: 'Admin Overview',
+        href: '/admin',
+        icon: LayoutDashboard
+      },
+      {
+        name: 'User Management',
+        href: '/admin/users',
+        icon: Users
+      },
+      {
+        name: 'Admin Management',
+        href: '/admin/admins',
+        icon: Shield
+      },
+      {
+        name: 'Group Management',
+        href: '/admin/groups',
         icon: Group
       }
     ]
   },
-      {
-        title: 'ATTENDANCE SYSTEM',
-        items: [
-          {
-            name: 'QR Scanner',
-            href: '/attendance/scanner',
-            icon: QrCode
-          },
-          {
-            name: 'Kiosk Mode',
-            href: '/attendance/kiosk',
-            icon: Monitor
-          },
-          {
-            name: 'Manual Check-in',
-            href: '/attendance/manual',
-            icon: CheckSquare
-          },
-          {
-            name: 'Bulk Attendance',
-            href: '/attendance/bulk',
-            icon: Users
-          },
-          {
-            name: 'Attendance Analytics',
-            href: '/attendance/analytics',
-            icon: BarChart3
-          }
-        ]
-      },
-      {
-        title: 'COMMUNICATIONS',
-        items: [
-          {
-            name: 'SMS Management',
-            href: '/sms',
-            icon: MessageSquare
-          },
-          {
-            name: 'Birthdays & Anniversaries',
-            href: '/celebrations',
-            icon: Cake
-          }
-        ]
-      },
   {
     title: 'FINANCIAL',
     items: [
@@ -169,26 +291,6 @@ const navigationSections = [
       }
     ]
   },
-  {
-    title: 'AI FEATURES',
-    items: [
-      {
-        name: 'Smart Insights',
-        href: '/ai/insights',
-        icon: Zap
-      },
-      {
-        name: 'Analytics',
-        href: '/ai/analytics',
-        icon: Target
-      },
-      {
-        name: 'Attendance AI',
-        href: '/ai/attendance',
-        icon: TrendingUp
-      }
-    ]
-  }
 ]
 
 const settingsNavigation = [
@@ -209,6 +311,12 @@ export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const { user, signOut } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Ensure consistent rendering between server and client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = async () => {
     await signOut()
@@ -221,6 +329,23 @@ export function Sidebar({ className }: SidebarProps) {
     }
     return pathname.startsWith(href)
   }
+
+  // Memoize filtered items to ensure consistency
+  const filteredSections = useMemo(() => {
+    if (!mounted) {
+      // Return all items on server to avoid hydration mismatch
+      return navigationSections
+    }
+    
+    return navigationSections.map(section => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (!user?.role) return true
+        if (item.roles && !item.roles.includes(user.role)) return false
+        return canAccessPath(user.role, item.href)
+      })
+    }))
+  }, [mounted, user?.role])
 
   return (
     <div className={cn(
@@ -237,9 +362,9 @@ export function Sidebar({ className }: SidebarProps) {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                Church of Pentecost
+                Campus Gem Ministries
               </h1>
-              <p className="text-sm text-white">Emmanuel Assembly</p>
+              <p className="text-sm text-white">Campus Ministry</p>
               <p className="text-xs text-yellow-400">Odorkor Area, Gbawe CP District</p>
             </div>
           </div>
@@ -279,7 +404,7 @@ export function Sidebar({ className }: SidebarProps) {
 
       {/* Main Navigation */}
       <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto overscroll-contain">
-        {navigationSections.map((section) => (
+        {filteredSections.map((section) => (
           <div key={section.title} className="space-y-2">
             {!collapsed && (
               <h3 className="text-xs font-semibold text-blue-200 uppercase tracking-wider px-3">
@@ -290,8 +415,6 @@ export function Sidebar({ className }: SidebarProps) {
               {section.items.map((item) => {
                 const Icon = item.icon
                 const isActive = isActiveRoute(item.href)
-                const isAISection = section.title === 'AI FEATURES'
-                
                 return (
                   <Button
                     key={item.name}
@@ -299,19 +422,13 @@ export function Sidebar({ className }: SidebarProps) {
                     className={cn(
                       'w-full justify-start px-3 py-2 h-auto',
                       collapsed && 'px-2',
-                      isActive 
-                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                        : isAISection
-                        ? 'text-yellow-400 hover:text-yellow-300 hover:bg-blue-800'
+                      isActive
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'text-blue-100 hover:text-white hover:bg-blue-800'
                     )}
                     onClick={() => router.push(item.href)}
                   >
-                    <Icon className={cn(
-                      'h-4 w-4',
-                      !collapsed && 'mr-3',
-                      isAISection && !isActive && 'text-yellow-400'
-                    )} />
+                    <Icon className={cn('h-4 w-4', !collapsed && 'mr-3')} />
                     {!collapsed && <span className="text-sm">{item.name}</span>}
                   </Button>
                 )
@@ -331,15 +448,15 @@ export function Sidebar({ className }: SidebarProps) {
             {settingsNavigation.map((item) => {
               const Icon = item.icon
               const isActive = isActiveRoute(item.href)
-              
+
               return (
                 <Button
                   key={item.name}
                   variant="ghost"
                   className={cn(
                     'w-full justify-start px-3 py-2 h-auto',
-                    isActive 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    isActive
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'text-blue-100 hover:text-white hover:bg-blue-800'
                   )}
                   onClick={() => router.push(item.href)}
@@ -387,9 +504,15 @@ export function Sidebar({ className }: SidebarProps) {
 // Mobile sidebar component
 export function MobileSidebar() {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { user, signOut } = useAuth()
+
+  // Ensure consistent rendering between server and client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = async () => {
     await signOut()
@@ -402,6 +525,23 @@ export function MobileSidebar() {
     }
     return pathname.startsWith(href)
   }
+
+  // Memoize filtered items to ensure consistency
+  const filteredSections = useMemo(() => {
+    if (!mounted) {
+      // Return all items on server to avoid hydration mismatch
+      return navigationSections
+    }
+    
+    return navigationSections.map(section => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (!user?.role) return true
+        if (item.roles && !item.roles.includes(user.role)) return false
+        return canAccessPath(user.role, item.href)
+      })
+    }))
+  }, [mounted, user?.role])
 
   return (
     <>
@@ -427,9 +567,9 @@ export function MobileSidebar() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-white" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                    Church of Pentecost
+                    Campus Gem Ministries
                   </h1>
-                  <p className="text-sm text-white">Emmanuel Assembly</p>
+                  <p className="text-sm text-white">Campus Ministry</p>
                   <p className="text-xs text-yellow-400">Odorkor Area, Gbawe CP District</p>
                 </div>
               </div>
@@ -462,7 +602,7 @@ export function MobileSidebar() {
 
             {/* Navigation */}
             <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto overscroll-contain">
-              {navigationSections.map((section) => (
+              {filteredSections.map((section) => (
                 <div key={section.title} className="space-y-2">
                   <h3 className="text-xs font-semibold text-blue-200 uppercase tracking-wider px-3">
                     {section.title}
@@ -471,18 +611,14 @@ export function MobileSidebar() {
                     {section.items.map((item) => {
                       const Icon = item.icon
                       const isActive = isActiveRoute(item.href)
-                      const isAISection = section.title === 'AI FEATURES'
-                      
                       return (
                         <Button
                           key={item.name}
                           variant="ghost"
                           className={cn(
                             'w-full justify-start px-3 py-2 h-auto',
-                            isActive 
-                              ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                              : isAISection
-                              ? 'text-yellow-400 hover:text-yellow-300 hover:bg-blue-800'
+                            isActive
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
                               : 'text-blue-100 hover:text-white hover:bg-blue-800'
                           )}
                           onClick={() => {
@@ -490,10 +626,7 @@ export function MobileSidebar() {
                             setOpen(false)
                           }}
                         >
-                          <Icon className={cn(
-                            'h-4 w-4 mr-3',
-                            isAISection && !isActive && 'text-yellow-400'
-                          )} />
+                          <Icon className="h-4 w-4 mr-3" />
                           <span className="text-sm">{item.name}</span>
                         </Button>
                       )

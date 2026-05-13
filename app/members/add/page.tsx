@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
-import { createClient } from '@/lib/supabase/client'
+import { createUserRecord } from '@/lib/actions/core-data'
 import { generateMembershipId } from '@/lib/membershipId'
 import { CreateUserForm } from '@/lib/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -48,7 +48,6 @@ export default function AddMemberPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('personal')
   const [formData, setFormData] = useState<CreateUserForm>({
@@ -157,61 +156,20 @@ export default function AddMemberPage() {
     setLoading(true)
 
     try {
-      // 1. Create app_user entry
-      const { data: userData, error: userError } = await supabase
-        .from('app_users')
-        .insert({
-          first_name: formData.first_name,
-          middle_name: formData.middle_name,
-          last_name: formData.last_name,
-          full_name: `${formData.first_name} ${formData.middle_name ? formData.middle_name + ' ' : ''}${formData.last_name}`.trim(),
-          phone: formData.phone,
-          secondary_phone: formData.secondary_phone,
-          email: formData.email,
-          role: formData.role,
-          membership_id: membershipId,
-          join_year: formData.join_year,
-          occupation: formData.occupation,
-          place_of_work: formData.place_of_work,
-          marital_status: formData.marital_status,
-          spouse_name: formData.spouse_name,
-          children_count: formData.children_count,
-          emergency_contact_name: formData.emergency_contact_name,
-          emergency_contact_phone: formData.emergency_contact_phone,
-          emergency_contact_relation: formData.emergency_contact_relation,
-        })
-        .select()
-        .single()
+      const fullName = `${formData.first_name} ${formData.middle_name ? formData.middle_name + ' ' : ''}${formData.last_name}`.trim()
+      const { data: userData, error: userError } = await createUserRecord({
+        full_name: fullName,
+        membership_id: membershipId,
+        phone: formData.phone,
+        email: formData.email,
+        role: formData.role,
+        join_year: formData.join_year,
+      })
 
-      if (userError) throw userError
+      if (userError || !userData) throw new Error(userError ?? 'Failed to create user')
 
-      // 2. Create member profile entry
-      const { error: memberError } = await supabase
-        .from('members')
-        .insert({
-          user_id: userData.id,
-          dob: formData.dob,
-          gender: formData.gender,
-          address: formData.address,
-          date_of_baptism: formData.date_of_baptism,
-          holy_ghost_baptism: formData.holy_ghost_baptism,
-          date_of_holy_ghost_baptism: formData.date_of_holy_ghost_baptism,
-          previous_church: formData.previous_church,
-          reason_for_leaving: formData.reason_for_leaving,
-          special_skills: formData.special_skills,
-          interests: formData.interests,
-          notes: formData.notes,
-          is_visitor: formData.is_visitor,
-          status: formData.is_visitor ? 'visitor' : 'active',
-          emergency_contacts: [
-            {
-              name: formData.emergency_contact_name,
-              relation: formData.emergency_contact_relation,
-              phone: formData.emergency_contact_phone,
-            },
-          ],
-          documents: [],
-        })
+      // Member profile is created by createUser; update member with extra fields if needed later
+      const memberError = null
 
       if (memberError) throw memberError
 

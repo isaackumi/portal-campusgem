@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { useAuth } from './providers'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  Settings, 
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  Settings,
   Bell,
   Church,
   Users,
@@ -56,11 +56,11 @@ export function Navbar() {
               <Link href="/dashboard" className="flex items-center space-x-2">
                 <Church className="h-8 w-8 text-blue-600" />
                 <span className="font-bold text-xl text-gray-900">
-                  Emmanuel Assembly
+                  Campus Gem Ministries
                 </span>
               </Link>
             </div>
-            
+
             {/* Desktop navigation */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               {filteredNavigation.map((item) => (
@@ -102,7 +102,7 @@ export function Navbar() {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <Link href="/profile">
                     <Button variant="ghost" size="sm">
@@ -110,7 +110,7 @@ export function Navbar() {
                       Profile
                     </Button>
                   </Link>
-                  
+
                   {user.role === 'admin' && (
                     <Link href="/admin">
                       <Button variant="ghost" size="sm">
@@ -119,7 +119,7 @@ export function Navbar() {
                       </Button>
                     </Link>
                   )}
-                  
+
                   <Button variant="ghost" size="sm" onClick={signOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
@@ -186,7 +186,7 @@ export function Navbar() {
                     Profile
                   </Button>
                 </Link>
-                
+
                 {user.role === 'admin' && (
                   <Link href="/admin" className="block">
                     <Button variant="ghost" className="w-full justify-start">
@@ -195,9 +195,9 @@ export function Navbar() {
                     </Button>
                   </Link>
                 )}
-                
-                <Button 
-                  variant="ghost" 
+
+                <Button
+                  variant="ghost"
                   className="w-full justify-start text-red-600 hover:text-red-700"
                   onClick={signOut}
                 >

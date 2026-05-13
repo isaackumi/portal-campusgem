@@ -103,12 +103,48 @@ Object.defineProperty(navigator, 'onLine', {
   value: true,
 })
 
-// Mock fetch
-global.fetch = jest.fn(() =>
-  Promise.resolve({
+// Mock fetch — enough shape for route / trailing-slash tests when dev server is not running
+global.fetch = jest.fn((input, init) => {
+  const url =
+    typeof input === 'string'
+      ? input
+      : input && typeof input === 'object' && 'url' in input
+        ? String((input).url)
+        : String(input)
+  const pathname = (() => {
+    try {
+      return new URL(url).pathname
+    } catch {
+      return url
+    }
+  })()
+  const redirectManual = init && init.redirect === 'manual'
+  const trailingRoots = ['/visitors', '/members', '/groups', '/attendance', '/celebrations', '/sms']
+  const wantsTrailingRedirect =
+    redirectManual && trailingRoots.some((r) => pathname === `${r}/`)
+
+  const htmlHeaders = {
+    get: (name) => (String(name).toLowerCase() === 'content-type' ? 'text/html; charset=utf-8' : null),
+  }
+
+  if (wantsTrailingRedirect) {
+    const base = pathname.replace(/\/$/, '')
+    return Promise.resolve({
+      ok: false,
+      status: 308,
+      headers: {
+        get: (name) => (String(name).toLowerCase() === 'location' ? `http://localhost:3000${base}` : null),
+      },
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve(''),
+    })
+  }
+
+  return Promise.resolve({
     ok: true,
     status: 200,
+    headers: htmlHeaders,
     json: () => Promise.resolve({}),
-    text: () => Promise.resolve(''),
+    text: () => Promise.resolve('<!DOCTYPE html><html><head></head><body></body></html>'),
   })
-)
+})

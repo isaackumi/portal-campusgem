@@ -38,7 +38,8 @@ import {
 } from 'lucide-react'
 import { enhancedAttendanceService, AttendanceStats } from '@/lib/services/enhanced-attendance-service'
 import { AttendanceActivity } from '@/lib/types'
-import { createClient } from '@/lib/supabase/client'
+import { dataService } from '@/lib/services/data-service'
+import { ServiceTypeMapper } from '@/lib/constants/service-types'
 import { useToast } from '@/hooks/use-toast'
 import { formatDateTime } from '@/lib/utils'
 
@@ -97,14 +98,7 @@ export default function ComprehensiveAttendancePage() {
   
   const { toast } = useToast()
 
-  const serviceTypes = [
-    { value: 'sunday_service', label: 'Sunday Service' },
-    { value: 'midweek_service', label: 'Midweek Service' },
-    { value: 'prayer_meeting', label: 'Prayer Meeting' },
-    { value: 'youth_service', label: 'Youth Service' },
-    { value: 'children_service', label: 'Children Service' },
-    { value: 'special_event', label: 'Special Event' }
-  ]
+  const serviceTypes = ServiceTypeMapper.getOptions()
 
   useEffect(() => {
     if (user) {
@@ -117,40 +111,31 @@ export default function ComprehensiveAttendancePage() {
       setLoading(true)
       setError(null)
 
-      // Fetch members with department information
-      const { data: membersData, error: membersError } = await createClient()
-        .from('members')
-        .select(`
-          id,
-          dob,
-          gender,
-          user:app_users(id, full_name, membership_id, phone, email),
-          department_memberships:department_memberships(
-            department:departments(name)
-          )
-        `)
-        .eq('status', 'active')
-
-      if (membersError) throw membersError
-
-      // Transform members data
-      const transformedMembers = membersData?.map(member => {
-        const user = member.user?.[0] || member.user
-        const departments = member.department_memberships?.map((dm: any) => dm.department?.name).filter(Boolean) || []
-        
-        return {
-          id: member.id,
-          full_name: user?.full_name || '',
-          membership_id: user?.membership_id || '',
-          phone: user?.phone,
-          email: user?.email,
-          gender: member.gender,
-          dob: member.dob,
-          departments
+      // Fetch members (Firebase/dataService)
+      const all: typeof members = []
+      let page = 1
+      const limit = 200
+      let hasMore = true
+      while (hasMore) {
+        const res = await dataService.getMembers(page, limit)
+        if (res.error) throw new Error(res.error)
+        const list = res.data ?? []
+        for (const m of list) {
+          all.push({
+            id: m.id,
+            full_name: m.user?.full_name ?? '',
+            membership_id: m.user?.membership_id ?? '',
+            phone: m.user?.phone,
+            email: m.user?.email,
+            gender: m.gender === 'other' ? undefined : m.gender,
+            dob: m.dob,
+            departments: []
+          })
         }
-      }) || []
-
-      setMembers(transformedMembers)
+        hasMore = list.length === limit
+        page++
+      }
+      setMembers(all)
 
       // Fetch attendance stats
       const dateRange = {
@@ -165,8 +150,8 @@ export default function ComprehensiveAttendancePage() {
       const activityData = await enhancedAttendanceService.getRecentActivity(10)
       setRecentActivity(activityData)
 
-      // Fetch absentees for today
-      await fetchAbsentees()
+      // Fetch absentees for today (pass current member list)
+      await fetchAbsentees(all)
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Failed to load attendance data')
@@ -175,57 +160,33 @@ export default function ComprehensiveAttendancePage() {
     }
   }
 
-  const fetchAbsentees = async () => {
+  const fetchAbsentees = async (membersList: Member[]) => {
     try {
-      const { data, error } = await createClient()
-        .from('absentee_records')
-        .select(`
-          id,
-          member_id,
-          service_date,
-          service_type,
-          reason,
-          follow_up_required,
-          follow_up_completed,
-          sms_sent,
-          created_at,
-          member:members(
-            user:app_users(full_name, membership_id, phone)
-          )
-        `)
-        .eq('service_date', serviceDate)
-        .eq('service_type', serviceTypes.find(s => s.value === serviceType)?.label || 'Sunday Service')
+      const { data: attendanceList } = await dataService.getAttendanceRecords({
+        service_date: serviceDate,
+        service_type: serviceType,
+        limit: 5000
+      })
+      const presentMemberIds = new Set((attendanceList ?? []).map((r: any) => r.member_id))
 
-      if (error) throw error
-
-      const transformedAbsentees = data?.map((record: any) => {
-        // Handle the user data structure properly
-        let user: any = null
-        if (record.member?.user) {
-          if (Array.isArray(record.member.user)) {
-            user = record.member.user[0]
-          } else {
-            user = record.member.user
-          }
-        }
-        
-        return {
-          id: record.id,
-          member_id: record.member_id,
-          full_name: user?.full_name || '',
-          membership_id: user?.membership_id || '',
-          phone: user?.phone,
-          service_date: record.service_date,
-          service_type: record.service_type,
-          reason: record.reason,
-          follow_up_required: record.follow_up_required,
-          follow_up_completed: record.follow_up_completed,
-          sms_sent: record.sms_sent,
-          created_at: record.created_at
-        }
-      }) || []
-
-      setAbsentees(transformedAbsentees)
+      const absenteesList: AbsenteeMember[] = []
+      for (const m of membersList) {
+        if (presentMemberIds.has(m.id)) continue
+        absenteesList.push({
+          id: `absentee-${m.id}`,
+          member_id: m.id,
+          full_name: m.full_name,
+          membership_id: m.membership_id,
+          phone: m.phone,
+          service_date: serviceDate,
+          service_type: serviceType,
+          follow_up_required: true,
+          follow_up_completed: false,
+          sms_sent: false,
+          created_at: new Date().toISOString()
+        })
+      }
+      setAbsentees(absenteesList)
     } catch (err) {
       console.error('Error fetching absentees:', err)
     }
@@ -297,8 +258,9 @@ export default function ComprehensiveAttendancePage() {
       const result = await enhancedAttendanceService.recordBulkAttendance({
         member_ids: selectedMembers,
         service_date: serviceDate,
-        service_type: serviceTypes.find(s => s.value === serviceType)?.label || 'Sunday Service',
+        service_type: serviceType,
         created_by: user?.id || 'admin',
+        checked_in_by: user?.id || undefined,
         method: 'admin'
       })
 
@@ -327,7 +289,7 @@ export default function ComprehensiveAttendancePage() {
       await enhancedAttendanceService.markAbsentee({
         member_id: memberId,
         service_date: serviceDate,
-        service_type: serviceTypes.find(s => s.value === serviceType)?.label || 'Sunday Service',
+        service_type: serviceType,
         follow_up_required: true,
         created_by: user?.id || 'admin'
       })
@@ -338,7 +300,7 @@ export default function ComprehensiveAttendancePage() {
         variant: "default"
       })
 
-      fetchAbsentees()
+      fetchAbsentees(members)
     } catch (err) {
       console.error('Error marking absentee:', err)
       toast({
@@ -375,7 +337,7 @@ export default function ComprehensiveAttendancePage() {
       })
 
       setSelectedAbsentees([])
-      fetchAbsentees()
+      fetchAbsentees(members)
     } catch (err) {
       console.error('Error sending SMS:', err)
       toast({

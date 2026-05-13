@@ -27,6 +27,7 @@ yarn-error.log*
 # IDE
 .vscode/
 .idea/
+.cursor/
 
 # OS
 .DS_Store
@@ -51,6 +52,10 @@ pids
 # Supabase
 supabase/.branches
 supabase/.temp
+
+# Firebase Functions
+functions/lib/
+functions/node_modules/
 
 # Bun
 bun.lockb

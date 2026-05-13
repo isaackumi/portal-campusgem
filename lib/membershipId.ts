@@ -1,6 +1,6 @@
 /**
- * Membership ID utilities for Emmanuel Assembly
- * Format: EA-XXXXYYYY where EA = Emmanuel Assembly, XXXX = 4 digits, YYYY = year joined
+ * Membership ID utilities for Campus Gem Ministries
+ * Format: CG-XXXXYYYY where CG = Campus Gem, XXXX = 4 digits, YYYY = year joined
  */
 
 /**
@@ -20,15 +20,15 @@ export function normalizeMembershipId(raw: string): string {
  */
 export function isValidMembershipId(id: string): boolean {
   const normalized = normalizeMembershipId(id)
-  // Should be EA followed by 4 digits and 4 year digits
-  const regex = /^EA\d{8}$/
+  // Should be CG followed by 4 digits and 4 year digits
+  const regex = /^CG\d{8}$/
   return regex.test(normalized)
 }
 
 /**
  * Formats a membership ID for display
  * @param id - Membership ID to format
- * @returns Formatted membership ID (EA-XXXX-YYYY)
+ * @returns Formatted membership ID (CG-XXXX-YYYY)
  */
 export function formatMembershipIdForDisplay(id: string): string {
   const normalized = normalizeMembershipId(id)
@@ -37,8 +37,8 @@ export function formatMembershipIdForDisplay(id: string): string {
     return id // Return original if invalid
   }
   
-  // Extract parts: EA + 4 digits + 4 year digits
-  const prefix = normalized.substring(0, 2) // EA
+  // Extract parts: CG + 4 digits + 4 year digits
+  const prefix = normalized.substring(0, 2) // CG
   const digits = normalized.substring(2, 6) // XXXX
   const year = normalized.substring(6, 10) // YYYY
   
@@ -79,7 +79,7 @@ export function generateMembershipId(phone?: string, joinYear?: number): string 
     digits = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
   }
   
-  return `EA-${digits}-${year}`
+  return `CG-${digits}-${year}`
 }
 
 /**

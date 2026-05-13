@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -10,21 +10,31 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay } from '@/components/ui/error-display'
 import { 
   Users, 
-  Search, 
+  Search,
   UserCheck, 
   Calendar,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Filter,
+  Phone,
+  Mail,
+  MapPin,
+  User,
+  UserPlus,
+  RefreshCw,
+  X
 } from 'lucide-react'
 import { useMembers } from '@/lib/hooks/use-data'
 import { dataService } from '@/lib/services/data-service'
 import { useToast } from '@/hooks/use-toast'
 import { formatMembershipIdForDisplay, formatDateTime } from '@/lib/utils'
+import { ServiceTypeMapper } from '@/lib/constants/service-types'
 import { Member, Dependant } from '@/lib/types'
 
 interface MemberWithDependants extends Member {
@@ -44,26 +54,53 @@ export default function ManualCheckInPage() {
   const [selectedMember, setSelectedMember] = useState<MemberWithDependants | null>(null)
   const [selectedDependants, setSelectedDependants] = useState<string[]>([])
   const [serviceType, setServiceType] = useState('sunday_service')
+  
+  // Debug serviceType changes
+  useEffect(() => {
+    console.log('🔍 ServiceType state changed to:', serviceType)
+  }, [serviceType])
   const [loading, setLoading] = useState(false)
   const [checkInResult, setCheckInResult] = useState<CheckInResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [showFilters, setShowFilters] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
-  const { data: members, total, hasMore, error: membersError, loading: membersLoading } = useMembers(1, 50, searchTerm)
+  const { data: members, total, hasMore, error: membersError, loading: membersLoading } = useMembers(1, 100, searchTerm)
 
-  const serviceTypes = [
-    { value: 'sunday_service', label: 'Sunday Service' },
-    { value: 'midweek_service', label: 'Midweek Service' },
-    { value: 'prayer_meeting', label: 'Prayer Meeting' },
-    { value: 'youth_service', label: 'Youth Service' },
-    { value: 'children_service', label: 'Children Service' },
-    { value: 'special_event', label: 'Special Event' }
-  ]
+  const serviceTypes = ServiceTypeMapper.getOptions()
+  console.log('🔍 ServiceTypes options:', serviceTypes)
+
+  // Filter members based on search and filters
+  const filteredMembers = useMemo(() => {
+    if (!members) return []
+    
+    return members.filter(member => {
+      const matchesSearch = searchTerm === '' || 
+        member.user?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.user?.membership_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.user?.phone?.includes(searchTerm) ||
+        member.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesRole = roleFilter === 'all' || member.user?.role === roleFilter
+      const matchesStatus = statusFilter === 'all' || member.status === statusFilter
+      
+      return matchesSearch && matchesRole && matchesStatus
+    })
+  }, [members, searchTerm, roleFilter, statusFilter])
+
+  // Get unique roles for filter
+  const uniqueRoles = useMemo(() => {
+    if (!members) return []
+    const roles = members.map(m => m.user?.role).filter(Boolean)
+    return Array.from(new Set(roles))
+  }, [members])
 
   const handleDependantToggle = (dependantId: string) => {
-    setSelectedDependants(prev => 
-      prev.includes(dependantId) 
+    setSelectedDependants(prev =>
+      prev.includes(dependantId)
         ? prev.filter(id => id !== dependantId)
         : [...prev, dependantId]
     )
@@ -76,19 +113,26 @@ export default function ManualCheckInPage() {
       setLoading(true)
       setError(null)
 
+      console.log('🔍 Manual Check-in - serviceType:', serviceType)
+      console.log('🔍 Manual Check-in - serviceTypes:', serviceTypes)
+
       const serviceLabel = serviceTypes.find(s => s.value === serviceType)?.label || 'Sunday Service'
       const checkInTime = new Date().toISOString()
       const serviceDate = new Date().toISOString().split('T')[0]
 
       // Record attendance for main member
+      console.log('🔍 Before mapping - serviceType:', serviceType)
+      const mappedServiceType = ServiceTypeMapper.toEnum(serviceType)
+      console.log('🔍 After mapping - mappedServiceType:', mappedServiceType)
+      
       const { error: memberError } = await dataService.recordAttendance({
-        member_id: selectedMember.id,
-        service_date: serviceDate,
-        service_type: serviceLabel,
-        check_in_time: checkInTime,
-        status: 'present',
+          member_id: selectedMember.id,
+          service_date: serviceDate,
+        service_type: mappedServiceType, // Professional mapping
+          check_in_time: checkInTime,
+          status: 'present',
         checked_in_by: user?.id || ''
-      })
+        })
 
       if (memberError) throw new Error(memberError)
 
@@ -99,14 +143,14 @@ export default function ManualCheckInPage() {
 
       if (selectedDependantObjects.length > 0) {
         for (const dependant of selectedDependantObjects) {
-          const { error: dependantError } = await dataService.recordAttendance({
-            member_id: dependant.id,
-            service_date: serviceDate,
-            service_type: serviceLabel,
-            check_in_time: checkInTime,
-            status: 'present',
-            checked_in_by: user?.id || ''
-          })
+            const { error: dependantError } = await dataService.recordAttendance({
+          member_id: dependant.id,
+          service_date: serviceDate,
+              service_type: mappedServiceType, // Use the same mapped value
+          check_in_time: checkInTime,
+          status: 'present',
+              checked_in_by: user?.id || ''
+            })
 
           if (dependantError) throw new Error(dependantError)
         }
@@ -115,7 +159,7 @@ export default function ManualCheckInPage() {
       setCheckInResult({
         member: selectedMember,
         dependants: selectedDependantObjects,
-        service_type: serviceLabel,
+        service_type: serviceLabel, // This is for display, so label is correct
         timestamp: checkInTime
       })
 
@@ -144,10 +188,29 @@ export default function ManualCheckInPage() {
     setError(null)
   }
 
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin': return 'bg-red-100 text-red-800'
+      case 'pastor': return 'bg-purple-100 text-purple-800'
+      case 'elder': return 'bg-yellow-100 text-yellow-800'
+      case 'member': return 'bg-blue-100 text-blue-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800'
+      case 'inactive': return 'bg-red-100 text-red-800'
+      case 'visitor': return 'bg-blue-100 text-blue-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   if (authLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center justify-center min-h-screen">
           <LoadingSpinner />
         </div>
       </DashboardLayout>
@@ -157,68 +220,15 @@ export default function ManualCheckInPage() {
   if (!user) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
-            <p className="text-gray-600 mb-4">Please log in to access manual check-in.</p>
-            <Button onClick={() => router.push('/auth')}>
-              Go to Login
-            </Button>
-          </div>
-        </div>
-      </DashboardLayout>
-    )
-  }
-
-  if (checkInResult) {
-    return (
-      <DashboardLayout>
-        <div className="max-w-2xl mx-auto">
-          <Card className="border-green-200 bg-green-50">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <CardTitle className="text-green-800">Check-in Successful!</CardTitle>
-              <CardDescription className="text-green-700">
-                {checkInResult.member.user?.full_name || 'Member'} has been checked in successfully.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-white rounded-lg p-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium">Member:</span>
-                  <span>{checkInResult.member.user?.full_name || 'Unknown'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Service:</span>
-                  <span>{checkInResult.service_type}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Time:</span>
-                  <span>{formatDateTime(checkInResult.timestamp)}</span>
-                </div>
-                {checkInResult.dependants.length > 0 && (
-                  <div>
-                    <span className="font-medium">Dependants:</span>
-                    <ul className="mt-1 space-y-1">
-                      {checkInResult.dependants.map(dependant => (
-                        <li key={dependant.id} className="text-sm text-gray-600">
-                          {dependant.first_name} {dependant.last_name} ({dependant.relationship})
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={resetForm} className="flex-1">
-                  Check In Another Member
-                </Button>
-                <Button variant="outline" onClick={() => router.push('/attendance')}>
-                  View Attendance
-                </Button>
-              </div>
+        <div className="flex items-center justify-center min-h-screen">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Required</h2>
+              <p className="text-gray-600 mb-4">Please log in to access the manual check-in page.</p>
+              <Button onClick={() => router.push('/auth')}>
+                Go to Login
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -228,222 +238,331 @@ export default function ManualCheckInPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Manual Check-in</h1>
-          <p className="text-gray-600 mt-2">
-            Manually check in members and their dependants for church services
-          </p>
+        <div className="flex items-center justify-between">
+            <div>
+            <h1 className="text-3xl font-bold text-gray-900">Manual Check-in</h1>
+            <p className="text-gray-600 mt-2">Search and check in members manually</p>
+            </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
+            <Button
+              variant="outline"
+              onClick={resetForm}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reset
+            </Button>
+          </div>
         </div>
 
-        {/* Service Type Selection */}
+        {/* Search and Filters */}
         <Card>
-          <CardHeader>
-            <CardTitle>Service Information</CardTitle>
-            <CardDescription>
-              Select the service type for this check-in session
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="service-type">Service Type</Label>
-              <Select value={serviceType} onValueChange={setServiceType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select service type" />
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search by name, membership ID, phone, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+          </div>
+
+              {/* Filters */}
+              {showFilters && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+                  <div>
+                    <Label htmlFor="role-filter">Role</Label>
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
-                  {serviceTypes.map(service => (
-                    <SelectItem key={service.value} value={service.value}>
-                      {service.label}
+                        <SelectItem value="all">All Roles</SelectItem>
+                        {uniqueRoles.map(role => (
+                          <SelectItem key={role} value={role || ''}>
+                            {role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Unknown'}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Member Search */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Find Member</CardTitle>
-            <CardDescription>
-              Search for a member to check in
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search by name or membership ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {membersLoading && (
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner />
-              </div>
-            )}
-
-            {membersError && (
-              <ErrorDisplay 
-                title="Failed to load members"
-                error={membersError}
-              />
-            )}
-
-            {!membersLoading && !membersError && members.length === 0 && searchTerm && (
-              <div className="text-center py-8 text-gray-500">
-                No members found matching "{searchTerm}"
-              </div>
-            )}
-
-            {!membersLoading && !membersError && members.length > 0 && (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {members.map(member => (
-                  <div
-                    key={member.id}
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedMember?.id === member.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setSelectedMember(member)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{member.user?.full_name || 'Unknown'}</div>
-                        <div className="text-sm text-gray-600">
-                          ID: {formatMembershipIdForDisplay(member.user?.membership_id || '')}
-                        </div>
-                        {member.user?.phone && (
-                          <div className="text-sm text-gray-500">{member.user.phone}</div>
-                        )}
-                      </div>
-                      {selectedMember?.id === member.id && (
-                        <CheckCircle className="h-5 w-5 text-blue-600" />
-                      )}
-                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Dependants Selection */}
-        {selectedMember && selectedMember.dependants && selectedMember.dependants.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Dependants</CardTitle>
-              <CardDescription>
-                Choose which dependants to check in with {selectedMember.user?.full_name || 'this member'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {selectedMember.dependants.map(dependant => (
-                  <div key={dependant.id} className="flex items-center space-x-3">
-                    <Checkbox
-                      id={dependant.id}
-                      checked={selectedDependants.includes(dependant.id)}
-                      onCheckedChange={() => handleDependantToggle(dependant.id)}
-                    />
-                    <Label htmlFor={dependant.id} className="flex-1 cursor-pointer">
-                      <div className="font-medium">
-                        {dependant.first_name} {dependant.last_name}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {dependant.relationship}
-                      </div>
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Check-in Summary */}
-        {selectedMember && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Check-in Summary</CardTitle>
-              <CardDescription>
-                Review the details before confirming check-in
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium">Member:</span>
-                  <span>{selectedMember.user?.full_name || 'Unknown'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Service:</span>
-                  <span>{serviceTypes.find(s => s.value === serviceType)?.label}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Date:</span>
-                  <span>{new Date().toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Time:</span>
-                  <span>{new Date().toLocaleTimeString()}</span>
-                </div>
-                {selectedDependants.length > 0 && (
+                  
                   <div>
-                    <span className="font-medium">Dependants:</span>
-                    <ul className="mt-1 space-y-1">
-                      {selectedMember.dependants
-                        ?.filter(d => selectedDependants.includes(d.id))
-                        .map(dependant => (
-                          <li key={dependant.id} className="text-sm text-gray-600">
-                            {dependant.first_name} {dependant.last_name} ({dependant.relationship})
-                          </li>
-                        ))}
-                    </ul>
+                    <Label htmlFor="status-filter">Status</Label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="visitor">Visitor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                </div>
+
+                  <div>
+                    <Label htmlFor="service-type">Service Type</Label>
+                    <Select value={serviceType} onValueChange={(value) => {
+                      console.log('🔍 Select onValueChange called with:', value)
+                      console.log('🔍 Available serviceTypes:', serviceTypes)
+                      console.log('🔍 Selected serviceType object:', serviceTypes.find(s => s.value === value))
+                      setServiceType(value)
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {serviceTypes.map(service => {
+                          console.log('🔍 Rendering SelectItem:', { value: service.value, label: service.label })
+                          return (
+                            <SelectItem key={service.value} value={service.value}>
+                              <span className="flex items-center">
+                                <span className="mr-2">{service.icon}</span>
+                                {service.label}
+                              </span>
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                    </div>
                   </div>
                 )}
               </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-center">
-                    <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
-                    <span className="text-red-800 text-sm">{error}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleCheckIn} 
-                  disabled={loading}
-                  className="flex-1"
-                >
-                  {loading ? (
-                    <>
-                      <LoadingSpinner className="mr-2 h-4 w-4" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <UserCheck className="mr-2 h-4 w-4" />
-                      Confirm Check-in
-                    </>
-                  )}
-                </Button>
-                <Button variant="outline" onClick={resetForm}>
-                  Cancel
-                </Button>
-              </div>
             </CardContent>
           </Card>
+
+        {/* Results */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Members List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                <Users className="h-5 w-5 mr-2" />
+                Members ({filteredMembers.length})
+                </CardTitle>
+                <CardDescription>
+                Select a member to check in
+                </CardDescription>
+              </CardHeader>
+            <CardContent>
+              {membersLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <LoadingSpinner />
+                  </div>
+              ) : membersError ? (
+                <ErrorDisplay error={membersError} />
+              ) : filteredMembers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No members found</h3>
+                  <p className="text-gray-600">Try adjusting your search or filters.</p>
+                </div>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {filteredMembers.map((member) => (
+                        <div
+                          key={member.id}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                            selectedMember?.id === member.id
+                              ? 'border-blue-500 bg-blue-50'
+                          : 'hover:bg-gray-50'
+                          }`}
+                      onClick={() => setSelectedMember(member)}
+                        >
+                          <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                              <h3 className="font-medium text-gray-900">
+                              {member.user?.full_name || 'Unknown'}
+                              </h3>
+                            <Badge className={getRoleColor(member.user?.role || '')}>
+                              {member.user?.role}
+                            </Badge>
+                            <Badge className={getStatusColor(member.status)}>
+                              {member.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            {member.user?.membership_id && (
+                              <span className="flex items-center">
+                                <User className="h-3 w-3 mr-1" />
+                                {formatMembershipIdForDisplay(member.user.membership_id)}
+                              </span>
+                            )}
+                            {member.user?.phone && (
+                              <span className="flex items-center">
+                                <Phone className="h-3 w-3 mr-1" />
+                                {member.user.phone}
+                              </span>
+                            )}
+                            {member.user?.email && (
+                              <span className="flex items-center">
+                                <Mail className="h-3 w-3 mr-1" />
+                                {member.user.email}
+                              </span>
+                              )}
+                            </div>
+                            {member.dependants && member.dependants.length > 0 && (
+                            <div className="mt-2 text-sm text-gray-600">
+                              <UserPlus className="h-3 w-3 inline mr-1" />
+                                {member.dependants.length} dependant(s)
+                              </div>
+                            )}
+                        </div>
+                        {selectedMember?.id === member.id && (
+                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                    )}
+                      </div>
+                    </div>
+                  ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+          {/* Check-in Form */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                <UserCheck className="h-5 w-5 mr-2" />
+                  Check-in Details
+                </CardTitle>
+                <CardDescription>
+                {selectedMember ? 'Review and confirm check-in' : 'Select a member first'}
+                </CardDescription>
+              </CardHeader>
+            <CardContent>
+                {selectedMember ? (
+                <div className="space-y-4">
+                  {/* Selected Member Info */}
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      {selectedMember.user?.full_name}
+                      </h3>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <User className="h-3 w-3 mr-2" />
+                        ID: {formatMembershipIdForDisplay(selectedMember.user?.membership_id || '')}
+                      </div>
+                      {selectedMember.user?.phone && (
+                        <div className="flex items-center">
+                          <Phone className="h-3 w-3 mr-2" />
+                          {selectedMember.user.phone}
+                        </div>
+                      )}
+                      <div className="flex items-center">
+                        <Calendar className="h-3 w-3 mr-2" />
+                        {serviceTypes.find(s => s.value === serviceType)?.icon} {serviceTypes.find(s => s.value === serviceType)?.label}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-3 w-3 mr-2" />
+                        {new Date().toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                  {/* Dependants Selection */}
+                    {selectedMember.dependants && selectedMember.dependants.length > 0 && (
+                      <div>
+                        <Label className="text-sm font-medium">Include Dependants</Label>
+                        <div className="mt-2 space-y-2">
+                          {selectedMember.dependants.map((dependant) => (
+                            <div key={dependant.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={dependant.id}
+                                checked={selectedDependants.includes(dependant.id)}
+                                onCheckedChange={() => handleDependantToggle(dependant.id)}
+                              />
+                            <Label htmlFor={dependant.id} className="text-sm">
+                              {dependant.first_name} {dependant.middle_name} {dependant.last_name} ({dependant.relationship})
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Error Display */}
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center">
+                        <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                        <span className="text-sm text-red-800">{error}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Check-in Button */}
+                    <Button 
+                      onClick={handleCheckIn}
+                      disabled={loading}
+                      className="w-full"
+                    size="lg"
+                    >
+                      {loading ? (
+                        <>
+                        <LoadingSpinner className="h-4 w-4 mr-2" />
+                        Processing...
+                        </>
+                      ) : (
+                        <>
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        Check In Member
+                        </>
+                      )}
+                    </Button>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Member Selected</h3>
+                  <p className="text-gray-600">Select a member from the list to proceed with check-in.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+        {/* Success Result */}
+        {checkInResult && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-6">
+              <div className="flex items-center mb-4">
+                <CheckCircle className="h-6 w-6 text-green-600 mr-2" />
+                <h3 className="text-lg font-semibold text-green-800">Check-in Successful!</h3>
+              </div>
+              <div className="space-y-2 text-sm">
+                <p><strong>Member:</strong> {checkInResult.member.user?.full_name}</p>
+                <p><strong>Service:</strong> {checkInResult.service_type}</p>
+                <p><strong>Time:</strong> {formatDateTime(checkInResult.timestamp)}</p>
+                {checkInResult.dependants.length > 0 && (
+                  <p><strong>Dependants:</strong> {checkInResult.dependants.map(d => `${d.first_name} ${d.middle_name} ${d.last_name}`).join(', ')}</p>
+                )}
+              </div>
+              <div className="mt-4 flex space-x-2">
+                <Button onClick={resetForm} variant="outline">
+                  Check In Another
+              </Button>
+                <Button onClick={() => router.push('/attendance')}>
+                  View Attendance
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
         )}
       </div>
     </DashboardLayout>

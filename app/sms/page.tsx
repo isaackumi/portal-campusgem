@@ -12,10 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay } from '@/components/ui/error-display'
-import { 
-  MessageSquare, 
-  Send, 
-  Users, 
+import {
+  MessageSquare,
+  Send,
+  Users,
   Calendar,
   BarChart3,
   Plus,
@@ -80,7 +80,7 @@ export default function SMSPage() {
           phone: '+233241234567',
           membership_id: 'EA-2024-TEST'
         },
-        message: 'This is a test message from Emmanuel Assembly SMS system.',
+        message: 'This is a test message from Campus Gem Ministries SMS system.',
         type: 'custom',
         created_by: user?.id || 'admin'
       })
@@ -142,7 +142,7 @@ export default function SMSPage() {
   }
 
   const filteredMessages = messages.filter(message => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       message.recipient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       message.recipient.phone.includes(searchTerm) ||
       message.message.toLowerCase().includes(searchTerm.toLowerCase())
@@ -274,7 +274,7 @@ export default function SMSPage() {
                       className="pl-10"
                     />
                   </div>
-                  
+
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Filter by status" />
@@ -423,7 +423,7 @@ export default function SMSPage() {
                     {['birthday', 'anniversary', 'group', 'event', 'custom'].map((type) => {
                       const count = messages.filter(m => m.type === type).length
                       const percentage = messages.length > 0 ? (count / messages.length) * 100 : 0
-                      
+
                       return (
                         <div key={type} className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -432,8 +432,8 @@ export default function SMSPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{count}</span>
                             <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full" 
+                              <div
+                                className="bg-blue-600 h-2 rounded-full"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
@@ -463,7 +463,7 @@ export default function SMSPage() {
                     ].map((item) => {
                       const count = messages.filter(m => m.status === item.status).length
                       const percentage = messages.length > 0 ? (count / messages.length) * 100 : 0
-                      
+
                       return (
                         <div key={item.status} className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -472,7 +472,7 @@ export default function SMSPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{count}</span>
                             <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
+                              <div
                                 className={`${item.color} h-2 rounded-full`}
                                 style={{ width: `${percentage}%` }}
                               />

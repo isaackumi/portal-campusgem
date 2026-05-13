@@ -1,140 +1,115 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { normalizeMembershipId } from '@/lib/membershipId'
+import { isValidMembershipId, normalizeMembershipId } from '@/lib/membershipId'
+import { normalizePhone, isValidPhone } from '@/lib/phone'
+import type { AppUser } from '@/lib/types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase environment variables')
+async function findUserByMembershipId(membershipId: string): Promise<AppUser | null> {
+  const { findUserByMembershipIdFromConvex } = await import('@/lib/convex/core-bridge')
+  return findUserByMembershipIdFromConvex(membershipId)
 }
 
-// Create admin client with service role key
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+async function findUserByPhone(phone: string): Promise<AppUser | null> {
+  const { findUserByPhoneFromConvex } = await import('@/lib/convex/core-bridge')
+  return findUserByPhoneFromConvex(phone)
+}
+
+async function resolveUserByPhone(phoneInput: string): Promise<AppUser | null> {
+  return findUserByPhone(phoneInput.trim())
+}
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Direct login API called')
+    if (!process.env.NEXT_PUBLIC_CONVEX_URL || !process.env.CAMP_CONVEX_SERVER_SECRET) {
+      return NextResponse.json(
+        { error: 'Convex is not configured for authentication' },
+        { status: 503 }
+      )
+    }
+
     const { phoneOrId } = await request.json()
-    console.log('Received phoneOrId:', phoneOrId)
 
     if (!phoneOrId?.trim()) {
-      console.log('No phoneOrId provided')
       return NextResponse.json(
         { error: 'Phone number or membership ID is required' },
         { status: 400 }
       )
     }
 
-    let phone = phoneOrId.trim()
-    let userData = null
+    const rawInput = phoneOrId.trim()
+    const normalizedMembershipId = normalizeMembershipId(rawInput)
+    const membershipLookup = isValidMembershipId(normalizedMembershipId)
+    const phoneLookup = isValidPhone(rawInput)
 
-    // Check if input is a membership ID
-    if (phoneOrId.toUpperCase().includes('EA')) {
-      console.log('Processing membership ID')
-      const normalizedId = normalizeMembershipId(phoneOrId)
-      console.log('Normalized ID:', normalizedId)
-
-      // Look up user by membership ID using maybeSingle to handle no results gracefully
-      console.log('Looking up membership ID:', normalizedId)
-      const { data: user, error: userError } = await supabaseAdmin
-        .from('app_users')
-        .select('phone, auth_uid, full_name, id, role')
-        .eq('membership_id', normalizedId)
-        .maybeSingle()
-
-      console.log('User lookup result:', { user, userError })
-
-      if (userError) {
-        console.log('Database error:', userError)
-        return NextResponse.json(
-          { error: 'Database error occurred' },
-          { status: 500 }
-        )
-      }
-
-      if (!user) {
-        console.log('User not found')
-        return NextResponse.json(
-          { error: 'Membership ID not found' },
-          { status: 404 }
-        )
-      }
-
-      userData = user
-
-      if (!userData.auth_uid) {
-        return NextResponse.json(
-          { error: 'Account not properly set up' },
-          { status: 400 }
-        )
-      }
-
-      phone = userData.phone
-    } else {
-      // Validate phone number format
-      const phoneRegex = /^(\+233|0)?[0-9]{9}$/
-      if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-        return NextResponse.json(
-          { error: 'Invalid phone number format' },
-          { status: 400 }
-        )
-      }
-
-      // Format phone number for Ghana
-      if (phone.startsWith('0')) {
-        phone = '+233' + phone.slice(1)
-      } else if (!phone.startsWith('+')) {
-        phone = '+233' + phone
-      }
-
-      // Check if phone exists in system
-      const { data: user, error: userError } = await supabaseAdmin
-        .from('app_users')
-        .select('phone, auth_uid, full_name, id, role')
-        .eq('phone', phone)
-        .single()
-
-      if (userError || !user) {
-        return NextResponse.json(
-          { error: 'Phone number not found' },
-          { status: 404 }
-        )
-      }
-
-      if (!user.auth_uid) {
-        return NextResponse.json(
-          { error: 'Account not properly set up' },
-          { status: 400 }
-        )
-      }
-
-      userData = user
+    if (!membershipLookup && !phoneLookup) {
+      return NextResponse.json(
+        { error: 'Enter a valid Ghana phone number or membership ID (CG-XXXX-YYYY).' },
+        { status: 400 }
+      )
     }
 
-    // For testing purposes, we'll return the user data
-    // The client will handle creating a session
-    return NextResponse.json({
+    let userData: AppUser | null = null
+
+    if (phoneLookup) {
+      userData = await resolveUserByPhone(rawInput)
+    }
+    if (!userData && membershipLookup) {
+      userData = await findUserByMembershipId(normalizedMembershipId)
+    }
+
+    if (!userData) {
+      const checked = phoneLookup ? normalizePhone(rawInput) : normalizedMembershipId
+      return NextResponse.json(
+        {
+          error: membershipLookup
+            ? `No account matches ${checked}. Check the membership ID or sign in with the phone number on file.`
+            : `No account matches ${checked}. Sign in with the phone number on file, or use your membership ID.`,
+        },
+        { status: 404 }
+      )
+    }
+
+    if (!userData.auth_uid) {
+      return NextResponse.json({ error: 'Account not properly set up' }, { status: 400 })
+    }
+
+    const response = NextResponse.json({
       success: true,
       user: {
         id: userData.id,
         full_name: userData.full_name,
         role: userData.role,
         phone: userData.phone,
-        auth_uid: userData.auth_uid
-      }
+        auth_uid: userData.auth_uid,
+        membership_id: userData.membership_id,
+      },
     })
 
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    }
+
+    response.cookies.set('firebase-auth-token', userData.auth_uid, cookieOptions)
+    response.cookies.set('chms-role', userData.role, cookieOptions)
+    response.cookies.set('chms-user-id', userData.id, cookieOptions)
+
+    return response
   } catch (error) {
     console.error('Direct login error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : ''
+    if (
+      message.includes('CAMP_CONVEX_SERVER_SECRET') ||
+      message.includes('NEXT_PUBLIC_CONVEX_URL') ||
+      message === 'Unauthorized'
+    ) {
+      return NextResponse.json(
+        { error: 'Login service is not configured correctly. Try again or use your membership ID.' },
+        { status: 503 }
+      )
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

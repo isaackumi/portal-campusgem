@@ -14,7 +14,7 @@ import {
   Clock,
   Calendar
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { dataService } from '@/lib/services/data-service'
 import { AppUser, Member, Dependant, ServiceType } from '@/lib/types'
 import { formatMembershipIdForDisplay, formatPhoneNumber } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -34,7 +34,6 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
   const [loading, setLoading] = useState(false)
   const [searching, setSearching] = useState(false)
   
-  const supabase = createClient()
   const { toast } = useToast()
 
   const handleSearch = async () => {
@@ -43,20 +42,8 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
     setSearching(true)
     try {
       const query = searchInput.trim()
-      
-      // Search by membership ID or phone number through members table
-      const { data, error } = await supabase
-        .from('members')
-        .select(`
-          *,
-          user:app_users(*)
-        `)
-        .eq('status', 'active')
-        .or(`user.membership_id.ilike.%${query}%,user.phone.ilike.%${query}%,user.full_name.ilike.%${query}%`)
-        .limit(10)
-
-      if (error) {
-        console.error('Search error:', error)
+      const res = await dataService.getMembers(1, 20, query)
+      if (res.error) {
         toast({
           title: "Search Error",
           description: "Failed to search for members. Please try again.",
@@ -64,15 +51,13 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
         })
         return
       }
-
-      // Transform the data to match the expected interface
-      const transformedResults = (data || [])
-        .filter(member => member.user) // Only include members with user data
-        .map(member => ({
-          ...member.user,
-          member: member
+      const list = res.data ?? []
+      const transformedResults = list
+        .filter(m => m.user)
+        .map(m => ({
+          ...m.user!,
+          member: m
         }))
-      
       setSearchResults(transformedResults)
     } catch (error) {
       console.error('Search error:', error)
@@ -91,16 +76,11 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
     setSearchResults([])
     setSearchInput('')
 
-    // Fetch dependants
-    if (member.member) {
-      const { data: dependantsData, error } = await supabase
-        .from('dependants')
-        .select('*')
-        .eq('member_id', member.member.id)
-
-      if (!error && dependantsData) {
-        setDependants(dependantsData)
-      }
+    // Dependants from member if available
+    if (member.member?.dependants) {
+      setDependants(member.member.dependants)
+    } else {
+      setDependants([])
     }
   }
 
@@ -117,23 +97,17 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
 
     setLoading(true)
     try {
-      const clientUuid = crypto.randomUUID()
       const today = new Date().toISOString().split('T')[0]
+      const checkedInByUserId: string | null = null // Kiosk self-service; could use useAuth() if supervised
 
-      // Check in main member
-      const { error: memberError } = await supabase
-        .from('attendance')
-        .insert({
-          member_id: selectedMember.member.id,
-          service_date: today,
-          service_type: serviceType,
-          method: 'kiosk',
-          client_uuid: clientUuid,
-          metadata: {
-            kiosk_checkin: true,
-            timestamp: new Date().toISOString()
-          }
-        })
+      const { error: memberError } = await dataService.recordAttendance({
+        member_id: selectedMember.member.id,
+        service_date: today,
+        service_type: serviceType,
+        check_in_time: new Date().toISOString(),
+        status: 'present',
+        checked_in_by: checkedInByUserId ?? undefined
+      })
 
       if (memberError) {
         console.error('Check-in error:', memberError)
@@ -145,27 +119,17 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
         return
       }
 
-      // Check in selected dependants
-      const dependantCheckIns = selectedDependants.map(dependantId => ({
-        dependant_id: dependantId,
-        service_date: today,
-        service_type: serviceType,
-        method: 'kiosk',
-        client_uuid: crypto.randomUUID(),
-        metadata: {
-          kiosk_checkin: true,
-          parent_member_id: selectedMember.member?.id,
-          timestamp: new Date().toISOString()
-        }
-      }))
-
-      if (dependantCheckIns.length > 0) {
-        const { error: dependantsError } = await supabase
-          .from('attendance')
-          .insert(dependantCheckIns)
-
+      for (const dependantId of selectedDependants) {
+        const { error: dependantsError } = await dataService.recordAttendance({
+          member_id: dependantId,
+          service_date: today,
+          service_type: serviceType,
+          check_in_time: new Date().toISOString(),
+          status: 'present',
+          checked_in_by: checkedInByUserId ?? undefined
+        })
         if (dependantsError) {
-          console.error('Dependants check-in error:', dependantsError)
+          console.error('Dependant check-in error:', dependantsError)
           toast({
             title: "Partial Check-in",
             description: "Member checked in, but some family members failed to check in.",

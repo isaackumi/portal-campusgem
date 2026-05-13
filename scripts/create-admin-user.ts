@@ -45,7 +45,7 @@ async function createAdminUser() {
     const adminData = {
       phone: '+233241234567', // Replace with your actual phone number
       full_name: 'System Administrator',
-      email: 'admin@emmanuelassembly.org',
+      email: 'admin@campusgemministries.org',
       role: 'admin' as const,
       join_year: 2024
     }
@@ -86,7 +86,7 @@ async function createAdminUser() {
         user_id: user.id,
         dob: '1990-01-01', // You can change this
         gender: 'male', // You can change this
-        address: 'Emmanuel Assembly, Odorkor',
+        address: 'Campus Gem Ministries, Odorkor',
         emergency_contacts: [
           {
             name: 'Emergency Contact',

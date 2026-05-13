@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useQuery, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query'
 import { dataService, ApiResponse, PaginatedResponse } from '@/lib/services/data-service'
 import { AppUser, Member, Group, GroupMembership, Attendance, Visitor, DashboardStats } from '@/lib/types'
@@ -52,6 +52,9 @@ export function usePaginatedData<T>(
   initialSearch: string = '',
   initialFilter: string = ''
 ) {
+  const fetchFnRef = useRef(fetchFn)
+  fetchFnRef.current = fetchFn
+
   const [data, setData] = useState<T[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(initialPage)
@@ -66,7 +69,7 @@ export function usePaginatedData<T>(
     try {
       setLoading(true)
       setError(null)
-      const result = await fetchFn(pageNum, limit, searchTerm, filterValue)
+      const result = await fetchFnRef.current(pageNum, limit, searchTerm, filterValue)
       
       if (result.error) {
         setError(result.error)
@@ -81,7 +84,7 @@ export function usePaginatedData<T>(
     } finally {
       setLoading(false)
     }
-  }, [fetchFn, page, limit, search, filter])
+  }, [page, limit, search, filter])
 
   useEffect(() => {
     fetchData()
@@ -248,61 +251,6 @@ export function useGroup(id: string) {
   return useApiData(() => dataService.getGroup(id), [id])
 }
 
-export function useCreateGroup() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const createGroup = useCallback(async (groupData: Partial<Group>) => {
-    try {
-      setLoading(true)
-      setError(null)
-      const result = await dataService.createGroup(groupData)
-      
-      if (result.error) {
-        setError(result.error)
-        return null
-      }
-      
-      return result.data
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create group'
-      setError(errorMessage)
-      return null
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  return { createGroup, loading, error }
-}
-
-export function useUpdateGroup() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const updateGroup = useCallback(async (id: string, updates: Partial<Group>) => {
-    try {
-      setLoading(true)
-      setError(null)
-      const result = await dataService.updateGroup(id, updates)
-      
-      if (result.error) {
-        setError(result.error)
-        return null
-      }
-      
-      return result.data
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update group'
-      setError(errorMessage)
-      return null
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  return { updateGroup, loading, error }
-}
 
 // Group Memberships hooks
 export function useGroupMembers(groupId: string) {
@@ -478,6 +426,273 @@ export function useAttendanceAnalyticsQuery(filters: {
     },
     staleTime: 60_000,
   })
+}
+
+// User Management Hooks
+export function useAllUsers() {
+  return useApiData(() => dataService.getAllUsers())
+}
+
+export function useUserById(userId: string) {
+  return useApiData(() => dataService.getUserById(userId), [userId])
+}
+
+export function useCreateUser() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const createUser = useCallback(async (userData: Partial<AppUser>) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.createUser(userData)
+      
+      if (result.error) {
+        setError(result.error)
+        return null
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create user'
+      setError(errorMessage)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { createUser, loading, error }
+}
+
+export function useUpdateUser() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const updateUser = useCallback(async (userId: string, updates: Partial<AppUser>) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.updateUser(userId, updates)
+      
+      if (result.error) {
+        setError(result.error)
+        return null
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update user'
+      setError(errorMessage)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { updateUser, loading, error }
+}
+
+export function useDeleteUser() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const deleteUser = useCallback(async (userId: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.deleteUser(userId)
+      
+      if (result.error) {
+        setError(result.error)
+        return false
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete user'
+      setError(errorMessage)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { deleteUser, loading, error }
+}
+
+// Group Management Hooks
+export function useGroupById(groupId: string) {
+  return useApiData(() => dataService.getGroupByIdNew(groupId), [groupId])
+}
+
+export function useCreateGroup() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const createGroup = useCallback(async (groupData: Partial<Group>) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.createGroupNew(groupData)
+      
+      if (result.error) {
+        setError(result.error)
+        return null
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create group'
+      setError(errorMessage)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { createGroup, loading, error }
+}
+
+export function useUpdateGroup() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const updateGroup = useCallback(async (groupId: string, updates: Partial<Group>) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.updateGroupNew(groupId, updates)
+      
+      if (result.error) {
+        setError(result.error)
+        return null
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update group'
+      setError(errorMessage)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { updateGroup, loading, error }
+}
+
+export function useDeleteGroup() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const deleteGroup = useCallback(async (groupId: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.deleteGroupNew(groupId)
+      
+      if (result.error) {
+        setError(result.error)
+        return false
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete group'
+      setError(errorMessage)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { deleteGroup, loading, error }
+}
+
+// Group Membership Management Hooks
+export function useAddUserToGroup() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const addUserToGroup = useCallback(async (groupId: string, userId: string, role: string = 'member') => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.addUserToGroup(groupId, userId, role)
+      
+      if (result.error) {
+        setError(result.error)
+        return null
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add user to group'
+      setError(errorMessage)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { addUserToGroup, loading, error }
+}
+
+export function useRemoveUserFromGroup() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const removeUserFromGroup = useCallback(async (groupId: string, userId: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.removeUserFromGroup(groupId, userId)
+      
+      if (result.error) {
+        setError(result.error)
+        return false
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to remove user from group'
+      setError(errorMessage)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { removeUserFromGroup, loading, error }
+}
+
+export function useUpdateGroupMembership() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const updateGroupMembership = useCallback(async (membershipId: string, updates: Partial<GroupMembership>) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await dataService.updateGroupMembership(membershipId, updates)
+      
+      if (result.error) {
+        setError(result.error)
+        return null
+      }
+      
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update group membership'
+      setError(errorMessage)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { updateGroupMembership, loading, error }
 }
 
 // Utility hooks

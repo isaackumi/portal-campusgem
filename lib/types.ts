@@ -108,6 +108,10 @@ export interface Group {
   meeting_location?: string
   is_active: boolean
   max_members?: number
+  /** Whether new members can join without an invite (stored in Firestore as isOpen) */
+  is_open?: boolean
+  /** If true, leader/admin must approve new members */
+  requires_approval?: boolean
   created_at: string
   updated_at: string
   // Joined data
@@ -165,6 +169,7 @@ export interface Attendance {
   metadata: Record<string, any>
   client_uuid?: string
   created_by?: string
+  checked_in_by?: string
   created_at: string
   // Enhanced fields
   is_duplicate?: boolean
@@ -177,6 +182,7 @@ export interface Attendance {
   member?: Member
   dependant?: Dependant
   creator?: AppUser
+  checked_in_user?: AppUser
 }
 
 export interface Department {
@@ -633,4 +639,238 @@ export interface ExportJob {
   created_at: string
   completed_at?: string
   error_message?: string
+}
+
+// Camp Meeting Types
+
+export interface CampYear {
+  id: string
+  year: number
+  theme: string
+  start_date: string
+  end_date: string
+  is_active: boolean
+  registration_open: boolean
+  flyer_image_url?: string | null
+  venue?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CampRegistration {
+  id: string
+  camp_year_id: string
+  user_id?: string
+  full_name: string // Kept for backward compatibility
+  first_name?: string
+  last_name?: string
+  email: string
+  phone: string
+  facebook_username?: string
+  sex?: 'Male' | 'Female'
+  date_of_birth?: string
+  birth_month?: number
+  birth_day?: number
+  age_bracket?: '1-12' | '13-19' | '20-29' | '30-39' | '40-49' | '50+'
+  address_school_work?: string
+  education_level?: 'JHS 1' | 'JHS 2' | 'JHS 3' | 'SHS 1' | 'SHS 2' | 'SHS 3' | 'COMPLETED SHS' | 'LEVEL 100' | 'LEVEL 200' | 'LEVEL 300' | 'LEVEL 400' | 'GRADUATED' | 'POSTGRADUATE'
+  highest_qualification?: 'JHS' | 'SHS' | 'University'
+  residence?: string
+  times_attended?: number
+  has_nhis_card?: boolean
+  nhis_card_expiry_date?: string
+  has_health_challenge?: boolean
+  health_challenges?: string[]
+  parent_name?: string
+  parent_contact?: string
+  payment_status?: 'pending' | 'paid' | 'confirmed' | 'refunded'
+  payment_reference?: string
+  payment_amount?: number
+  payment_date?: string
+  role: string
+  is_new_registrant: boolean
+  status: 'registered' | 'checked_in' | 'cancelled'
+  assigned_to?: string
+  follow_up_status?: 'pending' | 'in_progress' | 'completed'
+  qr_code: string
+  created_at: string
+  updated_at: string
+  // Joined data
+  camp_year?: CampYear
+  assigned_user?: AppUser
+  interactions?: CampInteraction[]
+}
+
+export interface CampInteraction {
+  id: string
+  registration_id: string
+  performed_by: string
+  interaction_type: 'call' | 'note' | 'status_change' | 'sms' | 'email'
+  notes?: string
+  created_at: string
+  // Joined data
+  performer?: AppUser
+}
+
+export interface CampRegistrationForm {
+  camp_year_id: string
+  first_name: string
+  last_name: string
+  full_name?: string // Optional, will be derived from first_name + last_name
+  email?: string
+  phone: string
+  facebook_username?: string
+  sex: 'Male' | 'Female'
+  date_of_birth?: string
+  birth_month?: number
+  birth_day?: number
+  age_bracket: '1-12' | '13-19' | '20-29' | '30-39' | '40-49' | '50+'
+  address_school_work: string
+  education_level: 'JHS 1' | 'JHS 2' | 'JHS 3' | 'SHS 1' | 'SHS 2' | 'SHS 3' | 'COMPLETED SHS' | 'LEVEL 100' | 'LEVEL 200' | 'LEVEL 300' | 'LEVEL 400' | 'GRADUATED' | 'POSTGRADUATE'
+  highest_qualification: 'JHS' | 'SHS' | 'University'
+  residence: string
+  times_attended: number
+  has_nhis_card: boolean
+  nhis_card_expiry_date?: string
+  has_health_challenge: boolean
+  health_challenges?: string[]
+  other_health_challenge?: string
+  parent_name: string
+  parent_contact: string
+  role?: string
+  is_new_registrant?: boolean // Will be derived from times_attended (0 = new)
+  qr_code?: string // Generated backend/frontend
+}
+
+export interface CampCommunication {
+  id: string
+  camp_year_id: string
+  communication_type: 'email' | 'sms'
+  sender_id?: string
+  recipient_type: 'individual' | 'bulk'
+  recipient_registration_id?: string
+  recipient_email?: string
+  recipient_phone?: string
+  subject?: string
+  message_body: string
+  filter_criteria?: {
+    year?: number
+    role?: string
+    is_new_registrant?: boolean
+    follow_up_status?: string
+    assigned_to?: string
+  }
+  status: 'pending' | 'sent' | 'delivered' | 'failed' | 'bounced'
+  provider_message_id?: string
+  error_message?: string
+  metadata?: Record<string, any>
+  created_at: string
+  sent_at?: string
+  delivered_at?: string
+  // Joined data
+  sender?: AppUser
+  recipient_registration?: CampRegistration
+}
+
+export interface CampCommunicationFilter {
+  camp_year_id?: string
+  role?: string
+  is_new_registrant?: boolean
+  follow_up_status?: 'pending' | 'in_progress' | 'completed'
+  assigned_to?: string
+}
+
+export interface CampActivity {
+  id: string
+  camp_year_id: string
+  title: string
+  description?: string
+  activity_type: 'session' | 'workshop' | 'meeting' | 'worship' | 'break' | 'meal' | 'recreation' | 'seminar' | 'prayer' | 'other'
+  date: string
+  start_time: string
+  end_time: string
+  location?: string
+  venue?: string
+  capacity?: number
+  assigned_staff?: string
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+  attendance_count: number
+  notes?: string
+  metadata?: Record<string, any>
+  created_at: string
+  updated_at: string
+  created_by?: string
+  // Joined data
+  camp_year?: CampYear
+  assigned_user?: AppUser
+  creator?: AppUser
+}
+
+export type ChurchFormStatus = 'draft' | 'published' | 'closed'
+
+export type ChurchFormFieldType =
+  | 'short_text'
+  | 'long_text'
+  | 'email'
+  | 'phone'
+  | 'number'
+  | 'dropdown'
+  | 'checkbox'
+  | 'date'
+  | 'file'
+
+export interface ChurchForm {
+  id: string
+  title: string
+  slug: string
+  description?: string
+  category?: string
+  status: ChurchFormStatus
+  enable_profile_lookup: boolean
+  created_by?: string
+  created_at: string
+  updated_at: string
+  response_count?: number
+}
+
+export interface ChurchFormField {
+  id: string
+  form_id: string
+  label: string
+  description?: string
+  field_type: ChurchFormFieldType
+  required: boolean
+  options?: string[]
+  prefill_key?: string
+  sort_order: number
+  updated_at: string
+}
+
+export interface ChurchFormResponse {
+  id: string
+  form_id: string
+  respondent_name?: string
+  respondent_phone?: string
+  respondent_email?: string
+  values: Record<string, unknown>
+  submitted_at: string
+  updated_at: string
+}
+
+export interface CampCamperDirectoryRow {
+  phone_key: string
+  full_name: string
+  first_name?: string
+  last_name?: string
+  email?: string
+  phone: string
+  years: Array<{
+    year_id: string
+    year: number
+    status: string
+    registration_id: string
+  }>
+  registration_count: number
+  user_id?: string
+  user_role?: string
 }

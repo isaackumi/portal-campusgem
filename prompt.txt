@@ -1,4 +1,4 @@
-You are an expert senior full-stack developer. Build a **complete production-ready Church Management System (ChMS)** for administrators at **The Church of Pentecost — Emmanuel Assembly (Odorkor Area, Gbawe CP District)** using the following stack and guidelines.
+You are an expert senior full-stack developer. Build a **complete production-ready Church Management System (ChMS)** for administrators at **The Church of Pentecost — Campus Gem Ministries (Odorkor Area, Gbawe CP District)** using the following stack and guidelines.
 
 **High-level tech**
 
@@ -17,7 +17,7 @@ You are an expert senior full-stack developer. Build a **complete production-rea
 1. **Admin-only user creation**: All user accounts are created by Admin/Data team in the system (UI + bulk CSV import). Standard users (members/elders/pastors) do not self-register.
 2. **Membership ID**:
 
-   * Format: `EA-XXXXYYYY` where `EA` = Emmanuel Assembly, `XXXX` = 4 digits (random or last 4 of phone if provided), `YYYY` = year joined.
+   * Format: `EA-XXXXYYYY` where `EA` = Campus Gem Ministries, `XXXX` = 4 digits (random or last 4 of phone if provided), `YYYY` = year joined.
    * System accepts ID input with or without hyphen (e.g., `EA12342021` or `EA-1234-2021` or `EA-12342021`); normalize by stripping non-alphanumerics.
    * Admins may override generated IDs when needed.
 3. **Auth**:
@@ -336,8 +336,8 @@ export function formatMembershipIdForDisplay(id: string) {
    * `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server only)
    * `SMS_PROVIDER_*` credentials
    * `NEXTAUTH_*` (if using NextAuth as optional)
-3. `pnpm install` in Next.js project.
-4. `pnpm dev` locally.
+3. `bun install` in Next.js project.
+4. `bun dev` locally.
 5. Deploy frontend to Vercel, set env vars. Deploy Edge Functions via Supabase CLI.
 6. Schedule `keepAlive` edge function cron (5–10 minutes).
 

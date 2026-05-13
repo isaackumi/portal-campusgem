@@ -1,24 +1,30 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Church, Phone, ArrowRight, Shield, Users, Heart, MessageCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { setTestUser } from '@/lib/auth-utils'
+import { setTestUser, type TestUser } from '@/lib/auth-utils'
+import { LoadingSpinner } from '@/components/ui/loading'
 
-export default function AuthPage() {
+function AuthPageContent() {
   const [phoneOrId, setPhoneOrId] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+  
+  // Get redirect destination from query params
+  const redirectTo = searchParams.get('redirect') || '/dashboard'
 
   const handleDirectLogin = async () => {
-    console.log('Login attempt started with:', phoneOrId)
-    
-    if (!phoneOrId.trim()) {
+    const identifier = phoneOrId.trim().replace(/\s/g, '')
+    console.log('Login attempt started with:', identifier)
+
+    if (!identifier) {
       toast({
         title: "Error",
         description: "Please enter your phone number or membership ID",
@@ -29,47 +35,62 @@ export default function AuthPage() {
 
     setLoading(true)
     console.log('Loading set to true')
-    
+
     try {
       // Call the direct login API
-      console.log('Calling API with:', { phoneOrId })
+      console.log('Calling API with:', { phoneOrId: identifier })
       const response = await fetch('/api/auth/direct-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phoneOrId }),
+        body: JSON.stringify({ phoneOrId: identifier }),
+        cache: 'no-store',
       })
 
-      const data = await response.json()
-      console.log('API Response:', data)
+      let data: { success?: boolean; user?: TestUser; error?: string } = {}
+      try {
+        data = await response.json()
+      } catch {
+        throw new Error(
+          response.ok
+            ? 'Login failed: unexpected response from the server'
+            : `Login failed (${response.status}). Check that the app is running and try again.`
+        )
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed')
+        throw new Error(data.error || `Login failed (${response.status})`)
       }
 
       if (data.success && data.user) {
         console.log('Login successful, setting test user:', data.user)
-        
+
         // Set the test user in localStorage
         setTestUser(data.user)
-        
+
         toast({
           title: "Welcome back!",
           description: `Hello ${data.user.full_name}`,
         })
 
-        // Redirect to dashboard
-        console.log('Redirecting to dashboard...')
-        router.push('/dashboard')
+        // Redirect to intended destination or dashboard
+        console.log('Redirecting to:', redirectTo)
+        router.push(redirectTo)
       } else {
         throw new Error(data.error || 'Invalid credentials')
       }
     } catch (error) {
       console.error('Login error:', error)
+      const description =
+        error instanceof TypeError && error.message === 'Failed to fetch'
+          ? 'Could not reach the login service. Check your connection and that the app is running.'
+          : error instanceof Error
+            ? error.message
+            : 'Please check your credentials and try again'
       toast({
         title: "Login Failed",
-        description: error instanceof Error ? error.message : "Please check your credentials and try again",
+        description,
         variant: "destructive"
       })
     } finally {
@@ -95,19 +116,15 @@ export default function AuthPage() {
           {/* Main Heading */}
           <div className="mb-12">
             <h1 className="text-6xl font-bold text-white leading-tight" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-              <div>Empower Your</div>
-              <div className="text-yellow-300">Spiritual Journey</div>
+              <div>Campus Gem Ministries</div>
+              <div className="text-yellow-300">Church Management</div>
             </h1>
           </div>
 
           {/* Description */}
           <div className="mb-16">
             <p className="text-xl leading-relaxed max-w-lg text-white">
-              Our streamlined church management system makes it easy for you to 
-              <span className="text-yellow-300 font-semibold"> connect with your church family</span>, 
-              <span className="text-blue-200"> track your spiritual growth</span>, and stay engaged with 
-              <span className="text-yellow-400 font-semibold"> Emmanuel Assembly activities</span>. 
-              Let's get started on your digital church experience.
+              Sign in with your phone number or membership ID to manage members, attendance, groups, and camp meeting records.
             </p>
           </div>
         </div>
@@ -123,9 +140,9 @@ export default function AuthPage() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                Emmanuel Assembly
+                Campus Gem Ministries
               </h2>
-              <p className="text-sm text-gray-600">Church Management System</p>
+              <p className="text-sm text-gray-600">Ministry Management System</p>
             </div>
           </div>
 
@@ -145,7 +162,7 @@ export default function AuthPage() {
               <Input
                 id="phone-or-id"
                 type="text"
-                placeholder="Enter your phone number or EA-XXXX-YYYY"
+                placeholder="Enter your phone number or CG-XXXX-YYYY"
                 value={phoneOrId}
                 onChange={(e) => setPhoneOrId(e.target.value)}
                 className="pl-12 h-14 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
@@ -172,7 +189,7 @@ export default function AuthPage() {
           </div>
 
           {/* Continue Button */}
-          <Button 
+          <Button
             type="button"
             onClick={handleDirectLogin}
             className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -197,5 +214,17 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    }>
+      <AuthPageContent />
+    </Suspense>
   )
 }

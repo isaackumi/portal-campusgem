@@ -1,7 +1,7 @@
 {
-  "name": "Church of Pentecost - Emmanuel Assembly",
-  "short_name": "Emmanuel Assembly",
-  "description": "Church Management System for The Church of Pentecost — Emmanuel Assembly",
+  "name": "Campus Gem Ministries",
+  "short_name": "Campus Gem",
+  "description": "Church Management System for Campus Gem Ministries",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1e3a8a",

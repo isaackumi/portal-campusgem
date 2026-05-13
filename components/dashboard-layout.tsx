@@ -22,9 +22,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <MobileSidebar />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-              Church of Pentecost
+              Campus Gem Ministries
             </h1>
-            <p className="text-sm text-gray-600">Emmanuel Assembly</p>
+            <p className="text-sm text-gray-600">Campus Ministry</p>
           </div>
         </div>
 

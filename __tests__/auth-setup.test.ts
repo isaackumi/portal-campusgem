@@ -35,8 +35,8 @@ describe('Authentication Setup', () => {
   })
 
   it('should have the correct localStorage key', () => {
-    const expectedKey = 'emmanuel_assembly_test_user'
-    expect(expectedKey).toBe('emmanuel_assembly_test_user')
+    const expectedKey = 'campus_gem_test_user'
+    expect(expectedKey).toBe('campus_gem_test_user')
   })
 
   it('should have the correct test user ID', () => {

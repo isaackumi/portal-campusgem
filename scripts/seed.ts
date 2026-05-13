@@ -1,5 +1,5 @@
 /**
- * Seed script for Emmanuel Assembly Church Management System
+ * Seed script for Campus Gem Ministries Church Management System
  * Creates sample data for development and testing
  */
 
@@ -39,7 +39,7 @@ const seedUsers: SeedUser[] = [
   {
     full_name: 'Rev. John Mensah',
     phone: '+233241234567',
-    email: 'pastor@emmanuelassembly.org',
+    email: 'pastor@campusgemministries.org',
     role: 'admin',
     join_year: 2020,
     member: {
@@ -58,7 +58,7 @@ const seedUsers: SeedUser[] = [
   {
     full_name: 'Elder Grace Asante',
     phone: '+233241234569',
-    email: 'elder.grace@emmanuelassembly.org',
+    email: 'elder.grace@campusgemministries.org',
     role: 'elder',
     join_year: 2019,
     member: {
@@ -77,7 +77,7 @@ const seedUsers: SeedUser[] = [
   {
     full_name: 'Brother Samuel Osei',
     phone: '+233241234571',
-    email: 'finance@emmanuelassembly.org',
+    email: 'finance@campusgemministries.org',
     role: 'finance_officer',
     join_year: 2021,
     member: {

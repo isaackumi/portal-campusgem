@@ -17,7 +17,7 @@ import {
   Clock,
   Users
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { dataService } from '@/lib/services/data-service'
 import { useToast } from '@/hooks/use-toast'
 import { formatMembershipIdForDisplay, formatDateTime } from '@/lib/utils'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -44,7 +44,6 @@ export default function ScannerPage() {
   const [loading, setLoading] = useState(false)
   const [serviceType, setServiceType] = useState('sunday_service')
   const router = useRouter()
-  const supabase = createClient()
   const { toast } = useToast()
 
   const serviceTypes = [
@@ -85,27 +84,20 @@ export default function ScannerPage() {
         membershipId = decodedText
       }
 
-      // Look up member by membership ID
-      const { data: memberData, error: memberError } = await supabase
-        .from('app_users')
-        .select(`
-          id,
-          full_name,
-          membership_id,
-          phone,
-          members (
-            id,
-            dependants (
-              id,
-              name,
-              relationship
-            )
-          )
-        `)
-        .eq('membership_id', membershipId)
-        .single()
-
-      if (memberError || !memberData) {
+      // Look up member by membership ID (search via getMembers)
+      const today = new Date().toISOString().split('T')[0]
+      const res = await dataService.getMembers(1, 500, membershipId)
+      if (res.error) {
+        toast({
+          title: "Error",
+          description: "Failed to look up member.",
+          variant: "destructive"
+        })
+        return
+      }
+      const list = res.data ?? []
+      const memberMatch = list.find(m => (m.user?.membership_id ?? '').toLowerCase() === membershipId.toLowerCase())
+      if (!memberMatch?.user) {
         toast({
           title: "Member Not Found",
           description: "This QR code doesn't match any member in our system.",
@@ -114,49 +106,29 @@ export default function ScannerPage() {
         return
       }
 
-      if (!memberData.members) {
-        toast({
-          title: "Profile Incomplete",
-          description: "Member profile is incomplete. Please contact an administrator.",
-          variant: "destructive"
-        })
-        return
-      }
-
-      // Check if already checked in today
-      const today = new Date().toISOString().split('T')[0]
-      const { data: existingAttendance, error: attendanceError } = await supabase
-        .from('attendance')
-        .select('id')
-        .eq('member_id', memberData.members[0]?.id)
-        .eq('service_date', today)
-        .single()
-
-      if (existingAttendance && !attendanceError) {
+      const memberId = memberMatch.id
+      const { data: existingList } = await dataService.getAttendanceRecords({
+        member_id: memberId,
+        service_date: today,
+        limit: 1
+      })
+      if (existingList && existingList.length > 0) {
         toast({
           title: "Already Checked In",
-          description: `${memberData.full_name} has already been checked in today.`,
+          description: `${memberMatch.user.full_name} has already been checked in today.`,
           variant: "destructive"
         })
         return
       }
 
-      // Perform check-in
-      const clientUuid = crypto.randomUUID()
-      const { error: checkInError } = await supabase
-        .from('attendance')
-        .insert({
-          member_id: memberData.members[0]?.id,
-          service_date: today,
-          service_type: 'sunday_service', // Default to Sunday service
-          method: 'qr',
-          client_uuid: clientUuid,
-          metadata: {
-            qr_scan: true,
-            scanned_at: new Date().toISOString(),
-            qr_data: decodedText
-          }
-        })
+      const { error: checkInError } = await dataService.recordAttendance({
+        member_id: memberId,
+        service_date: today,
+        service_type: serviceType,
+        check_in_time: new Date().toISOString(),
+        status: 'present',
+        checked_in_by: user?.id ?? undefined
+      })
 
       if (checkInError) {
         console.error('Check-in error:', checkInError)
@@ -168,22 +140,21 @@ export default function ScannerPage() {
         return
       }
 
-      // Set success result
       setCheckInResult({
         member: {
-          id: memberData.id,
-          full_name: memberData.full_name,
-          membership_id: memberData.membership_id,
-          phone: memberData.phone
+          id: memberMatch.user.id ?? memberId,
+          full_name: memberMatch.user.full_name,
+          membership_id: memberMatch.user.membership_id,
+          phone: memberMatch.user.phone
         },
-        dependants: memberData.members[0]?.dependants || [],
-        service_type: serviceTypes.find(s => s.value === serviceType)?.label || 'Sunday Service',
+        dependants: (memberMatch.dependants ?? []).map(d => ({ id: d.id, name: `${d.first_name ?? ''} ${d.last_name ?? ''}`.trim() || 'Dependant', relationship: d.relationship })),
+        service_type: serviceType,
         timestamp: new Date().toISOString()
       })
 
       toast({
         title: "Check-in Successful",
-        description: `${memberData.full_name} has been checked in successfully!`,
+        description: `${memberMatch.user.full_name} has been checked in successfully!`,
       })
 
     } catch (error) {

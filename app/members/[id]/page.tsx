@@ -105,40 +105,29 @@ export default function MemberProfilePage() {
     try {
       setLoading(true)
       
-      // For now, we'll use a simple approach - in a real app, you'd want to add update methods to the data service
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      
-      // Update user information
-      const { error: userError } = await supabase
-        .from('app_users')
-        .update({
-          full_name: editForm.full_name,
-          phone: editForm.phone,
-          email: editForm.email,
-          role: editForm.role,
-          occupation: editForm.occupation,
-          place_of_work: editForm.place_of_work,
-          marital_status: editForm.marital_status,
-          spouse_name: editForm.spouse_name,
-          children_count: editForm.children_count,
-          emergency_contact_name: editForm.emergency_contact_name,
-          emergency_contact_phone: editForm.emergency_contact_phone,
-          emergency_contact_relation: editForm.emergency_contact_relation
-        })
-        .eq('id', memberQuery.data.data.user.id)
+      const userId = memberQuery.data.data.user.id
+      const memberId = memberQuery.data.data.id
+      const { error: userError } = await dataService.updateUser(userId, {
+        full_name: editForm.full_name,
+        phone: editForm.phone,
+        email: editForm.email,
+        role: editForm.role as any,
+        occupation: editForm.occupation,
+        place_of_work: editForm.place_of_work,
+        marital_status:
+          editForm.marital_status === ''
+            ? undefined
+            : (editForm.marital_status as AppUser['marital_status']),
+        spouse_name: editForm.spouse_name,
+        children_count: editForm.children_count,
+        emergency_contact_name: editForm.emergency_contact_name,
+        emergency_contact_phone: editForm.emergency_contact_phone,
+        emergency_contact_relation: editForm.emergency_contact_relation
+      })
+      if (userError) throw new Error(userError)
 
-      if (userError) throw userError
-
-      // Update member information
-      const { error: memberError } = await supabase
-        .from('members')
-        .update({
-          address: editForm.address
-        })
-        .eq('id', memberQuery.data.data.id)
-
-      if (memberError) throw memberError
+      const { error: memberError } = await dataService.updateMember(memberId, { address: editForm.address })
+      if (memberError) throw new Error(memberError)
 
       toast({
         title: "Profile Updated",

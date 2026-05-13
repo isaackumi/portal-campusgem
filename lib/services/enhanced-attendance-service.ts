@@ -1,9 +1,10 @@
 /**
  * Enhanced Attendance Service
  * Handles comprehensive attendance tracking with departments, duplicates prevention, and absentee management
+ * Uses Firebase/dataService (no Supabase).
  */
 
-import { createClient } from '@/lib/supabase/client'
+import { dataService } from './data-service'
 import { Attendance, Department, DepartmentMembership, AbsenteeRecord, AttendanceActivity, AppUser, Member } from '@/lib/types'
 import { smsService } from './sms-service'
 
@@ -68,8 +69,6 @@ export interface AttendanceAnalytics {
 }
 
 class EnhancedAttendanceService {
-  private supabase = createClient()
-
   // Create attendance session
   async createAttendanceSession(data: {
     service_date: string
@@ -93,21 +92,17 @@ class EnhancedAttendanceService {
 
   // Check for duplicate attendance
   async checkDuplicateAttendance(memberId: string, serviceDate: string, serviceType: string): Promise<boolean> {
-    const { data, error } = await this.supabase
-      .from('attendance')
-      .select('id')
-      .eq('member_id', memberId)
-      .eq('service_date', serviceDate)
-      .eq('service_type', serviceType)
-      .eq('status', 'present')
-      .limit(1)
-
+    const { data, error } = await dataService.getAttendanceRecords({
+      member_id: memberId,
+      service_date: serviceDate,
+      service_type: serviceType,
+      limit: 1
+    })
     if (error) {
       console.error('Error checking duplicate attendance:', error)
       return false
     }
-
-    return data && data.length > 0
+    return (data?.length ?? 0) > 0
   }
 
   // Record attendance with enhanced tracking
@@ -117,6 +112,7 @@ class EnhancedAttendanceService {
     service_type: string
     method: 'qr' | 'kiosk' | 'admin' | 'pin' | 'mobile'
     created_by: string
+    checked_in_by?: string
     notes?: string
   }): Promise<{ attendance: Attendance; isDuplicate: boolean }> {
     // Check for duplicates
@@ -130,65 +126,38 @@ class EnhancedAttendanceService {
     }
 
     // Get member details for enhanced tracking
-    const { data: memberData, error: memberError } = await this.supabase
-      .from('members')
-      .select(`
-        *,
-        user:app_users(*),
-        department_memberships:department_memberships(
-          department:departments(name)
-        )
-      `)
-      .eq('id', data.member_id)
-      .single()
-
-    if (memberError) {
+    const { data: memberData, error: memberError } = await dataService.getMember(data.member_id)
+    if (memberError || !memberData) {
       throw new Error('Failed to fetch member data')
     }
 
-    const member = memberData.user?.[0] || memberData.user
-    const departments = memberData.department_memberships?.map((dm: any) => dm.department?.name).filter(Boolean) || []
-    
-    // Determine age category and gender
-    const ageCategory = this.getAgeCategory(member?.dob || memberData.dob)
-    const gender = member?.gender || memberData.gender
+    const appUser = memberData.user
+    const departments: string[] = [] // No department_memberships in current Firestore schema
 
-    // Create attendance record
-    const attendanceRecord = {
+    const ageCategory = this.getAgeCategory(memberData.dob)
+    const gender = memberData.gender
+
+    const { data: attendanceResult, error } = await dataService.recordAttendance({
       member_id: data.member_id,
       service_date: data.service_date,
       service_type: data.service_type,
       check_in_time: new Date().toISOString(),
-      method: data.method,
-      metadata: {
-        departments,
-        age_category: ageCategory,
-        gender,
-        is_duplicate: false
-      },
       status: 'present',
-      notes: data.notes,
-      created_by: data.created_by,
-      created_at: new Date().toISOString()
+      checked_in_by: data.checked_in_by || data.created_by
+    })
+
+    if (error || !attendanceResult) {
+      throw new Error(error || 'Failed to record attendance')
     }
 
-    const { data: attendance, error } = await this.supabase
-      .from('attendance')
-      .insert(attendanceRecord)
-      .select()
-      .single()
+    const attendance = attendanceResult as unknown as Attendance
 
-    if (error) {
-      throw error
-    }
-
-    // Log activity
     await this.logAttendanceActivity({
       type: 'check_in',
       member_id: data.member_id,
       service_date: data.service_date,
       service_type: data.service_type,
-      description: `${member?.full_name || 'Member'} checked in via ${data.method}`,
+      description: `${appUser?.full_name || 'Member'} checked in via ${data.method}`,
       metadata: { departments, age_category: ageCategory, gender },
       created_by: data.created_by
     })
@@ -202,6 +171,7 @@ class EnhancedAttendanceService {
     service_date: string
     service_type: string
     created_by: string
+    checked_in_by?: string
     method?: 'bulk' | 'admin'
   }): Promise<{ successful: number; duplicates: number; errors: number }> {
     let successful = 0
@@ -215,7 +185,8 @@ class EnhancedAttendanceService {
           service_date: data.service_date,
           service_type: data.service_type,
           method: 'admin',
-          created_by: data.created_by
+          created_by: data.created_by,
+          checked_in_by: data.checked_in_by || data.created_by
         })
 
         if (result.isDuplicate) {
@@ -306,27 +277,25 @@ class EnhancedAttendanceService {
 
   // Get attendance statistics
   async getAttendanceStats(dateRange: { start: string; end: string }): Promise<AttendanceStats> {
-    const { data: attendance, error } = await this.supabase
-      .from('attendance')
-      .select(`
-        *,
-        member:members(
-          user:app_users(id, full_name, membership_id, phone, email),
-          department_memberships:department_memberships(
-            department:departments(name)
-          )
-        )
-      `)
-      .eq('status', 'present')
-      .gte('service_date', dateRange.start)
-      .lte('service_date', dateRange.end)
+    const { data: attendanceList, error } = await dataService.getAttendanceRecords({
+      service_date: dateRange.start,
+      limit: 5000
+    })
 
     if (error) {
-      throw error
+      throw new Error(error)
+    }
+
+    const allRecords: { member_id: string; service_date?: string; service_type?: string; metadata?: { gender?: string; age_category?: string; departments?: string[] } }[] = []
+    const start = dateRange.start
+    const end = dateRange.end
+    for (const r of attendanceList ?? []) {
+      const sd = (r as { service_date?: string }).service_date
+      if (sd && sd >= start && sd <= end) allRecords.push(r as any)
     }
 
     const stats: AttendanceStats = {
-      total_attendance: attendance?.length || 0,
+      total_attendance: allRecords.length,
       male_attendance: 0,
       female_attendance: 0,
       adult_attendance: 0,
@@ -338,21 +307,15 @@ class EnhancedAttendanceService {
       }
     }
 
-    attendance?.forEach(record => {
-      const member = record.member?.user?.[0] || record.member?.user
-      const gender = record.metadata?.gender || member?.gender
-      const ageCategory = record.metadata?.age_category || this.getAgeCategory(member?.dob)
+    allRecords.forEach(record => {
+      const gender = record.metadata?.gender
+      const ageCategory = record.metadata?.age_category
       const departments = record.metadata?.departments || []
 
-      // Gender stats
       if (gender === 'male') stats.male_attendance++
       else if (gender === 'female') stats.female_attendance++
-
-      // Age category stats
       if (ageCategory === 'adult') stats.adult_attendance++
       else if (ageCategory === 'child') stats.children_attendance++
-
-      // Department stats
       departments.forEach((dept: string) => {
         if (!stats.department_stats[dept]) {
           stats.department_stats[dept] = { total: 0, present: 0, absent: 0 }
@@ -365,29 +328,26 @@ class EnhancedAttendanceService {
     return stats
   }
 
-  // Get recent attendance activity
-  async getRecentActivity(limit: number = 20): Promise<AttendanceActivity[]> {
-    const { data, error } = await this.supabase
-      .from('attendance_activities')
-      .select(`
-        *,
-        member:members(
-          user:app_users(full_name)
-        ),
-        created_user:app_users(full_name)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(limit)
-
-    if (error) {
-      throw error
-    }
-
-    return data || []
+  // Get recent attendance activity (from attendance records; no separate activities table in Firestore)
+  async getRecentActivity(limitCount: number = 20): Promise<AttendanceActivity[]> {
+    const { data: records, error } = await dataService.getAttendanceRecords({ limit: limitCount })
+    if (error || !records) return []
+    return records.map(
+      (r: any): AttendanceActivity => ({
+        id: r.id,
+        type: 'check_in',
+        member_id: r.member_id,
+        service_date: r.service_date ?? '',
+        service_type: r.service_type ?? '',
+        description: `Check-in recorded`,
+        created_by: '',
+        created_at: r.check_in_time ?? new Date().toISOString(),
+      })
+    )
   }
 
-  // Log attendance activity
-  private async logAttendanceActivity(data: {
+  // Log attendance activity (no-op; no attendance_activities collection in Firestore)
+  private async logAttendanceActivity(_data: {
     type: 'check_in' | 'check_out' | 'bulk_attendance' | 'absentee_marked' | 'follow_up'
     member_id?: string
     service_date: string
@@ -396,20 +356,7 @@ class EnhancedAttendanceService {
     metadata?: Record<string, any>
     created_by: string
   }): Promise<void> {
-    const activity = {
-      type: data.type,
-      member_id: data.member_id,
-      service_date: data.service_date,
-      service_type: data.service_type,
-      description: data.description,
-      metadata: data.metadata || {},
-      created_by: data.created_by,
-      created_at: new Date().toISOString()
-    }
-
-    await this.supabase
-      .from('attendance_activities')
-      .insert(activity)
+    // Optional: write to a Firestore 'attendance_activities' collection if added later
   }
 
   // Helper function to determine age category
@@ -420,43 +367,37 @@ class EnhancedAttendanceService {
     return age < 18 ? 'child' : 'adult'
   }
 
-  // Get departments
+  // Get departments (use groups as departments for now; no separate departments table in Firestore)
   async getDepartments(): Promise<Department[]> {
-    const { data, error } = await this.supabase
-      .from('departments')
-      .select(`
-        *,
-        leader:app_users(full_name),
-        co_leader:app_users(full_name)
-      `)
-      .eq('is_active', true)
-      .order('name')
-
-    if (error) {
-      throw error
-    }
-
-    return data || []
+    const res = await dataService.getGroups(1, 100)
+    const groups = res.data ?? []
+    if (res.error || !groups.length) return []
+    return groups.map(g => ({
+      id: g.id,
+      name: g.name ?? '',
+      description: g.description,
+      department_type: (g.group_type ?? 'ministry') as Department['department_type'],
+      leader_id: g.leader_id,
+      co_leader_id: g.co_leader_id,
+      is_active: g.is_active ?? true,
+      created_at: g.created_at ?? '',
+      updated_at: g.updated_at ?? ''
+    }))
   }
 
-  // Get department members
+  // Get department members (use group members)
   async getDepartmentMembers(departmentId: string): Promise<DepartmentMembership[]> {
-    const { data, error } = await this.supabase
-      .from('department_memberships')
-      .select(`
-        *,
-        member:members(
-          user:app_users(full_name, membership_id, phone)
-        )
-      `)
-      .eq('department_id', departmentId)
-      .eq('is_active', true)
-
-    if (error) {
-      throw error
-    }
-
-    return data || []
+    const { data: members, error } = await dataService.getGroupMembers(departmentId)
+    if (error || !members?.length) return []
+    return members.map(m => ({
+      id: m.id,
+      department_id: m.group_id,
+      member_id: m.member_id,
+      role: m.role,
+      joined_date: m.joined_date ?? '',
+      is_active: m.is_active ?? true,
+      created_at: m.created_at ?? ''
+    })) as DepartmentMembership[]
   }
 }
 

@@ -3,10 +3,10 @@
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  Home, 
-  ArrowLeft, 
-  Search, 
+import {
+  Home,
+  ArrowLeft,
+  Search,
   AlertTriangle,
   RefreshCw,
   HelpCircle,
@@ -49,15 +49,15 @@ export default function NotFound() {
           <CardContent className="space-y-6">
             {/* Quick Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button 
+              <Button
                 onClick={() => router.push('/dashboard')}
                 className="h-16 flex-col space-y-2 bg-blue-600 hover:bg-blue-700"
               >
                 <Home className="h-6 w-6" />
                 <span>Go to Dashboard</span>
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={() => router.back()}
                 className="h-16 flex-col space-y-2"
@@ -74,29 +74,29 @@ export default function NotFound() {
                 Popular Pages
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   onClick={() => router.push('/members')}
                   className="justify-start h-12 text-left"
                 >
                   <span className="text-sm">Members Management</span>
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   onClick={() => router.push('/attendance')}
                   className="justify-start h-12 text-left"
                 >
                   <span className="text-sm">Attendance Records</span>
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   onClick={() => router.push('/groups')}
                   className="justify-start h-12 text-left"
                 >
                   <span className="text-sm">Groups & Ministries</span>
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   onClick={() => router.push('/visitors')}
                   className="justify-start h-12 text-left"
                 >
@@ -131,8 +131,8 @@ export default function NotFound() {
 
             {/* Refresh Option */}
             <div className="border-t pt-6">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => window.location.reload()}
                 className="w-full"
               >
@@ -146,7 +146,7 @@ export default function NotFound() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
-            Church of Pentecost - Emmanuel Assembly
+            Campus Gem Ministries
           </p>
           <p className="text-xs text-gray-400 mt-1">
             Odorkor Area, Gbawe CP District

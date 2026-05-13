@@ -14,11 +14,11 @@ import { OfflineSync } from '@/components/offline-sync'
 import { Demographics } from '@/lib/types'
 import { FoldableCard } from '@/components/foldable-card'
 import { BirthdayNotifications } from '@/components/birthday-notifications'
-import { 
-  Users, 
-  Calendar, 
-  TrendingUp, 
-  UserPlus, 
+import {
+  Users,
+  Calendar,
+  TrendingUp,
+  UserPlus,
   ArrowRight,
   Cake,
   Heart,
@@ -35,7 +35,7 @@ import {
 function DashboardContent() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-  
+
   // Data hooks
   const { data: stats, error: statsError, loading: statsLoading, refetch: refetchStats } = useDashboardStats()
   const { data: upcomingEvents, error: eventsError, loading: eventsLoading, refetch: refetchEvents } = useUpcomingEvents()
@@ -43,10 +43,10 @@ function DashboardContent() {
   // Birthday notifications logic
   const getTodayBirthdays = () => {
     if (!upcomingEvents?.birthdays) return []
-    
+
     const today = new Date()
     const todayStr = `${today.getMonth() + 1}-${today.getDate()}`
-    
+
     return upcomingEvents.birthdays.filter((member: any) => {
       if (!member.dob) return false
       const birthday = new Date(member.dob)
@@ -65,19 +65,19 @@ function DashboardContent() {
 
   const getUpcomingBirthdays = () => {
     if (!upcomingEvents?.birthdays) return []
-    
+
     const today = new Date()
     const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-    
+
     return upcomingEvents.birthdays.filter((member: any) => {
       if (!member.dob) return false
       const birthday = new Date(member.dob)
       const thisYearBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())
-      
+
       if (thisYearBirthday < today) {
         thisYearBirthday.setFullYear(today.getFullYear() + 1)
       }
-      
+
       return thisYearBirthday > today && thisYearBirthday <= nextWeek
     }).map((member: any) => ({
       id: member.id,
@@ -167,17 +167,17 @@ function DashboardContent() {
       const today = new Date()
       const eventDate = new Date(dateString)
       const currentYear = today.getFullYear()
-      
+
       const thisYearEvent = new Date(eventDate)
       thisYearEvent.setFullYear(currentYear)
-      
+
       if (thisYearEvent < today) {
         thisYearEvent.setFullYear(currentYear + 1)
       }
-      
+
       const diffTime = thisYearEvent.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
+
       return diffDays >= 0 ? diffDays : null
     } catch (error) {
       return null
@@ -237,7 +237,7 @@ function DashboardContent() {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  <Button 
+                  <Button
                     size="lg"
                     className="bg-white text-blue-600 hover:bg-blue-50 font-semibold shadow-md hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
                     onClick={() => router.push('/attendance/manual')}
@@ -245,7 +245,7 @@ function DashboardContent() {
                     <Calendar className="h-5 w-5 mr-2" />
                     Manual Check-in
                   </Button>
-                  <Button 
+                  <Button
                     size="lg"
                     variant="outline"
                     className="border-white/30 text-white hover:bg-white/10 font-semibold w-full sm:w-auto"
@@ -277,7 +277,7 @@ function DashboardContent() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -292,7 +292,7 @@ function DashboardContent() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-purple-50 border-purple-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -385,7 +385,7 @@ function DashboardContent() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6 sm:space-y-8">
             {/* Birthday Notifications */}
-            <BirthdayNotifications 
+            <BirthdayNotifications
               todayBirthdays={todayBirthdays}
               upcomingBirthdays={upcomingBirthdays}
             />
@@ -395,7 +395,7 @@ function DashboardContent() {
               title="Upcoming Events"
               description="Birthdays and anniversaries in the next 30 days"
               icon={<Calendar className="h-5 w-5 text-blue-600" />}
-              badge={upcomingEvents?.birthdays?.length || upcomingEvents?.anniversaries?.length ? 
+              badge={upcomingEvents?.birthdays?.length || upcomingEvents?.anniversaries?.length ?
                 <Badge variant="secondary">{((upcomingEvents?.birthdays?.length || 0) + (upcomingEvents?.anniversaries?.length || 0))} events</Badge> : null
               }
               defaultExpanded={true}
@@ -487,102 +487,102 @@ function DashboardContent() {
               badge={<Badge variant="secondary">Analytics</Badge>}
               defaultExpanded={false}
             >
-                <div className="space-y-6">
-                  {/* Gender Distribution in Attendance */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Attendance by Gender</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Male</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ 
-                                width: `${stats?.male_attendance && stats?.female_attendance 
-                                  ? (stats.male_attendance / (stats.male_attendance + stats.female_attendance)) * 100 
-                                  : 0}%` 
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8">{stats?.male_attendance || 0}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Female</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-pink-600 h-2 rounded-full" 
-                              style={{ 
-                                width: `${stats?.male_attendance && stats?.female_attendance 
-                                  ? (stats.female_attendance / (stats.male_attendance + stats.female_attendance)) * 100 
-                                  : 0}%` 
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8">{stats?.female_attendance || 0}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Age Distribution in Attendance */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Attendance by Age Group</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Adults</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-green-600 h-2 rounded-full" 
-                              style={{ 
-                                width: `${stats?.adult_attendance && stats?.children_attendance 
-                                  ? (stats.adult_attendance / (stats.adult_attendance + stats.children_attendance)) * 100 
-                                  : 0}%` 
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8">{stats?.adult_attendance || 0}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Children</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-purple-600 h-2 rounded-full" 
-                              style={{ 
-                                width: `${stats?.adult_attendance && stats?.children_attendance 
-                                  ? (stats.children_attendance / (stats.adult_attendance + stats.children_attendance)) * 100 
-                                  : 0}%` 
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8">{stats?.children_attendance || 0}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Attendance Rate */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Attendance Rate</h4>
+              <div className="space-y-6">
+                {/* Gender Distribution in Attendance */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Attendance by Gender</h4>
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Last 30 Days</span>
+                      <span className="text-sm">Male</span>
                       <div className="flex items-center gap-2">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-indigo-600 h-2 rounded-full" 
-                            style={{ width: `${stats?.attendance_rate || 0}%` }}
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{
+                              width: `${stats?.male_attendance && stats?.female_attendance
+                                ? (stats.male_attendance / (stats.male_attendance + stats.female_attendance)) * 100
+                                : 0}%`
+                            }}
                           />
                         </div>
-                        <span className="text-sm font-medium w-12">{stats?.attendance_rate || 0}%</span>
+                        <span className="text-sm font-medium w-8">{stats?.male_attendance || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Female</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-pink-600 h-2 rounded-full"
+                            style={{
+                              width: `${stats?.male_attendance && stats?.female_attendance
+                                ? (stats.female_attendance / (stats.male_attendance + stats.female_attendance)) * 100
+                                : 0}%`
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-8">{stats?.female_attendance || 0}</span>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Age Distribution in Attendance */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Attendance by Age Group</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Adults</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-green-600 h-2 rounded-full"
+                            style={{
+                              width: `${stats?.adult_attendance && stats?.children_attendance
+                                ? (stats.adult_attendance / (stats.adult_attendance + stats.children_attendance)) * 100
+                                : 0}%`
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-8">{stats?.adult_attendance || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Children</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-purple-600 h-2 rounded-full"
+                            style={{
+                              width: `${stats?.adult_attendance && stats?.children_attendance
+                                ? (stats.children_attendance / (stats.adult_attendance + stats.children_attendance)) * 100
+                                : 0}%`
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-8">{stats?.children_attendance || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Attendance Rate */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Attendance Rate</h4>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Last 30 Days</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-indigo-600 h-2 rounded-full"
+                          style={{ width: `${stats?.attendance_rate || 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium w-12">{stats?.attendance_rate || 0}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </FoldableCard>
 
             {/* Demographics Section */}
@@ -593,101 +593,126 @@ function DashboardContent() {
               badge={<Badge variant="secondary">Demographics</Badge>}
               defaultExpanded={false}
             >
-                <div className="space-y-6">
-                  {/* Gender Distribution */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Gender Distribution</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Male</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${demographics.gender.male / (demographics.gender.male + demographics.gender.female) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8">{demographics.gender.male}</span>
+              <div className="space-y-6">
+                {/* Gender Distribution */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Gender Distribution</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Male</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{ 
+                              width: `${(demographics.gender.male + demographics.gender.female) > 0 
+                                ? (demographics.gender.male / (demographics.gender.male + demographics.gender.female) * 100) 
+                                : 0}%` 
+                            }}
+                          />
                         </div>
+                        <span className="text-sm font-medium w-8">{demographics.gender.male}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Female</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-pink-600 h-2 rounded-full" 
-                              style={{ width: `${demographics.gender.female / (demographics.gender.male + demographics.gender.female) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8">{demographics.gender.female}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Female</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-pink-600 h-2 rounded-full"
+                            style={{ 
+                              width: `${(demographics.gender.male + demographics.gender.female) > 0 
+                                ? (demographics.gender.female / (demographics.gender.male + demographics.gender.female) * 100) 
+                                : 0}%` 
+                            }}
+                          />
                         </div>
+                        <span className="text-sm font-medium w-8">{demographics.gender.female}</span>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Age Distribution */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Age Distribution</h4>
-                    <div className="space-y-2">
-                      {Object.entries(demographics.ageGroups).map(([ageGroup, count]) => (
+                {/* Age Distribution */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Age Distribution</h4>
+                  <div className="space-y-2">
+                    {Object.entries(demographics.ageGroups).map(([ageGroup, count]) => {
+                      const maxCount = Math.max(...Object.values(demographics.ageGroups), 1)
+                      return (
                         <div key={ageGroup} className="flex items-center justify-between">
                           <span className="text-sm">{ageGroup} years</span>
                           <div className="flex items-center gap-2">
                             <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-green-600 h-2 rounded-full" 
-                                style={{ width: `${count / Math.max(...Object.values(demographics.ageGroups)) * 100}%` }}
+                              <div
+                                className="bg-green-600 h-2 rounded-full"
+                                style={{ width: `${(count / maxCount) * 100}%` }}
                               />
                             </div>
                             <span className="text-sm font-medium w-8">{count}</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Church Groups */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Church Groups</h4>
-                    <div className="space-y-2">
-                      {Object.entries(demographics.groups).slice(0, 5).map(([group, count]) => (
-                        <div key={group} className="flex items-center justify-between">
-                          <span className="text-sm">{group}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-purple-600 h-2 rounded-full" 
-                                style={{ width: `${count / Math.max(...Object.values(demographics.groups)) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium w-6">{count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Marital Status */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Marital Status</h4>
-                    <div className="space-y-2">
-                      {Object.entries(demographics.maritalStatus).map(([status, count]) => (
-                        <div key={status} className="flex items-center justify-between">
-                          <span className="text-sm capitalize">{status}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-indigo-600 h-2 rounded-full" 
-                                style={{ width: `${count / Math.max(...Object.values(demographics.maritalStatus)) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium w-8">{count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                      )
+                    })}
                   </div>
                 </div>
+
+                {/* Church Groups */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Church Groups</h4>
+                  {Object.keys(demographics.groups).length === 0 ? (
+                    <p className="text-sm text-gray-500">No group data available</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {Object.entries(demographics.groups).slice(0, 5).map(([group, count]) => {
+                        const maxCount = Math.max(...Object.values(demographics.groups), 1)
+                        return (
+                          <div key={group} className="flex items-center justify-between">
+                            <span className="text-sm">{group}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-purple-600 h-2 rounded-full"
+                                  style={{ width: `${(count / maxCount) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium w-6">{count}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Marital Status */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Marital Status</h4>
+                  {Object.keys(demographics.maritalStatus).length === 0 ? (
+                    <p className="text-sm text-gray-500">No marital status data available</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {Object.entries(demographics.maritalStatus).map(([status, count]) => {
+                        const maxCount = Math.max(...Object.values(demographics.maritalStatus), 1)
+                        return (
+                          <div key={status} className="flex items-center justify-between">
+                            <span className="text-sm capitalize">{status}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-20 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-indigo-600 h-2 rounded-full"
+                                  style={{ width: `${(count / maxCount) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium w-8">{count}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
             </FoldableCard>
 
             {/* Quick Actions */}
@@ -698,70 +723,70 @@ function DashboardContent() {
               badge={<Badge variant="secondary">Actions</Badge>}
               defaultExpanded={true}
             >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <Button
-                    variant="outline"
-                    className="h-16 sm:h-20 flex-col space-y-2"
-                    onClick={() => router.push('/members')}
-                  >
-                    <Users className="h-6 w-6" />
-                    <span>Manage Members</span>
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="h-20 flex-col space-y-2"
-                    onClick={() => router.push('/groups')}
-                  >
-                    <Calendar className="h-6 w-6" />
-                    <span>Manage Groups</span>
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="h-16 sm:h-20 flex-col space-y-2"
-                    onClick={() => router.push('/attendance/scanner')}
-                  >
-                    <BarChart3 className="h-6 w-6" />
-                    <span>Take Attendance</span>
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="h-16 sm:h-20 flex-col space-y-2"
-                    onClick={() => router.push('/visitors')}
-                  >
-                    <UserPlus className="h-6 w-6" />
-                    <span>Manage Visitors</span>
-                  </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <Button
+                  variant="outline"
+                  className="h-16 sm:h-20 flex-col space-y-2"
+                  onClick={() => router.push('/members')}
+                >
+                  <Users className="h-6 w-6" />
+                  <span>Manage Members</span>
+                </Button>
 
-                  <Button
-                    variant="outline"
-                    className="h-16 sm:h-20 flex-col space-y-2"
-                    onClick={() => router.push('/celebrations')}
-                  >
-                    <Cake className="h-6 w-6" />
-                    <span>Birthdays & Anniversaries</span>
-                  </Button>
+                <Button
+                  variant="outline"
+                  className="h-20 flex-col space-y-2"
+                  onClick={() => router.push('/groups')}
+                >
+                  <Calendar className="h-6 w-6" />
+                  <span>Manage Groups</span>
+                </Button>
 
-                  <Button
-                    variant="outline"
-                    className="h-16 sm:h-20 flex-col space-y-2"
-                    onClick={() => router.push('/sms')}
-                  >
-                    <MessageSquare className="h-6 w-6" />
-                    <span>SMS Management</span>
-                  </Button>
+                <Button
+                  variant="outline"
+                  className="h-16 sm:h-20 flex-col space-y-2"
+                  onClick={() => router.push('/attendance/scanner')}
+                >
+                  <BarChart3 className="h-6 w-6" />
+                  <span>Take Attendance</span>
+                </Button>
 
-                  <Button
-                    variant="outline"
-                    className="h-16 sm:h-20 flex-col space-y-2"
-                    onClick={() => router.push('/attendance/analytics')}
-                  >
-                    <BarChart3 className="h-6 w-6" />
-                    <span>Attendance Analytics</span>
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="h-16 sm:h-20 flex-col space-y-2"
+                  onClick={() => router.push('/visitors')}
+                >
+                  <UserPlus className="h-6 w-6" />
+                  <span>Manage Visitors</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-16 sm:h-20 flex-col space-y-2"
+                  onClick={() => router.push('/celebrations')}
+                >
+                  <Cake className="h-6 w-6" />
+                  <span>Birthdays & Anniversaries</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-16 sm:h-20 flex-col space-y-2"
+                  onClick={() => router.push('/sms')}
+                >
+                  <MessageSquare className="h-6 w-6" />
+                  <span>SMS Management</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-16 sm:h-20 flex-col space-y-2"
+                  onClick={() => router.push('/attendance/analytics')}
+                >
+                  <BarChart3 className="h-6 w-6" />
+                  <span>Attendance Analytics</span>
+                </Button>
+              </div>
             </FoldableCard>
           </div>
 
@@ -775,40 +800,40 @@ function DashboardContent() {
               badge={<Badge variant="secondary">Activity</Badge>}
               defaultExpanded={false}
             >
-                <EmptyState
-                  title="No recent activity"
-                  description="Activity will appear here as members interact with the system"
-                  icon={<Activity className="h-12 w-12" />}
-                />
+              <EmptyState
+                title="No recent activity"
+                description="Activity will appear here as members interact with the system"
+                icon={<Activity className="h-12 w-12" />}
+              />
             </FoldableCard>
 
             {/* Church Info */}
             <FoldableCard
-              title="Emmanuel Assembly"
+              title="Campus Gem Ministries"
               description="Church information and contact details"
               icon={<MapPin className="h-5 w-5 text-blue-600" />}
               badge={<Badge variant="secondary">Info</Badge>}
               defaultExpanded={true}
             >
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Location</p>
-                    <p className="text-sm text-gray-900">Odorkor Area, Gbawe CP District</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Services</p>
-                    <p className="text-sm text-gray-900">Sundays 7:00 AM & 9:00 AM</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Contact</p>
-                    <p className="text-sm text-gray-900">+233 XX XXX XXXX</p>
-                  </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Location</p>
+                  <p className="text-sm text-gray-900">Odorkor Area, Gbawe CP District</p>
                 </div>
-                
-                <Button variant="outline" className="w-full" onClick={() => router.push('/groups')}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View All Groups
-                </Button>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Services</p>
+                  <p className="text-sm text-gray-900">Sundays 7:00 AM & 9:00 AM</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Contact</p>
+                  <p className="text-sm text-gray-900">+233 XX XXX XXXX</p>
+                </div>
+              </div>
+
+              <Button variant="outline" className="w-full" onClick={() => router.push('/groups')}>
+                <Eye className="h-4 w-4 mr-2" />
+                View All Groups
+              </Button>
             </FoldableCard>
 
             {/* Offline Sync Status */}

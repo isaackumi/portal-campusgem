@@ -12,15 +12,15 @@ interface PWAInstallPromptProps {
 }
 
 export function PWAInstallPrompt({ onClose, className }: PWAInstallPromptProps) {
-  const { 
-    isInstalled, 
-    canInstall, 
-    isOnline, 
-    installPWA, 
+  const {
+    isInstalled,
+    canInstall,
+    isOnline,
+    installPWA,
     sendTestNotification,
-    requestNotificationPermission 
+    requestNotificationPermission
   } = usePWA()
-  
+
   const [isVisible, setIsVisible] = useState(false)
   const [isInstalling, setIsInstalling] = useState(false)
 
@@ -70,7 +70,7 @@ export function PWAInstallPrompt({ onClose, className }: PWAInstallPromptProps) 
                 <Download className="h-8 w-8 text-white" />
               </div>
               <CardTitle className="text-xl font-bold text-gray-900">
-                Install Emmanuel Assembly
+                Install Campus Gem Ministries
               </CardTitle>
               <CardDescription className="text-gray-600 mt-2">
                 Get quick access to your church management system
@@ -149,7 +149,7 @@ export function PWAInstallPrompt({ onClose, className }: PWAInstallPromptProps) 
                 </>
               )}
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={handleEnableNotifications}
@@ -162,11 +162,11 @@ export function PWAInstallPrompt({ onClose, className }: PWAInstallPromptProps) 
 
           {/* Footer */}
           <p className="text-xs text-gray-500 text-center">
-            This will add Emmanuel Assembly to your device for quick access.
+            This will add Campus Gem Ministries to your device for quick access.
           </p>
         </CardContent>
-      </Card>
-    </div>
+      </Card >
+    </div >
   )
 }
 

@@ -34,7 +34,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { dataService } from '@/lib/services/data-service'
 import { useToast } from '@/hooks/use-toast'
 import { formatMembershipIdForDisplay, formatDateTime } from '@/lib/utils'
 
@@ -77,7 +77,6 @@ export default function BulkAttendancePage() {
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const router = useRouter()
-  const supabase = createClient()
   const { toast } = useToast()
 
   const serviceTypes = [
@@ -152,43 +151,30 @@ export default function BulkAttendancePage() {
     try {
       setLoading(true)
       setError(null)
-      
-      // Get all members from the members table
-      const { data: membersData, error: membersError } = await supabase
-        .from('members')
-        .select(`
-          id,
-          status,
-          user:app_users(
-            id,
-            full_name,
-            membership_id,
-            phone,
-            email,
-            role
-          ),
-          dependants(id, relationship)
-        `)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
 
-      if (membersError) throw membersError
+      const all: Member[] = []
+      let page = 1
+      const limit = 100
+      let hasMore = true
+      while (hasMore) {
+        const res = await dataService.getMembers(page, limit)
+        if (res.error) throw new Error(res.error)
+        const list = res.data ?? []
+        all.push(...list.map(m => ({
+          id: m.id,
+          full_name: m.user?.full_name ?? '',
+          membership_id: m.user?.membership_id ?? '',
+          phone: m.user?.phone,
+          email: m.user?.email,
+          role: m.user?.role,
+          status: m.status,
+          dependants: (m.dependants ?? []).map(d => ({ id: d.id, relationship: d.relationship }))
+        })))
+        hasMore = list.length === limit
+        page++
+      }
 
-      // Transform the data to match our interface
-      const transformedMembers = (membersData || [])
-        .filter(member => member && member.user && Array.isArray(member.user) && member.user.length > 0)
-        .map(member => ({
-          id: member.user[0]?.id,
-          full_name: member.user[0]?.full_name,
-          membership_id: member.user[0]?.membership_id,
-          phone: member.user[0]?.phone,
-          email: member.user[0]?.email,
-          role: member.user[0]?.role,
-          status: member.status,
-          dependants: member.dependants || []
-        }))
-
-      setMembers(transformedMembers)
+      setMembers(all)
     } catch (err) {
       console.error('Error fetching members:', err)
       setError('Failed to load members')
@@ -280,36 +266,31 @@ export default function BulkAttendancePage() {
       // Process main members
       for (const memberId of Array.from(selectedMembers)) {
         try {
-          const { error: memberError } = await supabase
-            .from('attendance')
-            .insert({
-              member_id: memberId,
-              service_date: serviceDate,
-              service_type: serviceLabel,
-              check_in_time: checkInTime,
-              status: 'present',
-              checked_in_by: user?.id
-            })
+          const { error: memberError } = await dataService.recordAttendance({
+            member_id: memberId,
+            service_date: serviceDate,
+            service_type: serviceType,
+            check_in_time: checkInTime,
+            status: 'present',
+            checked_in_by: user?.id
+          })
 
-          if (memberError) throw memberError
+          if (memberError) throw new Error(memberError)
           successful++
 
           // Process dependants for this member
           const memberDependants = selectedDependants.get(memberId) || []
           for (const dependantId of memberDependants) {
             try {
-              const { error: dependantError } = await supabase
-                .from('attendance')
-                .insert({
-                  member_id: dependantId,
-                  service_date: serviceDate,
-                  service_type: serviceLabel,
-                  check_in_time: checkInTime,
-                  status: 'present',
-                  checked_in_by: user?.id
-                })
-
-              if (dependantError) throw dependantError
+              const { error: dependantError } = await dataService.recordAttendance({
+                member_id: dependantId,
+                service_date: serviceDate,
+                service_type: serviceType,
+                check_in_time: checkInTime,
+                status: 'present',
+                checked_in_by: user?.id
+              })
+              if (dependantError) throw new Error(dependantError)
               successful++
             } catch (err) {
               failed++

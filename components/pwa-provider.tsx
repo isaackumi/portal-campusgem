@@ -1,8 +1,23 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect } from 'react'
 import { usePWA } from '@/lib/hooks/use-pwa'
-import { PWAInstallPrompt, PWAInstallButton } from '@/components/pwa-install-prompt'
+
+const PWAInstallPrompt = dynamic(
+  () =>
+    import('@/components/pwa-install-prompt').then((mod) => ({
+      default: mod.PWAInstallPrompt,
+    })),
+  { ssr: false }
+)
+const PWAInstallButton = dynamic(
+  () =>
+    import('@/components/pwa-install-prompt').then((mod) => ({
+      default: mod.PWAInstallButton,
+    })),
+  { ssr: false }
+)
 
 interface PWAProviderProps {
   children: React.ReactNode
@@ -45,7 +60,7 @@ export function PWAProvider({ children }: PWAProviderProps) {
       if (!existingAppleTitle) {
         const appleTitle = document.createElement('meta')
         appleTitle.name = 'apple-mobile-web-app-title'
-        appleTitle.content = 'Emmanuel Assembly'
+        appleTitle.content = 'Campus Gem Ministries'
         document.head.appendChild(appleTitle)
       }
     }
@@ -80,7 +95,7 @@ export function PWAProvider({ children }: PWAProviderProps) {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
         console.log('Message from service worker:', event.data)
-        
+
         if (event.data.type === 'CACHE_UPDATED') {
           // Handle cache update
           console.log('Cache updated:', event.data.payload)
@@ -94,11 +109,17 @@ export function PWAProvider({ children }: PWAProviderProps) {
     }
   }, [registerServiceWorker])
 
+  const showInstallUi = process.env.NODE_ENV !== 'development'
+
   return (
     <>
       {children}
-      <PWAInstallPrompt />
-      <PWAInstallButton />
+      {showInstallUi ? (
+        <>
+          <PWAInstallPrompt />
+          <PWAInstallButton />
+        </>
+      ) : null}
     </>
   )
 }

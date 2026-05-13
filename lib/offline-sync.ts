@@ -5,7 +5,7 @@
 
 import { Attendance, OfflineQueueItem } from '@/lib/types'
 
-const DB_NAME = 'EmmanuelAssemblyDB'
+const DB_NAME = 'CampusGemMinistriesDB'
 const DB_VERSION = 1
 const STORE_NAMES = {
   ATTENDANCE_QUEUE: 'attendanceQueue',

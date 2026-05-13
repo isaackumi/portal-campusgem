@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-select',
+      '@tanstack/react-query',
+    ],
+  },
   images: {
     domains: ['localhost'],
   },
@@ -11,9 +19,6 @@ const nextConfig = {
     })
     return config
   },
-  // Use static build ID to avoid build traces
-  generateBuildId: () => 'static-build',
-  // Disable source maps
   productionBrowserSourceMaps: false,
   // Removed deprecated/unsupported options in Next 15
   // Handle trailing slashes consistently

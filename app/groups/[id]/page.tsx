@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { createClient } from '@/lib/supabase/client'
+import { dataService } from '@/lib/services/data-service'
 import { AppUser, Group, GroupMembership } from '@/lib/types'
 import { 
   ArrowLeft,
@@ -58,7 +58,6 @@ export default function GroupDetailsPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const params = useParams()
-  const supabase = createClient()
 
   const [group, setGroup] = useState<Group | null>(null)
   const [members, setMembers] = useState<GroupMemberWithUser[]>([])
@@ -91,22 +90,12 @@ export default function GroupDetailsPage() {
   const fetchGroupDetails = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('groups')
-        .select(`
-          *,
-          leader:app_users!leader_id(full_name, membership_id, phone, email),
-          co_leader:app_users!co_leader_id(full_name, membership_id, phone, email)
-        `)
-        .eq('id', groupId)
-        .single()
-
+      const { data, error } = await dataService.getGroup(groupId)
       if (error) {
         console.error('Error fetching group:', error)
         return
       }
-
-      setGroup(data)
+      setGroup(data ?? null)
     } catch (error) {
       console.error('Error fetching group:', error)
     } finally {
@@ -117,22 +106,22 @@ export default function GroupDetailsPage() {
   const fetchGroupMembers = async () => {
     try {
       setMembersLoading(true)
-      const { data, error } = await supabase
-        .from('group_memberships')
-        .select(`
-          *,
-          member:app_users(id, full_name, membership_id, phone, email, role)
-        `)
-        .eq('group_id', groupId)
-        .eq('status', 'active')
-        .order('joined_at', { ascending: false })
-
+      const { data: list, error } = await dataService.getGroupMembers(groupId)
       if (error) {
         console.error('Error fetching group members:', error)
         return
       }
-
-      setMembers(data || [])
+      const withUser: GroupMemberWithUser[] = (list ?? []).map(m => ({
+        id: m.id,
+        group_id: m.group_id,
+        member_id: m.member_id,
+        role: m.role,
+        joined_date: m.joined_date ?? '',
+        is_active: m.is_active ?? true,
+        created_at: m.created_at ?? '',
+        member: allMembers.find(u => u.id === m.member_id) ?? ({ id: m.member_id, full_name: '', membership_id: '', role: 'member' } as AppUser)
+      }))
+      setMembers(withUser)
     } catch (error) {
       console.error('Error fetching group members:', error)
     } finally {
@@ -142,18 +131,12 @@ export default function GroupDetailsPage() {
 
   const fetchAllMembers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('app_users')
-        .select('id, full_name, membership_id, phone, email, role, join_year, created_at, updated_at')
-        .not('role', 'eq', 'visitor')
-        .order('full_name', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching all members:', error)
+      const res = await dataService.getAllMembers()
+      if (res.error) {
+        console.error('Error fetching all members:', res.error)
         return
       }
-
-      setAllMembers(data || [])
+      setAllMembers((res.data ?? []).filter(u => u.role !== 'visitor'))
     } catch (error) {
       console.error('Error fetching all members:', error)
     }
@@ -163,16 +146,7 @@ export default function GroupDetailsPage() {
     if (!selectedMemberId || !groupId || selectedMemberId === 'no-members') return
 
     try {
-      const { error } = await supabase
-        .from('group_memberships')
-        .insert({
-          group_id: groupId,
-          member_id: selectedMemberId,
-          role: selectedRole,
-          status: 'active',
-          joined_at: new Date().toISOString(),
-          added_by: user?.id
-        })
+      const { error } = await dataService.addUserToGroup(groupId, selectedMemberId, selectedRole)
 
       if (error) {
         console.error('Error adding member:', error)
@@ -196,10 +170,7 @@ export default function GroupDetailsPage() {
     if (!confirm(`Are you sure you want to remove ${memberName} from this group?`)) return
 
     try {
-      const { error } = await supabase
-        .from('group_memberships')
-        .update({ status: 'inactive' })
-        .eq('id', membershipId)
+      const { error } = await dataService.removeGroupMember(membershipId)
 
       if (error) {
         console.error('Error removing member:', error)
@@ -218,10 +189,7 @@ export default function GroupDetailsPage() {
 
   const updateMemberRole = async (membershipId: string, newRole: string) => {
     try {
-      const { error } = await supabase
-        .from('group_memberships')
-        .update({ role: newRole })
-        .eq('id', membershipId)
+      const { error } = await dataService.updateGroupMembership(membershipId, { role: newRole as GroupMembership['role'] })
 
       if (error) {
         console.error('Error updating role:', error)

@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { KioskForm } from '@/components/kiosk-form'
 import { AppUser, Dependant } from '@/lib/types'
+import { ServiceTypeMapper } from '@/lib/constants/service-types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -19,7 +20,7 @@ import {
   Clock,
   Users
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { dataService } from '@/lib/services/data-service'
 import { useToast } from '@/hooks/use-toast'
 import { formatMembershipIdForDisplay, formatDateTime } from '@/lib/utils'
 
@@ -45,7 +46,6 @@ export default function KioskPage() {
   const [loading, setLoading] = useState(false)
   const [serviceType, setServiceType] = useState('sunday_service')
   const router = useRouter()
-  const supabase = createClient()
   const { toast } = useToast()
 
   const serviceTypes = [
@@ -74,36 +74,30 @@ export default function KioskPage() {
   const handleCheckIn = async (member: AppUser, dependants: Dependant[] = []) => {
     setLoading(true)
     try {
-      // Record attendance for main member
-      const { error: memberError } = await supabase
-        .from('attendance')
-        .insert({
-          member_id: member.id,
-          service_date: new Date().toISOString().split('T')[0],
-          service_type: serviceTypes.find(s => s.value === serviceType)?.label || 'Sunday Service',
-          check_in_time: new Date().toISOString(),
-          status: 'present',
-          checked_in_by: user.id
-        })
+      const memberDocId = (member as AppUser & { member?: { id: string } }).member?.id ?? member.id
+      const serviceDate = new Date().toISOString().split('T')[0]
+      const checkInTime = new Date().toISOString()
 
-      if (memberError) throw memberError
+      const { error: memberError } = await dataService.recordAttendance({
+        member_id: memberDocId,
+        service_date: serviceDate,
+        service_type: ServiceTypeMapper.toEnum(serviceType),
+        check_in_time: checkInTime,
+        status: 'present',
+        checked_in_by: user?.id
+      })
+      if (memberError) throw new Error(memberError)
 
-      // Record attendance for dependants if any
-      if (dependants.length > 0) {
-        const dependantAttendance = dependants.map(dependant => ({
+      for (const dependant of dependants) {
+        const { error: dependantsError } = await dataService.recordAttendance({
           member_id: dependant.id,
-          service_date: new Date().toISOString().split('T')[0],
-          service_type: serviceTypes.find(s => s.value === serviceType)?.label || 'Sunday Service',
-          check_in_time: new Date().toISOString(),
+          service_date: serviceDate,
+          service_type: ServiceTypeMapper.toEnum(serviceType),
+          check_in_time: checkInTime,
           status: 'present',
-          checked_in_by: user.id
-        }))
-
-        const { error: dependantsError } = await supabase
-          .from('attendance')
-          .insert(dependantAttendance)
-
-        if (dependantsError) throw dependantsError
+          checked_in_by: user?.id
+        })
+        if (dependantsError) throw new Error(dependantsError)
       }
 
       // Set check-in result with the provided data
@@ -119,7 +113,7 @@ export default function KioskPage() {
           name: d.first_name,
           relationship: d.relationship
         })),
-        service_type: serviceTypes.find(s => s.value === serviceType)?.label || 'Sunday Service',
+        service_type: serviceType,
         timestamp: new Date().toISOString()
       })
 

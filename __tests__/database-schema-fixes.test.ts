@@ -16,7 +16,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-describe('Database Schema Fixes', () => {
+// Skipped: legacy Supabase schema checks; app data layer is Convex-first.
+describe.skip('Database Schema Fixes', () => {
   it('should query members table for gender and dob (not app_users)', async () => {
     const { data, error } = await supabase
       .from('members')

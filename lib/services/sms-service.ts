@@ -61,7 +61,7 @@ class SMSService {
         id: 'birthday-template',
         name: 'Birthday Greeting',
         type: 'birthday',
-        template: 'Happy Birthday {{name}}! 🎉 May God bless you with another year of joy, health, and prosperity. Emmanuel Assembly wishes you a wonderful day!',
+        template: 'Happy Birthday {{name}}! 🎉 May God bless you with another year of joy, health, and prosperity. Campus Gem Ministries wishes you a wonderful day!',
         variables: ['name'],
         is_active: true,
         created_at: new Date().toISOString()
@@ -70,7 +70,7 @@ class SMSService {
         id: 'anniversary-template',
         name: 'Anniversary Wishes',
         type: 'anniversary',
-        template: 'Happy Anniversary {{name}} and {{spouse_name}}! 💕 May God continue to bless your union with love, joy, and many more years together. Congratulations from Emmanuel Assembly!',
+        template: 'Happy Anniversary {{name}} and {{spouse_name}}! 💕 May God continue to bless your union with love, joy, and many more years together. Congratulations from Campus Gem Ministries!',
         variables: ['name', 'spouse_name'],
         is_active: true,
         created_at: new Date().toISOString()
@@ -79,7 +79,7 @@ class SMSService {
         id: 'group-meeting-template',
         name: 'Group Meeting Reminder',
         type: 'group',
-        template: 'Reminder: {{group_name}} meeting is scheduled for {{date}} at {{time}} in {{location}}. See you there! - Emmanuel Assembly',
+        template: 'Reminder: {{group_name}} meeting is scheduled for {{date}} at {{time}} in {{location}}. See you there! - Campus Gem Ministries',
         variables: ['group_name', 'date', 'time', 'location'],
         is_active: true,
         created_at: new Date().toISOString()
@@ -88,7 +88,7 @@ class SMSService {
         id: 'event-invitation-template',
         name: 'Event Invitation',
         type: 'event',
-        template: 'You\'re invited to {{event_name}} on {{date}} at {{time}}. {{description}} We hope to see you there! - Emmanuel Assembly',
+        template: 'You\'re invited to {{event_name}} on {{date}} at {{time}}. {{description}} We hope to see you there! - Campus Gem Ministries',
         variables: ['event_name', 'date', 'time', 'description'],
         is_active: true,
         created_at: new Date().toISOString()
@@ -106,7 +106,7 @@ class SMSService {
           phone: '+233241234567',
           membership_id: 'EA-2024-001'
         },
-        message: 'Happy Birthday John! 🎉 May God bless you with another year of joy, health, and prosperity. Emmanuel Assembly wishes you a wonderful day!',
+        message: 'Happy Birthday John! 🎉 May God bless you with another year of joy, health, and prosperity. Campus Gem Ministries wishes you a wonderful day!',
         type: 'birthday',
         status: 'delivered',
         sent_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),

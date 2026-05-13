@@ -34,7 +34,7 @@ export function SimpleAuthProvider({ children }: { children: React.ReactNode }) 
 
     // Listen for localStorage changes (other tabs)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'emmanuel_assembly_test_user') {
+      if (e.key === 'campus_gem_test_user' || e.key === 'emmanuel_assembly_test_user') {
         console.log('SimpleAuth: localStorage changed, checking user')
         checkUser()
       }
@@ -59,9 +59,18 @@ export function SimpleAuthProvider({ children }: { children: React.ReactNode }) 
     }
   }, [])
 
-  const signOut = () => {
+  const signOut = async () => {
+    // Clear the authentication cookie via API
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch (error) {
+      console.error('Error clearing auth cookie:', error)
+    }
+    
+    // Clear localStorage
     clearTestUser()
     setUser(null)
+    
     // Redirect to auth page
     if (typeof window !== 'undefined') {
       window.location.href = '/auth'

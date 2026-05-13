@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { db } from '@/lib/firebase/server'
 import { normalizeMembershipId, isValidPhone } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
@@ -13,104 +13,66 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createAdminClient()
     let phone = phoneOrId.trim()
-    let userId = null
+    let userId: string | null = null
 
-    // Check if input is a membership ID
     if (phoneOrId.toUpperCase().includes('EA')) {
       const normalizedId = normalizeMembershipId(phoneOrId)
-      
-      // Look up user by membership ID
-      const { data: user, error: userError } = await supabase
-        .from('app_users')
-        .select('id, phone')
-        .eq('membership_id', normalizedId)
-        .single()
+      const usersSnap = await db
+        .collection('users')
+        .where('membershipId', '==', normalizedId)
+        .limit(1)
+        .get()
 
-      if (userError || !user) {
-        return NextResponse.json(
-          { error: 'Membership ID not found' },
-          { status: 404 }
-        )
+      if (usersSnap.empty) {
+        return NextResponse.json({ error: 'Membership ID not found' }, { status: 404 })
       }
 
-      if (!user.phone) {
+      const userData = usersSnap.docs[0].data()
+      const userPhone = userData.phone
+      if (!userPhone) {
         return NextResponse.json(
           { error: 'No phone number associated with this membership ID' },
           { status: 400 }
         )
       }
-
-      phone = user.phone
-      userId = user.id
+      phone = userPhone
+      userId = usersSnap.docs[0].id
     } else {
-      // Validate phone number format
       if (!isValidPhone(phone)) {
-        return NextResponse.json(
-          { error: 'Invalid phone number format' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
       }
-
-      // Format phone number for Ghana
       if (phone.startsWith('0')) {
         phone = '+233' + phone.slice(1)
       } else if (!phone.startsWith('+')) {
         phone = '+233' + phone
       }
 
-      // Check if phone exists in system
-      const { data: user, error: userError } = await supabase
-        .from('app_users')
-        .select('id, phone')
-        .eq('phone', phone)
-        .single()
+      const usersSnap = await db
+        .collection('users')
+        .where('phone', '==', phone)
+        .limit(1)
+        .get()
 
-      if (userError || !user) {
-        return NextResponse.json(
-          { error: 'Phone number not found in system' },
-          { status: 404 }
-        )
+      if (usersSnap.empty) {
+        return NextResponse.json({ error: 'Phone number not found in system' }, { status: 404 })
       }
-
-      userId = user.id
+      userId = usersSnap.docs[0].id
     }
 
     if (action === 'send') {
-      // Send OTP via Supabase Auth
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        phone: phone,
-        options: {
-          channel: 'sms'
-        }
-      })
-
-      if (otpError) {
-        console.error('OTP Error:', otpError)
-        return NextResponse.json(
-          { error: 'Failed to send OTP' },
-          { status: 500 }
-        )
-      }
-
-      return NextResponse.json({ 
-        success: true, 
-        message: 'OTP sent successfully',
-        phone: phone // Return formatted phone for client
-      })
+      return NextResponse.json(
+        {
+          error: 'OTP via SMS is not configured. Use Firebase Phone Auth or another provider.',
+          code: 'OTP_NOT_CONFIGURED'
+        },
+        { status: 501 }
+      )
     }
 
-    return NextResponse.json(
-      { error: 'Invalid action' },
-      { status: 400 }
-    )
-
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   } catch (error) {
     console.error('OTP API Error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

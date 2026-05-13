@@ -10,11 +10,11 @@ import { LoadingStats, LoadingGrid, LoadingPage } from '@/components/ui/loading'
 import { ErrorDisplay, EmptyState } from '@/components/ui/error-display'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { Demographics } from '@/lib/types'
-import { 
-  Users, 
-  Calendar, 
-  TrendingUp, 
-  UserPlus, 
+import {
+  Users,
+  Calendar,
+  TrendingUp,
+  UserPlus,
   ArrowRight,
   Cake,
   Heart,
@@ -30,7 +30,7 @@ import {
 function DashboardContent() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-  
+
   // Data hooks
   const { data: stats, error: statsError, loading: statsLoading, refetch: refetchStats } = useDashboardStats()
   const { data: upcomingEvents, error: eventsError, loading: eventsLoading, refetch: refetchEvents } = useUpcomingEvents()
@@ -104,17 +104,17 @@ function DashboardContent() {
       const today = new Date()
       const eventDate = new Date(dateString)
       const currentYear = today.getFullYear()
-      
+
       const thisYearEvent = new Date(eventDate)
       thisYearEvent.setFullYear(currentYear)
-      
+
       if (thisYearEvent < today) {
         thisYearEvent.setFullYear(currentYear + 1)
       }
-      
+
       const diffTime = thisYearEvent.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
+
       return diffDays >= 0 ? diffDays : null
     } catch (error) {
       return null
@@ -338,7 +338,7 @@ function DashboardContent() {
                     <Users className="h-6 w-6" />
                     <span>Manage Members</span>
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     className="h-20 flex-col space-y-2"
@@ -347,7 +347,7 @@ function DashboardContent() {
                     <Calendar className="h-6 w-6" />
                     <span>Manage Groups</span>
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     className="h-20 flex-col space-y-2"
@@ -356,7 +356,7 @@ function DashboardContent() {
                     <BarChart3 className="h-6 w-6" />
                     <span>Take Attendance</span>
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     className="h-20 flex-col space-y-2"
@@ -394,7 +394,7 @@ function DashboardContent() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <MapPin className="h-5 w-5 mr-2 text-blue-600" />
-                  Emmanuel Assembly
+                  Campus Gem Ministries
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -412,7 +412,7 @@ function DashboardContent() {
                     <p className="text-sm text-gray-900">+233 XX XXX XXXX</p>
                   </div>
                 </div>
-                
+
                 <Button variant="outline" className="w-full" onClick={() => router.push('/groups')}>
                   <Eye className="h-4 w-4 mr-2" />
                   View All Groups

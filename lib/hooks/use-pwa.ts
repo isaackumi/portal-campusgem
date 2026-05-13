@@ -132,6 +132,16 @@ export function usePWA() {
       return null
     }
 
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(registrations.map((registration) => registration.unregister()))
+      } catch (error) {
+        console.warn('Failed to unregister service workers in development:', error)
+      }
+      return null
+    }
+
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/'
@@ -213,7 +223,7 @@ export function usePWA() {
   // Send push notification (for testing)
   const sendTestNotification = useCallback(() => {
     if (Notification.permission === 'granted') {
-      new Notification('Emmanuel Assembly', {
+      new Notification('Campus Gem Ministries', {
         body: 'This is a test notification from your church management system.',
         icon: '/icon-192x192.png',
         badge: '/icon-72x72.png',

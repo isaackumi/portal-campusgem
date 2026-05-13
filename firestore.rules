@@ -1,0 +1,222 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper function to get user role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Helper function to check if user has role
+    function hasRole(role) {
+      return isAuthenticated() && getUserRole() == role;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return hasRole('admin');
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      // Admins can read all users
+      allow read: if isAdmin();
+      // Users can update their own profile (limited fields)
+      allow update: if isOwner(userId) && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['full_name', 'email', 'phone']);
+      // Admins can create/update/delete users
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Members collection
+    match /members/{memberId} {
+      // Authenticated users can read members
+      allow read: if isAuthenticated();
+      // Only admins, pastors, and elders can create/update/delete
+      allow create, update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('pastor') || hasRole('elder'));
+    }
+    
+    // Dependants collection
+    match /dependants/{dependantId} {
+      // Authenticated users can read dependants
+      allow read: if isAuthenticated();
+      // Members can create dependants for themselves
+      allow create: if isAuthenticated();
+      // Only admins, pastors, and elders can update/delete
+      allow update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('pastor') || hasRole('elder'));
+    }
+    
+    // Attendance collection
+    match /attendance/{attendanceId} {
+      // Authenticated users can read attendance
+      allow read: if isAuthenticated();
+      // Authenticated users can create attendance (for check-ins)
+      allow create: if isAuthenticated();
+      // Only admins, pastors, and elders can update/delete
+      allow update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('pastor') || hasRole('elder'));
+    }
+    
+    // Donations collection
+    match /donations/{donationId} {
+      // Finance officers and admins can read all donations
+      allow read: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('finance_officer'));
+      // Members can read their own donations
+      allow read: if isAuthenticated() && 
+        resource.data.memberId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.memberId;
+      // Only finance officers and admins can create/update/delete
+      allow create, update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('finance_officer'));
+    }
+    
+    // Pledges collection
+    match /pledges/{pledgeId} {
+      // Finance officers and admins can read all pledges
+      allow read: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('finance_officer'));
+      // Members can read their own pledges
+      allow read: if isAuthenticated() && 
+        resource.data.memberId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.memberId;
+      // Only finance officers and admins can create/update/delete
+      allow create, update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('finance_officer'));
+    }
+    
+    // Expenses collection
+    match /expenses/{expenseId} {
+      // Only finance officers and admins can read expenses
+      allow read: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('finance_officer'));
+      // Only finance officers and admins can create/update/delete
+      allow create, update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('finance_officer'));
+    }
+    
+    // Groups collection
+    match /groups/{groupId} {
+      // Authenticated users can read groups
+      allow read: if isAuthenticated();
+      // Only admins, pastors, and elders can create/update/delete
+      allow create, update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('pastor') || hasRole('elder'));
+    }
+    
+    // Group memberships collection
+    match /groupMemberships/{membershipId} {
+      // Authenticated users can read memberships
+      allow read: if isAuthenticated();
+      // Only admins, pastors, and elders can create/update/delete
+      allow create, update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('pastor') || hasRole('elder'));
+    }
+    
+    // Camp years collection
+    match /campYears/{yearId} {
+      // Authenticated users can read camp years
+      allow read: if isAuthenticated();
+      // Only admins can create/update/delete
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Camp registrations collection
+    match /campRegistrations/{registrationId} {
+      // Authenticated users can read registrations
+      allow read: if isAuthenticated();
+      // Anyone can create a registration (public registration form)
+      allow create: if true;
+      // Only admins can update/delete
+      allow update, delete: if isAdmin();
+    }
+    
+    // Camp interactions collection
+    match /campInteractions/{interactionId} {
+      // Authenticated users can read interactions
+      allow read: if isAuthenticated();
+      // Only admins, pastors, and elders can create/update/delete
+      allow create, update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('pastor') || hasRole('elder'));
+    }
+    
+    // Camp communications collection
+    match /campCommunications/{communicationId} {
+      // Authenticated users can read communications
+      allow read: if isAuthenticated();
+      // Only admins, pastors, and elders can create/update/delete
+      allow create, update, delete: if isAuthenticated() && 
+        (hasRole('admin') || hasRole('pastor') || hasRole('elder'));
+    }
+    
+    // Messages collection
+    match /messages/{messageId} {
+      // Users can read messages they sent or received
+      allow read: if isAuthenticated() && 
+        (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid);
+      // Users can create messages
+      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+      // Users can update messages they sent
+      allow update: if isAuthenticated() && resource.data.senderId == request.auth.uid;
+      // Users can delete messages they sent or received
+      allow delete: if isAuthenticated() && 
+        (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid);
+    }
+    
+    // Prayer requests collection
+    match /prayerRequests/{requestId} {
+      // Authenticated users can read prayer requests (unless anonymous)
+      allow read: if isAuthenticated() && 
+        (resource.data.isAnonymous == false || resource.data.memberId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.memberId);
+      // Authenticated users can create prayer requests
+      allow create: if isAuthenticated();
+      // Users can update their own requests, admins/pastors can update any
+      allow update: if isAuthenticated() && 
+        (resource.data.memberId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.memberId ||
+         hasRole('admin') || hasRole('pastor'));
+      // Same for delete
+      allow delete: if isAuthenticated() && 
+        (resource.data.memberId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.memberId ||
+         hasRole('admin') || hasRole('pastor'));
+    }
+    
+    // Equipment collection
+    match /equipment/{equipmentId} {
+      // Authenticated users can read equipment
+      allow read: if isAuthenticated();
+      // Only admins can create/update/delete
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Audit logs collection
+    match /auditLogs/{logId} {
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+      // System can create audit logs (via Cloud Functions)
+      allow create: if true;
+      // No updates or deletes allowed
+      allow update, delete: if false;
+    }
+    
+    // Sync queue collection (for offline sync)
+    match /syncQueue/{queueId} {
+      // Users can read their own sync queue items
+      allow read: if isAuthenticated() && resource.data.clientUuid == request.auth.uid;
+      // Users can create sync queue items
+      allow create: if isAuthenticated() && request.resource.data.clientUuid == request.auth.uid;
+      // System can update/delete (via Cloud Functions)
+      allow update, delete: if true;
+    }
+  }
+}

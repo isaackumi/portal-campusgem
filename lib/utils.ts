@@ -89,10 +89,7 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(email)
 }
 
-export function isValidPhone(phone: string): boolean {
-  const phoneRegex = /^(\+233|0)?[0-9]{9}$/
-  return phoneRegex.test(phone.replace(/\s/g, ''))
-}
+export { isValidPhone } from '@/lib/phone'
 
 export function getInitials(name: string): string {
   return name
