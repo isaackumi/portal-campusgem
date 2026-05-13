@@ -67,6 +67,7 @@ bun.lockb
 # Build artifacts
 *.tgz
 *.tar.gz
+*.tsbuildinfo
 
 # Coverage
 coverage/
