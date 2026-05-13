@@ -49,6 +49,9 @@ export default function FormResponsesPage() {
     ])
 
     if (formResult.error || !formResult.data) {
+      setForm(null)
+      setFields([])
+      setResponses([])
       toast({ variant: 'destructive', title: 'Error', description: formResult.error ?? 'Form not found' })
       setLoading(false)
       return
@@ -72,7 +75,34 @@ export default function FormResponsesPage() {
     )
   }
 
-  if (!form) return null
+  if (!user) {
+    return null
+  }
+
+  if (!form) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+        <div className="mx-auto max-w-lg space-y-6">
+          <Button variant="ghost" onClick={() => router.push('/admin/forms')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to forms
+          </Button>
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader>
+              <CardTitle>Form or responses unavailable</CardTitle>
+              <CardDescription>
+                Check the URL, your permissions (Forms Hub), and that Convex is configured with
+                CAMP_CONVEX_SERVER_SECRET.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push('/admin/forms')}>Return to Forms Hub</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

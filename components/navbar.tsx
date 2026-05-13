@@ -31,8 +31,8 @@ const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: Church },
   { name: 'Members', href: '/members', icon: Users },
   { name: 'Attendance', href: '/attendance', icon: Calendar },
-  { name: 'Donations', href: '/donations', icon: DollarSign },
-  { name: 'Messages', href: '/messages', icon: MessageSquare },
+  { name: 'Donations', href: '/financial/donations', icon: DollarSign, roles: ['admin', 'pastor', 'elder', 'finance_officer'] },
+  { name: 'Messages', href: '/sms', icon: MessageSquare, roles: ['admin', 'pastor', 'elder', 'finance_officer'] },
 ]
 
 export function Navbar() {

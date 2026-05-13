@@ -152,16 +152,23 @@ export default function MemberProfilePage() {
 
   const memberQuery = useQuery({
     queryKey: ['member-profile', params.id],
-    queryFn: async () => dataService.getMember(params.id as string),
+    queryFn: async () => {
+      const id = params.id as string
+      const byMemberId = await dataService.getMember(id)
+      if (byMemberId.data) return byMemberId
+      return await dataService.getMemberByUserId(id)
+    },
     enabled: Boolean(user && params.id),
-    staleTime: 30_000
+    staleTime: 30_000,
   })
 
+  const resolvedMemberId = memberQuery.data?.data?.id
+
   const attendanceQuery = useQuery({
-    queryKey: ['member-attendance', params.id],
-    queryFn: async () => dataService.getAttendanceByMember(params.id as string, 50),
-    enabled: Boolean(user && params.id),
-    staleTime: 30_000
+    queryKey: ['member-attendance', resolvedMemberId],
+    queryFn: async () => dataService.getAttendanceByMember(resolvedMemberId as string, 50),
+    enabled: Boolean(user && resolvedMemberId),
+    staleTime: 30_000,
   })
 
   // Initialize edit form when member data loads
@@ -219,7 +226,7 @@ export default function MemberProfilePage() {
     }
   }
 
-  if (authLoading || memberQuery.isLoading || memberQuery.isFetching) {
+  if (authLoading || memberQuery.isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
         <div className="animate-pulse text-blue-600 text-lg">Loading...</div>

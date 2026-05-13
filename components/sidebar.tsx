@@ -276,18 +276,21 @@ const navigationSections: Array<{ title: string; items: NavItem[] }> = [
     items: [
       {
         name: 'SMS',
-        href: '/communication/sms',
-        icon: MessageSquare
+        href: '/sms',
+        icon: MessageSquare,
+        roles: ['admin', 'pastor', 'elder', 'finance_officer']
       },
       {
         name: 'Email',
         href: '/communication/email',
-        icon: Mail
+        icon: Mail,
+        roles: ['admin', 'pastor', 'elder', 'finance_officer']
       },
       {
         name: 'Notifications',
         href: '/communication/notifications',
-        icon: Bell
+        icon: Bell,
+        roles: ['admin', 'pastor', 'elder', 'finance_officer']
       }
     ]
   },

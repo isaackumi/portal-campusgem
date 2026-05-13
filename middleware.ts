@@ -15,6 +15,9 @@ const protectedPrefixes = [
   '/celebrations',
   '/visitors',
   '/financial',
+  '/communication',
+  '/settings',
+  '/recommendations',
 ]
 
 export function middleware(request: NextRequest) {

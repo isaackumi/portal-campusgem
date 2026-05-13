@@ -82,6 +82,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'camp.manage',
     'camp.payments',
     'forms.manage',
+    'financial.view',
   ],
   elder: [
     'dashboard.view',
@@ -98,6 +99,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'camp.view',
     'camp.manage',
     'forms.manage',
+    'financial.view',
   ],
   finance_officer: [
     'dashboard.view',
@@ -143,6 +145,9 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/sms', permission: 'sms.send' },
   { prefix: '/celebrations', permission: 'celebrations.view' },
   { prefix: '/financial', permission: 'financial.view' },
+  { prefix: '/communication', permission: 'dashboard.view' },
+  { prefix: '/settings', permission: 'dashboard.view' },
+  { prefix: '/recommendations', permission: 'dashboard.view' },
   { prefix: '/dashboard', permission: 'dashboard.view' },
 ]
 
