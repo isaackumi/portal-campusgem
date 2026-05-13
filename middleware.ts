@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { canAccessPath, isUserRole } from '@/lib/auth/roles'
+import { CHMS_AUTH_SESSION_COOKIE } from '@/lib/auth/session-cookie'
 
 const publicRoutes = ['/', '/auth', '/camp-meeting/register', '/camp-meeting/success', '/f']
 
@@ -31,7 +32,7 @@ export function middleware(request: NextRequest) {
   const isProtectedRoute = protectedPrefixes.some((prefix) => pathname.startsWith(prefix))
 
   if (isProtectedRoute) {
-    const hasAuthToken = request.cookies.has('firebase-auth-token')
+    const hasAuthToken = request.cookies.has(CHMS_AUTH_SESSION_COOKIE)
     if (!hasAuthToken) {
       const redirectUrl = new URL('/auth', request.url)
       redirectUrl.searchParams.set('redirect', pathname)
@@ -45,7 +46,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (pathname === '/') {
-    const hasAuthToken = request.cookies.has('firebase-auth-token')
+    const hasAuthToken = request.cookies.has(CHMS_AUTH_SESSION_COOKIE)
     if (hasAuthToken && !isPublicRoute) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }

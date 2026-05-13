@@ -1,7 +1,7 @@
 import { getConvexHttpClient, runConvexQueryWithRetry } from '@/lib/convex/http-client'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
-import type { AppUser, Attendance, DashboardStats, Group, Member } from '@/lib/types'
+import type { AppUser, Attendance, DashboardStats, Group, GroupMembership, Member, Visitor } from '@/lib/types'
 
 export function requireCoreServerSecret(): string {
   const secret = process.env.CAMP_CONVEX_SERVER_SECRET
@@ -308,4 +308,266 @@ export async function updateGroupInConvex(
   const group = convexGroupDocToGroup(doc)
   if (!group) throw new Error('Failed to update group')
   return group
+}
+
+export function convexVisitorDocToVisitor(doc: Record<string, unknown> | null | undefined): Visitor | null {
+  if (!doc || typeof doc !== 'object') return null
+  const id = String(doc._id ?? '')
+  if (!id) return null
+  const ct = doc._creationTime as number | undefined
+  const ut = doc.updated_at as number | undefined
+  const created = isoFromMs(ct) || new Date().toISOString()
+  return {
+    id,
+    first_name: String(doc.first_name ?? ''),
+    last_name: doc.last_name != null ? String(doc.last_name) : undefined,
+    phone: doc.phone != null ? String(doc.phone) : undefined,
+    email: doc.email != null ? String(doc.email) : undefined,
+    address: doc.address != null ? String(doc.address) : undefined,
+    visit_date: String(doc.visit_date ?? ''),
+    service_attended: doc.service_attended != null ? String(doc.service_attended) : undefined,
+    how_heard_about_church: doc.how_heard_about_church != null ? String(doc.how_heard_about_church) : undefined,
+    invited_by_member_id: doc.invited_by_member_id != null ? String(doc.invited_by_member_id) : undefined,
+    follow_up_notes: doc.follow_up_notes != null ? String(doc.follow_up_notes) : undefined,
+    follow_up_date: doc.follow_up_date != null ? String(doc.follow_up_date) : undefined,
+    follow_up_completed: Boolean(doc.follow_up_completed),
+    converted_to_member: Boolean(doc.converted_to_member),
+    converted_member_id: doc.converted_member_id != null ? String(doc.converted_member_id) : undefined,
+    is_active: Boolean(doc.is_active ?? true),
+    created_at: created,
+    updated_at: isoFromMs(ut) || created,
+  }
+}
+
+export function convexGroupMembershipDocToGroupMembership(
+  doc: Record<string, unknown> | null | undefined
+): GroupMembership | null {
+  if (!doc || typeof doc !== 'object') return null
+  const id = String(doc._id ?? '')
+  if (!id) return null
+  const ct = doc._creationTime as number | undefined
+  const ut = doc.updated_at as number | undefined
+  return {
+    id,
+    group_id: String(doc.group_id ?? ''),
+    member_id: String(doc.member_id ?? ''),
+    role: (doc.role as GroupMembership['role']) ?? 'member',
+    joined_date: String(doc.joined_date ?? ''),
+    is_active: Boolean(doc.is_active ?? true),
+    created_at: isoFromMs(ct) || new Date().toISOString(),
+    notes: doc.notes != null ? String(doc.notes) : undefined,
+  }
+}
+
+export async function listAttendanceFromConvex(args: {
+  member_id?: string
+  service_date?: string
+  service_type?: string
+  limit?: number
+}): Promise<Attendance[]> {
+  const client = getConvexHttpClient()
+  const docs = (await client.query(api.core.listAttendanceWithSecret, {
+    secret: requireCoreServerSecret(),
+    member_id: args.member_id,
+    service_date: args.service_date,
+    service_type: args.service_type as Attendance['service_type'] | undefined,
+    limit: args.limit,
+  })) as Record<string, unknown>[]
+  return docs.map((d) => convexAttendanceDocToAttendance(d)).filter((a): a is Attendance => a != null)
+}
+
+export async function getAttendanceStatsFromConvex(): Promise<{
+  total_attendance: number
+  today_attendance: number
+  weekly_attendance: number
+  monthly_attendance: number
+}> {
+  const client = getConvexHttpClient()
+  return (await client.query(api.core.getAttendanceStatsWithSecret, {
+    secret: requireCoreServerSecret(),
+  })) as {
+    total_attendance: number
+    today_attendance: number
+    weekly_attendance: number
+    monthly_attendance: number
+  }
+}
+
+export async function listVisitorsFromConvex(): Promise<Visitor[]> {
+  const client = getConvexHttpClient()
+  const docs = (await client.query(api.core.listVisitorsWithSecret, {
+    secret: requireCoreServerSecret(),
+  })) as Record<string, unknown>[]
+  return docs.map((d) => convexVisitorDocToVisitor(d)).filter((v): v is Visitor => v != null)
+}
+
+export async function createVisitorInConvex(visitor: Partial<Visitor>): Promise<Visitor> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.core.createVisitorWithSecret, {
+    secret: requireCoreServerSecret(),
+    first_name: visitor.first_name ?? 'Visitor',
+    last_name: visitor.last_name,
+    phone: visitor.phone,
+    email: visitor.email,
+    address: visitor.address,
+    visit_date: visitor.visit_date ?? new Date().toISOString().split('T')[0],
+    follow_up_completed: visitor.follow_up_completed ?? false,
+    converted_to_member: visitor.converted_to_member ?? false,
+    is_active: visitor.is_active ?? true,
+  })) as Record<string, unknown>
+  const v = convexVisitorDocToVisitor(doc)
+  if (!v) throw new Error('Failed to create visitor')
+  return v
+}
+
+export async function listGroupMembershipsFromConvex(groupId: string): Promise<GroupMembership[]> {
+  const client = getConvexHttpClient()
+  const docs = (await client.query(api.core.listGroupMembershipsForGroupWithSecret, {
+    secret: requireCoreServerSecret(),
+    group_id: groupId,
+  })) as Record<string, unknown>[]
+  return docs
+    .map((d) => convexGroupMembershipDocToGroupMembership(d))
+    .filter((m): m is GroupMembership => m != null)
+    .filter((m) => m.is_active)
+}
+
+export async function addGroupMembershipForUserInConvex(
+  groupId: string,
+  userId: string,
+  role: GroupMembership['role']
+): Promise<GroupMembership> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.core.addGroupMembershipForUserWithSecret, {
+    secret: requireCoreServerSecret(),
+    group_id: groupId,
+    user_id: userId,
+    role,
+    joined_date: new Date().toISOString().split('T')[0],
+  })) as Record<string, unknown>
+  const m = convexGroupMembershipDocToGroupMembership(doc)
+  if (!m) throw new Error('Failed to add group membership')
+  return m
+}
+
+export async function deactivateGroupMembershipInConvex(membershipId: string): Promise<void> {
+  const client = getConvexHttpClient()
+  await client.mutation(api.core.deactivateGroupMembershipWithSecret, {
+    secret: requireCoreServerSecret(),
+    id: membershipId as Id<'group_memberships'>,
+  })
+}
+
+export async function removeGroupMembershipForUserInConvex(groupId: string, userId: string): Promise<number> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.core.removeGroupMembershipForUserWithSecret, {
+    secret: requireCoreServerSecret(),
+    group_id: groupId,
+    user_id: userId,
+  })) as number
+}
+
+export async function patchGroupMembershipInConvex(
+  membershipId: string,
+  updates: Partial<GroupMembership>
+): Promise<GroupMembership> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.core.patchGroupMembershipWithSecret, {
+    secret: requireCoreServerSecret(),
+    id: membershipId as Id<'group_memberships'>,
+    role: updates.role,
+    is_active: updates.is_active,
+  })) as Record<string, unknown>
+  const m = convexGroupMembershipDocToGroupMembership(doc)
+  if (!m) throw new Error('Failed to update membership')
+  return m
+}
+
+export async function deleteGroupInConvex(groupId: string): Promise<void> {
+  const client = getConvexHttpClient()
+  await client.mutation(api.core.deleteGroupWithSecret, {
+    secret: requireCoreServerSecret(),
+    id: groupId as Id<'groups'>,
+  })
+}
+
+export async function deleteUserInConvex(userId: string): Promise<void> {
+  const client = getConvexHttpClient()
+  await client.mutation(api.core.deleteUserWithSecret, {
+    secret: requireCoreServerSecret(),
+    id: userId as Id<'users'>,
+  })
+}
+
+export async function insertMemberInConvex(memberData: Partial<Member>): Promise<Member> {
+  if (!memberData.user_id?.trim()) throw new Error('user_id is required to create a member profile.')
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.core.insertMemberWithSecret, {
+    secret: requireCoreServerSecret(),
+    user_id: memberData.user_id,
+    dob: memberData.dob,
+    gender: memberData.gender,
+    address: memberData.address,
+    notes: memberData.notes,
+    status: memberData.status,
+    emergency_contacts: memberData.emergency_contacts,
+    documents: memberData.documents,
+  })) as Record<string, unknown>
+  const m = convexMemberDocToMember(doc)
+  if (!m) throw new Error('Failed to create member')
+  return m
+}
+
+export async function patchMemberInConvex(memberId: string, updates: Partial<Member>): Promise<Member> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.core.patchMemberWithSecret, {
+    secret: requireCoreServerSecret(),
+    id: memberId as Id<'members'>,
+    dob: updates.dob,
+    gender: updates.gender,
+    address: updates.address,
+    notes: updates.notes,
+    status: updates.status,
+    emergency_contacts: updates.emergency_contacts,
+    documents: updates.documents,
+    profile_photo: updates.profile_photo,
+  })) as Record<string, unknown>
+  const m = convexMemberDocToMember(doc)
+  if (!m) throw new Error('Failed to update member')
+  if (m.user_id) {
+    const user = await fetchUserFromConvex(m.user_id)
+    if (user) return { ...m, user }
+  }
+  return m
+}
+
+export async function getUpcomingEventsFromConvex(): Promise<{
+  birthdays: Member[]
+  anniversaries: Member[]
+}> {
+  const client = getConvexHttpClient()
+  const raw = (await client.query(api.core.getUpcomingEventsWithSecret, {
+    secret: requireCoreServerSecret(),
+  })) as {
+    birthdays: Record<string, unknown>[]
+    anniversaries: Record<string, unknown>[]
+    usersById: Record<string, Record<string, unknown>>
+  }
+
+  const mapMember = async (d: Record<string, unknown>): Promise<Member | null> => {
+    const m = convexMemberDocToMember(d)
+    if (!m?.user_id) return m
+    const cached = raw.usersById[m.user_id]
+    const user = cached ? convexUserDocToAppUser(cached) : await fetchUserFromConvex(m.user_id)
+    if (user) return { ...m, user }
+    return m
+  }
+
+  const birthdays = (await Promise.all((raw.birthdays ?? []).map((d) => mapMember(d)))).filter(
+    (m): m is Member => m != null
+  )
+  const anniversaries = (await Promise.all((raw.anniversaries ?? []).map((d) => mapMember(d)))).filter(
+    (m): m is Member => m != null
+  )
+  return { birthdays, anniversaries }
 }

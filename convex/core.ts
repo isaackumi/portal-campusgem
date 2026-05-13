@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { query, mutation } from './_generated/server'
+import type { Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
 
 const attendanceMethod = v.union(
@@ -516,5 +517,415 @@ export const bootstrapUserWithSecret = mutation({
     }
 
     return user
+  },
+})
+
+const memberStatusValue = v.union(
+  v.literal('active'),
+  v.literal('visitor'),
+  v.literal('transferred'),
+  v.literal('inactive')
+)
+
+const membershipRole = v.union(
+  v.literal('leader'),
+  v.literal('co_leader'),
+  v.literal('member'),
+  v.literal('volunteer')
+)
+
+export const listAttendanceWithSecret = query({
+  args: {
+    secret: v.string(),
+    member_id: v.optional(v.string()),
+    service_date: v.optional(v.string()),
+    service_type: v.optional(serviceType),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(v.any()),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const lim = Math.min(Math.max(args.limit ?? 100, 1), 2000)
+    let rows: Array<Record<string, unknown>> = []
+
+    if (args.member_id) {
+      rows = await ctx.db
+        .query('attendance')
+        .withIndex('by_member_id', (q) => q.eq('member_id', args.member_id!))
+        .order('desc')
+        .take(lim)
+    } else if (args.service_date) {
+      rows = await ctx.db
+        .query('attendance')
+        .withIndex('by_service_date', (q) => q.eq('service_date', args.service_date!))
+        .collect()
+      rows = rows.slice(0, lim)
+    } else {
+      rows = await ctx.db.query('attendance').order('desc').take(lim)
+    }
+
+    if (args.service_type) {
+      rows = rows.filter((r) => (r as { service_type?: string }).service_type === args.service_type)
+    }
+    return rows
+  },
+})
+
+export const getAttendanceStatsWithSecret = query({
+  args: { secret: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]
+    const weekStart = new Date(now)
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+    const weekStartStr = weekStart.toISOString().split('T')[0]
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+
+    const all = await ctx.db.query('attendance').collect()
+    const total_attendance = all.length
+    const today_attendance = all.filter((a) => a.service_date === today).length
+    const weekly_attendance = all.filter((a) => (a.service_date ?? '') >= weekStartStr).length
+    const monthly_attendance = all.filter((a) => (a.service_date ?? '') >= monthStart).length
+
+    return { total_attendance, today_attendance, weekly_attendance, monthly_attendance }
+  },
+})
+
+export const listVisitorsWithSecret = query({
+  args: { secret: v.string() },
+  returns: v.array(v.any()),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    return await ctx.db.query('visitors').order('desc').collect()
+  },
+})
+
+export const createVisitorWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    first_name: v.string(),
+    last_name: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    address: v.optional(v.string()),
+    visit_date: v.string(),
+    follow_up_completed: v.boolean(),
+    converted_to_member: v.boolean(),
+    is_active: v.boolean(),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const now = Date.now()
+    const id = await ctx.db.insert('visitors', {
+      first_name: args.first_name,
+      last_name: args.last_name,
+      phone: args.phone,
+      email: args.email,
+      address: args.address,
+      visit_date: args.visit_date,
+      follow_up_completed: args.follow_up_completed,
+      converted_to_member: args.converted_to_member,
+      is_active: args.is_active,
+      updated_at: now,
+    })
+    return await ctx.db.get('visitors', id)
+  },
+})
+
+export const listGroupMembershipsForGroupWithSecret = query({
+  args: { secret: v.string(), group_id: v.string() },
+  returns: v.array(v.any()),
+  handler: async (ctx, { secret, group_id }) => {
+    assertServerSecret(secret)
+    return await ctx.db
+      .query('group_memberships')
+      .withIndex('by_group_id', (q) => q.eq('group_id', group_id))
+      .collect()
+  },
+})
+
+export const addGroupMembershipForUserWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    group_id: v.string(),
+    user_id: v.string(),
+    role: membershipRole,
+    joined_date: v.string(),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const member = await ctx.db
+      .query('members')
+      .withIndex('by_user_id', (q) => q.eq('user_id', args.user_id))
+      .first()
+    if (!member) throw new Error('No member profile found for this user.')
+
+    const memberId = String(member._id)
+    const now = Date.now()
+    const existing = await ctx.db
+      .query('group_memberships')
+      .withIndex('by_group_and_member', (q) => q.eq('group_id', args.group_id).eq('member_id', memberId))
+      .first()
+
+    if (existing) {
+      await ctx.db.patch('group_memberships', existing._id, {
+        role: args.role,
+        is_active: true,
+        joined_date: args.joined_date,
+        updated_at: now,
+      })
+      return await ctx.db.get('group_memberships', existing._id)
+    }
+
+    const id = await ctx.db.insert('group_memberships', {
+      group_id: args.group_id,
+      member_id: memberId,
+      role: args.role,
+      joined_date: args.joined_date,
+      is_active: true,
+      updated_at: now,
+    })
+    return await ctx.db.get('group_memberships', id)
+  },
+})
+
+export const deactivateGroupMembershipWithSecret = mutation({
+  args: { secret: v.string(), id: v.id('group_memberships') },
+  returns: v.null(),
+  handler: async (ctx, { secret, id }) => {
+    assertServerSecret(secret)
+    await ctx.db.patch(id, { is_active: false, updated_at: Date.now() })
+    return null
+  },
+})
+
+export const removeGroupMembershipForUserWithSecret = mutation({
+  args: { secret: v.string(), group_id: v.string(), user_id: v.string() },
+  returns: v.number(),
+  handler: async (ctx, { secret, group_id, user_id }) => {
+    assertServerSecret(secret)
+    const member = await ctx.db
+      .query('members')
+      .withIndex('by_user_id', (q) => q.eq('user_id', user_id))
+      .first()
+    if (!member) return 0
+
+    const memberId = String(member._id)
+    const list = await ctx.db
+      .query('group_memberships')
+      .withIndex('by_group_and_member', (q) => q.eq('group_id', group_id).eq('member_id', memberId))
+      .collect()
+
+    const now = Date.now()
+    for (const row of list) {
+      await ctx.db.patch(row._id, { is_active: false, updated_at: now })
+    }
+    return list.length
+  },
+})
+
+export const patchGroupMembershipWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    id: v.id('group_memberships'),
+    role: v.optional(membershipRole),
+    is_active: v.optional(v.boolean()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const patch: Record<string, unknown> = { updated_at: Date.now() }
+    if (args.role != null) patch.role = args.role
+    if (args.is_active != null) patch.is_active = args.is_active
+    await ctx.db.patch(args.id, patch)
+    return await ctx.db.get('group_memberships', args.id)
+  },
+})
+
+export const deleteGroupWithSecret = mutation({
+  args: { secret: v.string(), id: v.id('groups') },
+  returns: v.null(),
+  handler: async (ctx, { secret, id }) => {
+    assertServerSecret(secret)
+    const gid = String(id)
+    const memberships = await ctx.db
+      .query('group_memberships')
+      .withIndex('by_group_id', (q) => q.eq('group_id', gid))
+      .collect()
+    for (const m of memberships) {
+      await ctx.db.delete(m._id)
+    }
+    await ctx.db.delete(id)
+    return null
+  },
+})
+
+export const deleteUserWithSecret = mutation({
+  args: { secret: v.string(), id: v.id('users') },
+  returns: v.null(),
+  handler: async (ctx, { secret, id }) => {
+    assertServerSecret(secret)
+    const uid = String(id)
+    const members = await ctx.db
+      .query('members')
+      .withIndex('by_user_id', (q) => q.eq('user_id', uid))
+      .collect()
+
+    for (const member of members) {
+      const mid = String(member._id)
+      const gms = await ctx.db
+        .query('group_memberships')
+        .withIndex('by_member_id', (q) => q.eq('member_id', mid))
+        .collect()
+      for (const gm of gms) {
+        await ctx.db.delete(gm._id)
+      }
+      await ctx.db.delete(member._id)
+    }
+
+    await ctx.db.delete(id)
+    return null
+  },
+})
+
+export const insertMemberWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    user_id: v.string(),
+    dob: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'), v.literal('other'))),
+    address: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    status: v.optional(memberStatusValue),
+    emergency_contacts: v.optional(v.any()),
+    documents: v.optional(v.any()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const now = Date.now()
+    const id = await ctx.db.insert('members', {
+      user_id: args.user_id,
+      dob: args.dob,
+      gender: args.gender,
+      address: args.address,
+      notes: args.notes,
+      status: args.status ?? 'active',
+      emergency_contacts: Array.isArray(args.emergency_contacts) ? args.emergency_contacts : [],
+      documents: Array.isArray(args.documents) ? args.documents : [],
+      updated_at: now,
+    })
+    return await ctx.db.get('members', id)
+  },
+})
+
+export const patchMemberWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    id: v.id('members'),
+    dob: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'), v.literal('other'))),
+    address: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    status: v.optional(memberStatusValue),
+    emergency_contacts: v.optional(v.any()),
+    documents: v.optional(v.any()),
+    profile_photo: v.optional(v.string()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const patch: Record<string, unknown> = { updated_at: Date.now() }
+    if (args.dob !== undefined) patch.dob = args.dob
+    if (args.gender !== undefined) patch.gender = args.gender
+    if (args.address !== undefined) patch.address = args.address
+    if (args.notes !== undefined) patch.notes = args.notes
+    if (args.status !== undefined) patch.status = args.status
+    if (args.emergency_contacts !== undefined) patch.emergency_contacts = args.emergency_contacts
+    if (args.documents !== undefined) patch.documents = args.documents
+    if (args.profile_photo !== undefined) patch.profile_photo = args.profile_photo
+
+    await ctx.db.patch(args.id, patch)
+    return await ctx.db.get('members', args.id)
+  },
+})
+
+function upcomingEventDays(dateString: string, type: 'birthday' | 'anniversary'): number | null {
+  try {
+    const today = new Date()
+    const eventDate = new Date(dateString)
+    const currentYear = today.getFullYear()
+    const thisYearEvent = new Date(eventDate)
+    thisYearEvent.setFullYear(currentYear)
+    if (thisYearEvent < today) {
+      thisYearEvent.setFullYear(currentYear + 1)
+    }
+    const diffTime = thisYearEvent.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays >= 0 ? diffDays : null
+  } catch {
+    return null
+  }
+}
+
+export const getUpcomingEventsWithSecret = query({
+  args: { secret: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    const members = (await ctx.db.query('members').collect()).filter(
+      (m: { status?: string }) => m.status === 'active'
+    )
+
+    const out: { birthdays: typeof members; anniversaries: typeof members; usersById: Record<string, unknown> } = {
+      birthdays: [],
+      anniversaries: [],
+      usersById: {},
+    }
+
+    for (const m of members) {
+      if (!m.dob) continue
+      const days = upcomingEventDays(String(m.dob), 'birthday')
+      if (days !== null && days <= 30) {
+        out.birthdays.push(m)
+      }
+    }
+
+    for (const m of members) {
+      if (!m.user_id) continue
+      type MiniUser = { marital_status?: string; anniversary_date?: string }
+      let user = out.usersById[m.user_id] as MiniUser | undefined
+      if (!user) {
+        const u = await ctx.db.get('users', m.user_id as Id<'users'>)
+        if (!u) continue
+        user = u as MiniUser
+        out.usersById[m.user_id] = u
+      }
+      if (user?.marital_status !== 'married' || !user?.anniversary_date) continue
+      const days = upcomingEventDays(String(user.anniversary_date), 'anniversary')
+      if (days !== null && days <= 30) {
+        out.anniversaries.push(m)
+      }
+    }
+
+    out.birthdays.sort(
+      (a, b) =>
+        (upcomingEventDays(String(a.dob!), 'birthday') ?? 999) -
+        (upcomingEventDays(String(b.dob!), 'birthday') ?? 999)
+    )
+    out.anniversaries.sort((a, b) => {
+      const ua = out.usersById[a.user_id] as { anniversary_date?: string } | undefined
+      const ub = out.usersById[b.user_id] as { anniversary_date?: string } | undefined
+      return (
+        (upcomingEventDays(String(ua?.anniversary_date ?? ''), 'anniversary') ?? 999) -
+        (upcomingEventDays(String(ub?.anniversary_date ?? ''), 'anniversary') ?? 999)
+      )
+    })
+
+    return out
   },
 })

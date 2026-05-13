@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isValidMembershipId, normalizeMembershipId } from '@/lib/membershipId'
 import { normalizePhone, isValidPhone } from '@/lib/phone'
 import type { AppUser } from '@/lib/types'
+import { CHMS_AUTH_SESSION_COOKIE } from '@/lib/auth/session-cookie'
 
 async function findUserByMembershipId(membershipId: string): Promise<AppUser | null> {
   const { findUserByMembershipIdFromConvex } = await import('@/lib/convex/core-bridge')
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     }
 
-    response.cookies.set('firebase-auth-token', userData.auth_uid, cookieOptions)
+    response.cookies.set(CHMS_AUTH_SESSION_COOKIE, userData.auth_uid, cookieOptions)
     response.cookies.set('chms-role', userData.role, cookieOptions)
     response.cookies.set('chms-user-id', userData.id, cookieOptions)
 
