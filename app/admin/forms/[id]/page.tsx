@@ -2,6 +2,25 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useAuth } from '@/components/providers'
 import { getFormAdmin, saveFormFields, updateForm } from '@/lib/actions/forms'
 import type { ChurchForm, ChurchFormField, ChurchFormFieldType } from '@/lib/types'
@@ -14,7 +33,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowDown, ArrowLeft, ArrowUp, Copy, Link2, Plus, Save, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { ArrowLeft, Copy, GripVertical, Link2, Plus, Save, Trash2 } from 'lucide-react'
 
 type EditableField = {
   client_id: string
@@ -71,6 +91,136 @@ function createEmptyField(index: number): EditableField {
   }
 }
 
+function SortableQuestionCard({
+  field,
+  index,
+  onUpdate,
+  onRemove,
+}: {
+  field: EditableField
+  index: number
+  onUpdate: (clientId: string, patch: Partial<EditableField>) => void
+  onRemove: (clientId: string) => void
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: field.client_id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className={cn(isDragging && 'relative z-10')}>
+      <Card
+        className={cn(
+          'overflow-hidden border-slate-200/80 bg-white shadow-sm transition-shadow',
+          isDragging && 'opacity-40 ring-2 ring-slate-300/60'
+        )}
+      >
+        <CardHeader className="border-b border-slate-100 bg-slate-50/80 pb-3 pt-4">
+          <div className="flex items-start gap-2">
+            <button
+              type="button"
+              ref={setActivatorNodeRef}
+              className={cn(
+                'mt-0.5 flex h-9 w-9 shrink-0 touch-none items-center justify-center rounded-md border border-transparent text-muted-foreground',
+                'hover:border-slate-200 hover:bg-white hover:text-foreground',
+                'cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+              )}
+              aria-label="Drag to reorder question"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1 pt-1">
+              <CardTitle className="text-base font-medium text-slate-800">Question {index + 1}</CardTitle>
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">{field.label || 'Untitled question'}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => onRemove(field.client_id)}
+              aria-label="Delete question"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-4 pt-5 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2">
+            <Label>Question</Label>
+            <Input value={field.label} onChange={(event) => onUpdate(field.client_id, { label: event.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Type</Label>
+            <Select
+              value={field.field_type}
+              onValueChange={(value) => onUpdate(field.client_id, { field_type: value as ChurchFormFieldType })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FIELD_TYPES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Prefill key</Label>
+            <Select
+              value={field.prefill_key}
+              onValueChange={(value) => onUpdate(field.client_id, { prefill_key: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PREFILL_KEYS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Help text</Label>
+            <Input
+              value={field.description}
+              onChange={(event) => onUpdate(field.client_id, { description: event.target.value })}
+            />
+          </div>
+          {field.field_type === 'dropdown' ? (
+            <div className="space-y-2 md:col-span-2">
+              <Label>Dropdown options (one per line)</Label>
+              <Textarea
+                value={field.options}
+                onChange={(event) => onUpdate(field.client_id, { options: event.target.value })}
+                rows={4}
+              />
+            </div>
+          ) : null}
+          <div className="flex items-center gap-2 md:col-span-2">
+            <Checkbox
+              checked={field.required}
+              onCheckedChange={(checked) => onUpdate(field.client_id, { required: checked === true })}
+            />
+            <Label>Required</Label>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export default function FormEditorPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
@@ -86,6 +236,19 @@ export default function FormEditorPage() {
   const [status, setStatus] = useState<ChurchForm['status']>('draft')
   const [enableProfileLookup, setEnableProfileLookup] = useState(false)
   const [fields, setFields] = useState<EditableField[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const activeField = useMemo(() => fields.find((f) => f.client_id === activeId) ?? null, [fields, activeId])
+  const activeQuestionNumber = useMemo(() => {
+    if (!activeId) return 0
+    const i = fields.findIndex((f) => f.client_id === activeId)
+    return i >= 0 ? i + 1 : 0
+  }, [activeId, fields])
 
   const publicUrl = useMemo(() => {
     if (!slug || typeof window === 'undefined') return `/f/${slug}`
@@ -128,16 +291,24 @@ export default function FormEditorPage() {
     setFields((current) => current.map((field) => (field.client_id === clientId ? { ...field, ...patch } : field)))
   }
 
-  function moveField(clientId: string, direction: -1 | 1) {
-    setFields((current) => {
-      const index = current.findIndex((field) => field.client_id === clientId)
-      const target = index + direction
-      if (index < 0 || target < 0 || target >= current.length) return current
-      const next = [...current]
-      const [item] = next.splice(index, 1)
-      next.splice(target, 0, item)
-      return next
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id))
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveId(null)
+    if (!over || active.id === over.id) return
+    setFields((items) => {
+      const oldIndex = items.findIndex((item) => item.client_id === active.id)
+      const newIndex = items.findIndex((item) => item.client_id === over.id)
+      if (oldIndex < 0 || newIndex < 0) return items
+      return arrayMove(items, oldIndex, newIndex)
     })
+  }
+
+  function handleDragCancel() {
+    setActiveId(null)
   }
 
   async function handleSave(publish = false) {
@@ -322,102 +493,59 @@ export default function FormEditorPage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          {fields.map((field, index) => (
-            <Card key={field.client_id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-3">
-                  <CardTitle className="text-base">Question {index + 1}</CardTitle>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => moveField(field.client_id, -1)} disabled={index === 0}>
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => moveField(field.client_id, 1)}
-                      disabled={index === fields.length - 1}
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setFields((current) => current.filter((item) => item.client_id !== field.client_id))}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Question</Label>
-                  <Input value={field.label} onChange={(event) => updateField(field.client_id, { label: event.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select
-                    value={field.field_type}
-                    onValueChange={(value) => updateField(field.client_id, { field_type: value as ChurchFormFieldType })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FIELD_TYPES.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Prefill key</Label>
-                  <Select
-                    value={field.prefill_key}
-                    onValueChange={(value) => updateField(field.client_id, { prefill_key: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PREFILL_KEYS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Help text</Label>
-                  <Input
-                    value={field.description}
-                    onChange={(event) => updateField(field.client_id, { description: event.target.value })}
+        <div className="space-y-2">
+          <div className="flex flex-col gap-1 px-0.5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Questions</h2>
+              <p className="text-sm text-muted-foreground">
+                Drag the grip handle to reorder. Order is saved when you save or publish the form.
+              </p>
+            </div>
+          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext items={fields.map((f) => f.client_id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-4 pt-2">
+                {fields.map((field, index) => (
+                  <SortableQuestionCard
+                    key={field.client_id}
+                    field={field}
+                    index={index}
+                    onUpdate={updateField}
+                    onRemove={(clientId) =>
+                      setFields((current) => current.filter((item) => item.client_id !== clientId))
+                    }
                   />
-                </div>
-                {field.field_type === 'dropdown' ? (
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Dropdown options (one per line)</Label>
-                    <Textarea
-                      value={field.options}
-                      onChange={(event) => updateField(field.client_id, { options: event.target.value })}
-                      rows={4}
-                    />
-                  </div>
-                ) : null}
-                <div className="flex items-center gap-2 md:col-span-2">
-                  <Checkbox
-                    checked={field.required}
-                    onCheckedChange={(checked) => updateField(field.client_id, { required: checked === true })}
-                  />
-                  <Label>Required</Label>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay adjustScale={false}>
+              {activeField ? (
+                <Card className="w-[min(100vw-2rem,56rem)] cursor-grabbing border-slate-200 shadow-2xl ring-2 ring-slate-400/30">
+                  <CardHeader className="border-b border-slate-100 bg-slate-50/90 pb-3 pt-4">
+                    <div className="flex items-start gap-2">
+                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-muted-foreground">
+                        <GripVertical className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1 pt-1">
+                        <CardTitle className="text-base font-medium text-slate-800">
+                          Question {activeQuestionNumber || 1}
+                        </CardTitle>
+                        <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                          {activeField.label || 'Untitled question'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
 
         <Button variant="outline" onClick={() => setFields((current) => [...current, createEmptyField(current.length)])}>
