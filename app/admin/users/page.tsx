@@ -281,6 +281,15 @@ export default function UsersManagementPage() {
     })
   }
 
+  async function handleViewUser(user: AppUser) {
+    const memberRes = await dataService.getMemberByUserId(user.id)
+    if (memberRes.data?.id) {
+      router.push(`/members/${memberRes.data.id}`)
+      return
+    }
+    router.push(`/admin/users/${user.id}`)
+  }
+
   const openEditDialog = async (user: AppUser) => {
     setEditingUser(user)
     const memberRes = await dataService.getMemberByUserId(user.id)
@@ -663,7 +672,7 @@ export default function UsersManagementPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/members/${user.id}`)}
+                        onClick={() => void handleViewUser(user)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View

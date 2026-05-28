@@ -49,7 +49,14 @@ export function FormGroupSelect({
     campusGroups.length > 0 || activityGroups.length > 0 || otherGroups.length > 0 || inactiveGroups.length > 0
 
   return (
-    <Select value={value || (allowUnassigned ? '__none__' : undefined)} onValueChange={onValueChange}>
+    <Select
+      value={value || (allowUnassigned ? '__none__' : undefined)}
+      onValueChange={(next) => {
+        const normalized = next === '__none__' ? '' : next
+        if (normalized === value) return
+        onValueChange(next)
+      }}
+    >
       <SelectTrigger id={id}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

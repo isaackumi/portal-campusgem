@@ -197,6 +197,15 @@ export default function MemberProfilePage() {
     if (attendanceQuery.data?.data) setAttendanceHistory(attendanceQuery.data.data as Attendance[])
   }, [attendanceQuery.data])
 
+  useEffect(() => {
+    if (memberQuery.isLoading || memberQuery.data?.data) return
+    const id = params.id as string
+    if (!id) return
+    void dataService.getUserById(id).then((res) => {
+      if (res.data) router.replace(`/admin/users/${id}`)
+    })
+  }, [memberQuery.isLoading, memberQuery.data?.data, params.id, router])
+
   // Get member data
   const member = memberQuery.data?.data
   const attendance = attendanceQuery.data?.data || []

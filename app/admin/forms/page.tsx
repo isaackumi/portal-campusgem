@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers'
@@ -73,7 +73,7 @@ function FormsAdminContent() {
   const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
   const invalidateFormsHub = useInvalidateFormsHub()
-  const filterGroupId = searchParams.get('group') ?? ''
+  const [filterGroupId, setFilterGroupIdState] = useState(() => searchParams.get('group') ?? '')
   const [creating, setCreating] = useState(false)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -88,13 +88,27 @@ function FormsAdminContent() {
 
   const groupMap = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
 
-  function setFilterGroupId(groupId: string) {
-    const params = new URLSearchParams(searchParams.toString())
-    if (groupId) params.set('group', groupId)
-    else params.delete('group')
-    const query = params.toString()
-    router.replace(query ? `/admin/forms?${query}` : '/admin/forms')
-  }
+  const setFilterGroupId = useCallback(
+    (groupId: string) => {
+      const next = groupId.trim()
+      setFilterGroupIdState(next)
+
+      const current = searchParams.get('group') ?? ''
+      if (next === current) return
+
+      const params = new URLSearchParams(searchParams.toString())
+      if (next) params.set('group', next)
+      else params.delete('group')
+      const query = params.toString()
+      router.replace(query ? `/admin/forms?${query}` : '/admin/forms', { scroll: false })
+    },
+    [router, searchParams]
+  )
+
+  useEffect(() => {
+    const fromUrl = searchParams.get('group') ?? ''
+    setFilterGroupIdState((prev) => (prev === fromUrl ? prev : fromUrl))
+  }, [searchParams])
 
   const filteredForms = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -130,10 +144,11 @@ function FormsAdminContent() {
     if (filterGroupId) setSelectedGroupId(filterGroupId)
   }, [filterGroupId])
 
+  const lastErrorRef = useRef<string | null>(null)
   useEffect(() => {
-    if (error) {
-      toast({ variant: 'destructive', title: 'Error', description: error })
-    }
+    if (!error || error === lastErrorRef.current) return
+    lastErrorRef.current = error
+    toast({ variant: 'destructive', title: 'Error', description: error })
   }, [error, toast])
 
   async function handleCreate() {
