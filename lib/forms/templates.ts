@@ -1,5 +1,7 @@
 import type { ChurchFormField } from '@/lib/types'
-import { CAMPUS_MEMBER_REGISTRATION_CATEGORY } from '@/lib/forms/campus-member-registration'
+
+export const CAMPUS_MEMBER_REGISTRATION_CATEGORY = 'campus_member_registration'
+export const OUTREACH_SIGNUP_CATEGORY = 'outreach_signup'
 
 export type FormTemplateId = 'blank' | 'campus_registration' | 'outreach_signup'
 
@@ -24,8 +26,6 @@ export type FormTemplate = {
   defaultDescription: (groupName?: string) => string
   fields: FormTemplateField[]
 }
-
-export const OUTREACH_SIGNUP_CATEGORY = 'outreach_signup'
 
 export const CAMPUS_REGISTRATION_FIELDS: FormTemplateField[] = [
   { label: 'First name', field_type: 'short_text', required: true, prefill_key: 'first_name', sort_order: 0 },
