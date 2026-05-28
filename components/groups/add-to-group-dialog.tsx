@@ -46,7 +46,7 @@ export function AddToGroupDialog({
   onSuccess,
 }: Props) {
   const { toast } = useToast()
-  const { data: groups } = useGroups(1, 300)
+  const { data: groups, loading: groupsLoading, error: groupsError } = useGroups(1, 300)
   const { addUserToGroup, loading } = useAddUserToGroup()
   const [groupId, setGroupId] = useState(defaultGroupId)
   const [role, setRole] = useState<GroupMembership['role']>('member')
@@ -129,12 +129,21 @@ export function AddToGroupDialog({
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>Group</Label>
+            {groupsLoading ? <p className="text-xs text-muted-foreground">Loading groups…</p> : null}
+            {groupsError ? (
+              <p className="text-xs text-destructive">Could not load groups: {groupsError}</p>
+            ) : null}
             <FormGroupSelect
               groups={groups ?? []}
               value={groupId}
               onValueChange={(value) => setGroupId(value === '__none__' ? '' : value)}
               placeholder="Select campus or activity"
             />
+            {!groupsLoading && (groups?.length ?? 0) === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No groups yet. Create one in Admin → Group Management.
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label>Role in group</Label>

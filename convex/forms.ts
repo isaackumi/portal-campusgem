@@ -11,6 +11,7 @@ const formFieldType = v.union(
   v.literal('phone'),
   v.literal('number'),
   v.literal('dropdown'),
+  v.literal('radio'),
   v.literal('checkbox'),
   v.literal('date'),
   v.literal('file')
@@ -93,6 +94,39 @@ export const getPublishedFormBySlug = query({
     if (!form || form.status !== 'published') return null
     const fields = await getFieldsForForm(ctx, String(form._id))
     return { form, fields }
+  },
+})
+
+/** Public check: has this phone already submitted this published form? */
+export const checkFormSubmissionByPhone = query({
+  args: { slug: v.string(), phone: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { slug, phone }) => {
+    const form = await ctx.db
+      .query('forms')
+      .withIndex('by_slug', (q) => q.eq('slug', slug))
+      .first()
+    if (!form || form.status !== 'published') {
+      return { already_submitted: false, submitted_at: null as number | null }
+    }
+
+    const sanitized = sanitizePhoneInput(phone)
+    if (!sanitized || !isValidGhanaPhone(sanitized)) {
+      return { already_submitted: false, submitted_at: null as number | null }
+    }
+
+    const normalized = normalizeGhanaPhone(sanitized)
+    const existing = await ctx.db
+      .query('form_responses')
+      .withIndex('by_form_and_phone', (q) =>
+        q.eq('form_id', String(form._id)).eq('respondent_phone', normalized)
+      )
+      .first()
+
+    return {
+      already_submitted: Boolean(existing),
+      submitted_at: existing?.submitted_at ?? null,
+    }
   },
 })
 
@@ -292,7 +326,11 @@ export const submitFormResponsePublic = mutation({
         }
       }
 
-      if (field.field_type === 'dropdown' && value != null && String(value).trim()) {
+      if (
+        (field.field_type === 'dropdown' || field.field_type === 'radio') &&
+        value != null &&
+        String(value).trim()
+      ) {
         const options = field.options ?? []
         if (options.length > 0 && !options.includes(String(value))) {
           errors.push(`${field.label} has an invalid option`)
@@ -316,6 +354,26 @@ export const submitFormResponsePublic = mutation({
         (emailField ? values[String(emailField._id)] : undefined) ??
         ''
     ).trim()
+
+    if (respondentPhone) {
+      const normalized = normalizeGhanaPhone(respondentPhone)
+      const existing = await ctx.db
+        .query('form_responses')
+        .withIndex('by_form_and_phone', (q) =>
+          q.eq('form_id', String(form._id)).eq('respondent_phone', normalized)
+        )
+        .first()
+      if (existing) {
+        const when = new Date(existing.submitted_at).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+        throw new Error(
+          `This phone number already submitted this form on ${when}. Contact the church office if you need to update your answers.`
+        )
+      }
+    }
 
     const now = Date.now()
     const id = await ctx.db.insert('form_responses', {

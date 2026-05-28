@@ -822,6 +822,7 @@ export type ChurchFormFieldType =
   | 'phone'
   | 'number'
   | 'dropdown'
+  | 'radio'
   | 'checkbox'
   | 'date'
   | 'file'

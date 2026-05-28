@@ -317,6 +317,7 @@ export default defineSchema({
       v.literal('phone'),
       v.literal('number'),
       v.literal('dropdown'),
+      v.literal('radio'),
       v.literal('checkbox'),
       v.literal('date'),
       v.literal('file')

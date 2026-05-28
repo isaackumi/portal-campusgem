@@ -23,12 +23,16 @@ export function FormGroupSelect({
   allowUnassigned = false,
   id,
 }: Props) {
-  const { campusGroups, activityGroups, otherGroups } = useMemo(() => {
+  const { campusGroups, activityGroups, otherGroups, inactiveGroups } = useMemo(() => {
     const campus: Group[] = []
     const activity: Group[] = []
     const other: Group[] = []
+    const inactive: Group[] = []
     for (const group of groups) {
-      if (!group.is_active) continue
+      if (!group.is_active) {
+        inactive.push(group)
+        continue
+      }
       if (group.group_type === 'campus') campus.push(group)
       else if (group.group_type === 'activity') activity.push(group)
       else other.push(group)
@@ -37,8 +41,12 @@ export function FormGroupSelect({
     campus.sort(byName)
     activity.sort(byName)
     other.sort(byName)
-    return { campusGroups: campus, activityGroups: activity, otherGroups: other }
+    inactive.sort(byName)
+    return { campusGroups: campus, activityGroups: activity, otherGroups: other, inactiveGroups: inactive }
   }, [groups])
+
+  const hasAnyGroup =
+    campusGroups.length > 0 || activityGroups.length > 0 || otherGroups.length > 0 || inactiveGroups.length > 0
 
   return (
     <Select value={value || (allowUnassigned ? '__none__' : undefined)} onValueChange={onValueChange}>
@@ -77,6 +85,21 @@ export function FormGroupSelect({
                 {group.name} ({getGroupTypeLabel(group.group_type)})
               </SelectItem>
             ))}
+          </SelectGroup>
+        ) : null}
+        {inactiveGroups.length > 0 ? (
+          <SelectGroup>
+            <SelectLabel>Inactive groups</SelectLabel>
+            {inactiveGroups.map((group) => (
+              <SelectItem key={group.id} value={group.id}>
+                {group.name} (inactive)
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        ) : null}
+        {!hasAnyGroup ? (
+          <SelectGroup>
+            <SelectLabel>No groups found</SelectLabel>
           </SelectGroup>
         ) : null}
       </SelectContent>

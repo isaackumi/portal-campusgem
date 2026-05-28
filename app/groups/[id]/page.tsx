@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { dataService } from '@/lib/services/data-service'
+import { GROUP_MEMBERSHIP_ROLES, GROUP_MEMBERSHIP_ROLE_LABELS } from '@/lib/constants/groups'
 import { AppUser, Group, GroupMembership } from '@/lib/types'
 import { 
   ArrowLeft,
@@ -42,16 +43,8 @@ import {
   Phone as PhoneIcon
 } from 'lucide-react'
 
-interface GroupMemberWithUser {
-  id: string
-  group_id: string
-  member_id: string
-  role: 'leader' | 'co_leader' | 'executive' | 'member' | 'volunteer'
-  joined_date: string
-  is_active: boolean
-  notes?: string
-  created_at: string
-  member: AppUser
+type GroupMemberRow = GroupMembership & {
+  member?: GroupMembership['member']
 }
 
 export default function GroupDetailsPage() {
@@ -60,7 +53,7 @@ export default function GroupDetailsPage() {
   const params = useParams()
 
   const [group, setGroup] = useState<Group | null>(null)
-  const [members, setMembers] = useState<GroupMemberWithUser[]>([])
+  const [members, setMembers] = useState<GroupMemberRow[]>([])
   const [allMembers, setAllMembers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
   const [membersLoading, setMembersLoading] = useState(false)
@@ -80,16 +73,19 @@ export default function GroupDetailsPage() {
   }, [user, authLoading, router])
 
   useEffect(() => {
-    if (user && groupId) {
-      fetchGroupDetails()
-      fetchGroupMembers()
-      fetchAllMembers()
-    }
+    if (!user || !groupId) return
+    void loadPage()
   }, [user, groupId])
+
+  async function loadPage() {
+    setLoading(true)
+    await Promise.all([fetchGroupDetails(), fetchAllMembers()])
+    await fetchGroupMembers()
+    setLoading(false)
+  }
 
   const fetchGroupDetails = async () => {
     try {
-      setLoading(true)
       const { data, error } = await dataService.getGroup(groupId)
       if (error) {
         console.error('Error fetching group:', error)
@@ -98,8 +94,6 @@ export default function GroupDetailsPage() {
       setGroup(data ?? null)
     } catch (error) {
       console.error('Error fetching group:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -111,22 +105,24 @@ export default function GroupDetailsPage() {
         console.error('Error fetching group members:', error)
         return
       }
-      const withUser: GroupMemberWithUser[] = (list ?? []).map(m => ({
-        id: m.id,
-        group_id: m.group_id,
-        member_id: m.member_id,
-        role: m.role,
-        joined_date: m.joined_date ?? '',
-        is_active: m.is_active ?? true,
-        created_at: m.created_at ?? '',
-        member: allMembers.find(u => u.id === m.member_id) ?? ({ id: m.member_id, full_name: '', membership_id: '', role: 'member' } as AppUser)
-      }))
-      setMembers(withUser)
+      setMembers(list ?? [])
     } catch (error) {
       console.error('Error fetching group members:', error)
     } finally {
       setMembersLoading(false)
     }
+  }
+
+  function memberDisplayName(row: GroupMemberRow): string {
+    return row.member?.user?.full_name?.trim() || 'Unknown member'
+  }
+
+  function memberMembershipId(row: GroupMemberRow): string {
+    return row.member?.user?.membership_id?.trim() || '—'
+  }
+
+  function memberUserId(row: GroupMemberRow): string | undefined {
+    return row.member?.user?.id ?? row.member?.user_id
   }
 
   const fetchAllMembers = async () => {
@@ -220,38 +216,41 @@ export default function GroupDetailsPage() {
     }
   }
 
-  const getRoleColor = (role: string) => {
+  const getRoleColor = (role: GroupMembership['role']) => {
     switch (role) {
       case 'leader': return 'bg-yellow-100 text-yellow-800'
       case 'co_leader': return 'bg-blue-100 text-blue-800'
-      case 'admin': return 'bg-red-100 text-red-800'
+      case 'executive': return 'bg-purple-100 text-purple-800'
+      case 'volunteer': return 'bg-orange-100 text-orange-800'
       case 'member': return 'bg-green-100 text-green-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
 
-  const getRoleIcon = (role: string) => {
+  const getRoleIcon = (role: GroupMembership['role']) => {
     switch (role) {
       case 'leader': return <Crown className="h-3 w-3" />
       case 'co_leader': return <Star className="h-3 w-3" />
-      case 'admin': return <Shield className="h-3 w-3" />
+      case 'executive': return <Shield className="h-3 w-3" />
       default: return <Users className="h-3 w-3" />
     }
   }
 
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = searchTerm === '' || 
-      member.member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.member.membership_id?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesRole = roleFilter === 'all' || member.role === roleFilter
-    
+  const filteredMembers = members.filter((row) => {
+    const name = memberDisplayName(row).toLowerCase()
+    const membershipId = memberMembershipId(row).toLowerCase()
+    const matchesSearch =
+      searchTerm === '' ||
+      name.includes(searchTerm.toLowerCase()) ||
+      membershipId.includes(searchTerm.toLowerCase())
+
+    const matchesRole = roleFilter === 'all' || row.role === roleFilter
+
     return matchesSearch && matchesRole
   })
 
-  const availableMembers = allMembers.filter(member => 
-    !members.some(groupMember => groupMember.member_id === member.id)
-  )
+  const memberUserIds = new Set(members.map((row) => memberUserId(row)).filter(Boolean))
+  const availableMembers = allMembers.filter((user) => !memberUserIds.has(user.id))
 
   // Show loading state
   if (authLoading || loading) {
@@ -372,10 +371,11 @@ export default function GroupDetailsPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Roles</SelectItem>
-                            <SelectItem value="leader">Leaders</SelectItem>
-                            <SelectItem value="co_leader">Co-Leaders</SelectItem>
-                            <SelectItem value="admin">Admins</SelectItem>
-                            <SelectItem value="member">Members</SelectItem>
+                            {GROUP_MEMBERSHIP_ROLES.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -383,50 +383,71 @@ export default function GroupDetailsPage() {
 
                     {/* Members List */}
                     <div className="space-y-3">
+                      {membersLoading ? (
+                        <p className="py-6 text-center text-sm text-muted-foreground">Loading members…</p>
+                      ) : null}
                       {filteredMembers.map((groupMember) => (
-                        <div key={groupMember.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <div
+                          key={groupMember.id}
+                          className="flex flex-col gap-3 rounded-lg bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
                               <Users className="h-5 w-5 text-blue-600" />
                             </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{groupMember.member.full_name}</p>
-                              <p className="text-sm text-gray-500">{groupMember.member.membership_id}</p>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-gray-900">
+                                {memberDisplayName(groupMember)}
+                              </p>
+                              <p className="text-sm text-gray-500">{memberMembershipId(groupMember)}</p>
+                              {groupMember.member?.user?.phone ? (
+                                <p className="text-xs text-gray-500">{groupMember.member.user.phone}</p>
+                              ) : null}
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <Badge className={`${getRoleColor(groupMember.role)} flex items-center gap-1`}>
+                          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                            <Badge className={`${getRoleColor(groupMember.role)} flex items-center gap-1 capitalize`}>
                               {getRoleIcon(groupMember.role)}
-                              {groupMember.role.replace('_', ' ')}
+                              {GROUP_MEMBERSHIP_ROLE_LABELS[groupMember.role]}
                             </Badge>
-                            <Select
-                              value={groupMember.role}
-                              onValueChange={(value) => updateMemberRole(groupMember.id, value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="member">Member</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="co_leader">Co-Leader</SelectItem>
-                                <SelectItem value="leader">Leader</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeMemberFromGroup(groupMember.id, groupMember.member.full_name)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <UserMinus className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor={`role-${groupMember.id}`} className="sr-only">
+                                Change role
+                              </Label>
+                              <Select
+                                value={groupMember.role}
+                                onValueChange={(value) => updateMemberRole(groupMember.id, value)}
+                              >
+                                <SelectTrigger id={`role-${groupMember.id}`} className="w-36 bg-white">
+                                  <SelectValue placeholder="Change role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {GROUP_MEMBERSHIP_ROLES.map((item) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                      {item.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  removeMemberFromGroup(groupMember.id, memberDisplayName(groupMember))
+                                }
+                                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                aria-label={`Remove ${memberDisplayName(groupMember)} from group`}
+                              >
+                                <UserMinus className="mr-1 h-4 w-4" />
+                                Remove
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
 
-                    {filteredMembers.length === 0 && (
+                    {filteredMembers.length === 0 && !membersLoading && (
                       <div className="text-center py-8">
                         <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <p className="text-gray-500">No members found</p>
@@ -652,10 +673,11 @@ export default function GroupDetailsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="co_leader">Co-Leader</SelectItem>
-                      <SelectItem value="leader">Leader</SelectItem>
+                      {GROUP_MEMBERSHIP_ROLES.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

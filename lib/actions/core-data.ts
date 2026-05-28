@@ -562,8 +562,36 @@ export async function loadGroupMembersAction(groupId: string): Promise<ApiRespon
     return { data: null, error: convexUnavailable(), loading: false }
   }
   try {
-    const { listGroupMembershipsFromConvex } = await import('@/lib/convex/core-bridge')
-    const data = await listGroupMembershipsFromConvex(groupId)
+    const { listGroupMembershipsFromConvex, fetchMemberFromConvex, fetchUserFromConvex } =
+      await import('@/lib/convex/core-bridge')
+    const rows = await listGroupMembershipsFromConvex(groupId)
+
+    const profileIds = Array.from(new Set(rows.map((row) => row.member_id).filter(Boolean)))
+    const profiles = await Promise.all(profileIds.map((id) => fetchMemberFromConvex(id)))
+    const profileById = new Map(
+      profiles.filter((profile): profile is Member => profile != null).map((profile) => [profile.id, profile])
+    )
+
+    const userIds = Array.from(
+      new Set(
+        profiles
+          .filter((profile): profile is Member => profile != null)
+          .map((profile) => profile.user_id)
+          .filter(Boolean)
+      )
+    )
+    const users = await Promise.all(userIds.map((id) => fetchUserFromConvex(id)))
+    const userById = new Map(users.filter((user): user is AppUser => user != null).map((user) => [user.id, user]))
+
+    const data = rows.map((row) => {
+      const profile = profileById.get(row.member_id)
+      const user = profile ? userById.get(profile.user_id) : undefined
+      return {
+        ...row,
+        member: profile ? { ...profile, user } : undefined,
+      }
+    })
+
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {

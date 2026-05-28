@@ -1,4 +1,4 @@
-import type { CampRegistration, ChurchFormField } from '@/lib/types'
+import type { AppUser, CampRegistration, ChurchFormField } from '@/lib/types'
 
 export type FormPrefillKey =
   | 'first_name'
@@ -86,10 +86,72 @@ function isEmpty(value: unknown): boolean {
   return false
 }
 
-export function getCampProfilePrefillRaw(
-  profile: CampRegistration,
-  key: FormPrefillKey
-): unknown {
+/** Normalized profile shape for camp + directory prefill. */
+export type FormPrefillProfile = {
+  first_name?: string
+  last_name?: string
+  full_name?: string
+  email?: string
+  phone?: string
+  facebook_username?: string
+  sex?: string
+  date_of_birth?: string
+  age_bracket?: string
+  residence?: string
+  address_school_work?: string
+  education_level?: string
+  highest_qualification?: string
+  times_attended?: number
+  parent_name?: string
+  parent_contact?: string
+  has_nhis_card?: boolean
+  nhis_card_expiry_date?: string
+  has_health_challenge?: boolean
+  health_challenges?: string[]
+  role?: string
+  is_new_registrant?: boolean
+}
+
+export function campRegistrationToPrefillProfile(reg: CampRegistration): FormPrefillProfile {
+  return {
+    first_name: reg.first_name,
+    last_name: reg.last_name,
+    full_name: reg.full_name,
+    email: reg.email,
+    phone: reg.phone,
+    facebook_username: reg.facebook_username,
+    sex: reg.sex,
+    date_of_birth: reg.date_of_birth,
+    age_bracket: reg.age_bracket,
+    residence: reg.residence,
+    address_school_work: reg.address_school_work,
+    education_level: reg.education_level,
+    highest_qualification: reg.highest_qualification,
+    times_attended: reg.times_attended,
+    parent_name: reg.parent_name,
+    parent_contact: reg.parent_contact,
+    has_nhis_card: reg.has_nhis_card,
+    nhis_card_expiry_date: reg.nhis_card_expiry_date,
+    has_health_challenge: reg.has_health_challenge,
+    health_challenges: reg.health_challenges,
+    role: reg.role,
+    is_new_registrant: reg.is_new_registrant,
+  }
+}
+
+export function appUserToPrefillProfile(user: AppUser): FormPrefillProfile {
+  const parts = user.full_name?.trim().split(/\s+/).filter(Boolean) ?? []
+  return {
+    first_name: user.first_name ?? parts[0],
+    last_name: user.last_name ?? (parts.length > 1 ? parts.slice(1).join(' ') : undefined),
+    full_name: user.full_name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+  }
+}
+
+export function getProfilePrefillRaw(profile: FormPrefillProfile, key: FormPrefillKey): unknown {
   switch (key) {
     case 'first_name':
       return profile.first_name ?? profile.full_name?.split(' ')[0]
@@ -140,6 +202,10 @@ export function getCampProfilePrefillRaw(
   }
 }
 
+export function getCampProfilePrefillRaw(profile: CampRegistration, key: FormPrefillKey): unknown {
+  return getProfilePrefillRaw(campRegistrationToPrefillProfile(profile), key)
+}
+
 function normalizeYesNo(value: unknown): boolean | undefined {
   if (typeof value === 'boolean') return value
   const text = String(value).trim().toLowerCase()
@@ -164,14 +230,14 @@ function matchCheckboxOptions(options: string[], raw: unknown): string[] {
   return direct
 }
 
-/** Map a camp profile value into the shape expected by a form field type. */
+/** Map a profile value into the shape expected by a form field type. */
 export function applyPrefillToFormField(
   field: ChurchFormField,
-  profile: CampRegistration,
+  profile: FormPrefillProfile,
   prefillKey: string | undefined
 ): unknown | undefined {
   if (!prefillKey || prefillKey === 'none') return undefined
-  const raw = getCampProfilePrefillRaw(profile, prefillKey as FormPrefillKey)
+  const raw = getProfilePrefillRaw(profile, prefillKey as FormPrefillKey)
   if (isEmpty(raw)) return undefined
 
   switch (field.field_type) {
@@ -184,6 +250,7 @@ export function applyPrefillToFormField(
       return yesNo ?? undefined
     }
     case 'dropdown':
+    case 'radio':
     case 'short_text':
     case 'email':
     case 'phone':
@@ -205,16 +272,19 @@ export function applyPrefillToFormField(
   }
 }
 
-export function applyCampProfilePrefill(
+export function applyProfilePrefill(
   fields: ChurchFormField[],
-  profile: CampRegistration,
-  currentValues: Record<string, unknown>
+  profile: FormPrefillProfile,
+  currentValues: Record<string, unknown>,
+  options?: { overwrite?: boolean }
 ): { values: Record<string, unknown>; filledCount: number } {
   const nextValues = { ...currentValues }
   let filledCount = 0
+  const overwrite = options?.overwrite ?? false
 
   for (const field of fields) {
     if (!field.prefill_key) continue
+    if (!overwrite && !isEmpty(nextValues[field.id])) continue
     const value = applyPrefillToFormField(field, profile, field.prefill_key)
     if (value === undefined) continue
     nextValues[field.id] = value
@@ -222,4 +292,12 @@ export function applyCampProfilePrefill(
   }
 
   return { values: nextValues, filledCount }
+}
+
+export function applyCampProfilePrefill(
+  fields: ChurchFormField[],
+  profile: CampRegistration,
+  currentValues: Record<string, unknown>
+): { values: Record<string, unknown>; filledCount: number } {
+  return applyProfilePrefill(fields, campRegistrationToPrefillProfile(profile), currentValues)
 }

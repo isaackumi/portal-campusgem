@@ -32,6 +32,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FORM_PREFILL_KEY_GROUPS } from '@/lib/forms/prefill'
+import {
+  FieldOptionsEditor,
+  fieldTypeUsesOptions,
+  parseFieldOptionsText,
+} from '@/components/forms/field-options-editor'
 import { FormGroupSelect } from '@/components/forms/group-select'
 import { useGroups } from '@/lib/hooks/use-data'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -53,10 +58,11 @@ const FIELD_TYPES: Array<{ value: ChurchFormFieldType; label: string }> = [
   { value: 'short_text', label: 'Short answer' },
   { value: 'long_text', label: 'Paragraph' },
   { value: 'email', label: 'Email' },
-  { value: 'phone', label: 'Phone' },
+  { value: 'phone', label: 'Phone number' },
   { value: 'number', label: 'Number' },
-  { value: 'dropdown', label: 'Dropdown' },
-  { value: 'checkbox', label: 'Checkbox' },
+  { value: 'radio', label: 'Multiple choice (one answer)' },
+  { value: 'dropdown', label: 'Dropdown (one answer)' },
+  { value: 'checkbox', label: 'Checkboxes (one or many)' },
   { value: 'date', label: 'Date' },
   { value: 'file', label: 'File link' },
 ]
@@ -197,19 +203,12 @@ function SortableQuestionCard({
               onChange={(event) => onUpdate(field.client_id, { description: event.target.value })}
             />
           </div>
-          {field.field_type === 'dropdown' || field.field_type === 'checkbox' ? (
-            <div className="space-y-2 md:col-span-2">
-              <Label>
-                {field.field_type === 'checkbox'
-                  ? 'Checkbox options (one per line)'
-                  : 'Dropdown options (one per line)'}
-              </Label>
-              <Textarea
-                value={field.options}
-                onChange={(event) => onUpdate(field.client_id, { options: event.target.value })}
-                rows={4}
-              />
-            </div>
+          {fieldTypeUsesOptions(field.field_type) ? (
+            <FieldOptionsEditor
+              fieldType={field.field_type}
+              value={field.options}
+              onChange={(options) => onUpdate(field.client_id, { options })}
+            />
           ) : null}
           <div className="flex items-center gap-2 md:col-span-2">
             <Checkbox
@@ -343,13 +342,7 @@ export default function FormEditorPage() {
       description: field.description.trim() || undefined,
       field_type: field.field_type,
       required: field.required,
-      options:
-        field.field_type === 'dropdown' || field.field_type === 'checkbox'
-          ? field.options
-              .split('\n')
-              .map((option) => option.trim())
-              .filter(Boolean)
-          : undefined,
+      options: fieldTypeUsesOptions(field.field_type) ? parseFieldOptionsText(field.options) : undefined,
       prefill_key: field.prefill_key === 'none' ? undefined : field.prefill_key,
       sort_order: index,
     }))
@@ -507,9 +500,11 @@ export default function FormEditorPage() {
                 onCheckedChange={(checked) => setEnableProfileLookup(checked === true)}
               />
               <div className="space-y-1">
-                <Label htmlFor="profile-lookup">Allow phone lookup to prefill known camp details</Label>
+                <Label htmlFor="profile-lookup">Ask for phone first and prefill from camp records</Label>
                 <p className="text-sm text-muted-foreground">
-                  Respondents enter their phone, tap &quot;Find my details&quot;, and fields with a prefill key below are filled from past camp registrations (name, education, health, and more).
+                  Respondents see a phone step at the top of the public form (even if you do not add a separate Phone
+                  question). They can tap &quot;Find my details&quot; to fill fields that have a prefill key below.
+                  Add a Phone number question if you also want phone stored as its own answered field.
                 </p>
               </div>
             </div>
