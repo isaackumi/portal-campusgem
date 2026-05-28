@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers'
-import { createForm, listForms } from '@/lib/actions/forms'
+import { createForm } from '@/lib/actions/forms'
 import {
   ensureCampusMemberRegistrationForm,
   publishCampusMemberRegistrationForm,
@@ -28,7 +28,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { useGroups } from '@/lib/hooks/use-data'
+import { useFormsHub, useInvalidateFormsHub } from '@/lib/hooks/use-forms-hub'
 import { FormGroupSelect } from '@/components/forms/group-select'
 import { getGroupTypeLabel } from '@/lib/constants/groups'
 import {
@@ -55,13 +55,23 @@ function statusTone(status: ChurchForm['status']) {
   }
 }
 
+function FormsHubGridSkeleton() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-56 animate-pulse rounded-lg border border-slate-200 bg-white" />
+      ))}
+    </div>
+  )
+}
+
 function FormsAdminContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
-  const [forms, setForms] = useState<ChurchForm[]>([])
-  const [loading, setLoading] = useState(true)
+  const invalidateFormsHub = useInvalidateFormsHub()
+  const filterGroupId = searchParams.get('group') ?? ''
   const [creating, setCreating] = useState(false)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -69,12 +79,19 @@ function FormsAdminContent() {
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('outreach')
   const [selectedGroupId, setSelectedGroupId] = useState('')
-  const [filterGroupId, setFilterGroupId] = useState('')
   const [search, setSearch] = useState('')
-  const { data: groups } = useGroups(1, 300)
-  const scopedGroupId = searchParams.get('group')
 
-  const groupMap = useMemo(() => new Map((groups ?? []).map((group) => [group.id, group])), [groups])
+  const { forms, groups, isLoading, isFetching, error, refetch } = useFormsHub(filterGroupId, Boolean(user))
+
+  const groupMap = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
+
+  function setFilterGroupId(groupId: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (groupId) params.set('group', groupId)
+    else params.delete('group')
+    const query = params.toString()
+    router.replace(query ? `/admin/forms?${query}` : '/admin/forms')
+  }
 
   const filteredForms = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -107,26 +124,14 @@ function FormsAdminContent() {
   }, [authLoading, user, router])
 
   useEffect(() => {
-    if (!user) return
-    void loadForms(filterGroupId || undefined)
-  }, [user, filterGroupId])
+    if (filterGroupId) setSelectedGroupId(filterGroupId)
+  }, [filterGroupId])
 
   useEffect(() => {
-    if (!scopedGroupId) return
-    setSelectedGroupId(scopedGroupId)
-    setFilterGroupId(scopedGroupId)
-  }, [scopedGroupId])
-
-  async function loadForms(groupId?: string) {
-    setLoading(true)
-    const { data, error } = await listForms(groupId)
     if (error) {
       toast({ variant: 'destructive', title: 'Error', description: error })
-    } else {
-      setForms(data)
     }
-    setLoading(false)
-  }
+  }, [error, toast])
 
   async function handleCreate() {
     if (!title.trim()) {
@@ -190,7 +195,7 @@ function FormsAdminContent() {
     }
 
     setCreatingTemplate(false)
-    await loadForms(filterGroupId || undefined)
+    await invalidateFormsHub()
     toast({
       title: created ? 'Registration form ready' : 'Form already exists',
       description: created
@@ -206,13 +211,15 @@ function FormsAdminContent() {
     toast({ title: 'Link copied', description: url })
   }
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <LoadingSpinner />
       </div>
     )
   }
+
+  const showGridSkeleton = isLoading && forms.length === 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/40">
@@ -264,7 +271,7 @@ function FormsAdminContent() {
                   <div className="space-y-2">
                     <Label>Campus / Activity</Label>
                     <FormGroupSelect
-                      groups={groups ?? []}
+                      groups={groups}
                       value={selectedGroupId}
                       onValueChange={(v) => setSelectedGroupId(v === '__none__' ? '' : v)}
                     />
@@ -355,7 +362,7 @@ function FormsAdminContent() {
             <div className="flex-1 space-y-2">
               <Label>Campus group</Label>
               <FormGroupSelect
-                groups={(groups ?? []).filter((g) => g.group_type === 'campus')}
+                groups={groups.filter((g) => g.group_type === 'campus')}
                 value={selectedGroupId || filterGroupId}
                 onValueChange={(v) => {
                   const id = v === '__none__' ? '' : v
@@ -380,7 +387,7 @@ function FormsAdminContent() {
           <div className="flex-1 space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Filter by group</Label>
             <FormGroupSelect
-              groups={groups ?? []}
+              groups={groups}
               value={filterGroupId}
               onValueChange={(v) => setFilterGroupId(v === '__none__' ? '' : v)}
               allowUnassigned
@@ -397,22 +404,36 @@ function FormsAdminContent() {
           </div>
         </div>
 
-        {filteredForms.length === 0 ? (
+        {showGridSkeleton ? (
+          <FormsHubGridSkeleton />
+        ) : filteredForms.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <ClipboardList className="mb-4 h-12 w-12 text-slate-300" />
-              <h3 className="text-lg font-semibold text-slate-900">No forms yet</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {forms.length === 0 ? 'No forms yet' : 'No matching forms'}
+              </h3>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                Create a custom form or generate a campus member registration template to get started.
+                {forms.length === 0
+                  ? 'Create a custom form or generate a campus member registration template to get started.'
+                  : 'Try a different search or clear the group filter.'}
               </p>
-              <Button className="mt-6" onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create your first form
-              </Button>
+              {forms.length === 0 ? (
+                <Button className="mt-6" onClick={() => setCreateOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create your first form
+                </Button>
+              ) : (
+                <Button className="mt-6" variant="outline" onClick={() => void refetch()}>
+                  Refresh list
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div
+            className={isFetching ? 'grid gap-4 opacity-60 transition-opacity sm:grid-cols-2 xl:grid-cols-3' : 'grid gap-4 sm:grid-cols-2 xl:grid-cols-3'}
+          >
             {filteredForms.map((form) => {
               const group = form.group_id ? groupMap.get(form.group_id) : undefined
               const isRegistration = form.category === CAMPUS_MEMBER_REGISTRATION_CATEGORY

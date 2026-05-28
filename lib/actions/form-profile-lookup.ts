@@ -31,15 +31,10 @@ export async function checkFormSubmissionByPhone(
     return { already_submitted: false, submitted_at: null, error: null }
   }
   try {
-    const { ConvexHttpClient } = await import('convex/browser')
-    const { api } = await import('@/convex/_generated/api')
-    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL)
-    const result = (await client.query(api.forms.checkFormSubmissionByPhone, {
-      slug,
-      phone,
-    })) as { already_submitted: boolean; submitted_at: number | null }
+    const { checkFormSubmissionByPhoneFromConvex } = await import('@/lib/convex/forms-bridge')
+    const result = await checkFormSubmissionByPhoneFromConvex(slug, phone)
     return {
-      already_submitted: Boolean(result.already_submitted),
+      already_submitted: result.already_submitted,
       submitted_at: result.submitted_at ? new Date(result.submitted_at).toISOString() : null,
       error: null,
     }
@@ -55,7 +50,6 @@ export async function checkFormSubmissionByPhone(
 export async function lookupFormProfileByPhone(
   slug: string,
   phone: string,
-  fields: ChurchFormField[],
   currentValues: Record<string, unknown>
 ): Promise<FormProfileLookupResult & { values?: Record<string, unknown>; filledCount?: number }> {
   if (!isValidPhone(phone)) {
@@ -69,6 +63,15 @@ export async function lookupFormProfileByPhone(
   }
 
   const submission = await checkFormSubmissionByPhone(slug, phone)
+
+  let fields: ChurchFormField[] = []
+  try {
+    const { getPublishedFormBySlugFromConvex } = await import('@/lib/convex/forms-bridge')
+    const published = await getPublishedFormBySlugFromConvex(slug)
+    fields = published?.fields ?? []
+  } catch {
+    fields = []
+  }
 
   const camp = await lookupCampRegistrationByPhone(phone)
   if (camp.error) {

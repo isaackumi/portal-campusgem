@@ -51,23 +51,41 @@ export const listFormsWithSecret = query({
   returns: v.array(v.any()),
   handler: async (ctx, { secret, group_id }) => {
     assertServerSecret(secret)
-    let forms = await ctx.db.query('forms').order('desc').collect()
-    if (group_id) {
-      forms = forms.filter((form) => form.group_id === group_id)
-    }
-    const counts = await Promise.all(
-      forms.map(async (form) => {
-        const responses = await ctx.db
-          .query('form_responses')
-          .withIndex('by_form', (q) => q.eq('form_id', String(form._id)))
+    const forms = group_id
+      ? await ctx.db
+          .query('forms')
+          .withIndex('by_group', (q) => q.eq('group_id', group_id))
+          .order('desc')
           .collect()
-        return responses.length
-      })
-    )
-    return forms.map((form, index) => ({
+      : await ctx.db.query('forms').order('desc').collect()
+
+    return forms.map((form) => ({
       ...form,
-      response_count: counts[index] ?? 0,
+      response_count: form.response_count ?? 0,
     }))
+  },
+})
+
+/** One-time or maintenance: sync response_count from form_responses */
+export const backfillFormResponseCountsWithSecret = mutation({
+  args: { secret: v.string() },
+  returns: v.object({ updated: v.number() }),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    const forms = await ctx.db.query('forms').collect()
+    let updated = 0
+    for (const form of forms) {
+      const responses = await ctx.db
+        .query('form_responses')
+        .withIndex('by_form', (q) => q.eq('form_id', String(form._id)))
+        .collect()
+      const count = responses.length
+      if ((form.response_count ?? 0) !== count) {
+        await ctx.db.patch(form._id, { response_count: count, updated_at: Date.now() })
+        updated += 1
+      }
+    }
+    return { updated }
   },
 })
 
@@ -180,6 +198,7 @@ export const createFormWithSecret = mutation({
       group_id: args.group_id,
       status: 'draft',
       enable_profile_lookup: args.enable_profile_lookup ?? false,
+      response_count: 0,
       created_by: args.created_by,
       updated_at: now,
     })
@@ -383,6 +402,11 @@ export const submitFormResponsePublic = mutation({
       respondent_email: respondentEmail || undefined,
       values,
       submitted_at: now,
+      updated_at: now,
+    })
+
+    await ctx.db.patch(form._id, {
+      response_count: (form.response_count ?? 0) + 1,
       updated_at: now,
     })
 

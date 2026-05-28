@@ -299,6 +299,8 @@ export default defineSchema({
     group_id: v.optional(v.string()),
     status: v.union(v.literal('draft'), v.literal('published'), v.literal('closed')),
     enable_profile_lookup: v.boolean(),
+    /** Denormalized count — updated on each public submission */
+    response_count: v.optional(v.number()),
     created_by: v.optional(v.string()),
     updated_at: v.number(),
   })

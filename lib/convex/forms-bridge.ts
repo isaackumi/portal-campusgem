@@ -199,3 +199,18 @@ export async function submitFormResponseInConvex(input: {
   >
   return mapResponse(doc)
 }
+
+export async function checkFormSubmissionByPhoneFromConvex(
+  slug: string,
+  phone: string
+): Promise<{ already_submitted: boolean; submitted_at: number | null }> {
+  const client = new ConvexHttpClient(requireConvexUrl())
+  const result = (await client.query(api.forms.checkFormSubmissionByPhone, {
+    slug,
+    phone,
+  })) as { already_submitted: boolean; submitted_at: number | null }
+  return {
+    already_submitted: Boolean(result.already_submitted),
+    submitted_at: result.submitted_at ?? null,
+  }
+}

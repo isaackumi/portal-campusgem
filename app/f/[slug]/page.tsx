@@ -102,7 +102,7 @@ export default function PublicFormPage() {
     }
 
     setLookupLoading(true)
-    const result = await lookupFormProfileByPhone(form.slug, phone, fields, values)
+    const result = await lookupFormProfileByPhone(form.slug, phone, values)
     setLookupLoading(false)
 
     if (result.error) {
@@ -176,7 +176,7 @@ export default function PublicFormPage() {
 
     const phone = getRespondentPhone()
     if (form && isValidPhone(phone)) {
-      void lookupFormProfileByPhone(form.slug, phone, fields, values).then((result) => {
+      void lookupFormProfileByPhone(form.slug, phone, values).then((result) => {
         setAlreadySubmitted(result.already_submitted)
         setSubmittedAt(result.submitted_at ?? null)
         if (result.already_submitted) {
