@@ -1,15 +1,7 @@
-import { ConvexHttpClient } from 'convex/browser'
+import { getConvexHttpClient } from '@/lib/convex/http-client'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
 import type { ChurchForm, ChurchFormField, ChurchFormResponse } from '@/lib/types'
-
-function requireConvexUrl(): string {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL
-  if (!url) {
-    throw new Error('NEXT_PUBLIC_CONVEX_URL is not set')
-  }
-  return url
-}
 
 export function requireCampAdminSecret(): string {
   const secret = process.env.CAMP_CONVEX_SERVER_SECRET
@@ -80,7 +72,7 @@ function mapResponse(doc: Record<string, unknown>): ChurchFormResponse {
 }
 
 export async function listFormsFromConvex(groupId?: string): Promise<ChurchForm[]> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const args: { secret: string; group_id?: string } = { secret: requireCampAdminSecret() }
   if (groupId) args.group_id = groupId
   const rows = (await client.query(api.forms.listFormsWithSecret, args)) as Array<Record<string, unknown>>
@@ -91,7 +83,7 @@ export async function getFormAdminFromConvex(formId: string): Promise<{
   form: ChurchForm
   fields: ChurchFormField[]
 } | null> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const result = (await client.query(api.forms.getFormAdminWithSecret, {
     secret: requireCampAdminSecret(),
     form_id: formId as Id<'forms'>,
@@ -108,7 +100,7 @@ export async function getPublishedFormBySlugFromConvex(slug: string): Promise<{
   form: ChurchForm
   fields: ChurchFormField[]
 } | null> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const result = (await client.query(api.forms.getPublishedFormBySlug, { slug })) as {
     form: Record<string, unknown>
     fields: Array<Record<string, unknown>>
@@ -122,7 +114,7 @@ export async function getPublishedFormBySlugFromConvex(slug: string): Promise<{
 }
 
 export async function listFormResponsesFromConvex(formId: string): Promise<ChurchFormResponse[]> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const rows = (await client.query(api.forms.listFormResponsesWithSecret, {
     secret: requireCampAdminSecret(),
     form_id: formId as Id<'forms'>,
@@ -139,7 +131,7 @@ export async function createFormInConvex(input: {
   enable_profile_lookup?: boolean
   capture_respondent_location?: boolean
 }): Promise<ChurchForm> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.forms.createFormWithSecret, {
     secret: requireCampAdminSecret(),
     ...input,
@@ -162,7 +154,7 @@ export async function updateFormInConvex(
     capture_respondent_location?: boolean
   }
 ): Promise<ChurchForm> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.forms.updateFormWithSecret, {
     secret: requireCampAdminSecret(),
     form_id: formId as Id<'forms'>,
@@ -185,7 +177,7 @@ export async function replaceFormFieldsInConvex(
     sort_order: number
   }>
 ): Promise<ChurchFormField[]> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const rows = (await client.mutation(api.forms.replaceFormFieldsWithSecret, {
     secret: requireCampAdminSecret(),
     form_id: formId as Id<'forms'>,
@@ -204,7 +196,7 @@ export async function submitFormResponseInConvex(input: {
   respondent_longitude?: number
   respondent_location_label?: string
 }): Promise<ChurchFormResponse> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.forms.submitFormResponsePublic, input)) as Record<
     string,
     unknown
@@ -216,7 +208,7 @@ export async function checkFormSubmissionByPhoneFromConvex(
   slug: string,
   phone: string
 ): Promise<{ already_submitted: boolean; submitted_at: number | null }> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const result = (await client.query(api.forms.checkFormSubmissionByPhone, {
     slug,
     phone,
