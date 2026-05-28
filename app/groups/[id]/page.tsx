@@ -46,7 +46,7 @@ interface GroupMemberWithUser {
   id: string
   group_id: string
   member_id: string
-  role: 'leader' | 'co_leader' | 'member' | 'volunteer'
+  role: 'leader' | 'co_leader' | 'executive' | 'member' | 'volunteer'
   joined_date: string
   is_active: boolean
   notes?: string

@@ -37,6 +37,7 @@ export const addMembership = mutation({
     role: v.union(
       v.literal('leader'),
       v.literal('co_leader'),
+      v.literal('executive'),
       v.literal('member'),
       v.literal('volunteer')
     ),

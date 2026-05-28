@@ -17,9 +17,12 @@ import {
     ArrowLeft, Users, UserCheck, UserX, Clock, CheckCircle2,
     AlertCircle, Filter, UserPlus, Eye, MessageSquare, Phone, Mail
 } from 'lucide-react'
+import { classifyFollowUpSla, type FollowUpSlaBucket } from '@/lib/camp/follow-up-sla'
 import { cn } from '@/lib/utils'
 
 const FOLLOW_UP_STATUSES = ['pending', 'in_progress', 'completed'] as const
+const SLA_FILTERS = ['all', 'overdue', 'due_soon', 'healthy'] as const
+type SlaFilter = (typeof SLA_FILTERS)[number]
 
 function FollowUpManagementContent() {
     const router = useRouter()
@@ -28,6 +31,8 @@ function FollowUpManagementContent() {
     const { user } = useAuth()
     const mineOnly = searchParams.get('mine') === '1'
     const yearIdParam = searchParams.get('year')
+    const statusParam = searchParams.get('status')
+    const slaParam = searchParams.get('sla')
     const [campYear, setCampYear] = useState<CampYear | null>(null)
     const [registrations, setRegistrations] = useState<CampRegistration[]>([])
     const [staffMembers, setStaffMembers] = useState<AppUser[]>([])
@@ -35,6 +40,7 @@ function FollowUpManagementContent() {
 
     // Filters
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all')
+    const [slaFilter, setSlaFilter] = useState<SlaFilter>('all')
     const [assignedToFilter, setAssignedToFilter] = useState<string>('all')
     const [typeFilter, setTypeFilter] = useState<'all' | 'new' | 'returning'>('all')
 
@@ -43,6 +49,18 @@ function FollowUpManagementContent() {
             setAssignedToFilter(user.id)
         }
     }, [mineOnly, user?.id])
+
+    useEffect(() => {
+        if (statusParam && FOLLOW_UP_STATUSES.includes(statusParam as (typeof FOLLOW_UP_STATUSES)[number])) {
+            setStatusFilter(statusParam as (typeof FOLLOW_UP_STATUSES)[number])
+        }
+    }, [statusParam])
+
+    useEffect(() => {
+        if (slaParam && SLA_FILTERS.includes(slaParam as SlaFilter)) {
+            setSlaFilter(slaParam as SlaFilter)
+        }
+    }, [slaParam])
 
     useEffect(() => {
         loadData()
@@ -109,7 +127,14 @@ function FollowUpManagementContent() {
 
     // Filter registrations
     const filteredRegistrations = registrations.filter(reg => {
-        const matchesStatus = statusFilter === 'all' || reg.follow_up_status === statusFilter
+        const effectiveStatus = reg.follow_up_status ?? 'pending'
+        const matchesStatus =
+            statusFilter === 'all' ||
+            effectiveStatus === statusFilter ||
+            (statusFilter === 'pending' && !reg.follow_up_status)
+        const matchesSla =
+            slaFilter === 'all' ||
+            classifyFollowUpSla(reg) === (slaFilter as FollowUpSlaBucket)
         const matchesAssigned = assignedToFilter === 'all' || 
             (assignedToFilter === 'unassigned' && !reg.assigned_to) ||
             reg.assigned_to === assignedToFilter
@@ -117,7 +142,7 @@ function FollowUpManagementContent() {
             (typeFilter === 'new' && reg.is_new_registrant) ||
             (typeFilter === 'returning' && !reg.is_new_registrant)
 
-        return matchesStatus && matchesAssigned && matchesType
+        return matchesStatus && matchesSla && matchesAssigned && matchesType
     })
 
     // Group by status
@@ -186,6 +211,20 @@ function FollowUpManagementContent() {
                             </h1>
                             <p className="text-muted-foreground mt-1">
                                 Camp Meeting {campYear.year} • {campYear.theme}
+                                {slaFilter !== 'all' ? (
+                                    <span className="ml-2 inline-flex">
+                                        <Badge variant="secondary" className="capitalize">
+                                            SLA: {slaFilter.replace('_', ' ')}
+                                        </Badge>
+                                    </span>
+                                ) : null}
+                                {statusFilter !== 'all' ? (
+                                    <span className="ml-2 inline-flex">
+                                        <Badge variant="outline" className="capitalize">
+                                            Status: {statusFilter.replace('_', ' ')}
+                                        </Badge>
+                                    </span>
+                                ) : null}
                             </p>
                         </div>
                     </div>
@@ -258,7 +297,18 @@ function FollowUpManagementContent() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid gap-4 md:grid-cols-3">
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            <Select value={slaFilter} onValueChange={(v: SlaFilter) => setSlaFilter(v)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="SLA health" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All SLA buckets</SelectItem>
+                                    <SelectItem value="overdue">Overdue</SelectItem>
+                                    <SelectItem value="due_soon">Due soon</SelectItem>
+                                    <SelectItem value="healthy">Healthy</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Follow-up Status" />

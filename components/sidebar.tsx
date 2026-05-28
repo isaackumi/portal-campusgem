@@ -40,7 +40,8 @@ import {
   Cake,
   ClipboardList,
   Upload,
-  UserCheck
+  UserCheck,
+  Building2
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -114,6 +115,12 @@ const navigationSections: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'FORMS & OUTREACH',
     items: [
+      {
+        name: 'Campus & Activities',
+        href: '/admin/campus-activities',
+        icon: Building2,
+        roles: ['admin', 'pastor', 'elder']
+      },
       {
         name: 'Forms Hub',
         href: '/admin/forms',
@@ -368,7 +375,7 @@ export function Sidebar({ className }: SidebarProps) {
                 Campus Gem Ministries
               </h1>
               <p className="text-sm text-white">Campus Ministry</p>
-              <p className="text-xs text-yellow-400">Odorkor Area, Gbawe CP District</p>
+              <p className="text-xs text-yellow-400">Kokomlemle, Accra</p>
             </div>
           </div>
         )}
@@ -573,7 +580,7 @@ export function MobileSidebar() {
                     Campus Gem Ministries
                   </h1>
                   <p className="text-sm text-white">Campus Ministry</p>
-                  <p className="text-xs text-yellow-400">Odorkor Area, Gbawe CP District</p>
+                  <p className="text-xs text-yellow-400">Kokomlemle, Accra</p>
                 </div>
               </div>
               <Button

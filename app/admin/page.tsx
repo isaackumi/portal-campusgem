@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, ClipboardList, Group, Shield, Users } from 'lucide-react'
+import { Building2, Calendar, ClipboardList, Group, Shield, Users } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const adminSections = [
@@ -16,6 +16,12 @@ const adminSections = [
     title: 'Camp Years',
     description: 'Create camp years and import historical registration data.',
     icon: Calendar,
+  },
+  {
+    href: '/admin/campus-activities',
+    title: 'Campus & Activities',
+    description: 'Campus fellowships and church-wide events with members and scoped forms.',
+    icon: Building2,
   },
   {
     href: '/admin/forms',
@@ -38,7 +44,7 @@ const adminSections = [
   {
     href: '/admin/groups',
     title: 'Group Management',
-    description: 'Manage ministries and small groups.',
+    description: 'Manage campuses, activities, ministries, and small groups.',
     icon: Group,
   },
 ]

@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server'
-import type { Doc } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
 import { isValidGhanaPhone, normalizeGhanaPhone, sanitizePhoneInput } from './lib/phone'
 
@@ -46,11 +46,14 @@ async function getFieldsForForm(ctx: FormsCtx, formId: string): Promise<Doc<'for
 }
 
 export const listFormsWithSecret = query({
-  args: { secret: v.string() },
+  args: { secret: v.string(), group_id: v.optional(v.string()) },
   returns: v.array(v.any()),
-  handler: async (ctx, { secret }) => {
+  handler: async (ctx, { secret, group_id }) => {
     assertServerSecret(secret)
-    const forms = await ctx.db.query('forms').order('desc').collect()
+    let forms = await ctx.db.query('forms').order('desc').collect()
+    if (group_id) {
+      forms = forms.filter((form) => form.group_id === group_id)
+    }
     const counts = await Promise.all(
       forms.map(async (form) => {
         const responses = await ctx.db
@@ -112,6 +115,7 @@ export const createFormWithSecret = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
+    group_id: v.optional(v.string()),
     created_by: v.optional(v.string()),
     enable_profile_lookup: v.optional(v.boolean()),
   },
@@ -120,6 +124,10 @@ export const createFormWithSecret = mutation({
     assertServerSecret(args.secret)
     const title = args.title.trim()
     if (!title) throw new Error('Form title is required.')
+    if (args.group_id) {
+      const group = await ctx.db.get('groups', args.group_id as Id<'groups'>)
+      if (!group) throw new Error('Selected group was not found.')
+    }
 
     const baseSlug = slugifyTitle(title) || 'form'
     let slug = baseSlug
@@ -135,6 +143,7 @@ export const createFormWithSecret = mutation({
       slug,
       description: args.description?.trim() || undefined,
       category: args.category?.trim() || 'general',
+      group_id: args.group_id,
       status: 'draft',
       enable_profile_lookup: args.enable_profile_lookup ?? false,
       created_by: args.created_by,
@@ -151,6 +160,7 @@ export const updateFormWithSecret = mutation({
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
+    group_id: v.optional(v.union(v.string(), v.null())),
     status: v.optional(v.union(v.literal('draft'), v.literal('published'), v.literal('closed'))),
     slug: v.optional(v.string()),
     enable_profile_lookup: v.optional(v.boolean()),
@@ -165,6 +175,15 @@ export const updateFormWithSecret = mutation({
     if (args.title != null) patch.title = args.title.trim()
     if (args.description != null) patch.description = args.description.trim() || undefined
     if (args.category != null) patch.category = args.category.trim() || 'general'
+    if (args.group_id !== undefined) {
+      if (args.group_id === null) {
+        patch.group_id = undefined
+      } else {
+        const group = await ctx.db.get('groups', args.group_id as Id<'groups'>)
+        if (!group) throw new Error('Selected group was not found.')
+        patch.group_id = args.group_id
+      }
+    }
     if (args.status != null) patch.status = args.status
     if (args.enable_profile_lookup != null) patch.enable_profile_lookup = args.enable_profile_lookup
 

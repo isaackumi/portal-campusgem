@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay, EmptyState } from '@/components/ui/error-display'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { MemberRowActions } from '@/components/members/member-row-actions'
 import { 
   Users, 
   Search, 
@@ -562,32 +563,12 @@ export default function MembersPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyMembershipId(member.user?.membership_id || '')}
-                        title="Copy Membership ID"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/members/${member.id}`)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/members/${member.id}?edit=true`)}
-                        title="Edit Member"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <MemberRowActions
+                      memberId={member.id}
+                      userId={member.user_id}
+                      displayName={member.user?.full_name || 'Member'}
+                      membershipId={member.user?.membership_id}
+                    />
                   </div>
                 ))}
               </div>

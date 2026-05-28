@@ -32,6 +32,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useGroups, useCreateGroup, useUpdateGroup, useDeleteGroup, useAllUsers, useAddUserToGroup, useRemoveUserFromGroup } from '@/lib/hooks/use-data'
 import { useAuth } from '@/components/providers'
 import { Group, AppUser } from '@/lib/types'
+import { GROUP_MEMBERSHIP_ROLES, GROUP_TYPES, getGroupTypeBadgeClass, getGroupTypeLabel } from '@/lib/constants/groups'
 
 export default function GroupsManagementPage() {
   const { user: currentUser } = useAuth()
@@ -47,12 +48,13 @@ export default function GroupsManagementPage() {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
   const [showMembersDialog, setShowMembersDialog] = useState(false)
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false)
+  const [selectedMembershipRole, setSelectedMembershipRole] = useState<'leader' | 'co_leader' | 'executive' | 'member' | 'volunteer'>('member')
   
   // Form state for creating/editing groups
   const [formData, setFormData] = useState<{
     name: string
     description: string
-    group_type: 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership'
+    group_type: 'campus' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership'
     meeting_location: string
     meeting_schedule: string
     is_active: boolean
@@ -60,7 +62,7 @@ export default function GroupsManagementPage() {
   }>({
     name: '',
     description: '',
-    group_type: 'ministry',
+    group_type: 'campus',
     meeting_location: '',
     meeting_schedule: '',
     is_active: true,
@@ -98,14 +100,14 @@ export default function GroupsManagementPage() {
   }, [groups])
 
   const stats = useMemo(() => {
-    if (!groups) return { total: 0, ministries: 0, fellowships: 0, age_groups: 0, other: 0 }
+    if (!groups) return { total: 0, campuses: 0, activities: 0, fellowships: 0, other: 0 }
     
     return {
       total: groups.length,
-      ministries: groups.filter(g => g.group_type === 'ministry').length,
+      campuses: groups.filter(g => g.group_type === 'campus').length,
+      activities: groups.filter(g => g.group_type === 'activity').length,
       fellowships: groups.filter(g => g.group_type === 'fellowship').length,
-      age_groups: groups.filter(g => g.group_type === 'age_group').length,
-      other: groups.filter(g => !['ministry', 'fellowship', 'age_group'].includes(g.group_type || '')).length
+      other: groups.filter(g => !['campus', 'activity', 'fellowship'].includes(g.group_type || '')).length
     }
   }, [groups])
 
@@ -251,7 +253,7 @@ export default function GroupsManagementPage() {
     setFormData({
       name: '',
       description: '',
-      group_type: 'ministry' as const,
+      group_type: 'campus' as const,
       meeting_location: '',
       meeting_schedule: '',
       is_active: true,
@@ -280,19 +282,11 @@ export default function GroupsManagementPage() {
 
   const getGroupTypeIcon = (type: string) => {
     switch (type) {
+      case 'campus': return <Crown className="h-4 w-4" />
+      case 'activity': return <Calendar className="h-4 w-4" />
       case 'ministry': return <Users className="h-4 w-4" />
-      case 'department': return <Settings className="h-4 w-4" />
-      case 'committee': return <Shield className="h-4 w-4" />
+      case 'leadership': return <Shield className="h-4 w-4" />
       default: return <Users className="h-4 w-4" />
-    }
-  }
-
-  const getGroupTypeColor = (type: string) => {
-    switch (type) {
-      case 'ministry': return 'bg-blue-100 text-blue-800'
-      case 'department': return 'bg-green-100 text-green-800'
-      case 'committee': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -331,7 +325,7 @@ export default function GroupsManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Group Management</h1>
-              <p className="text-gray-600 mt-2">Manage church groups, ministries, and departments</p>
+              <p className="text-gray-600 mt-2">Manage campus fellowships, event activities, and ministry groups</p>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
@@ -344,7 +338,7 @@ export default function GroupsManagementPage() {
                 <DialogHeader>
                   <DialogTitle>Create New Group</DialogTitle>
                   <DialogDescription>
-                    Add a new group, ministry, or department to the church.
+                    Add a new campus fellowship, activity, or ministry group.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -360,16 +354,16 @@ export default function GroupsManagementPage() {
                     </div>
                     <div>
                       <Label htmlFor="group_type">Group Type *</Label>
-                      <Select value={formData.group_type} onValueChange={(value) => setFormData(prev => ({ ...prev, group_type: value as 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership' }))}>
+                      <Select value={formData.group_type} onValueChange={(value) => setFormData(prev => ({ ...prev, group_type: value as 'campus' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership' }))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="ministry">Ministry</SelectItem>
-                          <SelectItem value="department">Department</SelectItem>
-                          <SelectItem value="committee">Committee</SelectItem>
-                          <SelectItem value="fellowship">Fellowship</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
+                          {GROUP_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -463,8 +457,8 @@ export default function GroupsManagementPage() {
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Ministries</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.ministries}</p>
+                  <p className="text-sm font-medium text-gray-600">Campuses</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.campuses}</p>
                 </div>
               </div>
             </CardContent>
@@ -475,8 +469,8 @@ export default function GroupsManagementPage() {
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Fellowships</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.fellowships}</p>
+                  <p className="text-sm font-medium text-gray-600">Activities</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.activities}</p>
                 </div>
               </div>
             </CardContent>
@@ -487,8 +481,8 @@ export default function GroupsManagementPage() {
               <div className="flex items-center">
                 <Calendar className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Age Groups</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.age_groups}</p>
+                  <p className="text-sm font-medium text-gray-600">Fellowships</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.fellowships}</p>
                 </div>
               </div>
             </CardContent>
@@ -547,7 +541,7 @@ export default function GroupsManagementPage() {
           <CardHeader>
             <CardTitle>Groups ({filteredGroups.length})</CardTitle>
             <CardDescription>
-              Manage church groups, ministries, and departments
+              Manage campus fellowships, activities, and ministry structures
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -569,8 +563,8 @@ export default function GroupsManagementPage() {
                           </div>
                           <div>
                             <CardTitle className="text-lg">{group.name}</CardTitle>
-                            <Badge className={getGroupTypeColor(group.group_type || '')}>
-                              {group.group_type}
+                            <Badge className={getGroupTypeBadgeClass(group.group_type || '')}>
+                              {getGroupTypeLabel(group.group_type)}
                             </Badge>
                           </div>
                         </div>
@@ -625,6 +619,17 @@ export default function GroupsManagementPage() {
                           </div>
                         )}
                       </div>
+                      <div className="mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => router.push(`/admin/forms?group=${encodeURIComponent(group.id)}`)}
+                        >
+                          <Plus className="mr-2 h-3.5 w-3.5" />
+                          Create scoped form
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -655,16 +660,16 @@ export default function GroupsManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="edit_group_type">Group Type *</Label>
-                  <Select value={formData.group_type} onValueChange={(value) => setFormData(prev => ({ ...prev, group_type: value as 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership' }))}>
+                  <Select value={formData.group_type} onValueChange={(value) => setFormData(prev => ({ ...prev, group_type: value as 'campus' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership' }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ministry">Ministry</SelectItem>
-                      <SelectItem value="department">Department</SelectItem>
-                      <SelectItem value="committee">Committee</SelectItem>
-                      <SelectItem value="fellowship">Fellowship</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      {GROUP_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -757,6 +762,24 @@ export default function GroupsManagementPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="membership-role">Role in this group</Label>
+                <Select
+                  value={selectedMembershipRole}
+                  onValueChange={(value) => setSelectedMembershipRole(value as 'leader' | 'co_leader' | 'executive' | 'member' | 'volunteer')}
+                >
+                  <SelectTrigger id="membership-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GROUP_MEMBERSHIP_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {users && users.length > 0 ? (
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {users.map((user) => (
@@ -772,7 +795,7 @@ export default function GroupsManagementPage() {
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => handleAddMemberToGroup(user.id)}
+                        onClick={() => handleAddMemberToGroup(user.id, selectedMembershipRole)}
                         disabled={addingMember}
                       >
                         {addingMember ? 'Adding...' : 'Add'}

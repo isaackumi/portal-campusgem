@@ -3,9 +3,9 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { Mail, Phone, Shield, UserRound } from 'lucide-react'
 
+import { ContactRowActions } from '@/components/contacts/contact-row-actions'
 import type { CampCamperDirectoryRow } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 
 export function createCamperDirectoryColumns(
@@ -95,14 +95,18 @@ export function createCamperDirectoryColumns(
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: '',
       cell: ({ row }) => {
         const latest = row.original.years[0]
-        if (!latest) return null
         return (
-          <Button variant="outline" size="sm" onClick={() => onOpenRegistration(latest.registration_id)}>
-            Open latest
-          </Button>
+          <ContactRowActions
+            contactName={row.original.full_name}
+            phone={row.original.phone}
+            email={row.original.email}
+            userId={row.original.user_id}
+            latestRegistrationId={latest?.registration_id}
+            showFollowUp={false}
+          />
         )
       },
     },

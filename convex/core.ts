@@ -20,6 +20,16 @@ const serviceType = v.union(
   v.literal('special_event')
 )
 
+const groupType = v.union(
+  v.literal('campus'),
+  v.literal('activity'),
+  v.literal('ministry'),
+  v.literal('fellowship'),
+  v.literal('age_group'),
+  v.literal('special_interest'),
+  v.literal('leadership')
+)
+
 const userRole = v.union(
   v.literal('admin'),
   v.literal('pastor'),
@@ -206,13 +216,7 @@ export const createGroupWithSecret = mutation({
     secret: v.string(),
     name: v.string(),
     description: v.optional(v.string()),
-    group_type: v.union(
-      v.literal('ministry'),
-      v.literal('fellowship'),
-      v.literal('age_group'),
-      v.literal('special_interest'),
-      v.literal('leadership')
-    ),
+    group_type: groupType,
     leader_id: v.optional(v.string()),
     co_leader_id: v.optional(v.string()),
     meeting_schedule: v.optional(v.string()),
@@ -246,15 +250,7 @@ export const updateGroupWithSecret = mutation({
     id: v.id('groups'),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
-    group_type: v.optional(
-      v.union(
-        v.literal('ministry'),
-        v.literal('fellowship'),
-        v.literal('age_group'),
-        v.literal('special_interest'),
-        v.literal('leadership')
-      )
-    ),
+    group_type: v.optional(groupType),
     leader_id: v.optional(v.string()),
     co_leader_id: v.optional(v.string()),
     meeting_schedule: v.optional(v.string()),
@@ -285,10 +281,13 @@ export const updateGroupWithSecret = mutation({
 })
 
 export const listGroupsWithSecret = query({
-  args: { secret: v.string() },
+  args: { secret: v.string(), active_only: v.optional(v.boolean()) },
   returns: v.array(v.any()),
-  handler: async (ctx, { secret }) => {
+  handler: async (ctx, { secret, active_only }) => {
     assertServerSecret(secret)
+    if (active_only === false) {
+      return await ctx.db.query('groups').collect()
+    }
     return await ctx.db
       .query('groups')
       .withIndex('by_active', (q) => q.eq('is_active', true))
@@ -542,6 +541,7 @@ const memberStatusValue = v.union(
 const membershipRole = v.union(
   v.literal('leader'),
   v.literal('co_leader'),
+  v.literal('executive'),
   v.literal('member'),
   v.literal('volunteer')
 )
@@ -764,6 +764,15 @@ export const deleteGroupWithSecret = mutation({
   handler: async (ctx, { secret, id }) => {
     assertServerSecret(secret)
     const gid = String(id)
+    const linkedForms = await ctx.db
+      .query('forms')
+      .withIndex('by_group', (q) => q.eq('group_id', gid))
+      .first()
+    if (linkedForms) {
+      throw new Error(
+        'This group has forms linked to it. Reassign or delete those forms before deleting the group.'
+      )
+    }
     const memberships = await ctx.db
       .query('group_memberships')
       .withIndex('by_group_id', (q) => q.eq('group_id', gid))

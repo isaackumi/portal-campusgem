@@ -101,7 +101,14 @@ export interface Group {
   id: string
   name: string
   description?: string
-  group_type: 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership'
+  group_type:
+    | 'campus'
+    | 'activity'
+    | 'ministry'
+    | 'fellowship'
+    | 'age_group'
+    | 'special_interest'
+    | 'leadership'
   leader_id?: string
   co_leader_id?: string
   meeting_schedule?: string
@@ -124,7 +131,7 @@ export interface GroupMembership {
   id: string
   group_id: string
   member_id: string
-  role: 'leader' | 'co_leader' | 'member' | 'volunteer'
+  role: 'leader' | 'co_leader' | 'executive' | 'member' | 'volunteer'
   joined_date: string
   is_active: boolean
   notes?: string
@@ -205,7 +212,7 @@ export interface DepartmentMembership {
   id: string
   department_id: string
   member_id: string
-  role: 'leader' | 'co_leader' | 'member' | 'volunteer'
+  role: 'leader' | 'co_leader' | 'executive' | 'member' | 'volunteer'
   joined_date: string
   is_active: boolean
   notes?: string
@@ -825,6 +832,8 @@ export interface ChurchForm {
   slug: string
   description?: string
   category?: string
+  /** Campus fellowship or general activity group this form belongs to */
+  group_id?: string
   status: ChurchFormStatus
   enable_profile_lookup: boolean
   created_by?: string

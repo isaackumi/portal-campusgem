@@ -148,9 +148,7 @@ export default function NotFound() {
           <p className="text-sm text-gray-500">
             Campus Gem Ministries
           </p>
-          <p className="text-xs text-gray-400 mt-1">
-            Odorkor Area, Gbawe CP District
-          </p>
+          <p className="text-xs text-gray-400 mt-1">Kokomlemle, Accra</p>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { getPublishedFormBySlug, submitFormResponse } from '@/lib/actions/forms'
 import { lookupCampRegistrationByPhone } from '@/lib/actions/camp'
 import type { ChurchForm, ChurchFormField } from '@/lib/types'
 import { isValidPhone } from '@/lib/phone'
+import { applyCampProfilePrefill } from '@/lib/forms/prefill'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -51,6 +52,14 @@ export default function PublicFormPage() {
     setValues((current) => ({ ...current, [fieldId]: value }))
   }
 
+  function toggleCheckboxOption(fieldId: string, option: string, checked: boolean) {
+    setValues((current) => {
+      const existing = Array.isArray(current[fieldId]) ? (current[fieldId] as string[]) : []
+      const next = checked ? Array.from(new Set([...existing, option])) : existing.filter((item) => item !== option)
+      return { ...current, [fieldId]: next }
+    })
+  }
+
   async function handleLookup() {
     if (!form?.enable_profile_lookup || !phoneField) return
     const phone = String(values[phoneField.id] ?? '').trim()
@@ -73,17 +82,15 @@ export default function PublicFormPage() {
       return
     }
 
-    const nextValues = { ...values }
-    for (const field of fields) {
-      if (!field.prefill_key) continue
-      const key = field.prefill_key as keyof typeof profile
-      const profileValue = profile[key]
-      if (profileValue != null && profileValue !== '') {
-        nextValues[field.id] = String(profileValue)
-      }
-    }
+    const { values: nextValues, filledCount } = applyCampProfilePrefill(fields, profile, values)
     setValues(nextValues)
-    toast({ title: 'Details found', description: 'We prefilled matching fields from previous camp records.' })
+    toast({
+      title: 'Details found',
+      description:
+        filledCount > 0
+          ? `We prefilled ${filledCount} field${filledCount === 1 ? '' : 's'} from your previous camp record.`
+          : 'We found your record, but no fields on this form are mapped for prefill yet.',
+    })
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -209,13 +216,30 @@ export default function PublicFormPage() {
               ) : null}
 
               {field.field_type === 'checkbox' ? (
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={values[field.id] === true}
-                    onCheckedChange={(checked) => setFieldValue(field.id, checked === true)}
-                  />
-                  <span className="text-sm text-muted-foreground">Yes</span>
-                </div>
+                (field.options ?? []).length > 0 ? (
+                  <div className="space-y-2">
+                    {(field.options ?? []).map((option) => {
+                      const selected = Array.isArray(values[field.id]) && (values[field.id] as string[]).includes(option)
+                      return (
+                        <label key={option} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selected}
+                            onCheckedChange={(checked) => toggleCheckboxOption(field.id, option, checked === true)}
+                          />
+                          <span className="text-sm text-muted-foreground">{option}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={values[field.id] === true}
+                      onCheckedChange={(checked) => setFieldValue(field.id, checked === true)}
+                    />
+                    <span className="text-sm text-muted-foreground">Yes</span>
+                  </div>
+                )
               ) : null}
 
               {['short_text', 'email', 'phone', 'number', 'date', 'file'].includes(field.field_type) ? (

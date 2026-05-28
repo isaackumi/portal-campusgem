@@ -138,6 +138,8 @@ export default defineSchema({
     name: v.string(),
     description: v.optional(v.string()),
     group_type: v.union(
+      v.literal('campus'),
+      v.literal('activity'),
       v.literal('ministry'),
       v.literal('fellowship'),
       v.literal('age_group'),
@@ -159,6 +161,7 @@ export default defineSchema({
     role: v.union(
       v.literal('leader'),
       v.literal('co_leader'),
+      v.literal('executive'),
       v.literal('member'),
       v.literal('volunteer')
     ),
@@ -293,13 +296,15 @@ export default defineSchema({
     slug: v.string(),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
+    group_id: v.optional(v.string()),
     status: v.union(v.literal('draft'), v.literal('published'), v.literal('closed')),
     enable_profile_lookup: v.boolean(),
     created_by: v.optional(v.string()),
     updated_at: v.number(),
   })
     .index('by_slug', ['slug'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_group', ['group_id']),
 
   form_fields: defineTable({
     form_id: v.string(),

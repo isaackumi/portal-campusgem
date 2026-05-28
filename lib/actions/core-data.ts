@@ -190,7 +190,7 @@ export async function loadGroupsPage(
 
   try {
     const { fetchGroupsFromConvex } = await import('@/lib/convex/core-bridge')
-    let groups = await fetchGroupsFromConvex()
+    let groups = await fetchGroupsFromConvex(true)
     if (type && type !== 'all') {
       groups = groups.filter((group) => group.group_type === type)
     }

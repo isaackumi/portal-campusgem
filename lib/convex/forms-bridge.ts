@@ -33,6 +33,7 @@ function mapForm(doc: Record<string, unknown> | null | undefined): ChurchForm | 
     slug: String(doc.slug ?? ''),
     description: doc.description != null ? String(doc.description) : undefined,
     category: doc.category != null ? String(doc.category) : undefined,
+    group_id: doc.group_id != null ? String(doc.group_id) : undefined,
     status: (doc.status as ChurchForm['status']) ?? 'draft',
     enable_profile_lookup: Boolean(doc.enable_profile_lookup),
     created_by: doc.created_by != null ? String(doc.created_by) : undefined,
@@ -71,11 +72,11 @@ function mapResponse(doc: Record<string, unknown>): ChurchFormResponse {
   }
 }
 
-export async function listFormsFromConvex(): Promise<ChurchForm[]> {
+export async function listFormsFromConvex(groupId?: string): Promise<ChurchForm[]> {
   const client = new ConvexHttpClient(requireConvexUrl())
-  const rows = (await client.query(api.forms.listFormsWithSecret, {
-    secret: requireCampAdminSecret(),
-  })) as Array<Record<string, unknown>>
+  const args: { secret: string; group_id?: string } = { secret: requireCampAdminSecret() }
+  if (groupId) args.group_id = groupId
+  const rows = (await client.query(api.forms.listFormsWithSecret, args)) as Array<Record<string, unknown>>
   return rows.map((row) => mapForm(row)).filter((row): row is ChurchForm => row != null)
 }
 
@@ -126,6 +127,7 @@ export async function createFormInConvex(input: {
   title: string
   description?: string
   category?: string
+  group_id?: string
   created_by?: string
   enable_profile_lookup?: boolean
 }): Promise<ChurchForm> {
@@ -145,6 +147,7 @@ export async function updateFormInConvex(
     title?: string
     description?: string
     category?: string
+    group_id?: string | null
     status?: ChurchForm['status']
     slug?: string
     enable_profile_lookup?: boolean

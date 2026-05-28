@@ -161,14 +161,33 @@ export async function fetchUserFromConvex(id: string): Promise<AppUser | null> {
   return convexUserDocToAppUser(doc)
 }
 
-export async function fetchGroupsFromConvex(): Promise<Group[]> {
+export async function fetchGroupsFromConvex(includeInactive = false): Promise<Group[]> {
   const client = getConvexHttpClient()
-  const docs = (await client.query(api.core.listGroupsWithSecret, {
-    secret: requireCoreServerSecret(),
-  })) as Record<string, unknown>[]
+  const secret = requireCoreServerSecret()
+  // Only pass { secret } so this works before Convex is redeployed with `active_only`.
+  // After deploy, optional active_only: false returns inactive groups too.
+  let docs: Record<string, unknown>[]
+  if (includeInactive) {
+    try {
+      docs = (await client.query(api.core.listGroupsWithSecret, {
+        secret,
+        active_only: false,
+      })) as Record<string, unknown>[]
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      const validationMismatch =
+        message.includes('active_only') || message.includes('ArgumentValidationError')
+      if (!validationMismatch) throw error
+      docs = (await client.query(api.core.listGroupsWithSecret, { secret })) as Record<string, unknown>[]
+    }
+  } else {
+    docs = (await client.query(api.core.listGroupsWithSecret, { secret })) as Record<string, unknown>[]
+  }
+
   return docs
     .map((d) => convexGroupDocToGroup(d))
     .filter((g): g is Group => g != null)
+    .filter((g) => includeInactive || g.is_active)
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 

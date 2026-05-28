@@ -30,7 +30,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FORM_PREFILL_KEY_GROUPS } from '@/lib/forms/prefill'
+import { FormGroupSelect } from '@/components/forms/group-select'
+import { useGroups } from '@/lib/hooks/use-data'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -56,15 +59,6 @@ const FIELD_TYPES: Array<{ value: ChurchFormFieldType; label: string }> = [
   { value: 'checkbox', label: 'Checkbox' },
   { value: 'date', label: 'Date' },
   { value: 'file', label: 'File link' },
-]
-
-const PREFILL_KEYS = [
-  { value: 'none', label: 'No prefill' },
-  { value: 'first_name', label: 'First name' },
-  { value: 'last_name', label: 'Last name' },
-  { value: 'email', label: 'Email' },
-  { value: 'phone', label: 'Phone' },
-  { value: 'residence', label: 'Residence' },
 ]
 
 function toEditableField(field: ChurchFormField, index: number): EditableField {
@@ -182,11 +176,16 @@ function SortableQuestionCard({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                {PREFILL_KEYS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
+              <SelectContent className="max-h-72">
+                {FORM_PREFILL_KEY_GROUPS.map((group) => (
+                  <SelectGroup key={group.label}>
+                    <SelectLabel>{group.label}</SelectLabel>
+                    {group.keys.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
@@ -198,9 +197,13 @@ function SortableQuestionCard({
               onChange={(event) => onUpdate(field.client_id, { description: event.target.value })}
             />
           </div>
-          {field.field_type === 'dropdown' ? (
+          {field.field_type === 'dropdown' || field.field_type === 'checkbox' ? (
             <div className="space-y-2 md:col-span-2">
-              <Label>Dropdown options (one per line)</Label>
+              <Label>
+                {field.field_type === 'checkbox'
+                  ? 'Checkbox options (one per line)'
+                  : 'Dropdown options (one per line)'}
+              </Label>
               <Textarea
                 value={field.options}
                 onChange={(event) => onUpdate(field.client_id, { options: event.target.value })}
@@ -233,10 +236,12 @@ export default function FormEditorPage() {
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('general')
   const [slug, setSlug] = useState('')
+  const [groupId, setGroupId] = useState('')
   const [status, setStatus] = useState<ChurchForm['status']>('draft')
   const [enableProfileLookup, setEnableProfileLookup] = useState(false)
   const [fields, setFields] = useState<EditableField[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
+  const { data: groups } = useGroups(1, 300)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -281,6 +286,7 @@ export default function FormEditorPage() {
     setDescription(data.form.description ?? '')
     setCategory(data.form.category ?? 'general')
     setSlug(data.form.slug)
+    setGroupId(data.form.group_id ?? '')
     setStatus(data.form.status)
     setEnableProfileLookup(data.form.enable_profile_lookup)
     setFields(data.fields.map(toEditableField))
@@ -319,6 +325,7 @@ export default function FormEditorPage() {
       title: title.trim(),
       description: description.trim() || undefined,
       category: category.trim() || 'general',
+      group_id: groupId || null,
       slug: slug.trim(),
       enable_profile_lookup: enableProfileLookup,
       status: publish ? ('published' as const) : status,
@@ -337,7 +344,7 @@ export default function FormEditorPage() {
       field_type: field.field_type,
       required: field.required,
       options:
-        field.field_type === 'dropdown'
+        field.field_type === 'dropdown' || field.field_type === 'checkbox'
           ? field.options
               .split('\n')
               .map((option) => option.trim())
@@ -456,6 +463,17 @@ export default function FormEditorPage() {
               <Input id="category" value={category} onChange={(event) => setCategory(event.target.value)} />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="group">Campus / Activity scope</Label>
+              <FormGroupSelect
+                id="group"
+                groups={groups ?? []}
+                value={groupId}
+                onValueChange={(value) => setGroupId(value === '__none__' ? '' : value)}
+                allowUnassigned
+                placeholder="Assign to a campus or activity"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select value={status} onValueChange={(value) => setStatus(value as ChurchForm['status'])}>
                 <SelectTrigger id="status">
@@ -488,7 +506,12 @@ export default function FormEditorPage() {
                 checked={enableProfileLookup}
                 onCheckedChange={(checked) => setEnableProfileLookup(checked === true)}
               />
-              <Label htmlFor="profile-lookup">Allow phone lookup to prefill known camp details</Label>
+              <div className="space-y-1">
+                <Label htmlFor="profile-lookup">Allow phone lookup to prefill known camp details</Label>
+                <p className="text-sm text-muted-foreground">
+                  Respondents enter their phone, tap &quot;Find my details&quot;, and fields with a prefill key below are filled from past camp registrations (name, education, health, and more).
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
