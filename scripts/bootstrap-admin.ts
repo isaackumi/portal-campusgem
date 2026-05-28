@@ -16,9 +16,14 @@ function main() {
   )
   const authUid = process.env.BOOTSTRAP_ADMIN_AUTH_UID ?? `cgms-${randomUUID()}`
   const secret = process.env.CAMP_CONVEX_SERVER_SECRET
+  const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim()
 
   if (!secret) {
     console.error('Set CAMP_CONVEX_SERVER_SECRET in .env.local (and in Convex env).')
+    process.exit(1)
+  }
+  if (!email) {
+    console.error('Set BOOTSTRAP_ADMIN_EMAIL in .env.local.')
     process.exit(1)
   }
 
@@ -30,7 +35,7 @@ function main() {
     last_name: rest.join(' ') || undefined,
     phone,
     role,
-    email: process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'isaac.kumi@campusgemministries.org',
+    email,
     membership_id: membershipId,
     auth_uid: authUid,
   })
