@@ -299,6 +299,7 @@ export default defineSchema({
     group_id: v.optional(v.string()),
     status: v.union(v.literal('draft'), v.literal('published'), v.literal('closed')),
     enable_profile_lookup: v.boolean(),
+    capture_respondent_location: v.optional(v.boolean()),
     /** Denormalized count — updated on each public submission */
     response_count: v.optional(v.number()),
     created_by: v.optional(v.string()),
@@ -336,6 +337,9 @@ export default defineSchema({
     respondent_name: v.optional(v.string()),
     respondent_phone: v.optional(v.string()),
     respondent_email: v.optional(v.string()),
+    respondent_latitude: v.optional(v.number()),
+    respondent_longitude: v.optional(v.number()),
+    respondent_location_label: v.optional(v.string()),
     values: v.any(),
     submitted_at: v.number(),
     updated_at: v.number(),

@@ -1,11 +1,9 @@
 'use server'
 
+import { createFormFromTemplate } from '@/lib/actions/form-templates'
 import type { ChurchForm } from '@/lib/types'
-import {
-  CAMPUS_MEMBER_REGISTRATION_CATEGORY,
-  CAMPUS_MEMBER_REGISTRATION_FIELDS,
-} from '@/lib/forms/campus-member-registration'
-import { createForm, listForms, saveFormFields, updateForm } from '@/lib/actions/forms'
+import { CAMPUS_MEMBER_REGISTRATION_CATEGORY } from '@/lib/forms/campus-member-registration'
+import { listForms } from '@/lib/actions/forms'
 
 export async function ensureCampusMemberRegistrationForm(
   groupId: string,
@@ -20,23 +18,18 @@ export async function ensureCampusMemberRegistrationForm(
       return { data: existing, created: false, error: null }
     }
 
-    const { data: created, error: createError } = await createForm({
-      title: `${groupName} — Member registration`,
-      description: `Join ${groupName} at Campus Gem Ministries. Fill in your details below.`,
-      category: CAMPUS_MEMBER_REGISTRATION_CATEGORY,
+    const { data, error } = await createFormFromTemplate({
+      templateId: 'campus_registration',
       group_id: groupId,
-      enable_profile_lookup: true,
+      group_name: groupName,
+      publish: false,
     })
-    if (createError || !created) {
-      return { data: null, created: false, error: createError ?? 'Failed to create registration form' }
+
+    if (error || !data) {
+      return { data: null, created: false, error: error ?? 'Failed to create registration form' }
     }
 
-    const { error: fieldsError } = await saveFormFields(created.id, CAMPUS_MEMBER_REGISTRATION_FIELDS)
-    if (fieldsError) {
-      return { data: created, created: true, error: fieldsError }
-    }
-
-    return { data: created, created: true, error: null }
+    return { data, created: true, error: null }
   } catch (error: unknown) {
     return {
       data: null,
@@ -49,5 +42,6 @@ export async function ensureCampusMemberRegistrationForm(
 export async function publishCampusMemberRegistrationForm(
   formId: string
 ): Promise<{ data: ChurchForm | null; error: string | null }> {
+  const { updateForm } = await import('@/lib/actions/forms')
   return updateForm(formId, { status: 'published' })
 }

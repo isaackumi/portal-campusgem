@@ -170,6 +170,7 @@ export const createFormWithSecret = mutation({
     group_id: v.optional(v.string()),
     created_by: v.optional(v.string()),
     enable_profile_lookup: v.optional(v.boolean()),
+    capture_respondent_location: v.optional(v.boolean()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -198,6 +199,7 @@ export const createFormWithSecret = mutation({
       group_id: args.group_id,
       status: 'draft',
       enable_profile_lookup: args.enable_profile_lookup ?? false,
+      capture_respondent_location: args.capture_respondent_location ?? false,
       response_count: 0,
       created_by: args.created_by,
       updated_at: now,
@@ -217,6 +219,7 @@ export const updateFormWithSecret = mutation({
     status: v.optional(v.union(v.literal('draft'), v.literal('published'), v.literal('closed'))),
     slug: v.optional(v.string()),
     enable_profile_lookup: v.optional(v.boolean()),
+    capture_respondent_location: v.optional(v.boolean()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -239,6 +242,9 @@ export const updateFormWithSecret = mutation({
     }
     if (args.status != null) patch.status = args.status
     if (args.enable_profile_lookup != null) patch.enable_profile_lookup = args.enable_profile_lookup
+    if (args.capture_respondent_location != null) {
+      patch.capture_respondent_location = args.capture_respondent_location
+    }
 
     if (args.slug != null) {
       const slug = slugifyTitle(args.slug)
@@ -304,6 +310,9 @@ export const submitFormResponsePublic = mutation({
     respondent_name: v.optional(v.string()),
     respondent_phone: v.optional(v.string()),
     respondent_email: v.optional(v.string()),
+    respondent_latitude: v.optional(v.number()),
+    respondent_longitude: v.optional(v.number()),
+    respondent_location_label: v.optional(v.string()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -395,11 +404,29 @@ export const submitFormResponsePublic = mutation({
     }
 
     const now = Date.now()
+
+    const latitude = args.respondent_latitude
+    const longitude = args.respondent_longitude
+    const locationLabel = args.respondent_location_label?.trim() || undefined
+    const storeLocation =
+      Boolean(form.capture_respondent_location) &&
+      latitude != null &&
+      longitude != null &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180
+
     const id = await ctx.db.insert('form_responses', {
       form_id: String(form._id),
       respondent_name: args.respondent_name?.trim() || undefined,
       respondent_phone: respondentPhone ? normalizeGhanaPhone(respondentPhone) : undefined,
       respondent_email: respondentEmail || undefined,
+      respondent_latitude: storeLocation ? latitude : undefined,
+      respondent_longitude: storeLocation ? longitude : undefined,
+      respondent_location_label: storeLocation ? locationLabel : undefined,
       values,
       submitted_at: now,
       updated_at: now,

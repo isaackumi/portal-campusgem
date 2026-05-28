@@ -80,6 +80,7 @@ export async function createForm(input: {
   group_id?: string
   created_by?: string
   enable_profile_lookup?: boolean
+  capture_respondent_location?: boolean
 }): Promise<{ data: ChurchForm | null; error: string | null }> {
   requireConvexEnv()
   try {
@@ -104,6 +105,7 @@ export async function updateForm(
     status?: ChurchForm['status']
     slug?: string
     enable_profile_lookup?: boolean
+    capture_respondent_location?: boolean
   }
 ): Promise<{ data: ChurchForm | null; error: string | null }> {
   requireConvexEnv()
@@ -150,6 +152,9 @@ export async function submitFormResponse(input: {
   respondent_name?: string
   respondent_phone?: string
   respondent_email?: string
+  respondent_latitude?: number
+  respondent_longitude?: number
+  respondent_location_label?: string
 }): Promise<{ data: ChurchFormResponse | null; error: string | null }> {
   requireConvexEnv()
   try {

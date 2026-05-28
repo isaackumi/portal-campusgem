@@ -24,6 +24,8 @@ import type { ChurchForm, ChurchFormField } from '@/lib/types'
 import { isValidPhone } from '@/lib/phone'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { PublicFormLocationCapture } from '@/components/forms/public-form-location'
+import type { RespondentLocation } from '@/lib/actions/reverse-geocode'
 
 type Step = 'fill' | 'review'
 
@@ -46,6 +48,7 @@ export default function PublicFormPage() {
   const [profileName, setProfileName] = useState<string | null>(null)
   const [alreadySubmitted, setAlreadySubmitted] = useState(false)
   const [submittedAt, setSubmittedAt] = useState<string | null>(null)
+  const [respondentLocation, setRespondentLocation] = useState<RespondentLocation | null>(null)
 
   const phoneField = useMemo(() => findPhoneField(fields), [fields])
   const showPhoneStep = Boolean(form?.enable_profile_lookup || phoneField)
@@ -226,6 +229,9 @@ export default function PublicFormPage() {
       respondent_phone: phone || undefined,
       respondent_email: emailField ? String(values[emailField.id] ?? '') : undefined,
       respondent_name: nameField ? String(values[nameField.id] ?? '') : profileName ?? undefined,
+      respondent_latitude: respondentLocation?.latitude,
+      respondent_longitude: respondentLocation?.longitude,
+      respondent_location_label: respondentLocation?.label,
     })
     setSubmitting(false)
 
@@ -265,6 +271,15 @@ export default function PublicFormPage() {
               value={formatResponseValue(values[field.id])}
             />
           ))}
+          {respondentLocation ? (
+            <PublicFormReviewRow
+              label="Location"
+              value={
+                respondentLocation.label ??
+                `${respondentLocation.latitude.toFixed(5)}, ${respondentLocation.longitude.toFixed(5)}`
+              }
+            />
+          ) : null}
         </PublicFormDocument>
         <PublicFormReviewActions
           onEdit={() => setStep('fill')}
@@ -318,6 +333,10 @@ export default function PublicFormPage() {
               </PublicFormQuestionBlock>
             ))
           )}
+
+          {form.capture_respondent_location ? (
+            <PublicFormLocationCapture value={respondentLocation} onChange={setRespondentLocation} />
+          ) : null}
         </PublicFormDocument>
 
         <PublicFormSubmitBar>

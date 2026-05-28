@@ -837,6 +837,7 @@ export interface ChurchForm {
   group_id?: string
   status: ChurchFormStatus
   enable_profile_lookup: boolean
+  capture_respondent_location: boolean
   created_by?: string
   created_at: string
   updated_at: string
@@ -862,6 +863,9 @@ export interface ChurchFormResponse {
   respondent_name?: string
   respondent_phone?: string
   respondent_email?: string
+  respondent_latitude?: number
+  respondent_longitude?: number
+  respondent_location_label?: string
   values: Record<string, unknown>
   submitted_at: string
   updated_at: string

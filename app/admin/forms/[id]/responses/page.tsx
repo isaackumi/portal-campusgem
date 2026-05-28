@@ -122,6 +122,7 @@ export default function FormResponsesPage() {
                       <TableHead>Submitted</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Location</TableHead>
                       {fields.map((field) => (
                         <TableHead key={field.id}>{field.label}</TableHead>
                       ))}
@@ -133,6 +134,12 @@ export default function FormResponsesPage() {
                         <TableCell>{new Date(response.submitted_at).toLocaleString()}</TableCell>
                         <TableCell>{response.respondent_phone ?? '—'}</TableCell>
                         <TableCell>{response.respondent_email ?? '—'}</TableCell>
+                        <TableCell>
+                          {response.respondent_location_label ??
+                            (response.respondent_latitude != null && response.respondent_longitude != null
+                              ? `${response.respondent_latitude.toFixed(4)}, ${response.respondent_longitude.toFixed(4)}`
+                              : '—')}
+                        </TableCell>
                         {fields.map((field) => (
                           <TableCell key={`${response.id}-${field.id}`}>
                             {formatResponseValue(response.values[field.id])}

@@ -36,6 +36,7 @@ function mapForm(doc: Record<string, unknown> | null | undefined): ChurchForm | 
     group_id: doc.group_id != null ? String(doc.group_id) : undefined,
     status: (doc.status as ChurchForm['status']) ?? 'draft',
     enable_profile_lookup: Boolean(doc.enable_profile_lookup),
+    capture_respondent_location: Boolean(doc.capture_respondent_location),
     created_by: doc.created_by != null ? String(doc.created_by) : undefined,
     created_at: iso(doc._creationTime as number | undefined),
     updated_at: iso(doc.updated_at as number | undefined),
@@ -66,6 +67,12 @@ function mapResponse(doc: Record<string, unknown>): ChurchFormResponse {
     respondent_name: doc.respondent_name != null ? String(doc.respondent_name) : undefined,
     respondent_phone: doc.respondent_phone != null ? String(doc.respondent_phone) : undefined,
     respondent_email: doc.respondent_email != null ? String(doc.respondent_email) : undefined,
+    respondent_latitude:
+      doc.respondent_latitude != null ? Number(doc.respondent_latitude) : undefined,
+    respondent_longitude:
+      doc.respondent_longitude != null ? Number(doc.respondent_longitude) : undefined,
+    respondent_location_label:
+      doc.respondent_location_label != null ? String(doc.respondent_location_label) : undefined,
     values: (doc.values as Record<string, unknown>) ?? {},
     submitted_at: iso(doc.submitted_at as number | undefined),
     updated_at: iso(doc.updated_at as number | undefined),
@@ -130,6 +137,7 @@ export async function createFormInConvex(input: {
   group_id?: string
   created_by?: string
   enable_profile_lookup?: boolean
+  capture_respondent_location?: boolean
 }): Promise<ChurchForm> {
   const client = new ConvexHttpClient(requireConvexUrl())
   const doc = (await client.mutation(api.forms.createFormWithSecret, {
@@ -151,6 +159,7 @@ export async function updateFormInConvex(
     status?: ChurchForm['status']
     slug?: string
     enable_profile_lookup?: boolean
+    capture_respondent_location?: boolean
   }
 ): Promise<ChurchForm> {
   const client = new ConvexHttpClient(requireConvexUrl())
@@ -191,6 +200,9 @@ export async function submitFormResponseInConvex(input: {
   respondent_name?: string
   respondent_phone?: string
   respondent_email?: string
+  respondent_latitude?: number
+  respondent_longitude?: number
+  respondent_location_label?: string
 }): Promise<ChurchFormResponse> {
   const client = new ConvexHttpClient(requireConvexUrl())
   const doc = (await client.mutation(api.forms.submitFormResponsePublic, input)) as Record<

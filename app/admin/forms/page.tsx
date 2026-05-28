@@ -4,7 +4,8 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers'
-import { createForm } from '@/lib/actions/forms'
+import { createFormFromTemplate } from '@/lib/actions/form-templates'
+import { FORM_TEMPLATES, getFormTemplate, type FormTemplateId } from '@/lib/forms/templates'
 import {
   ensureCampusMemberRegistrationForm,
   publishCampusMemberRegistrationForm,
@@ -17,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
 import {
   Dialog,
@@ -79,6 +81,7 @@ function FormsAdminContent() {
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('outreach')
   const [selectedGroupId, setSelectedGroupId] = useState('')
+  const [templateId, setTemplateId] = useState<FormTemplateId>('blank')
   const [search, setSearch] = useState('')
 
   const { forms, groups, isLoading, isFetching, error, refetch } = useFormsHub(filterGroupId, Boolean(user))
@@ -148,11 +151,14 @@ function FormsAdminContent() {
     }
 
     setCreating(true)
-    const { data, error } = await createForm({
+    const groupName = groupMap.get(selectedGroupId)?.name
+    const { data, error } = await createFormFromTemplate({
+      templateId,
+      group_id: selectedGroupId,
+      group_name: groupName,
       title: title.trim(),
       description: description.trim() || undefined,
-      category: category.trim() || 'general',
-      group_id: selectedGroupId,
+      category: category.trim() || undefined,
       created_by: user?.id,
     })
     setCreating(false)
@@ -162,11 +168,28 @@ function FormsAdminContent() {
       return
     }
 
+    await invalidateFormsHub()
     setCreateOpen(false)
     setTitle('')
     setDescription('')
-    toast({ title: 'Form created', description: 'Add questions and publish when ready.' })
+    setTemplateId('blank')
+    toast({
+      title: 'Form created',
+      description:
+        templateId === 'blank'
+          ? 'Add questions and publish when ready.'
+          : 'Template questions were added — review and publish when ready.',
+    })
     router.push(`/admin/forms/${data.id}`)
+  }
+
+  function handleTemplateChange(next: FormTemplateId) {
+    setTemplateId(next)
+    const template = getFormTemplate(next)
+    const groupName = selectedGroupId ? groupMap.get(selectedGroupId)?.name : undefined
+    setTitle(template.defaultTitle(groupName))
+    setDescription(template.defaultDescription(groupName))
+    setCategory(template.category)
   }
 
   async function handleCreateCampusRegistrationTemplate() {
@@ -259,6 +282,24 @@ function FormsAdminContent() {
                   <DialogDescription>Assign it to a campus or activity, then add questions on the next screen.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Start from template</Label>
+                    <Select value={templateId} onValueChange={(v) => handleTemplateChange(v as FormTemplateId)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FORM_TEMPLATES.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      {getFormTemplate(templateId).description}
+                    </p>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="form-title">Form name</Label>
                     <Input

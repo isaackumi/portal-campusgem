@@ -238,6 +238,7 @@ export default function FormEditorPage() {
   const [groupId, setGroupId] = useState('')
   const [status, setStatus] = useState<ChurchForm['status']>('draft')
   const [enableProfileLookup, setEnableProfileLookup] = useState(false)
+  const [captureRespondentLocation, setCaptureRespondentLocation] = useState(false)
   const [fields, setFields] = useState<EditableField[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const { data: groups } = useGroups(1, 300)
@@ -288,6 +289,7 @@ export default function FormEditorPage() {
     setGroupId(data.form.group_id ?? '')
     setStatus(data.form.status)
     setEnableProfileLookup(data.form.enable_profile_lookup)
+    setCaptureRespondentLocation(data.form.capture_respondent_location)
     setFields(data.fields.map(toEditableField))
     setLoading(false)
   }
@@ -327,6 +329,7 @@ export default function FormEditorPage() {
       group_id: groupId || null,
       slug: slug.trim(),
       enable_profile_lookup: enableProfileLookup,
+      capture_respondent_location: captureRespondentLocation,
       status: publish ? ('published' as const) : status,
     }
 
@@ -505,6 +508,20 @@ export default function FormEditorPage() {
                   Respondents see a phone step at the top of the public form (even if you do not add a separate Phone
                   question). They can tap &quot;Find my details&quot; to fill fields that have a prefill key below.
                   Add a Phone number question if you also want phone stored as its own answered field.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 md:col-span-2">
+              <Checkbox
+                id="capture-location"
+                checked={captureRespondentLocation}
+                onCheckedChange={(checked) => setCaptureRespondentLocation(checked === true)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="capture-location">Offer optional GPS location on the public form</Label>
+                <p className="text-sm text-muted-foreground">
+                  Respondents can tap &quot;Use my location&quot; to share an approximate area (with browser
+                  permission). Stored with their submission for outreach planning.
                 </p>
               </div>
             </div>
