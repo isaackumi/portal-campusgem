@@ -2,7 +2,11 @@
  * Sync forms.response_count from form_responses (run once after deploy).
  * Usage: bunx tsx scripts/backfill-form-response-counts.ts
  */
+import { config } from 'dotenv'
+import path from 'path'
 import { ConvexHttpClient } from 'convex/browser'
+
+config({ path: path.join(process.cwd(), '.env.local') })
 import { api } from '../convex/_generated/api'
 
 const url = process.env.NEXT_PUBLIC_CONVEX_URL
