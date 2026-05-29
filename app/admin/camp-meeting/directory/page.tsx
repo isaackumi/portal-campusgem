@@ -41,9 +41,12 @@ export default function CampDirectoryPage() {
 
   const columns = useMemo(
     () =>
-      createCamperDirectoryColumns((registrationId) => {
-        router.push(`/admin/camp-meeting/registrations/${registrationId}`)
-      }),
+      createCamperDirectoryColumns(
+        (registrationId) => {
+          router.push(`/admin/camp-meeting/registrations/${registrationId}`)
+        },
+        () => void loadDirectory()
+      ),
     [router]
   )
 
@@ -114,7 +117,8 @@ export default function CampDirectoryPage() {
           <CardHeader>
             <CardTitle>All years</CardTitle>
             <CardDescription>
-              Search by name, phone, email, or year. Click a year chip to open that registration.
+              Search by name, phone, email, or year. Use the row menu to promote with a Corporate Gem group role
+              or grant a staff role and permissions (creates a directory profile when needed).
             </CardDescription>
           </CardHeader>
           <CardContent>

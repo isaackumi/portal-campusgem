@@ -11,16 +11,23 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { AddToGroupDialog, type CampContactForGroup } from '@/components/groups/add-to-group-dialog'
-import { Copy, ExternalLink, MoreHorizontal, UserPlus, Users } from 'lucide-react'
+import { PromoteCorporateGemDialog, PromoteStaffRoleDialog } from '@/components/contacts/promote-contact-dialogs'
+import { useAuth } from '@/components/providers'
+import { hasPermission, isStaffRole } from '@/lib/auth/roles'
+import { Copy, ExternalLink, Gem, MoreHorizontal, Shield, UserPlus, Users } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import type { UserRole } from '@/lib/types'
 
 type Props = {
   contactName: string
   phone?: string
   email?: string
   userId?: string
+  userRole?: string
   latestRegistrationId?: string
   showFollowUp?: boolean
+  showPromotions?: boolean
+  onPromoted?: () => void
 }
 
 export function ContactRowActions({
@@ -28,18 +35,49 @@ export function ContactRowActions({
   phone,
   email,
   userId,
+  userRole,
   latestRegistrationId,
   showFollowUp = true,
+  showPromotions = false,
+  onPromoted,
 }: Props) {
   const router = useRouter()
+  const { user: currentUser } = useAuth()
   const { toast } = useToast()
   const [addToGroupOpen, setAddToGroupOpen] = useState(false)
+  const [corporateGemOpen, setCorporateGemOpen] = useState(false)
+  const [staffRoleOpen, setStaffRoleOpen] = useState(false)
+
+  const actorRole = currentUser?.role as UserRole | undefined
+  const canManageGroups = Boolean(actorRole && hasPermission(actorRole, 'groups.manage'))
+  const canManageUsers = Boolean(actorRole && hasPermission(actorRole, 'users.manage'))
+  const canPromoteCorporateGem = showPromotions && canManageGroups && Boolean(phone?.trim())
+  const canPromoteStaff = showPromotions && canManageUsers && Boolean(phone?.trim())
+  const hasStaffAccess = isStaffRole(userRole)
+
+  function campContactInput() {
+    if (!phone?.trim()) return null
+    return {
+      full_name: contactName,
+      phone: phone.trim(),
+      email,
+      userId,
+      registrationId: latestRegistrationId,
+    }
+  }
+
+  function afterPromote() {
+    onPromoted?.()
+    router.refresh()
+  }
 
   function copyPhone() {
     if (!phone) return
     void navigator.clipboard.writeText(phone)
     toast({ title: 'Copied', description: 'Phone number copied to clipboard.' })
   }
+
+  const promotionInput = campContactInput()
 
   return (
     <>
@@ -49,7 +87,7 @@ export function ContactRowActions({
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuContent align="end" className="w-56">
           {latestRegistrationId ? (
             <DropdownMenuItem
               onClick={() => router.push(`/admin/camp-meeting/registrations/${latestRegistrationId}`)}
@@ -75,6 +113,18 @@ export function ContactRowActions({
               Add to group (needs phone)
             </DropdownMenuItem>
           )}
+          {canPromoteCorporateGem ? (
+            <DropdownMenuItem onClick={() => setCorporateGemOpen(true)}>
+              <Gem className="mr-2 h-4 w-4 text-violet-600" />
+              Promote to Corporate Gem…
+            </DropdownMenuItem>
+          ) : null}
+          {canPromoteStaff ? (
+            <DropdownMenuItem onClick={() => setStaffRoleOpen(true)}>
+              <Shield className="mr-2 h-4 w-4 text-amber-600" />
+              {hasStaffAccess ? 'Change staff role…' : 'Grant staff role…'}
+            </DropdownMenuItem>
+          ) : null}
           {phone ? (
             <>
               <DropdownMenuSeparator />
@@ -102,7 +152,24 @@ export function ContactRowActions({
             : undefined
         }
         contactName={contactName}
-        onSuccess={() => router.refresh()}
+        onSuccess={afterPromote}
+      />
+
+      <PromoteCorporateGemDialog
+        open={corporateGemOpen}
+        onOpenChange={setCorporateGemOpen}
+        contactName={contactName}
+        input={promotionInput}
+        onSuccess={afterPromote}
+      />
+
+      <PromoteStaffRoleDialog
+        open={staffRoleOpen}
+        onOpenChange={setStaffRoleOpen}
+        contactName={contactName}
+        input={promotionInput}
+        currentUserRole={userRole}
+        onSuccess={afterPromote}
       />
     </>
   )

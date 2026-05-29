@@ -155,6 +155,41 @@ export function isUserRole(value: string | null | undefined): value is UserRole 
   return Boolean(value && USER_ROLES.includes(value as UserRole))
 }
 
+/** Roles that can be assigned when elevating access from camp / user management. */
+export const STAFF_ROLES: UserRole[] = ['admin', 'pastor', 'elder', 'finance_officer']
+
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  'dashboard.view': 'View dashboard',
+  'members.view': 'View members',
+  'members.manage': 'Manage members',
+  'visitors.view': 'View visitors',
+  'visitors.manage': 'Manage visitors',
+  'groups.view': 'View groups',
+  'groups.manage': 'Manage groups',
+  'attendance.view': 'View attendance',
+  'attendance.record': 'Record attendance',
+  'attendance.manage': 'Manage attendance',
+  'sms.send': 'Send SMS',
+  'celebrations.view': 'View celebrations',
+  'camp.view': 'View camp meeting',
+  'camp.manage': 'Manage camp meeting',
+  'camp.payments': 'Manage camp payments',
+  'camp.settings': 'Camp settings',
+  'forms.manage': 'Manage forms',
+  'users.manage': 'Manage users',
+  'admins.manage': 'Manage administrators',
+  'financial.view': 'View financials',
+  'financial.manage': 'Manage financials',
+}
+
+export function permissionsForRole(role: UserRole): Permission[] {
+  return ROLE_PERMISSIONS[role] ? [...ROLE_PERMISSIONS[role]] : []
+}
+
+export function isStaffRole(role: string | null | undefined): boolean {
+  return Boolean(role && STAFF_ROLES.includes(role as UserRole))
+}
+
 export function hasPermission(role: UserRole, permission: Permission): boolean {
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false
 }

@@ -157,13 +157,16 @@ function DashboardContent() {
               phone={row.original.phone}
               email={row.original.email}
               userId={row.original.user_id}
+              userRole={row.original.user_role}
               latestRegistrationId={latest?.registration_id}
+              showPromotions
+              onPromoted={() => void loadCampDirectory()}
             />
           )
         },
       },
     ],
-    []
+    [loadCampDirectory]
   )
 
   const followUpCandidates = useMemo(

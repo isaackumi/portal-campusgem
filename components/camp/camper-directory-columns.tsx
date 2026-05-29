@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 
 export function createCamperDirectoryColumns(
-  onOpenRegistration: (registrationId: string) => void
+  onOpenRegistration: (registrationId: string) => void,
+  onRefresh?: () => void
 ): ColumnDef<CampCamperDirectoryRow>[] {
   return [
     {
@@ -104,8 +105,11 @@ export function createCamperDirectoryColumns(
             phone={row.original.phone}
             email={row.original.email}
             userId={row.original.user_id}
+            userRole={row.original.user_role}
             latestRegistrationId={latest?.registration_id}
             showFollowUp={false}
+            showPromotions
+            onPromoted={onRefresh}
           />
         )
       },
