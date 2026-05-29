@@ -39,6 +39,7 @@ import {
   parseFieldOptionsText,
 } from '@/components/forms/field-options-editor'
 import { FormPublicLink } from '@/components/forms/form-public-link'
+import { DeleteFormDialog } from '@/components/forms/delete-form-dialog'
 import { FormGroupSelect } from '@/components/forms/group-select'
 import { useGroups } from '@/lib/hooks/use-data'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -243,6 +244,7 @@ export default function FormEditorPage() {
   const [captureRespondentLocation, setCaptureRespondentLocation] = useState(false)
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [accentColor, setAccentColor] = useState('auto')
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [fields, setFields] = useState<EditableField[]>([])
   const [creatorName, setCreatorName] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -434,6 +436,14 @@ export default function FormEditorPage() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => router.push(`/admin/forms/${form.id}/responses`)}>
               View responses
+            </Button>
+            <Button
+              variant="outline"
+              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
             </Button>
             <Button variant="outline" onClick={() => void handleSave(false)} disabled={saving}>
               <Save className="mr-2 h-4 w-4" />
@@ -650,6 +660,13 @@ export default function FormEditorPage() {
           <Plus className="mr-2 h-4 w-4" />
           Add question
         </Button>
+
+        <DeleteFormDialog
+          form={form}
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          onDeleted={() => router.push('/admin/forms')}
+        />
       </div>
     </div>
   )

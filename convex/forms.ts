@@ -453,3 +453,37 @@ export const submitFormResponsePublic = mutation({
     return await ctx.db.get('form_responses', id)
   },
 })
+
+export const deleteFormWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    form_id: v.id('forms'),
+  },
+  returns: v.object({ deleted: v.boolean() }),
+  handler: async (ctx, { secret, form_id }) => {
+    assertServerSecret(secret)
+    const form = await ctx.db.get('forms', form_id)
+    if (!form) throw new Error('Form not found.')
+
+    const formIdStr = String(form_id)
+
+    const fields = await ctx.db
+      .query('form_fields')
+      .withIndex('by_form', (q) => q.eq('form_id', formIdStr))
+      .collect()
+    for (const field of fields) {
+      await ctx.db.delete('form_fields', field._id)
+    }
+
+    const responses = await ctx.db
+      .query('form_responses')
+      .withIndex('by_form', (q) => q.eq('form_id', formIdStr))
+      .collect()
+    for (const response of responses) {
+      await ctx.db.delete('form_responses', response._id)
+    }
+
+    await ctx.db.delete('forms', form_id)
+    return { deleted: true }
+  },
+})

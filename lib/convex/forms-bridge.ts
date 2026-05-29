@@ -192,6 +192,14 @@ export async function replaceFormFieldsInConvex(
   return rows.map(mapField)
 }
 
+export async function deleteFormInConvex(formId: string): Promise<void> {
+  const client = getConvexHttpClient()
+  await client.mutation(api.forms.deleteFormWithSecret, {
+    secret: requireCampAdminSecret(),
+    form_id: formId as Id<'forms'>,
+  })
+}
+
 export async function submitFormResponseInConvex(input: {
   slug: string
   values: Record<string, unknown>

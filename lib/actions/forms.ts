@@ -167,6 +167,19 @@ export async function saveFormFields(
   }
 }
 
+export async function deleteForm(formId: string): Promise<{ error: string | null }> {
+  requireConvexEnv()
+  try {
+    const { deleteFormInConvex } = await import('@/lib/convex/forms-bridge')
+    await deleteFormInConvex(formId)
+    return { error: null }
+  } catch (error: unknown) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to delete form',
+    }
+  }
+}
+
 export async function submitFormResponse(input: {
   slug: string
   values: Record<string, unknown>

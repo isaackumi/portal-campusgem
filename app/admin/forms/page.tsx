@@ -40,6 +40,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { useFormsHub, useInvalidateFormsHub } from '@/lib/hooks/use-forms-hub'
 import { FormPublicLink } from '@/components/forms/form-public-link'
+import { DeleteFormDialog } from '@/components/forms/delete-form-dialog'
 import { FormGroupSelect } from '@/components/forms/group-select'
 import { getGroupTypeLabel } from '@/lib/constants/groups'
 import { formatDateTime } from '@/lib/utils'
@@ -55,6 +56,7 @@ import {
   Link2,
   Plus,
   Sparkles,
+  Trash2,
   UserRound,
 } from 'lucide-react'
 
@@ -96,6 +98,7 @@ function FormsAdminContent() {
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [templateId, setTemplateId] = useState<FormTemplateId>('blank')
   const [search, setSearch] = useState('')
+  const [formToDelete, setFormToDelete] = useState<ChurchForm | null>(null)
 
   const { forms, groups, creatorsById, isLoading, isFetching, error, refetch } = useFormsHub(
     filterGroupId,
@@ -674,6 +677,15 @@ function FormsAdminContent() {
                       >
                         View responses
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="col-span-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => setFormToDelete(form)}
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        Delete form
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -681,6 +693,17 @@ function FormsAdminContent() {
             })}
           </div>
         )}
+        <DeleteFormDialog
+          form={formToDelete}
+          open={formToDelete != null}
+          onOpenChange={(open) => {
+            if (!open) setFormToDelete(null)
+          }}
+          onDeleted={() => {
+            setFormToDelete(null)
+            void invalidateFormsHub()
+          }}
+        />
       </div>
     </div>
   )
