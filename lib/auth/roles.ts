@@ -124,6 +124,8 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/admin/admins', permission: 'admins.manage' },
   { prefix: '/admin/users', permission: 'users.manage' },
   { prefix: '/admin/groups', permission: 'groups.manage' },
+  { prefix: '/admin/campus-activities', permission: 'groups.manage' },
+  { prefix: '/admin/corporate-gem', permission: 'groups.manage' },
   { prefix: '/admin/camp-meeting/years', permission: 'camp.settings' },
   { prefix: '/admin/camp-meeting/notifications', permission: 'camp.settings' },
   { prefix: '/admin/camp-meeting/payments', permission: 'camp.payments' },
@@ -196,7 +198,8 @@ export function hasPermission(role: UserRole, permission: Permission): boolean {
 
 export function canAccessPath(role: UserRole | null | undefined, pathname: string): boolean {
   if (!role || !isUserRole(role)) return false
-  const match = ROUTE_PERMISSIONS.find((rule) => pathname.startsWith(rule.prefix))
+  const path = pathname.split('?')[0].split('#')[0]
+  const match = ROUTE_PERMISSIONS.find((rule) => path.startsWith(rule.prefix))
   if (!match) return true
   return hasPermission(role, match.permission)
 }

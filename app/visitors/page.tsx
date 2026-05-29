@@ -11,6 +11,7 @@ import { dataService } from '@/lib/services/data-service'
 import { useQuery } from '@tanstack/react-query'
 import { Visitor } from '@/lib/types'
 import { formatDate } from '@/lib/utils'
+import { DashboardLayout } from '@/components/dashboard-layout'
 import { 
   Users, 
   Search, 
@@ -87,7 +88,8 @@ export default function VisitorsPage() {
   // Show loading state
   if (authLoading || visitorsQuery.isLoading || visitorsQuery.isFetching) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <DashboardLayout>
+      <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -99,6 +101,7 @@ export default function VisitorsPage() {
           </div>
         </div>
       </div>
+      </DashboardLayout>
     )
   }
 
@@ -108,7 +111,8 @@ export default function VisitorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <DashboardLayout>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -345,5 +349,6 @@ export default function VisitorsPage() {
         </Card>
       </div>
     </div>
+    </DashboardLayout>
   )
 }

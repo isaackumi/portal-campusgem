@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DashboardLayout } from '@/components/dashboard-layout'
 import { dataService } from '@/lib/services/data-service'
 import { GROUP_MEMBERSHIP_ROLES, GROUP_MEMBERSHIP_ROLE_LABELS } from '@/lib/constants/groups'
 import { AppUser, Group, GroupMembership } from '@/lib/types'
@@ -275,13 +276,27 @@ export default function GroupDetailsPage() {
     )
   }
 
-  // Show nothing while redirecting
-  if (!user || !group) {
+  if (!user) {
     return null
   }
 
+  if (!group) {
+    return (
+      <DashboardLayout>
+        <div className="py-12 text-center">
+          <h2 className="text-lg font-semibold text-gray-900">Group not found</h2>
+          <p className="mt-2 text-sm text-muted-foreground">This group may have been removed or the link is invalid.</p>
+          <Button className="mt-4" onClick={() => router.push('/groups')}>
+            Back to Groups
+          </Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <DashboardLayout>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -706,5 +721,6 @@ export default function GroupDetailsPage() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   )
 }

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingGrid, LoadingStats, LoadingPage } from '@/components/ui/loading'
 import { ErrorDisplay, EmptyState } from '@/components/ui/error-display'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { DashboardLayout } from '@/components/dashboard-layout'
 import { 
   Users, 
   Search, 
@@ -403,7 +404,9 @@ function GroupsContent() {
 export default function GroupsPage() {
   return (
     <ErrorBoundary>
-      <GroupsContent />
+      <DashboardLayout>
+        <GroupsContent />
+      </DashboardLayout>
     </ErrorBoundary>
   )
 }

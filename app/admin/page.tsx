@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, Calendar, ClipboardList, Group, Shield, Users } from 'lucide-react'
+import { Briefcase, Building2, Calendar, ClipboardList, Group, Shield, Users } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const adminSections = [
@@ -22,6 +22,12 @@ const adminSections = [
     title: 'Campus & Activities',
     description: 'Campus fellowships and church-wide events with members and scoped forms.',
     icon: Building2,
+  },
+  {
+    href: '/admin/corporate-gem',
+    title: 'Corporate Gem',
+    description: 'Graduates and professionals — members, leaders, and registration forms.',
+    icon: Briefcase,
   },
   {
     href: '/admin/forms',

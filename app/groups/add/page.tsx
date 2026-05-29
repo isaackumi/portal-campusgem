@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
+import { DashboardLayout } from '@/components/dashboard-layout'
 import { dataService } from '@/lib/services/data-service'
 import { AppUser, Group } from '@/lib/types'
 import {
@@ -254,7 +255,8 @@ export default function CreateGroupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <DashboardLayout>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -664,5 +666,6 @@ export default function CreateGroupPage() {
         </form>
       </div>
     </div>
+    </DashboardLayout>
   )
 }
