@@ -13,6 +13,7 @@ type Props = {
   allowUnassigned?: boolean
   required?: boolean
   id?: string
+  disabled?: boolean
 }
 
 export function FormGroupSelect({
@@ -22,6 +23,7 @@ export function FormGroupSelect({
   placeholder = 'Select campus or activity',
   allowUnassigned = false,
   id,
+  disabled = false,
 }: Props) {
   const { campusGroups, corporateGemGroups, activityGroups, otherGroups, inactiveGroups } = useMemo(() => {
     const campus: Group[] = []
@@ -64,6 +66,7 @@ export function FormGroupSelect({
   return (
     <Select
       value={value || (allowUnassigned ? '__none__' : undefined)}
+      disabled={disabled}
       onValueChange={(next) => {
         const normalized = next === '__none__' ? '' : next
         if (normalized === value) return

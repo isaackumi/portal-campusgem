@@ -7,9 +7,17 @@ import { useAuth } from '@/components/providers'
 import { createFormFromTemplate } from '@/lib/actions/form-templates'
 import { FORM_TEMPLATES, getFormTemplate, type FormTemplateId } from '@/lib/forms/templates'
 import {
+  ensureCampMeetingRegistrationForm,
+  ensureEaglesCampMeetingGroup,
+} from '@/lib/actions/camp-meeting-form'
+import {
   ensureCampusMemberRegistrationForm,
   publishCampusMemberRegistrationForm,
 } from '@/lib/actions/campus-registration-form'
+import {
+  CAMP_MEETING_REGISTRATION_CATEGORY,
+  DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME,
+} from '@/lib/constants/camp-meeting'
 import { CAMPUS_MEMBER_REGISTRATION_CATEGORY } from '@/lib/forms/campus-member-registration'
 import type { ChurchForm } from '@/lib/types'
 import { Button } from '@/components/ui/button'
@@ -80,6 +88,7 @@ function FormsAdminContent() {
   const [filterGroupId, setFilterGroupIdState] = useState(() => searchParams.get('group') ?? '')
   const [creating, setCreating] = useState(false)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
+  const [creatingCampMeetingTemplate, setCreatingCampMeetingTemplate] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -158,12 +167,36 @@ function FormsAdminContent() {
     toast({ variant: 'destructive', title: 'Error', description: error })
   }, [error, toast])
 
+  async function applyCampMeetingGroupSelection(): Promise<{ id: string; name: string } | null> {
+    const { data, error, created } = await ensureEaglesCampMeetingGroup()
+    if (error || !data) {
+      toast({
+        variant: 'destructive',
+        title: 'Group setup failed',
+        description: error ?? 'Could not set up Eagles camp meeting group.',
+      })
+      return null
+    }
+    if (created) await invalidateFormsHub()
+    setSelectedGroupId(data.id)
+    return { id: data.id, name: data.name }
+  }
+
   async function handleCreate() {
     if (!title.trim()) {
       toast({ variant: 'destructive', title: 'Title required', description: 'Give the form a name.' })
       return
     }
-    if (!selectedGroupId) {
+
+    let groupId = selectedGroupId
+    let groupName = groupId ? groupMap.get(groupId)?.name : undefined
+
+    if (templateId === 'camp_meeting_registration') {
+      const group = await applyCampMeetingGroupSelection()
+      if (!group) return
+      groupId = group.id
+      groupName = group.name
+    } else if (!groupId) {
       toast({
         variant: 'destructive',
         title: 'Group required',
@@ -173,10 +206,9 @@ function FormsAdminContent() {
     }
 
     setCreating(true)
-    const groupName = groupMap.get(selectedGroupId)?.name
     const { data, error } = await createFormFromTemplate({
       templateId,
-      group_id: selectedGroupId,
+      group_id: groupId,
       group_name: groupName,
       title: title.trim(),
       description: description.trim() || undefined,
@@ -205,13 +237,39 @@ function FormsAdminContent() {
     router.push(`/admin/forms/${data.id}`)
   }
 
-  function handleTemplateChange(next: FormTemplateId) {
+  async function handleTemplateChange(next: FormTemplateId) {
     setTemplateId(next)
     const template = getFormTemplate(next)
-    const groupName = selectedGroupId ? groupMap.get(selectedGroupId)?.name : undefined
+    let groupName = selectedGroupId ? groupMap.get(selectedGroupId)?.name : undefined
+
+    if (next === 'camp_meeting_registration') {
+      const group = await applyCampMeetingGroupSelection()
+      if (group) groupName = group.name
+    }
+
     setTitle(template.defaultTitle(groupName))
     setDescription(template.defaultDescription(groupName))
     setCategory(template.category)
+  }
+
+  async function handleCreateCampMeetingRegistrationTemplate() {
+    setCreatingCampMeetingTemplate(true)
+    const { data, created, error } = await ensureCampMeetingRegistrationForm()
+    setCreatingCampMeetingTemplate(false)
+
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Setup failed', description: error ?? 'Unknown error' })
+      return
+    }
+
+    await invalidateFormsHub()
+    toast({
+      title: created ? 'Camp meeting form ready' : 'Form already exists',
+      description: created
+        ? `Created under ${DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME} — review and publish when ready.`
+        : `Opening existing camp meeting form for ${DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}.`,
+    })
+    router.push(`/admin/forms/${data.id}`)
   }
 
   async function handleCreateCampusRegistrationTemplate() {
@@ -306,7 +364,7 @@ function FormsAdminContent() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Start from template</Label>
-                    <Select value={templateId} onValueChange={(v) => handleTemplateChange(v as FormTemplateId)}>
+                    <Select value={templateId} onValueChange={(v) => void handleTemplateChange(v as FormTemplateId)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -336,8 +394,15 @@ function FormsAdminContent() {
                     <FormGroupSelect
                       groups={groups}
                       value={selectedGroupId}
+                      disabled={templateId === 'camp_meeting_registration'}
                       onValueChange={(v) => setSelectedGroupId(v === '__none__' ? '' : v)}
                     />
+                    {templateId === 'camp_meeting_registration' ? (
+                      <p className="text-sm text-muted-foreground">
+                        Camp meeting forms are assigned to{' '}
+                        <span className="font-medium text-slate-800">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span>.
+                      </p>
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="form-category">Category tag</Label>
@@ -446,6 +511,30 @@ function FormsAdminContent() {
           </CardContent>
         </Card>
 
+        <Card className="border-indigo-200/80 bg-gradient-to-r from-indigo-50 to-violet-50/50 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ClipboardList className="h-5 w-5 text-indigo-700" />
+              Eagles camp meeting registration
+            </CardTitle>
+            <CardDescription>
+              One-click camp meeting sign-up under{' '}
+              <span className="font-medium text-slate-800">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span> — phone
+              lookup, education, age, optional location and comments.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="secondary"
+              className="border-indigo-300 bg-white hover:bg-indigo-50"
+              disabled={creatingCampMeetingTemplate}
+              onClick={() => void handleCreateCampMeetingRegistrationTemplate()}
+            >
+              {creatingCampMeetingTemplate ? 'Setting up...' : 'Create camp meeting form'}
+            </Button>
+          </CardContent>
+        </Card>
+
         <div className="flex flex-col gap-4 rounded-xl border bg-white/90 p-4 shadow-sm sm:flex-row sm:items-center">
           <div className="flex-1 space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Filter by group</Label>
@@ -500,6 +589,7 @@ function FormsAdminContent() {
             {filteredForms.map((form) => {
               const group = form.group_id ? groupMap.get(form.group_id) : undefined
               const isRegistration = form.category === CAMPUS_MEMBER_REGISTRATION_CATEGORY
+              const isCampMeeting = form.category === CAMP_MEETING_REGISTRATION_CATEGORY
               const creatorName = form.created_by
                 ? creatorsById[form.created_by] ?? 'Unknown user'
                 : 'Unknown'
@@ -524,6 +614,10 @@ function FormsAdminContent() {
                       {isRegistration ? (
                         <Badge className="bg-amber-100 font-normal text-amber-900 hover:bg-amber-100">
                           Member registration
+                        </Badge>
+                      ) : isCampMeeting ? (
+                        <Badge className="bg-indigo-100 font-normal text-indigo-900 hover:bg-indigo-100">
+                          Camp meeting
                         </Badge>
                       ) : form.category ? (
                         <Badge variant="outline" className="font-normal">

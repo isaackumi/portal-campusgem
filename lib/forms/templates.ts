@@ -1,6 +1,9 @@
 import type { ChurchFormField } from '@/lib/types'
 import {
   CAMP_MEETING_REGISTRATION_CATEGORY,
+  DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME,
+} from '@/lib/constants/camp-meeting'
+import {
   CORPORATE_GEM_REGISTRATION_CATEGORY,
   STUDENT_REGISTRATION_CATEGORY,
 } from '@/lib/constants/corporate-gem'
@@ -215,11 +218,13 @@ export const FORM_TEMPLATES: FormTemplate[] = [
     enable_profile_lookup: true,
     capture_respondent_location: false,
     defaultTitle: (groupName) =>
-      groupName ? `Camp Meeting — ${groupName}` : 'Camp Meeting registration',
+      groupName
+        ? `${groupName} registration`
+        : `${DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME} registration`,
     defaultDescription: (groupName) =>
       groupName
-        ? `Register for camp meeting (${groupName}).`
-        : 'Register for the upcoming Eagles Camp / Camp Meeting.',
+        ? `Register for ${groupName}.`
+        : `Register for ${DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}.`,
     fields: CAMP_MEETING_REGISTRATION_FIELDS,
   },
   {

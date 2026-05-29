@@ -47,6 +47,7 @@ export const CAMPUS_NAME_SUGGESTIONS = [
 ] as const
 
 export const ACTIVITY_NAME_SUGGESTIONS = [
+  'Eagles camp meeting',
   'Love Feat',
   'Fun Fair',
   'Outreach',
