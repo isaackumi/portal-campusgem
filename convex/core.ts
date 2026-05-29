@@ -22,6 +22,7 @@ const serviceType = v.union(
 
 const groupType = v.union(
   v.literal('campus'),
+  v.literal('corporate_gem'),
   v.literal('activity'),
   v.literal('ministry'),
   v.literal('fellowship'),

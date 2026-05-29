@@ -30,6 +30,7 @@ import {
   Cake
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { promoteUserToCorporateGem } from '@/lib/actions/corporate-gem'
 import { useAllUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/hooks/use-data'
 import { useAuth } from '@/components/providers'
 import { AppUser } from '@/lib/types'
@@ -52,6 +53,7 @@ export default function UsersManagementPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [editingUser, setEditingUser] = useState<AppUser | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [promotingUserId, setPromotingUserId] = useState<string | null>(null)
   
   // Form state for creating/editing users
   const [formData, setFormData] = useState({
@@ -288,6 +290,20 @@ export default function UsersManagementPage() {
       return
     }
     router.push(`/admin/users/${user.id}`)
+  }
+
+  async function handlePromoteToCorporateGem(user: AppUser) {
+    setPromotingUserId(user.id)
+    const { data, group, error } = await promoteUserToCorporateGem(user.id)
+    setPromotingUserId(null)
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Promotion failed', description: error ?? 'Could not add to Corporate Gem' })
+      return
+    }
+    toast({
+      title: 'Added to Corporate Gem',
+      description: `${user.full_name} is now in ${group?.name ?? 'Corporate Gem'} as ${data.role}.`,
+    })
   }
 
   const openEditDialog = async (user: AppUser) => {
@@ -676,6 +692,15 @@ export default function UsersManagementPage() {
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-violet-200 text-violet-900 hover:bg-violet-50"
+                        disabled={promotingUserId === user.id}
+                        onClick={() => void handlePromoteToCorporateGem(user)}
+                      >
+                        {promotingUserId === user.id ? '…' : 'Corporate Gem'}
                       </Button>
                       <Button
                         variant="outline"

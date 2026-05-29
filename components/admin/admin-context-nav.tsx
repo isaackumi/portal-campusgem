@@ -11,6 +11,7 @@ const adminLinks = [
     label: 'Camp',
     match: (path: string) => path.startsWith('/admin/camp-meeting'),
   },
+  { href: '/admin/corporate-gem', label: 'Corporate Gem', match: (path: string) => path === '/admin/corporate-gem' },
   { href: '/admin/forms', label: 'Forms', match: (path: string) => path.startsWith('/admin/forms') },
   { href: '/admin/users', label: 'Users', match: (path: string) => path === '/admin/users' },
   { href: '/admin/admins', label: 'Admins', match: (path: string) => path === '/admin/admins' },

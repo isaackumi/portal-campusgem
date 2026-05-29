@@ -3,6 +3,11 @@ import type { Group, GroupMembership } from '@/lib/types'
 /** Convex-backed group kinds used for campuses, events, and legacy ministries. */
 export const GROUP_TYPES = [
   { value: 'campus', label: 'Campus fellowship', description: 'University or campus chapter (leaders, executives, members)' },
+  {
+    value: 'corporate_gem',
+    label: 'Corporate Gem',
+    description: 'Graduates and workers — executives, leaders, members, and activities',
+  },
   { value: 'activity', label: 'General activity / event', description: 'Church-wide events (Love feat, fun fair, outreach, etc.)' },
   { value: 'ministry', label: 'Ministry', description: 'Ongoing ministry team' },
   { value: 'fellowship', label: 'Fellowship', description: 'Smaller fellowship group' },
@@ -58,6 +63,8 @@ export function getGroupTypeBadgeClass(type: string | undefined): string {
   switch (type) {
     case 'campus':
       return 'bg-indigo-100 text-indigo-800'
+    case 'corporate_gem':
+      return 'bg-violet-100 text-violet-900'
     case 'activity':
       return 'bg-amber-100 text-amber-900'
     case 'ministry':

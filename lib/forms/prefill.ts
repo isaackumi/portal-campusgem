@@ -23,6 +23,14 @@ export type FormPrefillKey =
   | 'health_challenges'
   | 'role'
   | 'is_new_registrant'
+  | 'program_of_study'
+  | 'student_id'
+  | 'hall_of_residence'
+  | 'room_number'
+  | 'academic_level'
+  | 'ministry_contribution'
+  | 'prayer_request'
+  | 'whatsapp'
 
 export const FORM_PREFILL_KEY_GROUPS: Array<{
   label: string
@@ -57,6 +65,19 @@ export const FORM_PREFILL_KEY_GROUPS: Array<{
       { value: 'times_attended', label: 'Times attended (number)' },
       { value: 'is_new_registrant', label: 'Is new registrant (yes/no)' },
       { value: 'role', label: 'Role' },
+    ],
+  },
+  {
+    label: 'Student / campus',
+    keys: [
+      { value: 'program_of_study', label: 'Program of study' },
+      { value: 'student_id', label: 'Student ID' },
+      { value: 'hall_of_residence', label: 'Hall of residence' },
+      { value: 'room_number', label: 'Room number' },
+      { value: 'academic_level', label: 'Level (100, 200, Masters…)' },
+      { value: 'ministry_contribution', label: 'Ministry contribution' },
+      { value: 'prayer_request', label: 'Prayer request' },
+      { value: 'whatsapp', label: 'WhatsApp number' },
     ],
   },
   {
@@ -110,6 +131,14 @@ export type FormPrefillProfile = {
   health_challenges?: string[]
   role?: string
   is_new_registrant?: boolean
+  program_of_study?: string
+  student_id?: string
+  hall_of_residence?: string
+  room_number?: string
+  academic_level?: string
+  ministry_contribution?: string
+  prayer_request?: string
+  whatsapp?: string
 }
 
 export function campRegistrationToPrefillProfile(reg: CampRegistration): FormPrefillProfile {
@@ -197,6 +226,22 @@ export function getProfilePrefillRaw(profile: FormPrefillProfile, key: FormPrefi
       return profile.role
     case 'is_new_registrant':
       return profile.is_new_registrant
+    case 'program_of_study':
+      return profile.program_of_study
+    case 'student_id':
+      return profile.student_id
+    case 'hall_of_residence':
+      return profile.hall_of_residence
+    case 'room_number':
+      return profile.room_number
+    case 'academic_level':
+      return profile.academic_level
+    case 'ministry_contribution':
+      return profile.ministry_contribution
+    case 'prayer_request':
+      return profile.prayer_request
+    case 'whatsapp':
+      return profile.whatsapp ?? profile.phone
     default:
       return undefined
   }

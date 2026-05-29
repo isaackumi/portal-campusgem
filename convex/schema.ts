@@ -139,6 +139,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     group_type: v.union(
       v.literal('campus'),
+      v.literal('corporate_gem'),
       v.literal('activity'),
       v.literal('ministry'),
       v.literal('fellowship'),

@@ -25,6 +25,12 @@ import { isValidPhone } from '@/lib/phone'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { PublicFormLocationCapture } from '@/components/forms/public-form-location'
+import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-phone'
+import {
+  applyWhatsappSameAsPhone,
+  findWhatsappField,
+  shouldDefaultWhatsappSameAsPhone,
+} from '@/lib/forms/whatsapp-phone'
 import type { RespondentLocation } from '@/lib/actions/reverse-geocode'
 
 type Step = 'fill' | 'review'
@@ -49,13 +55,27 @@ export default function PublicFormPage() {
   const [alreadySubmitted, setAlreadySubmitted] = useState(false)
   const [submittedAt, setSubmittedAt] = useState<string | null>(null)
   const [respondentLocation, setRespondentLocation] = useState<RespondentLocation | null>(null)
+  const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(true)
 
   const phoneField = useMemo(() => findPhoneField(fields), [fields])
+  const whatsappField = useMemo(() => findWhatsappField(fields), [fields])
   const showPhoneStep = Boolean(form?.enable_profile_lookup || phoneField)
   const visibleFields = useMemo(
-    () => fields.filter((field) => field.id !== phoneField?.id),
-    [fields, phoneField]
+    () =>
+      fields.filter((field) => {
+        if (field.id === phoneField?.id) return false
+        if (field.id === whatsappField?.id) return false
+        return true
+      }),
+    [fields, phoneField, whatsappField]
   )
+
+  useEffect(() => {
+    const phone = phoneField ? String(values[phoneField.id] ?? '').trim() : lookupPhone.trim()
+    if (shouldDefaultWhatsappSameAsPhone(values, fields, phone)) {
+      setWhatsappSameAsPhone(true)
+    }
+  }, [values, fields, phoneField, lookupPhone])
 
   useEffect(() => {
     void loadForm()
@@ -223,9 +243,11 @@ export default function PublicFormPage() {
     const emailField = fields.find((f) => f.field_type === 'email')
     const nameField = fields.find((f) => f.prefill_key === 'full_name' || f.label.toLowerCase().includes('name'))
 
+    const submitValues = applyWhatsappSameAsPhone(values, fields, phone, whatsappSameAsPhone)
+
     const { error } = await submitFormResponse({
       slug: form.slug,
-      values,
+      values: submitValues,
       respondent_phone: phone || undefined,
       respondent_email: emailField ? String(values[emailField.id] ?? '') : undefined,
       respondent_name: nameField ? String(values[nameField.id] ?? '') : profileName ?? undefined,
@@ -258,6 +280,7 @@ export default function PublicFormPage() {
 
   if (step === 'review') {
     const reviewPhone = getRespondentPhone()
+    const displayValues = applyWhatsappSameAsPhone(values, fields, reviewPhone, whatsappSameAsPhone)
     return (
       <PublicFormPageShell>
         <PublicFormDocument step="review" form={form}>
@@ -268,7 +291,7 @@ export default function PublicFormPage() {
             <PublicFormReviewRow
               key={field.id}
               label={field.label}
-              value={formatResponseValue(values[field.id])}
+              value={formatResponseValue(displayValues[field.id])}
             />
           ))}
           {respondentLocation ? (
@@ -322,7 +345,7 @@ export default function PublicFormPage() {
               <PublicFormQuestionBlock
                 key={field.id}
                 field={field}
-                isLast={index === visibleFields.length - 1}
+                isLast={!whatsappField && index === visibleFields.length - 1}
               >
                 <PublicFormFieldInput
                   field={field}
@@ -333,6 +356,18 @@ export default function PublicFormPage() {
               </PublicFormQuestionBlock>
             ))
           )}
+
+          {whatsappField ? (
+            <WhatsappSameAsPhoneBlock
+              whatsappField={whatsappField}
+              phone={getRespondentPhone()}
+              value={values[whatsappField.id]}
+              sameAsPhone={whatsappSameAsPhone}
+              onSameAsPhoneChange={setWhatsappSameAsPhone}
+              onValueChange={(value) => setFieldValue(whatsappField.id, value)}
+              isLast={!form.capture_respondent_location}
+            />
+          ) : null}
 
           {form.capture_respondent_location ? (
             <PublicFormLocationCapture value={respondentLocation} onChange={setRespondentLocation} />

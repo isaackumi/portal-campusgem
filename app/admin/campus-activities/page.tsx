@@ -19,6 +19,7 @@ import {
   ensureCampusMemberRegistrationForm,
   publishCampusMemberRegistrationForm,
 } from '@/lib/actions/campus-registration-form'
+import { ensureStudentRegistrationForm } from '@/lib/actions/student-registration-form'
 import {
   ArrowLeft,
   Building2,
@@ -34,6 +35,7 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
   const router = useRouter()
   const { toast } = useToast()
   const [settingUpRegistration, setSettingUpRegistration] = useState(false)
+  const [settingUpStudentForm, setSettingUpStudentForm] = useState(false)
 
   async function createRegistrationForm() {
     setSettingUpRegistration(true)
@@ -48,6 +50,23 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
     toast({
       title: created ? 'Registration form live' : 'Form ready',
       description: 'Share the public link with new campus members.',
+    })
+    router.push(`/admin/forms/${data.id}`)
+  }
+
+  async function createStudentForm() {
+    setSettingUpStudentForm(true)
+    const { data, created, error } = await ensureStudentRegistrationForm(group.id, group.name)
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Failed', description: error ?? 'Could not create form' })
+      setSettingUpStudentForm(false)
+      return
+    }
+    if (created) await publishCampusMemberRegistrationForm(data.id)
+    setSettingUpStudentForm(false)
+    toast({
+      title: created ? 'Student form live' : 'Form ready',
+      description: 'Hall, level, program, prayer request, and WhatsApp-friendly phone fields included.',
     })
     router.push(`/admin/forms/${data.id}`)
   }
@@ -127,15 +146,26 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
             </Button>
           </div>
           {group.group_type === 'campus' ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full border-amber-200 text-amber-900 hover:bg-amber-50"
-              disabled={settingUpRegistration}
-              onClick={() => void createRegistrationForm()}
-            >
-              {settingUpRegistration ? 'Setting up...' : 'Member registration form'}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-indigo-200 text-indigo-900 hover:bg-indigo-50"
+                disabled={settingUpStudentForm}
+                onClick={() => void createStudentForm()}
+              >
+                {settingUpStudentForm ? 'Setting up...' : 'Student registration form'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-amber-200 text-amber-900 hover:bg-amber-50"
+                disabled={settingUpRegistration}
+                onClick={() => void createRegistrationForm()}
+              >
+                {settingUpRegistration ? 'Setting up...' : 'Legacy member form'}
+              </Button>
+            </>
           ) : null}
         </div>
       </CardContent>

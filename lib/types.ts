@@ -103,6 +103,7 @@ export interface Group {
   description?: string
   group_type:
     | 'campus'
+    | 'corporate_gem'
     | 'activity'
     | 'ministry'
     | 'fellowship'

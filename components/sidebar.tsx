@@ -41,7 +41,8 @@ import {
   ClipboardList,
   Upload,
   UserCheck,
-  Building2
+  Building2,
+  Briefcase,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -119,6 +120,12 @@ const navigationSections: Array<{ title: string; items: NavItem[] }> = [
         name: 'Campus & Activities',
         href: '/admin/campus-activities',
         icon: Building2,
+        roles: ['admin', 'pastor', 'elder']
+      },
+      {
+        name: 'Corporate Gem',
+        href: '/admin/corporate-gem',
+        icon: Briefcase,
         roles: ['admin', 'pastor', 'elder']
       },
       {

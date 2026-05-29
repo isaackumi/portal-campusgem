@@ -54,7 +54,7 @@ export default function GroupsManagementPage() {
   const [formData, setFormData] = useState<{
     name: string
     description: string
-    group_type: 'campus' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership'
+    group_type: 'campus' | 'corporate_gem' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership'
     meeting_location: string
     meeting_schedule: string
     is_active: boolean
@@ -354,7 +354,7 @@ export default function GroupsManagementPage() {
                     </div>
                     <div>
                       <Label htmlFor="group_type">Group Type *</Label>
-                      <Select value={formData.group_type} onValueChange={(value) => setFormData(prev => ({ ...prev, group_type: value as 'campus' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership' }))}>
+                      <Select value={formData.group_type} onValueChange={(value) => setFormData(prev => ({ ...prev, group_type: value as 'campus' | 'corporate_gem' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership' }))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -660,7 +660,7 @@ export default function GroupsManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="edit_group_type">Group Type *</Label>
-                  <Select value={formData.group_type} onValueChange={(value) => setFormData(prev => ({ ...prev, group_type: value as 'campus' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership' }))}>
+                  <Select value={formData.group_type} onValueChange={(value) => setFormData(prev => ({ ...prev, group_type: value as 'campus' | 'corporate_gem' | 'activity' | 'ministry' | 'fellowship' | 'age_group' | 'special_interest' | 'leadership' }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

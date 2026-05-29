@@ -23,8 +23,9 @@ export function FormGroupSelect({
   allowUnassigned = false,
   id,
 }: Props) {
-  const { campusGroups, activityGroups, otherGroups, inactiveGroups } = useMemo(() => {
+  const { campusGroups, corporateGemGroups, activityGroups, otherGroups, inactiveGroups } = useMemo(() => {
     const campus: Group[] = []
+    const corporateGem: Group[] = []
     const activity: Group[] = []
     const other: Group[] = []
     const inactive: Group[] = []
@@ -34,19 +35,31 @@ export function FormGroupSelect({
         continue
       }
       if (group.group_type === 'campus') campus.push(group)
+      else if (group.group_type === 'corporate_gem') corporateGem.push(group)
       else if (group.group_type === 'activity') activity.push(group)
       else other.push(group)
     }
     const byName = (a: Group, b: Group) => a.name.localeCompare(b.name)
     campus.sort(byName)
+    corporateGem.sort(byName)
     activity.sort(byName)
     other.sort(byName)
     inactive.sort(byName)
-    return { campusGroups: campus, activityGroups: activity, otherGroups: other, inactiveGroups: inactive }
+    return {
+      campusGroups: campus,
+      corporateGemGroups: corporateGem,
+      activityGroups: activity,
+      otherGroups: other,
+      inactiveGroups: inactive,
+    }
   }, [groups])
 
   const hasAnyGroup =
-    campusGroups.length > 0 || activityGroups.length > 0 || otherGroups.length > 0 || inactiveGroups.length > 0
+    campusGroups.length > 0 ||
+    corporateGemGroups.length > 0 ||
+    activityGroups.length > 0 ||
+    otherGroups.length > 0 ||
+    inactiveGroups.length > 0
 
   return (
     <Select
@@ -68,6 +81,16 @@ export function FormGroupSelect({
           <SelectGroup>
             <SelectLabel>Campus fellowships</SelectLabel>
             {campusGroups.map((group) => (
+              <SelectItem key={group.id} value={group.id}>
+                {group.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        ) : null}
+        {corporateGemGroups.length > 0 ? (
+          <SelectGroup>
+            <SelectLabel>Corporate Gem</SelectLabel>
+            {corporateGemGroups.map((group) => (
               <SelectItem key={group.id} value={group.id}>
                 {group.name}
               </SelectItem>
