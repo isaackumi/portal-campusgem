@@ -50,7 +50,12 @@ export async function getFormAdmin(formId: string): Promise<{
 }
 
 export async function getPublishedFormBySlug(slug: string): Promise<{
-  data: { form: ChurchForm; fields: ChurchFormField[]; group_name?: string } | null
+  data: {
+    form: ChurchForm
+    fields: ChurchFormField[]
+    group_name?: string
+    camp_year_label?: string
+  } | null
   error: string | null
 }> {
   requireConvexEnv()
@@ -66,7 +71,16 @@ export async function getPublishedFormBySlug(slug: string): Promise<{
       group_name = groupRes.data?.name
     }
 
-    return { data: { ...data, group_name }, error: null }
+    let camp_year_label: string | undefined
+    if (data.form.camp_year_id) {
+      const { getCampYearById } = await import('@/lib/actions/camp')
+      const yearRes = await getCampYearById(data.form.camp_year_id)
+      if (yearRes.data) {
+        camp_year_label = `${yearRes.data.year}${yearRes.data.theme ? ` · ${yearRes.data.theme}` : ''}`
+      }
+    }
+
+    return { data: { ...data, group_name, camp_year_label }, error: null }
   } catch (error: unknown) {
     return {
       data: null,
@@ -100,6 +114,7 @@ export async function createForm(input: {
   created_by?: string
   enable_profile_lookup?: boolean
   capture_respondent_location?: boolean
+  camp_year_id?: string
 }): Promise<{ data: ChurchForm | null; error: string | null }> {
   requireConvexEnv()
   try {
@@ -127,6 +142,8 @@ export async function updateForm(
     capture_respondent_location?: boolean
     cover_image_url?: string | null
     accent_color?: string | null
+    camp_year_id?: string | null
+    display_mode?: 'classic' | 'stepped'
   }
 ): Promise<{ data: ChurchForm | null; error: string | null }> {
   requireConvexEnv()

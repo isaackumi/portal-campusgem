@@ -305,6 +305,10 @@ export default defineSchema({
     cover_image_url: v.optional(v.string()),
     /** Theme preset: auto | indigo | violet | emerald | amber | rose | sky | slate */
     accent_color: v.optional(v.string()),
+    /** Camp meeting year this form belongs to (required for camp meeting registration forms) */
+    camp_year_id: v.optional(v.string()),
+    /** Public layout: classic | stepped (Typeform-style one question per screen) */
+    display_mode: v.optional(v.union(v.literal('classic'), v.literal('stepped'))),
     /** Denormalized count — updated on each public submission */
     response_count: v.optional(v.number()),
     created_by: v.optional(v.string()),
@@ -312,7 +316,8 @@ export default defineSchema({
   })
     .index('by_slug', ['slug'])
     .index('by_status', ['status'])
-    .index('by_group', ['group_id']),
+    .index('by_group', ['group_id'])
+    .index('by_camp_year', ['camp_year_id']),
 
   form_fields: defineTable({
     form_id: v.string(),

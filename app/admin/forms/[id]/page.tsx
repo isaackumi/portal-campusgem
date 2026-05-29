@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
@@ -23,7 +24,10 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useAuth } from '@/components/providers'
 import { getFormAdmin, saveFormFields, updateForm } from '@/lib/actions/forms'
-import type { ChurchForm, ChurchFormField, ChurchFormFieldType } from '@/lib/types'
+import { CAMP_MEETING_REGISTRATION_CATEGORY } from '@/lib/constants/camp-meeting'
+import { getAllCampYears } from '@/lib/actions/camp'
+import { buildFormWhatsAppShareUrl } from '@/lib/forms/whatsapp-share'
+import type { ChurchForm, CampYear, ChurchFormField, ChurchFormFieldType } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -33,6 +37,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FORM_PREFILL_KEY_GROUPS } from '@/lib/forms/prefill'
 import { PUBLIC_FORM_ACCENT_OPTIONS, isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
+import { FORM_DISPLAY_MODE_OPTIONS, type FormDisplayMode } from '@/lib/forms/display-mode'
 import {
   FieldOptionsEditor,
   fieldTypeUsesOptions,
@@ -45,7 +50,7 @@ import { useGroups } from '@/lib/hooks/use-data'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { cn, formatDateTime } from '@/lib/utils'
-import { ArrowLeft, CalendarClock, Copy, GripVertical, Link2, Plus, Save, Trash2, UserRound } from 'lucide-react'
+import { ArrowLeft, CalendarClock, Copy, Eye, GripVertical, Link2, Plus, Save, Trash2, UserRound } from 'lucide-react'
 
 type EditableField = {
   client_id: string
@@ -244,7 +249,10 @@ export default function FormEditorPage() {
   const [captureRespondentLocation, setCaptureRespondentLocation] = useState(false)
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [accentColor, setAccentColor] = useState('auto')
+  const [displayMode, setDisplayMode] = useState<FormDisplayMode>('classic')
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [campYearId, setCampYearId] = useState('')
+  const [campYears, setCampYears] = useState<CampYear[]>([])
   const [fields, setFields] = useState<EditableField[]>([])
   const [creatorName, setCreatorName] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -266,6 +274,13 @@ export default function FormEditorPage() {
     if (!slug || typeof window === 'undefined') return `/f/${slug}`
     return `${window.location.origin}/f/${slug}`
   }, [slug])
+
+  useEffect(() => {
+    if (!user) return
+    void getAllCampYears().then(({ data }) => {
+      if (data) setCampYears(data)
+    })
+  }, [user])
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -300,6 +315,8 @@ export default function FormEditorPage() {
     setCaptureRespondentLocation(data.form.capture_respondent_location)
     setCoverImageUrl(data.form.cover_image_url ?? '')
     setAccentColor(data.form.accent_color ?? 'auto')
+    setDisplayMode(data.form.display_mode === 'stepped' ? 'stepped' : 'classic')
+    setCampYearId(data.form.camp_year_id ?? '')
     setFields(data.fields.map(toEditableField))
     setLoading(false)
   }
@@ -330,6 +347,16 @@ export default function FormEditorPage() {
 
   async function handleSave(publish = false) {
     if (!form) return
+
+    if (category === CAMP_MEETING_REGISTRATION_CATEGORY && !campYearId) {
+      toast({
+        variant: 'destructive',
+        title: 'Camp year required',
+        description: 'Camp meeting forms must be linked to a camp year.',
+      })
+      return
+    }
+
     setSaving(true)
 
     const formPatch = {
@@ -342,6 +369,9 @@ export default function FormEditorPage() {
       capture_respondent_location: captureRespondentLocation,
       cover_image_url: coverImageUrl.trim() || null,
       accent_color: accentColor === 'auto' ? null : accentColor,
+      display_mode: displayMode,
+      camp_year_id:
+        category === CAMP_MEETING_REGISTRATION_CATEGORY ? campYearId || null : null,
       status: publish ? ('published' as const) : status,
     }
 
@@ -434,6 +464,12 @@ export default function FormEditorPage() {
             Back to forms
           </Button>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/admin/forms/${form.id}/preview`} target="_blank">
+                <Eye className="mr-2 h-4 w-4" />
+                Preview
+              </Link>
+            </Button>
             <Button variant="outline" onClick={() => router.push(`/admin/forms/${form.id}/responses`)}>
               View responses
             </Button>
@@ -524,9 +560,45 @@ export default function FormEditorPage() {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="display-mode">Public form layout</Label>
+              <Select value={displayMode} onValueChange={(value) => setDisplayMode(value as FormDisplayMode)}>
+                <SelectTrigger id="display-mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FORM_DISPLAY_MODE_OPTIONS.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {FORM_DISPLAY_MODE_OPTIONS.find((option) => option.id === displayMode)?.description}
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Input id="category" value={category} onChange={(event) => setCategory(event.target.value)} />
             </div>
+            {category === CAMP_MEETING_REGISTRATION_CATEGORY ? (
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="camp-year">Camp year</Label>
+                <Select value={campYearId || undefined} onValueChange={setCampYearId}>
+                  <SelectTrigger id="camp-year">
+                    <SelectValue placeholder="Select camp year (required)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {campYears.map((year) => (
+                      <SelectItem key={year.id} value={year.id}>
+                        Camp Meeting {year.year} — {year.theme}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Only one camp meeting registration form is allowed per year.</p>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="group">Campus / Activity scope</Label>
               <FormGroupSelect
@@ -568,6 +640,16 @@ export default function FormEditorPage() {
                   <span className="text-muted-foreground">Set a slug to generate the public link</span>
                 )}
               </div>
+              {slug ? (
+                <a
+                  href={buildFormWhatsAppShareUrl({ formTitle: title, publicUrl })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex text-sm font-medium text-emerald-700 hover:underline"
+                >
+                  Share public link on WhatsApp
+                </a>
+              ) : null}
             </div>
             <div className="flex items-center gap-2 md:col-span-2">
               <Checkbox

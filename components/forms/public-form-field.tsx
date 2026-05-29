@@ -15,7 +15,7 @@ const inputClass =
 export function PublicFormQuestionBlock({
   field,
   children,
-  isLast,
+  isLast: _isLast,
   questionNumber,
 }: {
   field: ChurchFormField
@@ -26,23 +26,15 @@ export function PublicFormQuestionBlock({
   const theme = usePublicFormTheme()
 
   return (
-    <div className={cn('px-4 py-4', !isLast && 'border-b border-slate-100')}>
-      <fieldset className="space-y-3">
+    <section className="rounded-lg border border-slate-200/80 bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+      <fieldset className="space-y-4">
         <legend className="mb-0 w-full">
           <div className="flex items-start gap-3">
             {questionNumber != null ? (
-              <span
-                className={cn(
-                  'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold',
-                  theme.accentSoft,
-                  theme.accentText
-                )}
-              >
-                {questionNumber}
-              </span>
+              <span className="mt-0.5 text-sm font-normal text-slate-500">{questionNumber}.</span>
             ) : null}
             <div className="min-w-0 flex-1">
-              <span className="text-base font-semibold leading-snug text-slate-900">
+              <span className="text-base font-medium leading-snug text-slate-900">
                 {field.label}
                 {field.required ? <span className="text-red-500"> *</span> : null}
               </span>
@@ -52,9 +44,10 @@ export function PublicFormQuestionBlock({
             </div>
           </div>
         </legend>
-        <div className={questionNumber != null ? 'pl-10' : undefined}>{children}</div>
+        <div className={questionNumber != null ? 'pl-6 sm:pl-7' : undefined}>{children}</div>
+        <div className="h-0.5 w-12 rounded-full opacity-30" style={{ backgroundColor: theme.accentHex }} />
       </fieldset>
-    </div>
+    </section>
   )
 }
 

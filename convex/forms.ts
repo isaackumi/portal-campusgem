@@ -38,6 +38,43 @@ function slugifyTitle(title: string): string {
 
 type FormsCtx = QueryCtx | MutationCtx
 
+const CAMP_MEETING_REGISTRATION_CATEGORY = 'camp_meeting_registration'
+
+async function assertCampMeetingFormRules(
+  ctx: MutationCtx,
+  category: string | undefined,
+  campYearId: string | undefined,
+  excludeFormId?: string
+): Promise<void> {
+  if (category !== CAMP_MEETING_REGISTRATION_CATEGORY) return
+
+  const id = campYearId?.trim()
+  if (!id) {
+    throw new Error('Camp meeting forms must be linked to a camp year.')
+  }
+
+  const year = await ctx.db.get('camp_years', id as Id<'camp_years'>)
+  if (!year) {
+    throw new Error('Selected camp year was not found.')
+  }
+
+  const siblings = await ctx.db
+    .query('forms')
+    .withIndex('by_camp_year', (q) => q.eq('camp_year_id', id))
+    .collect()
+
+  const duplicate = siblings.find(
+    (row) =>
+      row.category === CAMP_MEETING_REGISTRATION_CATEGORY &&
+      String(row._id) !== (excludeFormId ?? '')
+  )
+  if (duplicate) {
+    throw new Error(
+      `A camp meeting registration form already exists for Camp Meeting ${year.year}. Edit or delete the existing form first.`
+    )
+  }
+}
+
 async function getFieldsForForm(ctx: FormsCtx, formId: string): Promise<Doc<'form_fields'>[]> {
   const fields = await ctx.db
     .query('form_fields')
@@ -173,6 +210,8 @@ export const createFormWithSecret = mutation({
     capture_respondent_location: v.optional(v.boolean()),
     cover_image_url: v.optional(v.string()),
     accent_color: v.optional(v.string()),
+    camp_year_id: v.optional(v.string()),
+    display_mode: v.optional(v.union(v.literal('classic'), v.literal('stepped'))),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -183,6 +222,12 @@ export const createFormWithSecret = mutation({
       const group = await ctx.db.get('groups', args.group_id as Id<'groups'>)
       if (!group) throw new Error('Selected group was not found.')
     }
+
+    const category = args.category?.trim() || 'general'
+    const campYearId =
+      category === CAMP_MEETING_REGISTRATION_CATEGORY ? args.camp_year_id?.trim() : undefined
+
+    await assertCampMeetingFormRules(ctx, category, campYearId)
 
     const baseSlug = slugifyTitle(title) || 'form'
     let slug = baseSlug
@@ -197,13 +242,15 @@ export const createFormWithSecret = mutation({
       title,
       slug,
       description: args.description?.trim() || undefined,
-      category: args.category?.trim() || 'general',
+      category,
       group_id: args.group_id,
+      camp_year_id: campYearId,
       status: 'draft',
       enable_profile_lookup: args.enable_profile_lookup ?? false,
       capture_respondent_location: args.capture_respondent_location ?? false,
       cover_image_url: args.cover_image_url?.trim() || undefined,
       accent_color: args.accent_color?.trim() || undefined,
+      display_mode: args.display_mode === 'stepped' ? 'stepped' : 'classic',
       response_count: 0,
       created_by: args.created_by,
       updated_at: now,
@@ -226,6 +273,8 @@ export const updateFormWithSecret = mutation({
     capture_respondent_location: v.optional(v.boolean()),
     cover_image_url: v.optional(v.union(v.string(), v.null())),
     accent_color: v.optional(v.union(v.string(), v.null())),
+    camp_year_id: v.optional(v.union(v.string(), v.null())),
+    display_mode: v.optional(v.union(v.literal('classic'), v.literal('stepped'))),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -236,7 +285,6 @@ export const updateFormWithSecret = mutation({
     const patch: Record<string, unknown> = { updated_at: Date.now() }
     if (args.title != null) patch.title = args.title.trim()
     if (args.description != null) patch.description = args.description.trim() || undefined
-    if (args.category != null) patch.category = args.category.trim() || 'general'
     if (args.group_id !== undefined) {
       if (args.group_id === null) {
         patch.group_id = undefined
@@ -258,6 +306,26 @@ export const updateFormWithSecret = mutation({
     if (args.accent_color !== undefined) {
       patch.accent_color = args.accent_color === null ? undefined : args.accent_color.trim() || undefined
     }
+    if (args.display_mode != null) {
+      patch.display_mode = args.display_mode === 'stepped' ? 'stepped' : 'classic'
+    }
+
+    const nextCategory =
+      args.category != null ? args.category.trim() || 'general' : form.category ?? 'general'
+    let nextCampYearId = form.camp_year_id
+
+    if (args.camp_year_id !== undefined) {
+      nextCampYearId =
+        args.camp_year_id === null ? undefined : args.camp_year_id.trim() || undefined
+    }
+    if (nextCategory !== CAMP_MEETING_REGISTRATION_CATEGORY) {
+      nextCampYearId = undefined
+    }
+
+    if (args.category != null) patch.category = nextCategory
+    patch.camp_year_id = nextCampYearId
+
+    await assertCampMeetingFormRules(ctx, nextCategory, nextCampYearId, String(args.form_id))
 
     if (args.slug != null) {
       const slug = slugifyTitle(args.slug)

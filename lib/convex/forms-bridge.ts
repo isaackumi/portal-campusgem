@@ -33,6 +33,9 @@ function mapForm(doc: Record<string, unknown> | null | undefined): ChurchForm | 
     capture_respondent_location: Boolean(doc.capture_respondent_location),
     cover_image_url: doc.cover_image_url != null ? String(doc.cover_image_url) : undefined,
     accent_color: doc.accent_color != null ? String(doc.accent_color) : undefined,
+    camp_year_id: doc.camp_year_id != null ? String(doc.camp_year_id) : undefined,
+    display_mode:
+      doc.display_mode === 'stepped' ? 'stepped' : doc.display_mode === 'classic' ? 'classic' : undefined,
     created_by: doc.created_by != null ? String(doc.created_by) : undefined,
     created_at: iso(doc._creationTime as number | undefined),
     updated_at: iso(doc.updated_at as number | undefined),
@@ -134,6 +137,10 @@ export async function createFormInConvex(input: {
   created_by?: string
   enable_profile_lookup?: boolean
   capture_respondent_location?: boolean
+  cover_image_url?: string
+  accent_color?: string
+  camp_year_id?: string
+  display_mode?: 'classic' | 'stepped'
 }): Promise<ChurchForm> {
   const client = getConvexHttpClient()
   const doc = (await client.mutation(api.forms.createFormWithSecret, {
@@ -156,16 +163,29 @@ type FormUpdatePatch = {
   capture_respondent_location?: boolean
   cover_image_url?: string | null
   accent_color?: string | null
+  camp_year_id?: string | null
+  display_mode?: 'classic' | 'stepped'
 }
 
-function stripFormAppearanceFields(patch: FormUpdatePatch): FormUpdatePatch {
-  const { cover_image_url: _cover, accent_color: _accent, ...rest } = patch
+function stripOptionalFormFields(patch: FormUpdatePatch): FormUpdatePatch {
+  const {
+    cover_image_url: _cover,
+    accent_color: _accent,
+    camp_year_id: _campYear,
+    display_mode: _displayMode,
+    ...rest
+  } = patch
   return rest
 }
 
-function isFormAppearanceValidationError(error: unknown): boolean {
+function isLegacyFormFieldValidationError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
-  return message.includes('accent_color') || message.includes('cover_image_url')
+  return (
+    message.includes('accent_color') ||
+    message.includes('cover_image_url') ||
+    message.includes('camp_year_id') ||
+    message.includes('display_mode')
+  )
 }
 
 export async function updateFormInConvex(formId: string, patch: FormUpdatePatch): Promise<ChurchForm> {
@@ -184,11 +204,11 @@ export async function updateFormInConvex(formId: string, patch: FormUpdatePatch)
     if (!form) throw new Error('Failed to update form')
     return form
   } catch (error: unknown) {
-    if (!isFormAppearanceValidationError(error)) throw error
+    if (!isLegacyFormFieldValidationError(error)) throw error
 
     const doc = (await client.mutation(api.forms.updateFormWithSecret, {
       ...base,
-      ...stripFormAppearanceFields(patch),
+      ...stripOptionalFormFields(patch),
     })) as Record<string, unknown>
     const form = mapForm(doc)
     if (!form) throw new Error('Failed to update form')

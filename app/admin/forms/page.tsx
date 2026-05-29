@@ -10,6 +10,7 @@ import {
   ensureCampMeetingRegistrationForm,
   ensureEaglesCampMeetingGroup,
 } from '@/lib/actions/camp-meeting-form'
+import { getAllCampYears } from '@/lib/actions/camp'
 import {
   ensureCampusMemberRegistrationForm,
   publishCampusMemberRegistrationForm,
@@ -19,7 +20,7 @@ import {
   DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME,
 } from '@/lib/constants/camp-meeting'
 import { CAMPUS_MEMBER_REGISTRATION_CATEGORY } from '@/lib/forms/campus-member-registration'
-import type { ChurchForm } from '@/lib/types'
+import type { ChurchForm, CampYear } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -99,6 +100,8 @@ function FormsAdminContent() {
   const [templateId, setTemplateId] = useState<FormTemplateId>('blank')
   const [search, setSearch] = useState('')
   const [formToDelete, setFormToDelete] = useState<ChurchForm | null>(null)
+  const [campYears, setCampYears] = useState<CampYear[]>([])
+  const [selectedCampYearId, setSelectedCampYearId] = useState('')
 
   const { forms, groups, creatorsById, isLoading, isFetching, error, refetch } = useFormsHub(
     filterGroupId,
@@ -163,6 +166,16 @@ function FormsAdminContent() {
     if (filterGroupId) setSelectedGroupId(filterGroupId)
   }, [filterGroupId])
 
+  useEffect(() => {
+    if (!user) return
+    void getAllCampYears().then(({ data }) => {
+      if (!data?.length) return
+      setCampYears(data)
+      const preferred = data.find((y) => y.registration_open) ?? data.find((y) => y.is_active) ?? data[0]
+      setSelectedCampYearId((prev) => prev || preferred.id)
+    })
+  }, [user])
+
   const lastErrorRef = useRef<string | null>(null)
   useEffect(() => {
     if (!error || error === lastErrorRef.current) return
@@ -195,6 +208,14 @@ function FormsAdminContent() {
     let groupName = groupId ? groupMap.get(groupId)?.name : undefined
 
     if (templateId === 'camp_meeting_registration') {
+      if (!selectedCampYearId) {
+        toast({
+          variant: 'destructive',
+          title: 'Camp year required',
+          description: 'Every camp meeting form must belong to a camp year.',
+        })
+        return
+      }
       const group = await applyCampMeetingGroupSelection()
       if (!group) return
       groupId = group.id
@@ -216,6 +237,7 @@ function FormsAdminContent() {
       title: title.trim(),
       description: description.trim() || undefined,
       category: category.trim() || undefined,
+      camp_year_id: templateId === 'camp_meeting_registration' ? selectedCampYearId : undefined,
       created_by: user?.id,
     })
     setCreating(false)
@@ -256,8 +278,17 @@ function FormsAdminContent() {
   }
 
   async function handleCreateCampMeetingRegistrationTemplate() {
+    if (!selectedCampYearId) {
+      toast({
+        variant: 'destructive',
+        title: 'Select a camp year',
+        description: 'Camp meeting forms must be linked to one camp year.',
+      })
+      return
+    }
+
     setCreatingCampMeetingTemplate(true)
-    const { data, created, error } = await ensureCampMeetingRegistrationForm()
+    const { data, created, error } = await ensureCampMeetingRegistrationForm(selectedCampYearId)
     setCreatingCampMeetingTemplate(false)
 
     if (error || !data) {
@@ -401,10 +432,27 @@ function FormsAdminContent() {
                       onValueChange={(v) => setSelectedGroupId(v === '__none__' ? '' : v)}
                     />
                     {templateId === 'camp_meeting_registration' ? (
-                      <p className="text-sm text-muted-foreground">
-                        Camp meeting forms are assigned to{' '}
-                        <span className="font-medium text-slate-800">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span>.
-                      </p>
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Camp meeting forms are assigned to{' '}
+                          <span className="font-medium text-slate-800">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span>.
+                        </p>
+                        <div className="space-y-2 pt-2">
+                          <Label>Camp year</Label>
+                          <Select value={selectedCampYearId} onValueChange={setSelectedCampYearId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select camp year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {campYears.map((year) => (
+                                <SelectItem key={year.id} value={year.id}>
+                                  Camp Meeting {year.year} — {year.theme}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
                     ) : null}
                   </div>
                   <div className="space-y-2">
@@ -521,12 +569,26 @@ function FormsAdminContent() {
               Eagles camp meeting registration
             </CardTitle>
             <CardDescription>
-              One-click camp meeting sign-up under{' '}
-              <span className="font-medium text-slate-800">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span> — phone
-              lookup, education, age, optional location and comments.
+              One camp meeting sign-up form per year under{' '}
+              <span className="font-medium text-slate-800">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span>.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-2">
+              <Label>Camp year</Label>
+              <Select value={selectedCampYearId} onValueChange={setSelectedCampYearId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select camp year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {campYears.map((year) => (
+                    <SelectItem key={year.id} value={year.id}>
+                      Camp Meeting {year.year} — {year.theme}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               variant="secondary"
               className="border-indigo-300 bg-white hover:bg-indigo-50"

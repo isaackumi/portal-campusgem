@@ -843,6 +843,10 @@ export interface ChurchForm {
   cover_image_url?: string
   /** Theme preset id (auto, indigo, emerald, …) */
   accent_color?: string
+  /** Required for camp meeting registration forms — one form per camp year */
+  camp_year_id?: string
+  /** Public layout: classic (all on one page) or stepped (Typeform-style) */
+  display_mode?: 'classic' | 'stepped'
   created_by?: string
   created_at: string
   updated_at: string

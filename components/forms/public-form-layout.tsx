@@ -14,15 +14,10 @@ import {
   usePublicFormTheme,
 } from '@/components/forms/public-form-theme-context'
 import { PublicFormCommunityJoin } from '@/components/forms/public-form-community-join'
-import { AlertTriangle, CheckCircle2, Loader2, Phone, Sparkles } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
 
-function PublicFormBranding() {
-  return (
-    <footer className="pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6 text-center">
-      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/70">Campus Gem Ministries</p>
-    </footer>
-  )
-}
+const SHELL_WIDTH =
+  'mx-auto w-full max-w-[640px] px-4 py-5 sm:px-6 sm:py-8 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl'
 
 export function PublicFormPageShell({
   form,
@@ -31,115 +26,75 @@ export function PublicFormPageShell({
   form?: Pick<ChurchForm, 'category' | 'accent_color'>
   children: ReactNode
 }) {
-  const inner = form ? (
-    <PublicFormThemeProvider form={form}>
-      <PublicFormPageShellInner>{children}</PublicFormPageShellInner>
-    </PublicFormThemeProvider>
-  ) : (
-    <PublicFormPageShellInner>{children}</PublicFormPageShellInner>
-  )
-
-  return inner
+  if (form) {
+    return (
+      <PublicFormThemeProvider form={form}>
+        <PublicFormPageShellInner>{children}</PublicFormPageShellInner>
+      </PublicFormThemeProvider>
+    )
+  }
+  return <PublicFormPageShellInner>{children}</PublicFormPageShellInner>
 }
 
 function PublicFormPageShellInner({ children }: { children: ReactNode }) {
-  const theme = usePublicFormTheme()
-
   return (
     <div
-      className={cn(
-        'min-h-[100dvh] bg-gradient-to-b',
-        theme.pageGradient,
-        'text-slate-900 antialiased'
-      )}
+      className="min-h-[100dvh] bg-[#eceff1] text-slate-900 antialiased"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-4 sm:pt-4">
-        <div className="flex-1">{children}</div>
-        <PublicFormBranding />
+      <div className={cn(SHELL_WIDTH, 'pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]')}>
+        {children}
+        <footer className="pt-8 text-center">
+          <p className="text-xs text-slate-500">Campus Gem Ministries</p>
+        </footer>
       </div>
     </div>
   )
 }
 
-export function PublicFormProgress({ step }: { step: 'fill' | 'review' }) {
-  const theme = usePublicFormTheme()
-  const fillActive = step === 'fill'
-
-  return (
-    <div className="flex items-center gap-2 px-4 py-3" aria-label={fillActive ? 'Step 1 of 2' : 'Step 2 of 2'}>
-      <div className="flex flex-1 gap-1.5">
-        <div
-          className={cn('h-1.5 flex-1 rounded-full transition-all', fillActive ? theme.progressActive : theme.progressDone)}
-        />
-        <div
-          className={cn(
-            'h-1.5 flex-1 rounded-full transition-all',
-            !fillActive ? theme.progressActive : 'bg-white/30'
-          )}
-        />
-      </div>
-      <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-white/80">
-        {fillActive ? '1 / 2' : '2 / 2'}
-      </span>
-    </div>
-  )
-}
-
-function PublicFormCoverHero({
+function PublicFormTitleCard({
   form,
-  groupName,
   step,
+  groupName,
+  campYearLabel,
 }: {
   form: ChurchForm
-  groupName?: string | null
   step: 'fill' | 'review'
+  groupName?: string | null
+  campYearLabel?: string | null
 }) {
   const theme = usePublicFormTheme()
   const coverUrl = isValidCoverImageUrl(form.cover_image_url) ? form.cover_image_url!.trim() : null
   const title = step === 'review' ? 'Review your answers' : form.title
+  const fillActive = step === 'fill'
 
   return (
-    <div className="relative overflow-hidden">
+    <header className="mb-3 overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-sm">
+      <div className="h-2.5 w-full" style={{ backgroundColor: theme.accentHex }} />
       {coverUrl ? (
-        <div className="relative h-44 w-full sm:h-48">
+        <div className="relative aspect-[21/9] max-h-56 w-full border-b border-slate-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={coverUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-            loading="eager"
-            decoding="async"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10" />
+          <img src={coverUrl} alt="" className="h-full w-full object-cover" loading="eager" />
         </div>
-      ) : (
-        <div className={cn('relative h-36 w-full bg-gradient-to-br sm:h-40', theme.heroGradient)}>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_45%)]" />
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-4 pb-3 pt-8">
-            <Sparkles className="h-4 w-4 text-white/80" aria-hidden />
-            <span className="text-xs font-medium uppercase tracking-wider text-white/80">Campus Gem</span>
-          </div>
-        </div>
-      )}
-
-      <div className={cn('px-4 pb-4', coverUrl ? 'absolute inset-x-0 bottom-0' : 'relative -mt-1 pt-1')}>
-        {groupName ? (
-          <span
-            className={cn(
-              'mb-2 inline-flex max-w-full truncate rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide',
-              coverUrl ? 'bg-white/20 text-white backdrop-blur-sm' : theme.badge
-            )}
-          >
-            {groupName}
+      ) : null}
+      <div className="px-5 py-6 sm:px-8 sm:py-8">
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+          <span className={cn('rounded-full px-2.5 py-0.5', theme.badge)}>
+            {fillActive ? 'Step 1 of 2' : 'Step 2 of 2'}
           </span>
-        ) : null}
-        <h1 className="text-xl font-bold leading-tight tracking-tight text-white drop-shadow-sm sm:text-2xl">
+          {campYearLabel ? <span>Camp Meeting {campYearLabel}</span> : null}
+          {groupName && !campYearLabel ? <span>{groupName}</span> : null}
+        </div>
+        <h1 className="text-2xl font-normal leading-snug tracking-tight text-slate-900 sm:text-3xl lg:text-[2rem]">
           {title}
         </h1>
+        {step === 'fill' && form.description?.trim() ? (
+          <p className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-slate-600">{form.description}</p>
+        ) : step === 'review' ? (
+          <p className="mt-3 text-base text-slate-500">Check your answers, then submit.</p>
+        ) : null}
       </div>
-    </div>
+    </header>
   )
 }
 
@@ -147,40 +102,28 @@ export function PublicFormDocument({
   step,
   form,
   groupName,
+  campYearLabel,
+  toolbar,
   children,
 }: {
   step: 'fill' | 'review'
   form: ChurchForm
   groupName?: string | null
+  campYearLabel?: string | null
+  toolbar?: ReactNode
   children: ReactNode
 }) {
-  const theme = usePublicFormTheme()
-  const showDescription = step === 'fill' && Boolean(form.description?.trim())
-
   return (
-    <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_40px_rgba(15,23,42,0.12)] ring-1 ring-black/5">
-      <PublicFormCoverHero form={form} groupName={groupName} step={step} />
-      <div className={cn('bg-gradient-to-r', theme.heroGradient)}>
-        <PublicFormProgress step={step} />
-      </div>
-
-      {showDescription ? (
-        <div className="px-4 pt-4">
-          <div
-            className={cn(
-              'rounded-xl border px-3.5 py-3 text-sm leading-relaxed',
-              theme.descriptionBox
-            )}
-          >
-            {form.description}
-          </div>
-        </div>
-      ) : step === 'review' ? (
-        <p className="px-4 pt-4 text-sm text-slate-500">Check everything below, then submit.</p>
-      ) : null}
-
-      <div className="mt-1">{children}</div>
-    </article>
+    <div>
+      {toolbar}
+      <PublicFormTitleCard
+        form={form}
+        step={step}
+        groupName={groupName}
+        campYearLabel={campYearLabel}
+      />
+      <div className="space-y-3">{children}</div>
+    </div>
   )
 }
 
@@ -212,67 +155,57 @@ export function PublicFormPhoneLookup({
   const theme = usePublicFormTheme()
 
   return (
-    <div className={cn('mx-4 mb-4 mt-4 space-y-3 rounded-xl border p-4', theme.accentSoft, theme.accentBorder)}>
-      <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm',
-            theme.button.split(' ')[0]
-          )}
+    <section className="rounded-lg border border-slate-200/80 bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+      <Label htmlFor="lookup-phone" className="text-base font-medium text-slate-900">
+        {label}
+        {required ? <span className="text-red-500"> *</span> : null}
+      </Label>
+      {description ? <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p> : null}
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Input
+          id="lookup-phone"
+          className="h-11 flex-1 border-slate-300 bg-white text-base shadow-none"
+          inputMode="tel"
+          autoComplete="tel"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="054 123 4567"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 shrink-0 border-slate-300 px-5"
+          onClick={onLookup}
+          disabled={lookupLoading}
         >
-          <Phone className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1 space-y-1">
-          <Label htmlFor="lookup-phone" className="text-base font-semibold text-slate-900">
-            {label}
-            {required ? <span className="text-red-500"> *</span> : null}
-          </Label>
-          {description ? <p className="text-sm leading-relaxed text-slate-600">{description}</p> : null}
-        </div>
+          {lookupLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Searching…
+            </>
+          ) : (
+            'Find my details'
+          )}
+        </Button>
       </div>
 
-      <Input
-        id="lookup-phone"
-        className="h-12 border-white/80 bg-white text-base shadow-none focus-visible:ring-2"
-        inputMode="tel"
-        autoComplete="tel"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder="054 123 4567"
-      />
-
-      <Button
-        type="button"
-        variant="outline"
-        className="h-12 w-full border-slate-200 bg-white text-base font-medium"
-        onClick={onLookup}
-        disabled={lookupLoading}
-      >
-        {lookupLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Searching…
-          </>
-        ) : (
-          'Find my details'
-        )}
-      </Button>
-
       {profileName ? (
-        <p className="rounded-lg bg-emerald-100/90 px-3 py-2.5 text-sm text-emerald-900">
-          Welcome back, <span className="font-semibold">{profileName}</span>. Update anything that changed below.
+        <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          Welcome back, <span className="font-medium">{profileName}</span>.
         </p>
       ) : null}
       {alreadySubmitted ? (
-        <p className="flex items-start gap-2 rounded-lg bg-amber-100/90 px-3 py-2.5 text-sm text-amber-950">
+        <p className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            You already submitted this form
+            Already submitted
             {submittedAt ? ` on ${new Date(submittedAt).toLocaleDateString('en-GB')}` : ''}.
           </span>
         </p>
       ) : null}
-    </div>
+      <div className="mt-4 h-0.5 w-12 rounded-full opacity-40" style={{ backgroundColor: theme.accentHex }} />
+    </section>
   )
 }
 
@@ -286,9 +219,7 @@ export function PublicFormSubmitBar({
   return (
     <div
       className={cn(
-        'sticky bottom-0 z-10 -mx-3 mt-4 border-t border-white/40 bg-white/85 px-3 py-3 backdrop-blur-md',
-        'pb-[max(0.75rem,env(safe-area-inset-bottom))]',
-        'shadow-[0_-8px_24px_rgba(15,23,42,0.08)] sm:-mx-0 sm:rounded-2xl sm:border sm:border-slate-200/80',
+        'mt-4 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:items-center sm:justify-end',
         className
       )}
     >
@@ -307,7 +238,7 @@ export function PublicFormPrimaryButton({
     <Button
       {...props}
       className={cn(
-        'h-12 w-full rounded-xl text-base font-semibold text-white shadow-md transition-transform active:scale-[0.99]',
+        'h-11 min-w-[140px] rounded-md px-8 text-sm font-medium text-white shadow-none',
         theme.button,
         className
       )}
@@ -320,9 +251,9 @@ export function PublicFormPrimaryButton({
 export function PublicFormLoadingState() {
   return (
     <PublicFormPageShell>
-      <div className="flex flex-col items-center justify-center gap-4 rounded-2xl bg-white py-24 shadow-lg ring-1 ring-black/5">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg bg-white py-24 shadow-sm">
         <LoadingSpinner />
-        <p className="text-sm font-medium text-slate-600">Loading form…</p>
+        <p className="text-sm text-slate-500">Loading form…</p>
       </div>
     </PublicFormPageShell>
   )
@@ -331,34 +262,30 @@ export function PublicFormLoadingState() {
 export function PublicFormNotFound() {
   return (
     <PublicFormPageShell>
-      <Card className="overflow-hidden rounded-2xl border-0 shadow-lg ring-1 ring-black/5">
-        <CardHeader className="px-5 py-8 text-center">
-          <CardTitle className="text-xl">Form not available</CardTitle>
-          <CardDescription className="text-base">
-            This link may be unpublished or incorrect. Check with your campus leader for the right link.
-          </CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="text-center">
+          <CardTitle>Form not available</CardTitle>
+          <CardDescription>This link may be unpublished or incorrect.</CardDescription>
         </CardHeader>
       </Card>
     </PublicFormPageShell>
   )
 }
 
-export function PublicFormSuccess({ title, form }: { title: string; form: ChurchForm }) {
+export function PublicFormSuccess({ title }: { title: string; form?: ChurchForm }) {
   const theme = usePublicFormTheme()
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl bg-white text-center shadow-lg ring-1 ring-black/5">
-        <div className={cn('h-1.5 w-full bg-gradient-to-r', theme.heroGradient)} />
-        <div className="space-y-3 px-5 py-10">
+    <div className="space-y-3">
+      <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white text-center shadow-sm">
+        <div className="h-2.5 w-full" style={{ backgroundColor: theme.accentHex }} />
+        <div className="space-y-3 px-6 py-10 sm:py-12">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
             <CheckCircle2 className="h-8 w-8 text-emerald-600" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">You&apos;re all set!</h2>
-          <p className="text-base leading-relaxed text-slate-600">
-            Thanks for completing{' '}
-            <span className="font-semibold text-slate-800">{title}</span>. Join our WhatsApp and Telegram
-            communities below.
+          <h2 className="text-2xl font-normal text-slate-900">Your response has been recorded</h2>
+          <p className="text-base text-slate-600">
+            Thank you for completing <span className="font-medium text-slate-800">{title}</span>.
           </p>
         </div>
       </div>
@@ -370,12 +297,12 @@ export function PublicFormSuccess({ title, form }: { title: string; form: Church
 export function PublicFormReviewRow({ label, value }: { label: string; value: string }) {
   const empty = value === '—' || !value.trim()
   return (
-    <div className="px-4 py-3.5 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-slate-100">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className={cn('mt-1 text-base leading-snug', empty ? 'italic text-slate-400' : 'text-slate-900')}>
+    <section className="rounded-lg border border-slate-200/80 bg-white px-5 py-4 shadow-sm sm:px-6 sm:py-5">
+      <p className="text-sm font-medium text-slate-700">{label}</p>
+      <p className={cn('mt-2 text-base', empty ? 'italic text-slate-400' : 'text-slate-900')}>
         {empty ? 'No answer' : value}
       </p>
-    </div>
+    </section>
   )
 }
 
@@ -392,21 +319,19 @@ export function PublicFormReviewActions({
 }) {
   return (
     <PublicFormSubmitBar>
-      <div className="flex flex-col gap-2.5">
-        <PublicFormPrimaryButton type="button" onClick={onSubmit} disabled={submitting || disabled}>
-          {submitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Submitting…
-            </>
-          ) : (
-            'Submit form'
-          )}
-        </PublicFormPrimaryButton>
-        <Button type="button" variant="ghost" className="h-11 w-full text-base" onClick={onEdit}>
-          Back to edit
-        </Button>
-      </div>
+      <Button type="button" variant="ghost" className="h-11" onClick={onEdit}>
+        Back
+      </Button>
+      <PublicFormPrimaryButton type="button" onClick={onSubmit} disabled={submitting || disabled}>
+        {submitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Submitting…
+          </>
+        ) : (
+          'Submit'
+        )}
+      </PublicFormPrimaryButton>
     </PublicFormSubmitBar>
   )
 }

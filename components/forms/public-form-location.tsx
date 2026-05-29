@@ -54,9 +54,9 @@ export function PublicFormLocationCapture({ value, onChange }: Props) {
   }
 
   return (
-    <div className="mx-4 mb-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+    <section className="rounded-lg border border-slate-200/80 bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
       <div>
-        <p className="text-base font-semibold text-slate-900">Your location (optional)</p>
+        <p className="text-base font-medium text-slate-900">Your location (optional)</p>
         <p className="mt-1 text-sm text-slate-500">Helps us plan outreach near you. Only shared if you tap below.</p>
       </div>
       {value ? (
@@ -95,6 +95,6 @@ export function PublicFormLocationCapture({ value, onChange }: Props) {
         </Button>
       )}
       {error ? <p className="text-sm text-amber-800">{error}</p> : null}
-    </div>
+    </section>
   )
 }

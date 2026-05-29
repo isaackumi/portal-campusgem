@@ -8,6 +8,7 @@ export async function createFormFromTemplate(input: {
   templateId: FormTemplateId
   group_id: string
   group_name?: string
+  camp_year_id?: string
   title?: string
   description?: string
   category?: string
@@ -22,6 +23,7 @@ export async function createFormFromTemplate(input: {
     description: input.description?.trim() || template.defaultDescription(groupName) || undefined,
     category: input.category?.trim() || template.category,
     group_id: input.group_id,
+    camp_year_id: input.camp_year_id,
     created_by: input.created_by,
     enable_profile_lookup: template.enable_profile_lookup,
     capture_respondent_location: template.capture_respondent_location,

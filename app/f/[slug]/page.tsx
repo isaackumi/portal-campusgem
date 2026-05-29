@@ -1,81 +1,24 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { getPublishedFormBySlug, submitFormResponse } from '@/lib/actions/forms'
-import { lookupFormProfileByPhone } from '@/lib/actions/form-profile-lookup'
-import { formatResponseValue } from '@/lib/forms/analytics'
+import { getPublishedFormBySlug } from '@/lib/actions/forms'
+import { PublicFormRenderer } from '@/components/forms/public-form-renderer'
 import {
-  PublicFormFieldInput,
-  PublicFormQuestionBlock,
-} from '@/components/forms/public-form-field'
-import {
-  PublicFormDocument,
   PublicFormLoadingState,
   PublicFormNotFound,
-  PublicFormPageShell,
-  PublicFormPhoneLookup,
-  PublicFormPrimaryButton,
-  PublicFormReviewActions,
-  PublicFormReviewRow,
-  PublicFormSubmitBar,
-  PublicFormSuccess,
 } from '@/components/forms/public-form-layout'
 import type { ChurchForm, ChurchFormField } from '@/lib/types'
-import { isValidPhone } from '@/lib/phone'
 import { useToast } from '@/hooks/use-toast'
-import { PublicFormLocationCapture } from '@/components/forms/public-form-location'
-import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-phone'
-import {
-  applyWhatsappSameAsPhone,
-  findWhatsappField,
-  shouldDefaultWhatsappSameAsPhone,
-} from '@/lib/forms/whatsapp-phone'
-import type { RespondentLocation } from '@/lib/actions/reverse-geocode'
-
-type Step = 'fill' | 'review'
-
-function findPhoneField(fields: ChurchFormField[]): ChurchFormField | undefined {
-  return fields.find((field) => field.field_type === 'phone' || field.prefill_key === 'phone')
-}
 
 export default function PublicFormPage() {
   const params = useParams<{ slug: string }>()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [lookupLoading, setLookupLoading] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [step, setStep] = useState<Step>('fill')
   const [form, setForm] = useState<ChurchForm | null>(null)
   const [fields, setFields] = useState<ChurchFormField[]>([])
-  const [values, setValues] = useState<Record<string, unknown>>({})
-  const [lookupPhone, setLookupPhone] = useState('')
-  const [profileName, setProfileName] = useState<string | null>(null)
-  const [alreadySubmitted, setAlreadySubmitted] = useState(false)
-  const [submittedAt, setSubmittedAt] = useState<string | null>(null)
-  const [respondentLocation, setRespondentLocation] = useState<RespondentLocation | null>(null)
-  const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(true)
   const [campusGroupName, setCampusGroupName] = useState<string | null>(null)
-
-  const phoneField = useMemo(() => findPhoneField(fields), [fields])
-  const whatsappField = useMemo(() => findWhatsappField(fields), [fields])
-  /** Camp-style forms put phone near the top (sort_order ≤ 3) for lookup; student forms keep phone in field order. */
-  const phoneFieldEarly = phoneField != null && phoneField.sort_order <= 3
-  const showPhoneStep = Boolean(
-    (form?.enable_profile_lookup || phoneField) && phoneField && phoneFieldEarly
-  )
-  const visibleFields = useMemo(() => {
-    const sorted = [...fields].sort((a, b) => a.sort_order - b.sort_order)
-    return sorted.filter((field) => !(showPhoneStep && field.id === phoneField?.id))
-  }, [fields, phoneField, showPhoneStep])
-
-  useEffect(() => {
-    const phone = phoneField ? String(values[phoneField.id] ?? '').trim() : lookupPhone.trim()
-    if (shouldDefaultWhatsappSameAsPhone(values, fields, phone)) {
-      setWhatsappSameAsPhone(true)
-    }
-  }, [values, fields, phoneField, lookupPhone])
+  const [campYearLabel, setCampYearLabel] = useState<string | null>(null)
 
   useEffect(() => {
     void loadForm()
@@ -85,333 +28,30 @@ export default function PublicFormPage() {
     setLoading(true)
     const { data, error } = await getPublishedFormBySlug(params.slug)
     if (error || !data) {
-      toast({ variant: 'destructive', title: 'Form unavailable', description: error ?? 'This form is not published.' })
+      toast({
+        variant: 'destructive',
+        title: 'Form unavailable',
+        description: error ?? 'This form is not published.',
+      })
       setLoading(false)
       return
     }
-    const sorted = [...data.fields].sort((a, b) => a.sort_order - b.sort_order)
     setForm(data.form)
-    setFields(sorted)
+    setFields([...data.fields].sort((a, b) => a.sort_order - b.sort_order))
     setCampusGroupName(data.group_name ?? null)
-
-    const initial: Record<string, unknown> = {}
-    if (data.group_name) {
-      const universityField = sorted.find((field) => field.prefill_key === 'university')
-      if (universityField) initial[universityField.id] = data.group_name
-    }
-    setValues(initial)
+    setCampYearLabel(data.camp_year_label ?? null)
     setLoading(false)
   }
 
-  function getRespondentPhone(): string {
-    if (phoneField) return String(values[phoneField.id] ?? '').trim()
-    return lookupPhone.trim()
-  }
-
-  function setRespondentPhone(phone: string) {
-    if (phoneField) setFieldValue(phoneField.id, phone)
-    else setLookupPhone(phone)
-  }
-
-  function setFieldValue(fieldId: string, value: unknown) {
-    setValues((current) => ({ ...current, [fieldId]: value }))
-  }
-
-  function toggleCheckboxOption(fieldId: string, option: string, checked: boolean) {
-    setValues((current) => {
-      const existing = Array.isArray(current[fieldId]) ? (current[fieldId] as string[]) : []
-      const next = checked ? Array.from(new Set([...existing, option])) : existing.filter((item) => item !== option)
-      return { ...current, [fieldId]: next }
-    })
-  }
-
-  async function handleLookup() {
-    if (!form) return
-    const phone = getRespondentPhone()
-    if (!isValidPhone(phone)) {
-      toast({ variant: 'destructive', title: 'Invalid phone', description: 'Enter a valid Ghana mobile number.' })
-      return
-    }
-
-    setLookupLoading(true)
-    const result = await lookupFormProfileByPhone(form.slug, phone, values)
-    setLookupLoading(false)
-
-    if (result.error) {
-      toast({ variant: 'destructive', title: 'Lookup failed', description: result.error })
-      return
-    }
-
-    setAlreadySubmitted(result.already_submitted)
-    setSubmittedAt(result.submitted_at ?? null)
-
-    if (result.already_submitted) {
-      toast({
-        variant: 'destructive',
-        title: 'Already submitted',
-        description: result.submitted_at
-          ? `You submitted this form on ${new Date(result.submitted_at).toLocaleDateString()}.`
-          : 'This phone number already has a submission for this form.',
-      })
-      return
-    }
-
-    if (!result.found || !result.values) {
-      setProfileName(null)
-      toast({ title: 'No record found', description: 'Continue filling the form — you can still submit.' })
-      return
-    }
-
-    setValues(result.values)
-    if (!phoneField) setLookupPhone(phone)
-    setProfileName(result.display_name ?? null)
-    toast({
-      title: 'Details loaded',
-      description:
-        result.filledCount && result.filledCount > 0
-          ? `We prefilled ${result.filledCount} field${result.filledCount === 1 ? '' : 's'}. Review and edit anything below.`
-          : 'Record found — review the form and edit as needed.',
-    })
-  }
-
-  function validateRequired(): string | null {
-    if (showPhoneStep && form?.enable_profile_lookup) {
-      const phone = getRespondentPhone()
-      if (!isValidPhone(phone)) {
-        return 'Phone number is required (use a valid Ghana mobile number)'
-      }
-    }
-
-    for (const field of fields) {
-      const value = values[field.id]
-      const isEmpty =
-        value == null ||
-        value === '' ||
-        (Array.isArray(value) && value.length === 0) ||
-        (field.field_type === 'checkbox' && value !== true && !(Array.isArray(value) && value.length > 0))
-
-      if (field.required && isEmpty) return `${field.label} is required`
-
-      if (field.field_type === 'radio' && field.required && (field.options ?? []).length === 0) {
-        return `${field.label} needs answer choices in the form editor`
-      }
-    }
-    return null
-  }
-
-  function goToReview() {
-    const error = validateRequired()
-    if (error) {
-      toast({ variant: 'destructive', title: 'Missing information', description: error })
-      return
-    }
-
-    const phone = getRespondentPhone()
-    if (form && isValidPhone(phone)) {
-      void lookupFormProfileByPhone(form.slug, phone, values).then((result) => {
-        setAlreadySubmitted(result.already_submitted)
-        setSubmittedAt(result.submitted_at ?? null)
-        if (result.already_submitted) {
-          toast({
-            variant: 'destructive',
-            title: 'Already submitted',
-            description: 'This phone number has already submitted this form.',
-          })
-          return
-        }
-        setStep('review')
-      })
-      return
-    }
-
-    setStep('review')
-  }
-
-  async function handleSubmit() {
-    if (!form) return
-    if (alreadySubmitted) {
-      toast({
-        variant: 'destructive',
-        title: 'Cannot submit again',
-        description: 'This phone number already submitted this form.',
-      })
-      return
-    }
-
-    const phone = getRespondentPhone()
-    if (form.enable_profile_lookup && !isValidPhone(phone)) {
-      toast({
-        variant: 'destructive',
-        title: 'Phone required',
-        description: 'Enter a valid Ghana phone number before submitting.',
-      })
-      return
-    }
-
-    setSubmitting(true)
-    const emailField = fields.find((f) => f.field_type === 'email')
-    const nameField = fields.find((f) => f.prefill_key === 'full_name' || f.label.toLowerCase().includes('name'))
-
-    const submitValues = applyWhatsappSameAsPhone(values, fields, phone, whatsappSameAsPhone)
-
-    const { error } = await submitFormResponse({
-      slug: form.slug,
-      values: submitValues,
-      respondent_phone: phone || undefined,
-      respondent_email: emailField ? String(values[emailField.id] ?? '') : undefined,
-      respondent_name: nameField ? String(values[nameField.id] ?? '') : profileName ?? undefined,
-      respondent_latitude: respondentLocation?.latitude,
-      respondent_longitude: respondentLocation?.longitude,
-      respondent_location_label: respondentLocation?.label,
-    })
-    setSubmitting(false)
-
-    if (error) {
-      toast({ variant: 'destructive', title: 'Submission failed', description: error })
-      return
-    }
-
-    setSubmitted(true)
-  }
-
-  const phoneInputValue = phoneField ? String(values[phoneField.id] ?? '') : lookupPhone
-  const phoneLookupLabel = phoneField?.label ?? 'Phone number'
-  const phoneLookupDescription =
-    phoneField?.description ||
-    (form?.enable_profile_lookup
-      ? 'Enter your Ghana mobile number to load your details and prevent duplicate submissions.'
-      : 'Optional — used to find your existing records.')
-  const phoneLookupRequired = Boolean(phoneField?.required || form?.enable_profile_lookup)
-
   if (loading) return <PublicFormLoadingState />
   if (!form) return <PublicFormNotFound />
-  if (submitted) {
-    return (
-      <PublicFormPageShell form={form}>
-        <PublicFormSuccess title={form.title} form={form} />
-      </PublicFormPageShell>
-    )
-  }
-
-  if (step === 'review') {
-    const reviewPhone = getRespondentPhone()
-    const displayValues = applyWhatsappSameAsPhone(values, fields, reviewPhone, whatsappSameAsPhone)
-    return (
-      <PublicFormPageShell form={form}>
-        <PublicFormDocument step="review" form={form} groupName={campusGroupName}>
-          {reviewPhone && !phoneField ? (
-            <PublicFormReviewRow label="Phone number" value={reviewPhone} />
-          ) : null}
-          {fields.map((field) => (
-            <PublicFormReviewRow
-              key={field.id}
-              label={field.label}
-              value={formatResponseValue(displayValues[field.id])}
-            />
-          ))}
-          {respondentLocation ? (
-            <PublicFormReviewRow
-              label="Location"
-              value={
-                respondentLocation.label ??
-                `${respondentLocation.latitude.toFixed(5)}, ${respondentLocation.longitude.toFixed(5)}`
-              }
-            />
-          ) : null}
-        </PublicFormDocument>
-        <PublicFormReviewActions
-          onEdit={() => setStep('fill')}
-          onSubmit={() => void handleSubmit()}
-          submitting={submitting}
-          disabled={alreadySubmitted}
-        />
-      </PublicFormPageShell>
-    )
-  }
 
   return (
-    <PublicFormPageShell form={form}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault()
-          goToReview()
-        }}
-      >
-        <PublicFormDocument step="fill" form={form} groupName={campusGroupName}>
-          {showPhoneStep ? (
-            <PublicFormPhoneLookup
-              label={phoneLookupLabel}
-              description={phoneLookupDescription}
-              required={phoneLookupRequired}
-              value={phoneInputValue}
-              onChange={setRespondentPhone}
-              onLookup={() => void handleLookup()}
-              lookupLoading={lookupLoading}
-              profileName={profileName}
-              alreadySubmitted={alreadySubmitted}
-              submittedAt={submittedAt}
-            />
-          ) : null}
-
-          {visibleFields.length === 0 ? (
-            <p className="px-6 py-10 text-center text-sm text-slate-500">No questions yet.</p>
-          ) : (
-            visibleFields.map((field, index) => {
-              const questionNumber = index + 1
-              const isLastField =
-                index === visibleFields.length - 1 && !form.capture_respondent_location
-
-              if (whatsappField && field.id === whatsappField.id) {
-                return (
-                  <WhatsappSameAsPhoneBlock
-                    key={field.id}
-                    whatsappField={field}
-                    phone={getRespondentPhone()}
-                    value={values[field.id]}
-                    sameAsPhone={whatsappSameAsPhone}
-                    onSameAsPhoneChange={setWhatsappSameAsPhone}
-                    onValueChange={(value) => setFieldValue(field.id, value)}
-                    isLast={isLastField}
-                    questionNumber={questionNumber}
-                  />
-                )
-              }
-
-              const universityLocked =
-                field.prefill_key === 'university' && Boolean(campusGroupName)
-
-              return (
-                <PublicFormQuestionBlock
-                  key={field.id}
-                  field={field}
-                  isLast={isLastField}
-                  questionNumber={questionNumber}
-                >
-                  <PublicFormFieldInput
-                    field={field}
-                    value={values[field.id]}
-                    readOnly={universityLocked}
-                    onChange={(value) => setFieldValue(field.id, value)}
-                    onToggleCheckbox={(option, checked) =>
-                      toggleCheckboxOption(field.id, option, checked)
-                    }
-                  />
-                </PublicFormQuestionBlock>
-              )
-            })
-          )}
-
-          {form.capture_respondent_location ? (
-            <PublicFormLocationCapture value={respondentLocation} onChange={setRespondentLocation} />
-          ) : null}
-        </PublicFormDocument>
-
-        <PublicFormSubmitBar>
-          <PublicFormPrimaryButton type="submit" disabled={alreadySubmitted}>
-            Continue to review
-          </PublicFormPrimaryButton>
-        </PublicFormSubmitBar>
-      </form>
-    </PublicFormPageShell>
+    <PublicFormRenderer
+      form={form}
+      fields={fields}
+      campusGroupName={campusGroupName}
+      campYearLabel={campYearLabel}
+    />
   )
 }
