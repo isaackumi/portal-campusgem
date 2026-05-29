@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { 
     ArrowLeft, Users, TrendingUp, TrendingDown, BarChart3, PieChart,
     DollarSign, CheckCircle2, XCircle, Calendar, MapPin, GraduationCap,
@@ -276,30 +277,15 @@ function CampAnalyticsContent() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/admin/camp-meeting')}
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back
+                <CampAdminPageHeader
+                    title="Camp Analytics"
+                    campYear={campYear}
+                    actions={
+                        <Button variant="outline" onClick={() => router.push('/admin/camp-meeting/registrations')}>
+                            <Download className="mr-2 h-4 w-4" /> Export Data
                         </Button>
-                        <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-                                Camp Analytics
-                            </h1>
-                            <p className="text-muted-foreground mt-1">
-                                Camp Meeting {campYear.year} • {campYear.theme}
-                            </p>
-                        </div>
-                    </div>
-                    <Button variant="outline" onClick={() => router.push('/admin/camp-meeting/registrations')}>
-                        <Download className="mr-2 h-4 w-4" /> Export Data
-                    </Button>
-                </div>
+                    }
+                />
 
                 {/* Overview Stats */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

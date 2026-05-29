@@ -25,6 +25,7 @@ export function useFormsHub(groupId: string, enabled = true) {
   return {
     forms: query.data?.forms ?? [],
     groups: query.data?.groups ?? [],
+    creatorsById: query.data?.creatorsById ?? {},
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     error: query.error instanceof Error ? query.error.message : query.error ? String(query.error) : null,

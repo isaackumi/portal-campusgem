@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import {
@@ -236,27 +237,7 @@ export default function NotificationSettingsPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="max-w-6xl mx-auto p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/admin/camp-meeting')}
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back
-                        </Button>
-                        <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-                                Notification Settings
-                            </h1>
-                            <p className="text-muted-foreground mt-1">
-                                Camp Meeting {campYear.year} • {campYear.theme}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                <CampAdminPageHeader title="Notification Settings" campYear={campYear} />
 
                 <Tabs defaultValue="email" className="space-y-6">
                     <TabsList>

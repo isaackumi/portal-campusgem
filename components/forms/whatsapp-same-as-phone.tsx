@@ -25,8 +25,8 @@ export function WhatsappSameAsPhoneBlock({
   isLast,
 }: Props) {
   return (
-    <div className="space-y-0">
-      <div className="border-b border-slate-100 px-6 py-4">
+    <PublicFormQuestionBlock field={whatsappField} isLast={isLast && sameAsPhone}>
+      <div className="space-y-4">
         <label className="flex cursor-pointer items-start gap-3">
           <Checkbox
             checked={sameAsPhone}
@@ -46,17 +46,15 @@ export function WhatsappSameAsPhoneBlock({
             )}
           </div>
         </label>
-      </div>
-      {!sameAsPhone ? (
-        <PublicFormQuestionBlock field={whatsappField} isLast={isLast}>
+        {!sameAsPhone ? (
           <PublicFormFieldInput
             field={whatsappField}
             value={value}
             onChange={onValueChange}
             onToggleCheckbox={() => {}}
           />
-        </PublicFormQuestionBlock>
-      ) : null}
-    </div>
+        ) : null}
+      </div>
+    </PublicFormQuestionBlock>
   )
 }

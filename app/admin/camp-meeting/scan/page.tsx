@@ -14,6 +14,7 @@ import { CampRegistration, CampYear } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import { cn } from '@/lib/utils'
+import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 
 interface CheckInStats {
     totalRegistrations: number
@@ -337,36 +338,27 @@ export default function CampScannerPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/admin/camp-meeting')}
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back
-                        </Button>
-                        <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-                                Camp Check-In Scanner
-                            </h1>
-                            <p className="text-muted-foreground mt-1">
-                                Camp Meeting {campYear.year} • {campYear.theme}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={handleManualCheckIn}>
-                            Manual Check-In
-                        </Button>
-                        <Button variant="outline" onClick={() => { loadStats(); loadRecentCheckIns() }}>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Refresh
-                        </Button>
-                    </div>
-                </div>
+                <CampAdminPageHeader
+                    title="Camp Check-In Scanner"
+                    campYear={campYear}
+                    actions={
+                        <>
+                            <Button variant="outline" onClick={handleManualCheckIn}>
+                                Manual Check-In
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    loadStats()
+                                    loadRecentCheckIns()
+                                }}
+                            >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Refresh
+                            </Button>
+                        </>
+                    }
+                />
 
                 {/* Stats Cards */}
                 <div className="grid gap-4 md:grid-cols-4">

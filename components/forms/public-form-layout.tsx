@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { cn } from '@/lib/utils'
+import { PublicFormCommunityJoin } from '@/components/forms/public-form-community-join'
 import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
 
 export function PublicFormPageShell({ children }: { children: ReactNode }) {
@@ -184,18 +185,22 @@ export function PublicFormNotFound() {
 export function PublicFormSuccess({ title }: { title: string }) {
   return (
     <PublicFormPageShell>
-      <Card className="overflow-hidden text-center shadow-sm">
-        <div className="h-1 bg-primary" />
-        <CardHeader className="space-y-3 px-6 py-12">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-            <CheckCircle2 className="h-7 w-7 text-emerald-600" />
-          </div>
-          <CardTitle className="text-xl">You&apos;re all set</CardTitle>
-          <CardDescription className="text-base">
-            Thanks for completing <span className="font-medium text-slate-700">{title}</span>.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="space-y-4">
+        <Card className="overflow-hidden text-center shadow-sm">
+          <div className="h-1 bg-primary" />
+          <CardHeader className="space-y-3 px-6 py-10">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+            </div>
+            <CardTitle className="text-xl">You&apos;re all set</CardTitle>
+            <CardDescription className="text-base leading-relaxed">
+              Thanks for completing <span className="font-medium text-slate-700">{title}</span>. Join our
+              WhatsApp and Telegram communities below — no need to save separate invite links.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <PublicFormCommunityJoin />
+      </div>
     </PublicFormPageShell>
   )
 }

@@ -23,14 +23,24 @@ export async function listForms(groupId?: string): Promise<{ data: ChurchForm[];
 }
 
 export async function getFormAdmin(formId: string): Promise<{
-  data: { form: ChurchForm; fields: ChurchFormField[] } | null
+  data: { form: ChurchForm; fields: ChurchFormField[]; creator_name?: string } | null
   error: string | null
 }> {
   requireConvexEnv()
   try {
     const { getFormAdminFromConvex } = await import('@/lib/convex/forms-bridge')
     const data = await getFormAdminFromConvex(formId)
-    return { data, error: null }
+    if (!data) return { data: null, error: null }
+
+    let creator_name: string | undefined
+    if (data.form.created_by) {
+      const { fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
+      const creator = await fetchUserFromConvex(data.form.created_by)
+      creator_name =
+        creator?.full_name?.trim() || creator?.phone?.trim() || creator?.email?.trim() || undefined
+    }
+
+    return { data: { ...data, creator_name }, error: null }
   } catch (error: unknown) {
     return {
       data: null,
@@ -40,14 +50,23 @@ export async function getFormAdmin(formId: string): Promise<{
 }
 
 export async function getPublishedFormBySlug(slug: string): Promise<{
-  data: { form: ChurchForm; fields: ChurchFormField[] } | null
+  data: { form: ChurchForm; fields: ChurchFormField[]; group_name?: string } | null
   error: string | null
 }> {
   requireConvexEnv()
   try {
     const { getPublishedFormBySlugFromConvex } = await import('@/lib/convex/forms-bridge')
     const data = await getPublishedFormBySlugFromConvex(slug)
-    return { data, error: null }
+    if (!data) return { data: null, error: null }
+
+    let group_name: string | undefined
+    if (data.form.group_id) {
+      const { loadGroupById } = await import('@/lib/actions/core-data')
+      const groupRes = await loadGroupById(data.form.group_id)
+      group_name = groupRes.data?.name
+    }
+
+    return { data: { ...data, group_name }, error: null }
   } catch (error: unknown) {
     return {
       data: null,

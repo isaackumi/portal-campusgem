@@ -37,12 +37,13 @@ import {
   fieldTypeUsesOptions,
   parseFieldOptionsText,
 } from '@/components/forms/field-options-editor'
+import { FormPublicLink } from '@/components/forms/form-public-link'
 import { FormGroupSelect } from '@/components/forms/group-select'
 import { useGroups } from '@/lib/hooks/use-data'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
-import { ArrowLeft, Copy, GripVertical, Link2, Plus, Save, Trash2 } from 'lucide-react'
+import { cn, formatDateTime } from '@/lib/utils'
+import { ArrowLeft, CalendarClock, Copy, GripVertical, Link2, Plus, Save, Trash2, UserRound } from 'lucide-react'
 
 type EditableField = {
   client_id: string
@@ -240,6 +241,7 @@ export default function FormEditorPage() {
   const [enableProfileLookup, setEnableProfileLookup] = useState(false)
   const [captureRespondentLocation, setCaptureRespondentLocation] = useState(false)
   const [fields, setFields] = useState<EditableField[]>([])
+  const [creatorName, setCreatorName] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const { data: groups } = useGroups(1, 300)
 
@@ -282,6 +284,7 @@ export default function FormEditorPage() {
     }
 
     setForm(data.form)
+    setCreatorName(data.creator_name ?? null)
     setTitle(data.form.title)
     setDescription(data.form.description ?? '')
     setCategory(data.form.category ?? 'general')
@@ -439,6 +442,17 @@ export default function FormEditorPage() {
           <CardHeader>
             <CardTitle>Form settings</CardTitle>
             <CardDescription>Title, share link, and optional phone lookup for returning campers.</CardDescription>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarClock className="h-4 w-4 shrink-0" />
+                Created {formatDateTime(form.created_at)}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <UserRound className="h-4 w-4 shrink-0" />
+                By{' '}
+                <span className="font-medium text-slate-800">{creatorName ?? 'Unknown user'}</span>
+              </span>
+            </div>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
@@ -491,10 +505,14 @@ export default function FormEditorPage() {
                   Copy
                 </Button>
               </div>
-              <p className="flex items-center gap-1 text-xs text-blue-600">
-                <Link2 className="h-3 w-3" />
-                {publicUrl}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <Link2 className="h-3 w-3 text-muted-foreground" />
+                {slug ? (
+                  <FormPublicLink slug={slug} className="text-sm" />
+                ) : (
+                  <span className="text-muted-foreground">Set a slug to generate the public link</span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2 md:col-span-2">
               <Checkbox

@@ -78,24 +78,37 @@ export function PublicFormFieldInput({
   value,
   onChange,
   onToggleCheckbox,
+  readOnly = false,
 }: {
   field: ChurchFormField
   value: unknown
   onChange: (value: unknown) => void
   onToggleCheckbox: (option: string, checked: boolean) => void
+  readOnly?: boolean
 }) {
+  const lockedClass = readOnly ? 'bg-slate-50 text-slate-700' : ''
+
   switch (field.field_type) {
     case 'long_text':
       return (
         <Textarea
-          className="min-h-[112px] resize-y border-slate-200 shadow-none focus-visible:ring-primary/30"
+          className={cn(
+            'min-h-[112px] resize-y border-slate-200 shadow-none focus-visible:ring-primary/30',
+            lockedClass
+          )}
           value={String(value ?? '')}
           onChange={(event) => onChange(event.target.value)}
+          readOnly={readOnly}
           rows={4}
         />
       )
 
     case 'dropdown':
+      if (readOnly) {
+        return (
+          <Input className={cn(inputClass, lockedClass)} value={String(value ?? '')} readOnly />
+        )
+      }
       return (
         <Select value={String(value ?? '')} onValueChange={onChange}>
           <SelectTrigger className={inputClass}>
@@ -178,7 +191,8 @@ export function PublicFormFieldInput({
     default:
       return (
         <Input
-          className={inputClass}
+          className={cn(inputClass, lockedClass)}
+          readOnly={readOnly}
           type={
             field.field_type === 'email'
               ? 'email'

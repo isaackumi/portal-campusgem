@@ -56,19 +56,19 @@ export default function PublicFormPage() {
   const [submittedAt, setSubmittedAt] = useState<string | null>(null)
   const [respondentLocation, setRespondentLocation] = useState<RespondentLocation | null>(null)
   const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(true)
+  const [campusGroupName, setCampusGroupName] = useState<string | null>(null)
 
   const phoneField = useMemo(() => findPhoneField(fields), [fields])
   const whatsappField = useMemo(() => findWhatsappField(fields), [fields])
-  const showPhoneStep = Boolean(form?.enable_profile_lookup || phoneField)
-  const visibleFields = useMemo(
-    () =>
-      fields.filter((field) => {
-        if (field.id === phoneField?.id) return false
-        if (field.id === whatsappField?.id) return false
-        return true
-      }),
-    [fields, phoneField, whatsappField]
+  /** Camp-style forms put phone near the top (sort_order ≤ 3) for lookup; student forms keep phone in field order. */
+  const phoneFieldEarly = phoneField != null && phoneField.sort_order <= 3
+  const showPhoneStep = Boolean(
+    (form?.enable_profile_lookup || phoneField) && phoneField && phoneFieldEarly
   )
+  const visibleFields = useMemo(() => {
+    const sorted = [...fields].sort((a, b) => a.sort_order - b.sort_order)
+    return sorted.filter((field) => !(showPhoneStep && field.id === phoneField?.id))
+  }, [fields, phoneField, showPhoneStep])
 
   useEffect(() => {
     const phone = phoneField ? String(values[phoneField.id] ?? '').trim() : lookupPhone.trim()
@@ -89,8 +89,17 @@ export default function PublicFormPage() {
       setLoading(false)
       return
     }
+    const sorted = [...data.fields].sort((a, b) => a.sort_order - b.sort_order)
     setForm(data.form)
-    setFields(data.fields)
+    setFields(sorted)
+    setCampusGroupName(data.group_name ?? null)
+
+    const initial: Record<string, unknown> = {}
+    if (data.group_name) {
+      const universityField = sorted.find((field) => field.prefill_key === 'university')
+      if (universityField) initial[universityField.id] = data.group_name
+    }
+    setValues(initial)
     setLoading(false)
   }
 
@@ -341,33 +350,43 @@ export default function PublicFormPage() {
           {visibleFields.length === 0 ? (
             <p className="px-6 py-10 text-center text-sm text-slate-500">No questions yet.</p>
           ) : (
-            visibleFields.map((field, index) => (
-              <PublicFormQuestionBlock
-                key={field.id}
-                field={field}
-                isLast={!whatsappField && index === visibleFields.length - 1}
-              >
-                <PublicFormFieldInput
-                  field={field}
-                  value={values[field.id]}
-                  onChange={(value) => setFieldValue(field.id, value)}
-                  onToggleCheckbox={(option, checked) => toggleCheckboxOption(field.id, option, checked)}
-                />
-              </PublicFormQuestionBlock>
-            ))
-          )}
+            visibleFields.map((field, index) => {
+              const isLastField =
+                index === visibleFields.length - 1 && !form.capture_respondent_location
 
-          {whatsappField ? (
-            <WhatsappSameAsPhoneBlock
-              whatsappField={whatsappField}
-              phone={getRespondentPhone()}
-              value={values[whatsappField.id]}
-              sameAsPhone={whatsappSameAsPhone}
-              onSameAsPhoneChange={setWhatsappSameAsPhone}
-              onValueChange={(value) => setFieldValue(whatsappField.id, value)}
-              isLast={!form.capture_respondent_location}
-            />
-          ) : null}
+              if (whatsappField && field.id === whatsappField.id) {
+                return (
+                  <WhatsappSameAsPhoneBlock
+                    key={field.id}
+                    whatsappField={field}
+                    phone={getRespondentPhone()}
+                    value={values[field.id]}
+                    sameAsPhone={whatsappSameAsPhone}
+                    onSameAsPhoneChange={setWhatsappSameAsPhone}
+                    onValueChange={(value) => setFieldValue(field.id, value)}
+                    isLast={isLastField}
+                  />
+                )
+              }
+
+              const universityLocked =
+                field.prefill_key === 'university' && Boolean(campusGroupName)
+
+              return (
+                <PublicFormQuestionBlock key={field.id} field={field} isLast={isLastField}>
+                  <PublicFormFieldInput
+                    field={field}
+                    value={values[field.id]}
+                    readOnly={universityLocked}
+                    onChange={(value) => setFieldValue(field.id, value)}
+                    onToggleCheckbox={(option, checked) =>
+                      toggleCheckboxOption(field.id, option, checked)
+                    }
+                  />
+                </PublicFormQuestionBlock>
+              )
+            })
+          )}
 
           {form.capture_respondent_location ? (
             <PublicFormLocationCapture value={respondentLocation} onChange={setRespondentLocation} />

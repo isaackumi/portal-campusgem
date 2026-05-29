@@ -12,6 +12,7 @@ export const STUDENT_LEVEL_OPTIONS = [
   'Graduate (completed)',
 ] as const
 
+/** Field order is fixed — public form renders by sort_order. */
 export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
   {
     label: 'Full name',
@@ -21,12 +22,20 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     sort_order: 0,
   },
   {
-    label: 'Gender',
-    field_type: 'dropdown',
+    label: 'University',
+    description: 'Your campus / fellowship (filled from the group this form belongs to)',
+    field_type: 'short_text',
+    required: true,
+    prefill_key: 'university',
+    sort_order: 1,
+  },
+  {
+    label: 'Sex / Gender',
+    field_type: 'radio',
     required: true,
     prefill_key: 'sex',
     options: ['Male', 'Female'],
-    sort_order: 1,
+    sort_order: 2,
   },
   {
     label: 'Program of study',
@@ -34,29 +43,7 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     field_type: 'short_text',
     required: true,
     prefill_key: 'program_of_study',
-    sort_order: 2,
-  },
-  {
-    label: 'Student ID',
-    description: 'Optional — your university index or student number',
-    field_type: 'short_text',
-    required: false,
-    prefill_key: 'student_id',
     sort_order: 3,
-  },
-  {
-    label: 'Hall of residence',
-    field_type: 'short_text',
-    required: true,
-    prefill_key: 'hall_of_residence',
-    sort_order: 4,
-  },
-  {
-    label: 'Room number',
-    field_type: 'short_text',
-    required: false,
-    prefill_key: 'room_number',
-    sort_order: 5,
   },
   {
     label: 'Level',
@@ -65,7 +52,29 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     required: true,
     prefill_key: 'academic_level',
     options: [...STUDENT_LEVEL_OPTIONS],
+    sort_order: 4,
+  },
+  {
+    label: 'Student ID',
+    description: 'Optional — your university index or student number',
+    field_type: 'short_text',
+    required: false,
+    prefill_key: 'student_id',
+    sort_order: 5,
+  },
+  {
+    label: 'Hall / residence',
+    field_type: 'short_text',
+    required: true,
+    prefill_key: 'hall_of_residence',
     sort_order: 6,
+  },
+  {
+    label: 'Room number',
+    field_type: 'short_text',
+    required: false,
+    prefill_key: 'room_number',
+    sort_order: 7,
   },
   {
     label: 'What can you do in our ministry?',
@@ -73,14 +82,14 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     field_type: 'long_text',
     required: false,
     prefill_key: 'ministry_contribution',
-    sort_order: 7,
+    sort_order: 8,
   },
   {
     label: 'Prayer request',
     field_type: 'long_text',
     required: false,
     prefill_key: 'prayer_request',
-    sort_order: 8,
+    sort_order: 9,
   },
   {
     label: 'Phone number',
@@ -88,14 +97,29 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     field_type: 'phone',
     required: true,
     prefill_key: 'phone',
-    sort_order: 9,
+    sort_order: 10,
   },
   {
     label: 'WhatsApp number',
-    description: 'Leave blank on the form if it is the same as your phone — we will copy it automatically',
+    description: 'You can use the same as phone option below',
     field_type: 'phone',
     required: false,
     prefill_key: 'whatsapp',
-    sort_order: 10,
+    sort_order: 11,
+  },
+  {
+    label: 'Location',
+    description: 'Optional — area, hostel vicinity, or landmark',
+    field_type: 'short_text',
+    required: false,
+    prefill_key: 'residence',
+    sort_order: 12,
+  },
+  {
+    label: 'Comments',
+    description: 'Optional — anything else you want us to know',
+    field_type: 'long_text',
+    required: false,
+    sort_order: 13,
   },
 ]

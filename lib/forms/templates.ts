@@ -1,20 +1,27 @@
 import type { ChurchFormField } from '@/lib/types'
 import {
+  CAMP_MEETING_REGISTRATION_CATEGORY,
   CORPORATE_GEM_REGISTRATION_CATEGORY,
   STUDENT_REGISTRATION_CATEGORY,
 } from '@/lib/constants/corporate-gem'
+import { CAMP_MEETING_REGISTRATION_FIELDS } from '@/lib/forms/camp-meeting-registration-fields'
 import { CORPORATE_GEM_REGISTRATION_FIELDS } from '@/lib/forms/corporate-gem-registration-fields'
 import { STUDENT_REGISTRATION_FIELDS } from '@/lib/forms/student-registration-fields'
 
 export const CAMPUS_MEMBER_REGISTRATION_CATEGORY = 'campus_member_registration'
 export const OUTREACH_SIGNUP_CATEGORY = 'outreach_signup'
-export { STUDENT_REGISTRATION_CATEGORY, CORPORATE_GEM_REGISTRATION_CATEGORY }
+export {
+  STUDENT_REGISTRATION_CATEGORY,
+  CORPORATE_GEM_REGISTRATION_CATEGORY,
+  CAMP_MEETING_REGISTRATION_CATEGORY,
+}
 
 export type FormTemplateId =
   | 'blank'
   | 'campus_registration'
   | 'student_registration'
   | 'corporate_gem_registration'
+  | 'camp_meeting_registration'
   | 'outreach_signup'
 
 export type FormTemplateField = {
@@ -188,16 +195,32 @@ export const FORM_TEMPLATES: FormTemplate[] = [
     id: 'student_registration',
     label: 'Student registration',
     description:
-      'Campus students: hall, room, level, program, ministry gifts, prayer request, phone & WhatsApp.',
+      'Full name, university, gender, program, level, hall, ministry & prayer, phone, WhatsApp, location & comments.',
     category: STUDENT_REGISTRATION_CATEGORY,
     enable_profile_lookup: true,
     capture_respondent_location: false,
     defaultTitle: (groupName) => (groupName ? `${groupName} — Student sign-up` : 'Student registration'),
     defaultDescription: (groupName) =>
       groupName
-        ? `Register as a student with ${groupName}.`
+        ? `Register as a student with ${groupName}. Your university is prefilled from this campus.`
         : 'Student registration for campus fellowship.',
     fields: STUDENT_REGISTRATION_FIELDS,
+  },
+  {
+    id: 'camp_meeting_registration',
+    label: 'Camp meeting registration',
+    description:
+      'Camp sign-up with phone lookup, education & age, optional location and comments.',
+    category: CAMP_MEETING_REGISTRATION_CATEGORY,
+    enable_profile_lookup: true,
+    capture_respondent_location: false,
+    defaultTitle: (groupName) =>
+      groupName ? `Camp Meeting — ${groupName}` : 'Camp Meeting registration',
+    defaultDescription: (groupName) =>
+      groupName
+        ? `Register for camp meeting (${groupName}).`
+        : 'Register for the upcoming Eagles Camp / Camp Meeting.',
+    fields: CAMP_MEETING_REGISTRATION_FIELDS,
   },
   {
     id: 'corporate_gem_registration',

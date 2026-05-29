@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { classifyFollowUpSla, type FollowUpSlaBucket } from '@/lib/camp/follow-up-sla'
 import { cn } from '@/lib/utils'
+import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 
 const FOLLOW_UP_STATUSES = ['pending', 'in_progress', 'completed'] as const
 const SLA_FILTERS = ['all', 'overdue', 'due_soon', 'healthy'] as const
@@ -194,41 +195,21 @@ function FollowUpManagementContent() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/admin/camp-meeting')}
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back
-                        </Button>
-                        <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-                                {mineOnly ? 'My follow-ups' : 'Follow-up Management'}
-                            </h1>
-                            <p className="text-muted-foreground mt-1">
-                                Camp Meeting {campYear.year} • {campYear.theme}
-                                {slaFilter !== 'all' ? (
-                                    <span className="ml-2 inline-flex">
-                                        <Badge variant="secondary" className="capitalize">
-                                            SLA: {slaFilter.replace('_', ' ')}
-                                        </Badge>
-                                    </span>
-                                ) : null}
-                                {statusFilter !== 'all' ? (
-                                    <span className="ml-2 inline-flex">
-                                        <Badge variant="outline" className="capitalize">
-                                            Status: {statusFilter.replace('_', ' ')}
-                                        </Badge>
-                                    </span>
-                                ) : null}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                <CampAdminPageHeader
+                    title={mineOnly ? 'My follow-ups' : 'Follow-up Management'}
+                    campYear={campYear}
+                >
+                    {slaFilter !== 'all' ? (
+                        <Badge variant="secondary" className="capitalize">
+                            SLA: {slaFilter.replace('_', ' ')}
+                        </Badge>
+                    ) : null}
+                    {statusFilter !== 'all' ? (
+                        <Badge variant="outline" className="capitalize">
+                            Status: {statusFilter.replace('_', ' ')}
+                        </Badge>
+                    ) : null}
+                </CampAdminPageHeader>
 
                 {/* Stats Cards */}
                 <div className="grid gap-4 md:grid-cols-5">

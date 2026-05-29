@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 
 type SortField = 'full_name' | 'email' | 'phone' | 'role' | 'status' | 'payment_status' | 'created_at' | 'is_new_registrant'
 type SortDirection = 'asc' | 'desc'
@@ -298,39 +299,22 @@ function RegistrationsPageContent() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/admin/camp-meeting')}
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back
-                        </Button>
-                        <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-                                Camp Registrations
-                            </h1>
-                            {campYear && (
-                                <p className="text-muted-foreground mt-1">
-                                    Camp Meeting {campYear.year} • {campYear.theme}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button onClick={printQRCodes} variant="outline" className="shadow-sm">
-                            <Printer className="mr-2 h-4 w-4" /> 
-                            Print QR Codes
-                        </Button>
-                        <Button onClick={exportToCSV} variant="outline" className="shadow-sm">
-                            <Download className="mr-2 h-4 w-4" /> 
-                            Export CSV
-                        </Button>
-                    </div>
-                </div>
+                <CampAdminPageHeader
+                    title="Camp Registrations"
+                    campYear={campYear}
+                    actions={
+                        <>
+                            <Button onClick={printQRCodes} variant="outline" className="shadow-sm">
+                                <Printer className="mr-2 h-4 w-4" />
+                                Print QR Codes
+                            </Button>
+                            <Button onClick={exportToCSV} variant="outline" className="shadow-sm">
+                                <Download className="mr-2 h-4 w-4" />
+                                Export CSV
+                            </Button>
+                        </>
+                    }
+                />
 
                 {/* Stats Cards */}
                 <div className="grid gap-4 md:grid-cols-4">

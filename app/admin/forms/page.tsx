@@ -31,12 +31,15 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { useFormsHub, useInvalidateFormsHub } from '@/lib/hooks/use-forms-hub'
+import { FormPublicLink } from '@/components/forms/form-public-link'
 import { FormGroupSelect } from '@/components/forms/group-select'
 import { getGroupTypeLabel } from '@/lib/constants/groups'
+import { formatDateTime } from '@/lib/utils'
 import {
   ArrowLeft,
   BarChart3,
   Building2,
+  CalendarClock,
   ClipboardList,
   Copy,
   ExternalLink,
@@ -44,6 +47,7 @@ import {
   Link2,
   Plus,
   Sparkles,
+  UserRound,
 } from 'lucide-react'
 
 function statusTone(status: ChurchForm['status']) {
@@ -84,7 +88,10 @@ function FormsAdminContent() {
   const [templateId, setTemplateId] = useState<FormTemplateId>('blank')
   const [search, setSearch] = useState('')
 
-  const { forms, groups, isLoading, isFetching, error, refetch } = useFormsHub(filterGroupId, Boolean(user))
+  const { forms, groups, creatorsById, isLoading, isFetching, error, refetch } = useFormsHub(
+    filterGroupId,
+    Boolean(user)
+  )
 
   const groupMap = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
 
@@ -493,6 +500,9 @@ function FormsAdminContent() {
             {filteredForms.map((form) => {
               const group = form.group_id ? groupMap.get(form.group_id) : undefined
               const isRegistration = form.category === CAMPUS_MEMBER_REGISTRATION_CATEGORY
+              const creatorName = form.created_by
+                ? creatorsById[form.created_by] ?? 'Unknown user'
+                : 'Unknown'
               return (
                 <Card
                   key={form.id}
@@ -526,6 +536,18 @@ function FormsAdminContent() {
                     {form.description ? (
                       <p className="line-clamp-2 text-sm text-muted-foreground">{form.description}</p>
                     ) : null}
+                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                      <p className="flex items-center gap-1.5">
+                        <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                        <span>Created {formatDateTime(form.created_at)}</span>
+                      </p>
+                      <p className="flex items-center gap-1.5">
+                        <UserRound className="h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          By <span className="font-medium text-slate-700">{creatorName}</span>
+                        </span>
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="rounded-lg bg-slate-50 px-3 py-2">
                         <p className="text-xs text-muted-foreground">Responses</p>
@@ -538,10 +560,10 @@ function FormsAdminContent() {
                         </p>
                       </div>
                     </div>
-                    <p className="flex items-center gap-1 truncate text-xs text-indigo-600">
-                      <Link2 className="h-3 w-3 shrink-0" />
-                      /f/{form.slug}
-                    </p>
+                    <div className="flex items-center gap-1 truncate text-xs">
+                      <Link2 className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <FormPublicLink slug={form.slug} showPathOnly />
+                    </div>
                     <div className="mt-auto grid grid-cols-2 gap-2">
                       <Button variant="outline" size="sm" onClick={() => copyFormLink(form.slug)}>
                         <Copy className="mr-1 h-3.5 w-3.5" />

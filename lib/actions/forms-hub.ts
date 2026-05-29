@@ -5,6 +5,8 @@ import type { ChurchForm, Group } from '@/lib/types'
 export type FormsHubData = {
   forms: ChurchForm[]
   groups: Group[]
+  /** User id → display name for form creators */
+  creatorsById: Record<string, string>
 }
 
 export async function getFormsHubData(groupId?: string): Promise<{
@@ -19,11 +21,18 @@ export async function getFormsHubData(groupId?: string): Promise<{
       import('@/lib/convex/forms-bridge'),
       import('@/lib/convex/core-bridge'),
     ])
-    const [forms, groups] = await Promise.all([
+    const [forms, groups, users] = await Promise.all([
       listFormsFromConvex(groupId || undefined),
       fetchGroupsFromConvex(true),
+      import('@/lib/convex/core-bridge').then(({ fetchUsersFromConvex }) => fetchUsersFromConvex()),
     ])
-    return { data: { forms, groups }, error: null }
+
+    const creatorsById: Record<string, string> = {}
+    for (const user of users) {
+      creatorsById[user.id] = user.full_name?.trim() || user.phone?.trim() || user.email?.trim() || 'Unknown user'
+    }
+
+    return { data: { forms, groups, creatorsById }, error: null }
   } catch (error: unknown) {
     return {
       data: null,

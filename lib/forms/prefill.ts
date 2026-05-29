@@ -31,6 +31,7 @@ export type FormPrefillKey =
   | 'ministry_contribution'
   | 'prayer_request'
   | 'whatsapp'
+  | 'university'
 
 export const FORM_PREFILL_KEY_GROUPS: Array<{
   label: string
@@ -70,6 +71,7 @@ export const FORM_PREFILL_KEY_GROUPS: Array<{
   {
     label: 'Student / campus',
     keys: [
+      { value: 'university', label: 'University / campus name', hint: 'Often prefilled from the form’s campus group' },
       { value: 'program_of_study', label: 'Program of study' },
       { value: 'student_id', label: 'Student ID' },
       { value: 'hall_of_residence', label: 'Hall of residence' },

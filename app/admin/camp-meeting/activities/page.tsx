@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import {
@@ -240,26 +241,10 @@ export default function CampActivitiesPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/admin/camp-meeting')}
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back
-                        </Button>
-                        <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-                                Camp Activities
-                            </h1>
-                            <p className="text-muted-foreground mt-1">
-                                Camp Meeting {campYear.year} • {campYear.theme}
-                            </p>
-                        </div>
-                    </div>
+                <CampAdminPageHeader
+                    title="Camp Activities"
+                    campYear={campYear}
+                    actions={
                     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                         <DialogTrigger asChild>
                             <Button onClick={openCreateDialog}>
@@ -449,7 +434,8 @@ export default function CampActivitiesPage() {
                             </form>
                         </DialogContent>
                     </Dialog>
-                </div>
+                    }
+                />
 
                 {/* Filters */}
                 <Card className="border-2">
