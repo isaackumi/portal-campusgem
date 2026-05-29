@@ -20,6 +20,4 @@ scripts/
 *.swp
 *.swo
 bun.lockb
-# Exclude specific problematic patterns
-**/[*]/**
-**/*\[*\]*
+# Do not ignore app/**/[param] routes — that breaks /groups/[id], /members/[id], /f/[slug], etc. on Vercel.
