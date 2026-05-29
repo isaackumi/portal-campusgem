@@ -21,6 +21,8 @@ export function PublicFormRenderer({
   campYearLabel,
   previewMode = false,
 }: Props) {
+  const formKey = `${form.id}-${form.updated_at}-${form.accent_color ?? 'auto'}-${form.display_mode ?? 'stepped'}`
+
   const controller = usePublicForm({
     form,
     fields,
@@ -32,8 +34,8 @@ export function PublicFormRenderer({
   const displayMode = normalizeFormDisplayMode(form.display_mode)
 
   if (displayMode === 'stepped') {
-    return <PublicFormSteppedView controller={controller} />
+    return <PublicFormSteppedView key={formKey} controller={controller} />
   }
 
-  return <PublicFormClassicView controller={controller} />
+  return <PublicFormClassicView key={formKey} controller={controller} />
 }

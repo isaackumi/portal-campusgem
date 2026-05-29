@@ -8,9 +8,7 @@ import { hasPermission } from '@/lib/auth/roles'
 import { buildFormWhatsAppShareUrl } from '@/lib/forms/whatsapp-share'
 import type { ChurchForm } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { usePublicFormTheme } from '@/components/forms/public-form-theme-context'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
 import { BarChart3, LogIn, Share2 } from 'lucide-react'
 
 type Props = {
@@ -22,7 +20,6 @@ type Props = {
 export function PublicFormToolbar({ form, campYearLabel, previewMode }: Props) {
   const { user, loading } = useAuth()
   const { toast } = useToast()
-  const theme = usePublicFormTheme()
 
   const publicUrl = useMemo(() => {
     if (typeof window === 'undefined') return `/f/${form.slug}`
@@ -47,12 +44,9 @@ export function PublicFormToolbar({ form, campYearLabel, previewMode }: Props) {
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
-          className={cn(
-            'inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium text-white shadow-sm transition hover:opacity-95',
-            theme.button
-          )}
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#20BD5A] active:bg-[#1DA851]"
         >
-          <WhatsappLogo className="h-4 w-4" />
+          <WhatsappLogo className="h-5 w-5" variant="white" />
           Share on WhatsApp
         </a>
         <Button

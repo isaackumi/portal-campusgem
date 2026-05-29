@@ -6,12 +6,12 @@ import { lookupFormProfileByPhone } from '@/lib/actions/form-profile-lookup'
 import type { ChurchForm, ChurchFormField } from '@/lib/types'
 import { isValidPhone } from '@/lib/phone'
 import { useToast } from '@/hooks/use-toast'
+import { normalizeFormDisplayMode } from '@/lib/forms/display-mode'
 import {
-  applyWhatsappSameAsPhone,
   findWhatsappField,
   shouldDefaultWhatsappSameAsPhone,
 } from '@/lib/forms/whatsapp-phone'
-import { validateAllFields, validateField } from '@/lib/forms/public-form-validation'
+import { validateFieldWithContext, prepareAndValidateSubmitValues } from '@/lib/forms/public-form-validation'
 import type { RespondentLocation } from '@/lib/actions/reverse-geocode'
 
 export type ClassicStep = 'fill' | 'review'
@@ -57,9 +57,11 @@ export function usePublicForm({
 
   const phoneField = useMemo(() => findPhoneField(fields), [fields])
   const whatsappField = useMemo(() => findWhatsappField(fields), [fields])
+  const isStepped = normalizeFormDisplayMode(form.display_mode) === 'stepped'
   const phoneFieldEarly = phoneField != null && phoneField.sort_order <= 3
   const showPhoneStep = Boolean(
-    (form.enable_profile_lookup || phoneField) && phoneField && phoneFieldEarly
+    phoneField &&
+      (isStepped || ((form.enable_profile_lookup || phoneField) && phoneFieldEarly))
   )
   const visibleFields = useMemo(() => {
     const sorted = [...fields].sort((a, b) => a.sort_order - b.sort_order)
@@ -159,17 +161,38 @@ export function usePublicForm({
     })
   }, [form.slug, getRespondentPhone, phoneField, previewMode, toast, values])
 
-  const validateRequired = useCallback((): string | null => {
-    return validateAllFields(fields, values, {
-      requirePhoneLookup: showPhoneStep && form.enable_profile_lookup,
+  const validationContext = useMemo(
+    () => ({
       phone: getRespondentPhone(),
+      whatsappSameAsPhone,
+      whatsappFieldId: whatsappField?.id,
+    }),
+    [getRespondentPhone, whatsappSameAsPhone, whatsappField?.id]
+  )
+
+  const validateRequired = useCallback((): string | null => {
+    const phone = getRespondentPhone()
+    const { error } = prepareAndValidateSubmitValues({
+      fields,
+      values,
+      phone,
+      whatsappSameAsPhone,
+      requirePhoneLookup: showPhoneStep && form.enable_profile_lookup,
     })
-  }, [fields, form.enable_profile_lookup, getRespondentPhone, showPhoneStep, values])
+    return error
+  }, [fields, form.enable_profile_lookup, getRespondentPhone, showPhoneStep, values, whatsappSameAsPhone])
 
   const validateSingleField = useCallback(
-    (field: ChurchFormField): string | null => validateField(field, values[field.id]),
-    [values]
+    (field: ChurchFormField): string | null =>
+      validateFieldWithContext(field, values, validationContext),
+    [values, validationContext]
   )
+
+  const syncWhatsappFromPhone = useCallback(() => {
+    if (!whatsappField || !whatsappSameAsPhone) return
+    const phone = getRespondentPhone()
+    if (phone) setFieldValue(whatsappField.id, phone)
+  }, [getRespondentPhone, setFieldValue, whatsappField, whatsappSameAsPhone])
 
   const goToReview = useCallback(() => {
     const error = validateRequired()
@@ -235,14 +258,28 @@ export function usePublicForm({
       (f) => f.prefill_key === 'full_name' || f.label.toLowerCase().includes('name')
     )
 
-    const submitValues = applyWhatsappSameAsPhone(values, fields, phone, whatsappSameAsPhone)
+    const { values: submitValues, error: validationError } = prepareAndValidateSubmitValues({
+      fields,
+      values,
+      phone,
+      whatsappSameAsPhone,
+      requirePhoneLookup: form.enable_profile_lookup,
+    })
+
+    if (validationError) {
+      setSubmitting(false)
+      toast({ variant: 'destructive', title: 'Missing information', description: validationError })
+      return false
+    }
 
     const { error } = await submitFormResponse({
       slug: form.slug,
       values: submitValues,
       respondent_phone: phone || undefined,
-      respondent_email: emailField ? String(values[emailField.id] ?? '') : undefined,
-      respondent_name: nameField ? String(values[nameField.id] ?? '') : profileName ?? undefined,
+      respondent_email: emailField ? String(submitValues[emailField.id] ?? '') : undefined,
+      respondent_name: nameField
+        ? String(submitValues[nameField.id] ?? '')
+        : profileName ?? undefined,
       respondent_latitude: respondentLocation?.latitude,
       respondent_longitude: respondentLocation?.longitude,
       respondent_location_label: respondentLocation?.label,
@@ -313,6 +350,7 @@ export function usePublicForm({
     handleLookup,
     validateRequired,
     validateSingleField,
+    syncWhatsappFromPhone,
     goToReview,
     handleSubmit,
   }

@@ -72,7 +72,7 @@ export function PublicFormCommunityJoin() {
           href={whatsapp.href}
           name={whatsapp.name}
           description={whatsapp.description}
-          icon={<WhatsappLogo className="h-7 w-7" />}
+          icon={<WhatsappLogo className="h-7 w-7" variant="white" />}
           iconClassName="bg-[#25D366]"
           cardClassName="border-emerald-100 bg-emerald-50/40 hover:border-emerald-200 hover:bg-emerald-50/80"
         />

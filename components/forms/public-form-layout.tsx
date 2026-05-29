@@ -28,7 +28,10 @@ export function PublicFormPageShell({
 }) {
   if (form) {
     return (
-      <PublicFormThemeProvider form={form}>
+      <PublicFormThemeProvider
+        form={form}
+        key={`${form.accent_color ?? 'auto'}-${form.category ?? 'general'}`}
+      >
         <PublicFormPageShellInner>{children}</PublicFormPageShellInner>
       </PublicFormThemeProvider>
     )

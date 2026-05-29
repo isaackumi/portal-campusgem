@@ -35,7 +35,7 @@ function mapForm(doc: Record<string, unknown> | null | undefined): ChurchForm | 
     accent_color: doc.accent_color != null ? String(doc.accent_color) : undefined,
     camp_year_id: doc.camp_year_id != null ? String(doc.camp_year_id) : undefined,
     display_mode:
-      doc.display_mode === 'stepped' ? 'stepped' : doc.display_mode === 'classic' ? 'classic' : undefined,
+      doc.display_mode === 'classic' ? 'classic' : 'stepped',
     created_by: doc.created_by != null ? String(doc.created_by) : undefined,
     created_at: iso(doc._creationTime as number | undefined),
     updated_at: iso(doc.updated_at as number | undefined),

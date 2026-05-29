@@ -51,20 +51,59 @@ export function PublicFormQuestionBlock({
   )
 }
 
+const steppedInputClass =
+  'h-14 rounded-none border-0 border-b-2 border-white/40 bg-transparent px-0 text-xl text-white shadow-none placeholder:text-white/45 focus-visible:border-white focus-visible:ring-0'
+
 function ChoiceOption({
   selected,
   onSelect,
   children,
   type,
   name,
+  variant = 'classic',
 }: {
   selected: boolean
   onSelect: () => void
   children: ReactNode
   type: 'radio' | 'checkbox'
   name?: string
+  variant?: 'classic' | 'stepped'
 }) {
   const theme = usePublicFormTheme()
+
+  if (variant === 'stepped') {
+    return (
+      <label
+        onClick={type === 'checkbox' ? onSelect : undefined}
+        className={cn(
+          'flex min-h-[3.25rem] cursor-pointer items-center gap-3 rounded-2xl border-2 px-5 py-4 transition-all duration-200 active:scale-[0.99]',
+          selected
+            ? 'border-white bg-white/20 shadow-lg backdrop-blur-sm'
+            : 'border-white/25 bg-white/10 hover:border-white/50 hover:bg-white/15'
+        )}
+      >
+        {type === 'radio' ? (
+          <input
+            type="radio"
+            name={name}
+            className="h-5 w-5 shrink-0 border-white/50 accent-white"
+            checked={selected}
+            onChange={onSelect}
+          />
+        ) : (
+          <span
+            className={cn(
+              'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 border-white/70 text-xs font-bold',
+              selected ? 'border-white bg-white text-slate-900' : 'bg-transparent text-transparent'
+            )}
+          >
+            ✓
+          </span>
+        )}
+        <span className="flex-1 text-lg leading-snug text-white">{children}</span>
+      </label>
+    )
+  }
 
   return (
     <label
@@ -93,34 +132,72 @@ export function PublicFormFieldInput({
   onChange,
   onToggleCheckbox,
   readOnly = false,
+  variant = 'classic',
+  autoFocus = false,
 }: {
   field: ChurchFormField
   value: unknown
   onChange: (value: unknown) => void
   onToggleCheckbox: (option: string, checked: boolean) => void
   readOnly?: boolean
+  variant?: 'classic' | 'stepped'
+  autoFocus?: boolean
 }) {
   const theme = usePublicFormTheme()
   const lockedClass = readOnly ? 'bg-slate-50 text-slate-700' : ''
+  const isStepped = variant === 'stepped'
+  const textInputClass = isStepped ? steppedInputClass : cn(inputClass, lockedClass)
 
   switch (field.field_type) {
     case 'long_text':
       return (
         <Textarea
           className={cn(
-            'min-h-[120px] resize-y rounded-xl border-slate-200 text-base shadow-none focus-visible:ring-2',
-            lockedClass
+            isStepped
+              ? 'min-h-[140px] resize-y rounded-2xl border-2 border-white/30 bg-white/10 px-4 py-3 text-lg text-white shadow-none placeholder:text-white/45 focus-visible:border-white focus-visible:ring-0'
+              : 'min-h-[120px] resize-y rounded-xl border-slate-200 text-base shadow-none focus-visible:ring-2',
+            !isStepped && lockedClass
           )}
           value={String(value ?? '')}
           onChange={(event) => onChange(event.target.value)}
           readOnly={readOnly}
           rows={4}
+          autoFocus={autoFocus}
         />
       )
 
     case 'dropdown':
       if (readOnly) {
-        return <Input className={cn(inputClass, lockedClass)} value={String(value ?? '')} readOnly />
+        return (
+          <Input
+            className={textInputClass}
+            value={String(value ?? '')}
+            readOnly
+            autoFocus={autoFocus}
+          />
+        )
+      }
+      if (isStepped) {
+        return (
+          <select
+            className={cn(
+              steppedInputClass,
+              'w-full appearance-none bg-transparent pr-8 text-lg outline-none'
+            )}
+            value={String(value ?? '')}
+            onChange={(event) => onChange(event.target.value)}
+            autoFocus={autoFocus}
+          >
+            <option value="" className="text-slate-900">
+              Choose an option
+            </option>
+            {(field.options ?? []).map((option) => (
+              <option key={option} value={option} className="text-slate-900">
+                {option}
+              </option>
+            ))}
+          </select>
+        )
       }
       return (
         <Select value={String(value ?? '')} onValueChange={onChange}>
@@ -139,7 +216,11 @@ export function PublicFormFieldInput({
 
     case 'radio':
       if ((field.options ?? []).length === 0) {
-        return <p className="text-sm text-amber-700">This question is not set up yet.</p>
+        return (
+          <p className={cn('text-sm', isStepped ? 'text-amber-100' : 'text-amber-700')}>
+            This question is not set up yet.
+          </p>
+        )
       }
       return (
         <div className="space-y-2.5" role="radiogroup" aria-label={field.label}>
@@ -152,6 +233,7 @@ export function PublicFormFieldInput({
                 name={`field-${field.id}`}
                 selected={selected}
                 onSelect={() => onChange(option)}
+                variant={variant}
               >
                 {option}
               </ChoiceOption>
@@ -166,6 +248,19 @@ export function PublicFormFieldInput({
           <div className="space-y-2.5">
             {(field.options ?? []).map((option) => {
               const selected = Array.isArray(value) && (value as string[]).includes(option)
+              if (isStepped) {
+                return (
+                  <ChoiceOption
+                    key={option}
+                    type="checkbox"
+                    selected={selected}
+                    onSelect={() => onToggleCheckbox(option, !selected)}
+                    variant="stepped"
+                  >
+                    {option}
+                  </ChoiceOption>
+                )
+              }
               return (
                 <label
                   key={option}
@@ -184,6 +279,18 @@ export function PublicFormFieldInput({
               )
             })}
           </div>
+        )
+      }
+      if (isStepped) {
+        return (
+          <ChoiceOption
+            type="checkbox"
+            selected={value === true}
+            onSelect={() => onChange(value !== true)}
+            variant="stepped"
+          >
+            Yes
+          </ChoiceOption>
         )
       }
       return (
@@ -205,8 +312,9 @@ export function PublicFormFieldInput({
     default:
       return (
         <Input
-          className={cn(inputClass, lockedClass)}
+          className={textInputClass}
           readOnly={readOnly}
+          autoFocus={autoFocus}
           type={
             field.field_type === 'email'
               ? 'email'
@@ -225,7 +333,9 @@ export function PublicFormFieldInput({
                 ? '054 123 4567'
                 : field.field_type === 'email'
                   ? 'you@example.com'
-                  : undefined
+                  : isStepped
+                    ? 'Type your answer…'
+                    : undefined
           }
         />
       )

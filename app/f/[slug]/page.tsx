@@ -48,6 +48,7 @@ export default function PublicFormPage() {
 
   return (
     <PublicFormRenderer
+      key={`${form.id}-${form.updated_at}-${form.accent_color}-${form.display_mode}`}
       form={form}
       fields={fields}
       campusGroupName={campusGroupName}

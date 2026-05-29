@@ -100,7 +100,7 @@ export default function FormPreviewPage() {
         </Button>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-slate-500">
-            Preview · {form.display_mode === 'stepped' ? 'Step-by-step' : 'Classic'}
+            Preview · {form.display_mode === 'classic' ? 'Classic' : 'Step-by-step'}
           </span>
           {form.status === 'published' ? (
             <Button variant="outline" size="sm" asChild>
