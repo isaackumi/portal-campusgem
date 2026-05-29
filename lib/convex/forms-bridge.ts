@@ -145,30 +145,55 @@ export async function createFormInConvex(input: {
   return form
 }
 
-export async function updateFormInConvex(
-  formId: string,
-  patch: {
-    title?: string
-    description?: string
-    category?: string
-    group_id?: string | null
-    status?: ChurchForm['status']
-    slug?: string
-    enable_profile_lookup?: boolean
-    capture_respondent_location?: boolean
-    cover_image_url?: string | null
-    accent_color?: string | null
-  }
-): Promise<ChurchForm> {
+type FormUpdatePatch = {
+  title?: string
+  description?: string
+  category?: string
+  group_id?: string | null
+  status?: ChurchForm['status']
+  slug?: string
+  enable_profile_lookup?: boolean
+  capture_respondent_location?: boolean
+  cover_image_url?: string | null
+  accent_color?: string | null
+}
+
+function stripFormAppearanceFields(patch: FormUpdatePatch): FormUpdatePatch {
+  const { cover_image_url: _cover, accent_color: _accent, ...rest } = patch
+  return rest
+}
+
+function isFormAppearanceValidationError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('accent_color') || message.includes('cover_image_url')
+}
+
+export async function updateFormInConvex(formId: string, patch: FormUpdatePatch): Promise<ChurchForm> {
   const client = getConvexHttpClient()
-  const doc = (await client.mutation(api.forms.updateFormWithSecret, {
+  const base = {
     secret: requireCampAdminSecret(),
     form_id: formId as Id<'forms'>,
-    ...patch,
-  })) as Record<string, unknown>
-  const form = mapForm(doc)
-  if (!form) throw new Error('Failed to update form')
-  return form
+  }
+
+  try {
+    const doc = (await client.mutation(api.forms.updateFormWithSecret, {
+      ...base,
+      ...patch,
+    })) as Record<string, unknown>
+    const form = mapForm(doc)
+    if (!form) throw new Error('Failed to update form')
+    return form
+  } catch (error: unknown) {
+    if (!isFormAppearanceValidationError(error)) throw error
+
+    const doc = (await client.mutation(api.forms.updateFormWithSecret, {
+      ...base,
+      ...stripFormAppearanceFields(patch),
+    })) as Record<string, unknown>
+    const form = mapForm(doc)
+    if (!form) throw new Error('Failed to update form')
+    return form
+  }
 }
 
 export async function replaceFormFieldsInConvex(
