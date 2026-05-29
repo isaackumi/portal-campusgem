@@ -38,6 +38,10 @@ export const viewport = {
   themeColor: '#1e3a8a',
 }
 
+/** App-wide: skip broken static path generation for Convex-backed dynamic routes */
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
+
 function DevAssetRecoveryScript() {
   if (process.env.NODE_ENV !== 'development') return null
 

@@ -1,4 +1,6 @@
-import { ConvexHttpClient } from 'convex/browser'
+import 'server-only'
+
+import { getConvexHttpClient } from '@/lib/convex/http-client'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
 import type {
@@ -8,14 +10,6 @@ import type {
   CampRegistrationForm,
   CampYear,
 } from '@/lib/types'
-
-function requireConvexUrl(): string {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL
-  if (!url) {
-    throw new Error('NEXT_PUBLIC_CONVEX_URL is not set')
-  }
-  return url
-}
 
 /** Maps a Convex `camp_years` document to `CampYear` (public registration query). */
 export function convexCampYearDocToCampYear(doc: Record<string, unknown> | null | undefined): CampYear | null {
@@ -51,8 +45,10 @@ export async function lookupCamperByPhoneFromConvex(
   profile: CampRegistration | null
   current_year_registration: CampRegistration | null
 }> {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL
-  if (!url) {
+  let client
+  try {
+    client = getConvexHttpClient()
+  } catch {
     return {
       found: false,
       already_registered_this_year: false,
@@ -61,7 +57,6 @@ export async function lookupCamperByPhoneFromConvex(
       current_year_registration: null,
     }
   }
-  const client = new ConvexHttpClient(url)
   const result = (await client.query(api.camp.lookupCamperByPhonePublic, {
     phone,
     camp_year_id: campYearId,
@@ -82,9 +77,12 @@ export async function lookupCamperByPhoneFromConvex(
 }
 
 export async function fetchRegistrationYearFromConvex(): Promise<CampYear | null> {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL
-  if (!url) return null
-  const client = new ConvexHttpClient(url)
+  let client
+  try {
+    client = getConvexHttpClient()
+  } catch {
+    return null
+  }
   const doc = (await client.query(api.camp.getRegistrationYearPublic, {})) as Record<
     string,
     unknown
@@ -93,7 +91,7 @@ export async function fetchRegistrationYearFromConvex(): Promise<CampYear | null
 }
 
 export async function fetchActiveCampYearFromConvex(): Promise<CampYear | null> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.query(api.camp.getActiveCampYearWithSecret, {
     secret: requireCampAdminSecret(),
   })) as Record<string, unknown> | null
@@ -102,9 +100,12 @@ export async function fetchActiveCampYearFromConvex(): Promise<CampYear | null> 
 
 /** Reads any camp year by id (public Convex query). */
 export async function fetchCampYearByIdFromConvex(yearId: string): Promise<CampYear | null> {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL
-  if (!url) return null
-  const client = new ConvexHttpClient(url)
+  let client
+  try {
+    client = getConvexHttpClient()
+  } catch {
+    return null
+  }
   const doc = (await client.query(api.camp.getCampYearByIdPublic, {
     id: yearId as Id<'camp_years'>,
   })) as Record<string, unknown> | null
@@ -113,9 +114,12 @@ export async function fetchCampYearByIdFromConvex(yearId: string): Promise<CampY
 
 /** Reads camp year by calendar year (public Convex query). */
 export async function fetchCampYearByYearFromConvex(year: number): Promise<CampYear | null> {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL
-  if (!url) return null
-  const client = new ConvexHttpClient(url)
+  let client
+  try {
+    client = getConvexHttpClient()
+  } catch {
+    return null
+  }
   const doc = (await client.query(api.camp.getCampYearByYearPublic, { year })) as Record<
     string,
     unknown
@@ -129,7 +133,7 @@ export async function fetchRegistrationsFromConvex(campYearId: string): Promise<
   if (!secret) {
     throw new Error('CAMP_CONVEX_SERVER_SECRET must be set for Convex registration listing.')
   }
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const docs = (await client.query(api.camp.listRegistrationsWithSecret, {
     camp_year_id: campYearId,
     secret,
@@ -196,7 +200,7 @@ export function convexRegistrationDocToCampRegistration(
 }
 
 export async function registerCamperViaConvex(formData: CampRegistrationForm): Promise<CampRegistration> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.camp.registerCamperPublic, {
     camp_year_id: formData.camp_year_id as Id<'camp_years'>,
     first_name: formData.first_name,
@@ -243,7 +247,7 @@ export function requireCampAdminSecret(): string {
 }
 
 export async function fetchAllCampYearsFromConvex(): Promise<CampYear[]> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const secret = requireCampAdminSecret()
   const docs = (await client.query(api.camp.getAllCampYearsWithSecret, { secret })) as Record<
     string,
@@ -265,7 +269,7 @@ export async function createCampYearInConvex(args: {
   flyer_image_url?: string | null
   venue?: string
 }): Promise<CampYear> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.camp.createCampYearWithSecret, {
     secret: requireCampAdminSecret(),
     ...args,
@@ -287,7 +291,7 @@ export async function updateCampYearInConvex(
     venue?: string
   }
 ): Promise<CampYear> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.camp.updateCampYearWithSecret, {
     secret: requireCampAdminSecret(),
     yearId: yearId as Id<'camp_years'>,
@@ -302,7 +306,7 @@ export async function toggleCampYearRegistrationInConvex(
   yearId: string,
   current_registration_open: boolean
 ): Promise<void> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   await client.mutation(api.camp.toggleCampYearRegistrationWithSecret, {
     secret: requireCampAdminSecret(),
     yearId: yearId as Id<'camp_years'>,
@@ -311,7 +315,7 @@ export async function toggleCampYearRegistrationInConvex(
 }
 
 export async function setActiveCampYearInConvex(activeYearId: string): Promise<void> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   await client.mutation(api.camp.setActiveCampYearWithSecret, {
     secret: requireCampAdminSecret(),
     activeYearId: activeYearId as Id<'camp_years'>,
@@ -319,7 +323,7 @@ export async function setActiveCampYearInConvex(activeYearId: string): Promise<v
 }
 
 export async function clearActiveCampYearInConvex(): Promise<void> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   await client.mutation(api.camp.clearActiveCampYearWithSecret, {
     secret: requireCampAdminSecret(),
   })
@@ -330,7 +334,7 @@ export async function bulkPatchRegistrationsInConvex(args: {
   assigned_to?: string
   follow_up_status?: 'pending' | 'in_progress' | 'completed'
 }): Promise<number> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const result = (await client.mutation(api.camp.bulkPatchCampRegistrationsWithSecret, {
     secret: requireCampAdminSecret(),
     registration_ids: args.registration_ids as Id<'camp_registrations'>[],
@@ -341,7 +345,7 @@ export async function bulkPatchRegistrationsInConvex(args: {
 }
 
 export async function fetchRegistrationFromConvex(id: string): Promise<CampRegistration | null> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.query(api.camp.getRegistrationWithSecret, {
     secret: requireCampAdminSecret(),
     id: id as Id<'camp_registrations'>,
@@ -350,7 +354,7 @@ export async function fetchRegistrationFromConvex(id: string): Promise<CampRegis
 }
 
 export async function fetchInteractionsFromConvex(registrationId: string): Promise<CampInteraction[]> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const docs = (await client.query(api.camp.listInteractionsWithSecret, {
     secret: requireCampAdminSecret(),
     registration_id: registrationId,
@@ -364,7 +368,7 @@ export async function patchRegistrationInConvex(
   id: string,
   patch: Partial<CampRegistration> & Record<string, unknown>
 ): Promise<CampRegistration> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.camp.patchCampRegistrationWithSecret, {
     secret: requireCampAdminSecret(),
     id: id as Id<'camp_registrations'>,
@@ -382,7 +386,7 @@ export async function promoteCampRegistrantInConvex(args: {
   birth_day?: number
   birth_year?: number
 }): Promise<{ user: Record<string, unknown> | null; registration: CampRegistration | null }> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const result = (await client.mutation(api.camp.promoteCampRegistrantWithSecret, {
     secret: requireCampAdminSecret(),
     registration_id: args.registration_id as Id<'camp_registrations'>,
@@ -419,7 +423,7 @@ export function convexInteractionDocToCampInteraction(
 export async function addInteractionInConvex(
   interaction: Partial<CampInteraction> & { registration_id: string; performed_by: string }
 ): Promise<CampInteraction> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.camp.addCampInteractionWithSecret, {
     secret: requireCampAdminSecret(),
     registration_id: interaction.registration_id,
@@ -433,7 +437,7 @@ export async function addInteractionInConvex(
 }
 
 export async function fetchCampActivitiesFromConvex(campYearId: string): Promise<unknown[]> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   return (await client.query(api.camp.listCampActivitiesWithSecret, {
     secret: requireCampAdminSecret(),
     camp_year_id: campYearId,
@@ -444,7 +448,7 @@ export async function createCampActivityInConvex(
   campYearId: string,
   activity: Record<string, unknown>
 ): Promise<unknown> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   return await client.mutation(api.camp.createCampActivityWithSecret, {
     secret: requireCampAdminSecret(),
     camp_year_id: campYearId,
@@ -456,7 +460,7 @@ export async function updateCampActivityInConvex(
   id: string,
   patch: Record<string, unknown>
 ): Promise<unknown> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   return await client.mutation(api.camp.updateCampActivityWithSecret, {
     secret: requireCampAdminSecret(),
     id: id as Id<'camp_activities'>,
@@ -465,7 +469,7 @@ export async function updateCampActivityInConvex(
 }
 
 export async function deleteCampActivityInConvex(id: string): Promise<void> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   await client.mutation(api.camp.deleteCampActivityWithSecret, {
     secret: requireCampAdminSecret(),
     id: id as Id<'camp_activities'>,
@@ -507,7 +511,7 @@ export function convexCommunicationDocToCampCommunication(
 export async function fetchCampCommunicationsFromConvex(
   campYearId: string
 ): Promise<CampCommunication[]> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const docs = (await client.query(api.camp.listCampCommunicationsWithSecret, {
     secret: requireCampAdminSecret(),
     camp_year_id: campYearId,
@@ -523,7 +527,7 @@ export async function logCampCommunicationInConvex(
     delivered_at?: string
   }
 ): Promise<CampCommunication> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   const doc = (await client.mutation(api.camp.logCampCommunicationWithSecret, {
     secret: requireCampAdminSecret(),
     camp_year_id: communication.camp_year_id,
@@ -558,7 +562,7 @@ export async function importCampRegistrationsInConvex(
   errors: Array<{ row: number; errors: string[] }>
   skipped_rows: Array<{ row: number; reason: string }>
 }> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   return (await client.mutation(api.camp.importCampRegistrationsWithSecret, {
     secret: requireCampAdminSecret(),
     camp_year_id: campYearId as Id<'camp_years'>,
@@ -573,7 +577,7 @@ export async function importCampRegistrationsInConvex(
 }
 
 export async function fetchCamperDirectoryFromConvex(): Promise<import('@/lib/types').CampCamperDirectoryRow[]> {
-  const client = new ConvexHttpClient(requireConvexUrl())
+  const client = getConvexHttpClient()
   return (await client.query(api.camp.listCamperDirectoryWithSecret, {
     secret: requireCampAdminSecret(),
   })) as import('@/lib/types').CampCamperDirectoryRow[]

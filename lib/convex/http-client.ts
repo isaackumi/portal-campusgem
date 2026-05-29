@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { ConvexHttpClient } from 'convex/browser'
 
 let sharedClient: ConvexHttpClient | null = null

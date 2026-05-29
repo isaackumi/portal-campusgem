@@ -1,14 +1,9 @@
-'use client'
-
 import type { ReactNode } from 'react'
-import { DashboardLayout } from '@/components/dashboard-layout'
-import { AdminContextNav } from '@/components/admin/admin-context-nav'
+import { AdminDashboardLayout } from '@/components/admin/admin-dashboard-layout'
+
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <DashboardLayout>
-      <AdminContextNav />
-      {children}
-    </DashboardLayout>
-  )
+  return <AdminDashboardLayout>{children}</AdminDashboardLayout>
 }
