@@ -8,6 +8,9 @@ import {
 } from '@/components/forms/public-form-theme-context'
 import { cn } from '@/lib/utils'
 
+const DOT_PATTERN =
+  'radial-gradient(circle, rgba(255,255,255,0.14) 1px, transparent 1px)'
+
 export function PublicFormSteppedShell({
   form,
   children,
@@ -38,22 +41,39 @@ function PublicFormSteppedShellInner({
 
   return (
     <div
-      className={cn('min-h-[100dvh] bg-[#eceff1] text-slate-900 antialiased')}
+      className={cn(
+        'relative flex min-h-[100dvh] flex-col bg-gradient-to-br text-white antialiased',
+        theme.heroGradient
+      )}
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
-      <div className="h-1.5 w-full bg-slate-200">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          opacity: theme.steppedPatternOpacity,
+          backgroundImage: DOT_PATTERN,
+          backgroundSize: '22px 22px',
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 55%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.15) 0%, transparent 50%)',
+        }}
+      />
+
+      <div className="relative h-1.5 w-full bg-black/20">
         <div
-          className="h-full transition-all duration-500 ease-out"
-          style={{
-            width: `${Math.min(100, Math.max(0, progress))}%`,
-            backgroundColor: theme.accentHex,
-          }}
+          className="h-full bg-white shadow-sm transition-all duration-500 ease-out"
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
       </div>
-      <div className="mx-auto flex min-h-[calc(100dvh-6px)] w-full max-w-2xl flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
+
+      <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
         {children}
-        <footer className="mt-auto pt-8 text-center">
-          <p className="text-xs text-slate-500">Campus Gem Ministries</p>
+        <footer className="mt-auto pt-6 text-center">
+          <p className="text-xs font-medium text-white/70">Campus Gem Ministries</p>
         </footer>
       </div>
     </div>
@@ -64,7 +84,7 @@ export function SteppedQuestionCard({ children }: { children: ReactNode }) {
   const theme = usePublicFormTheme()
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
+    <div className="w-full overflow-hidden rounded-2xl border border-white/20 bg-white text-slate-900 shadow-2xl shadow-black/25">
       <div className="h-1.5 w-full" style={{ backgroundColor: theme.accentHex }} />
       <div className="px-5 py-7 sm:px-8 sm:py-9">{children}</div>
     </div>

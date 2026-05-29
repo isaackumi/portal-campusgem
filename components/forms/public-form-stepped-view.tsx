@@ -12,7 +12,6 @@ import {
 } from '@/components/forms/public-form-stepped-shell'
 import { PublicFormToolbar } from '@/components/forms/public-form-toolbar'
 import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-phone'
-import { usePublicFormTheme } from '@/components/forms/public-form-theme-context'
 import { buildSteppedScreens, type SteppedScreen } from '@/lib/forms/public-form-steps'
 import { applyWhatsappSameAsPhone } from '@/lib/forms/whatsapp-phone'
 import { isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
@@ -66,7 +65,6 @@ function SteppedActions({
 }
 
 export function PublicFormSteppedView({ controller }: { controller: PublicFormController }) {
-  const theme = usePublicFormTheme()
   const {
     form,
     fields,
@@ -243,7 +241,9 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
     return (
       <PublicFormSteppedShell form={form} progress={100}>
         {previewMode ? <PublicFormPreviewBanner /> : null}
-        <PublicFormSuccess title={form.title} form={form} />
+        <div className="flex flex-1 flex-col justify-center py-8">
+          <PublicFormSuccess title={form.title} form={form} />
+        </div>
       </PublicFormSteppedShell>
     )
   }
@@ -264,27 +264,34 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
 
       <div className="mb-4 flex items-center justify-between gap-3">
         {stepIndex > 0 ? (
-          <Button type="button" variant="ghost" size="sm" className="h-9 text-slate-600" onClick={goBack}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-9 border border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+            onClick={goBack}
+          >
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Back
           </Button>
         ) : (
           <span />
         )}
-        <p className="text-sm font-medium text-slate-500">
+        <p className="text-sm font-semibold text-white">
           Step {stepIndex + 1} of {totalSteps}
         </p>
       </div>
 
       {encouragement ? (
-        <p className={cn('mb-4 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium', theme.badge)}>
+        <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
           <Sparkles className="h-4 w-4" />
           {encouragement}
         </p>
       ) : null}
 
-      <div ref={contentRef} className={cn(enterClass, shake && 'animate-shake')}>
-        <SteppedQuestionCard>
+      <div className="flex flex-1 flex-col justify-center py-4 sm:py-8">
+        <div ref={contentRef} className={cn(enterClass, shake && 'animate-shake')}>
+          <SteppedQuestionCard>
           {screen.kind === 'intro' ? (
             <div className="space-y-6">
               {coverUrl ? (
@@ -469,7 +476,8 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
               {fieldError}
             </p>
           ) : null}
-        </SteppedQuestionCard>
+          </SteppedQuestionCard>
+        </div>
       </div>
     </PublicFormSteppedShell>
   )

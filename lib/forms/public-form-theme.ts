@@ -4,18 +4,21 @@ export type PublicFormAccentId =
   | 'auto'
   | 'indigo'
   | 'sky'
+  | 'black'
   | 'slate'
 
 export const PUBLIC_FORM_ACCENT_OPTIONS: Array<{ id: PublicFormAccentId; label: string }> = [
   { id: 'auto', label: 'Blue (auto — recommended)' },
   { id: 'indigo', label: 'Blue' },
   { id: 'sky', label: 'Light blue' },
+  { id: 'black', label: 'Black' },
   { id: 'slate', label: 'Neutral gray' },
 ]
 
 export type PublicFormTheme = {
   id: Exclude<PublicFormAccentId, 'auto'>
   pageGradient: string
+  /** Full-page stepped background gradient */
   heroGradient: string
   accentHex: string
   accentSoft: string
@@ -27,13 +30,15 @@ export type PublicFormTheme = {
   choiceSelected: string
   descriptionBox: string
   badge: string
+  /** Dot pattern opacity on stepped background (0–1) */
+  steppedPatternOpacity: number
 }
 
 const THEMES: Record<Exclude<PublicFormAccentId, 'auto'>, PublicFormTheme> = {
   indigo: {
     id: 'indigo',
     pageGradient: 'from-indigo-50 via-slate-50 to-white',
-    heroGradient: 'from-indigo-600 to-indigo-800',
+    heroGradient: 'from-indigo-600 via-indigo-700 to-indigo-950',
     accentHex: '#4338ca',
     accentSoft: 'bg-indigo-50',
     accentBorder: 'border-indigo-200',
@@ -44,11 +49,12 @@ const THEMES: Record<Exclude<PublicFormAccentId, 'auto'>, PublicFormTheme> = {
     choiceSelected: 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200',
     descriptionBox: 'bg-indigo-50 border-indigo-100 text-indigo-950',
     badge: 'bg-indigo-100 text-indigo-900',
+    steppedPatternOpacity: 0.35,
   },
   sky: {
     id: 'sky',
     pageGradient: 'from-sky-50 via-slate-50 to-white',
-    heroGradient: 'from-sky-600 to-sky-800',
+    heroGradient: 'from-sky-600 via-sky-700 to-sky-950',
     accentHex: '#0369a1',
     accentSoft: 'bg-sky-50',
     accentBorder: 'border-sky-200',
@@ -59,11 +65,28 @@ const THEMES: Record<Exclude<PublicFormAccentId, 'auto'>, PublicFormTheme> = {
     choiceSelected: 'border-sky-500 bg-sky-50 ring-2 ring-sky-200',
     descriptionBox: 'bg-sky-50 border-sky-100 text-sky-950',
     badge: 'bg-sky-100 text-sky-900',
+    steppedPatternOpacity: 0.32,
+  },
+  black: {
+    id: 'black',
+    pageGradient: 'from-neutral-100 via-neutral-50 to-white',
+    heroGradient: 'from-neutral-800 via-neutral-950 to-black',
+    accentHex: '#171717',
+    accentSoft: 'bg-neutral-100',
+    accentBorder: 'border-neutral-300',
+    accentText: 'text-neutral-950',
+    button: 'bg-neutral-900 hover:bg-black active:bg-black text-white',
+    progressActive: 'bg-neutral-900',
+    progressDone: 'bg-neutral-400',
+    choiceSelected: 'border-neutral-700 bg-neutral-100 ring-2 ring-neutral-300',
+    descriptionBox: 'bg-neutral-100 border-neutral-200 text-neutral-950',
+    badge: 'bg-neutral-200 text-neutral-900',
+    steppedPatternOpacity: 0.28,
   },
   slate: {
     id: 'slate',
     pageGradient: 'from-slate-100 via-slate-50 to-white',
-    heroGradient: 'from-slate-700 to-slate-900',
+    heroGradient: 'from-slate-600 via-slate-700 to-slate-950',
     accentHex: '#334155',
     accentSoft: 'bg-slate-100',
     accentBorder: 'border-slate-300',
@@ -74,10 +97,10 @@ const THEMES: Record<Exclude<PublicFormAccentId, 'auto'>, PublicFormTheme> = {
     choiceSelected: 'border-slate-500 bg-slate-50 ring-2 ring-slate-200',
     descriptionBox: 'bg-slate-50 border-slate-200 text-slate-900',
     badge: 'bg-slate-200 text-slate-800',
+    steppedPatternOpacity: 0.3,
   },
 }
 
-/** All form types default to blue unless admin picks another theme. */
 function accentFromCategory(_category?: string): Exclude<PublicFormAccentId, 'auto'> {
   return 'indigo'
 }
