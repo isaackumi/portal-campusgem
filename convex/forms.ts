@@ -171,6 +171,8 @@ export const createFormWithSecret = mutation({
     created_by: v.optional(v.string()),
     enable_profile_lookup: v.optional(v.boolean()),
     capture_respondent_location: v.optional(v.boolean()),
+    cover_image_url: v.optional(v.string()),
+    accent_color: v.optional(v.string()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -200,6 +202,8 @@ export const createFormWithSecret = mutation({
       status: 'draft',
       enable_profile_lookup: args.enable_profile_lookup ?? false,
       capture_respondent_location: args.capture_respondent_location ?? false,
+      cover_image_url: args.cover_image_url?.trim() || undefined,
+      accent_color: args.accent_color?.trim() || undefined,
       response_count: 0,
       created_by: args.created_by,
       updated_at: now,
@@ -220,6 +224,8 @@ export const updateFormWithSecret = mutation({
     slug: v.optional(v.string()),
     enable_profile_lookup: v.optional(v.boolean()),
     capture_respondent_location: v.optional(v.boolean()),
+    cover_image_url: v.optional(v.union(v.string(), v.null())),
+    accent_color: v.optional(v.union(v.string(), v.null())),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -244,6 +250,13 @@ export const updateFormWithSecret = mutation({
     if (args.enable_profile_lookup != null) patch.enable_profile_lookup = args.enable_profile_lookup
     if (args.capture_respondent_location != null) {
       patch.capture_respondent_location = args.capture_respondent_location
+    }
+    if (args.cover_image_url !== undefined) {
+      patch.cover_image_url =
+        args.cover_image_url === null ? undefined : args.cover_image_url.trim() || undefined
+    }
+    if (args.accent_color !== undefined) {
+      patch.accent_color = args.accent_color === null ? undefined : args.accent_color.trim() || undefined
     }
 
     if (args.slug != null) {

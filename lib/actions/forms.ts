@@ -125,6 +125,8 @@ export async function updateForm(
     slug?: string
     enable_profile_lookup?: boolean
     capture_respondent_location?: boolean
+    cover_image_url?: string | null
+    accent_color?: string | null
   }
 ): Promise<{ data: ChurchForm | null; error: string | null }> {
   requireConvexEnv()

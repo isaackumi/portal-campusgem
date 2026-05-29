@@ -301,6 +301,10 @@ export default defineSchema({
     status: v.union(v.literal('draft'), v.literal('published'), v.literal('closed')),
     enable_profile_lookup: v.boolean(),
     capture_respondent_location: v.optional(v.boolean()),
+    /** Banner / flyer shown at top of public form (HTTPS URL) */
+    cover_image_url: v.optional(v.string()),
+    /** Theme preset: auto | indigo | violet | emerald | amber | rose | sky | slate */
+    accent_color: v.optional(v.string()),
     /** Denormalized count — updated on each public submission */
     response_count: v.optional(v.number()),
     created_by: v.optional(v.string()),

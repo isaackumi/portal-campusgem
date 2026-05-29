@@ -13,6 +13,7 @@ type Props = {
   onSameAsPhoneChange: (checked: boolean) => void
   onValueChange: (value: unknown) => void
   isLast?: boolean
+  questionNumber?: number
 }
 
 export function WhatsappSameAsPhoneBlock({
@@ -23,26 +24,31 @@ export function WhatsappSameAsPhoneBlock({
   onSameAsPhoneChange,
   onValueChange,
   isLast,
+  questionNumber,
 }: Props) {
   return (
-    <PublicFormQuestionBlock field={whatsappField} isLast={isLast && sameAsPhone}>
+    <PublicFormQuestionBlock
+      field={whatsappField}
+      isLast={isLast && sameAsPhone}
+      questionNumber={questionNumber}
+    >
       <div className="space-y-4">
-        <label className="flex cursor-pointer items-start gap-3">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 active:bg-slate-100">
           <Checkbox
             checked={sameAsPhone}
             onCheckedChange={(checked) => onSameAsPhoneChange(checked === true)}
-            className="mt-0.5"
+            className="mt-0.5 h-5 w-5"
           />
           <div className="space-y-1">
-            <Label className="cursor-pointer text-sm font-medium text-slate-900">
-              My WhatsApp number is the same as my phone number
+            <Label className="cursor-pointer text-base font-medium text-slate-900">
+              Same as my phone number
             </Label>
             {phone ? (
-              <p className="text-sm text-muted-foreground">
-                We will use <span className="font-medium text-slate-700">{phone}</span> for WhatsApp.
+              <p className="text-sm text-slate-600">
+                WhatsApp: <span className="font-semibold text-slate-800">{phone}</span>
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">Enter your phone number first.</p>
+              <p className="text-sm text-slate-500">Enter your phone number first.</p>
             )}
           </div>
         </label>

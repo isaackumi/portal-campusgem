@@ -15,6 +15,7 @@ import {
   PublicFormNotFound,
   PublicFormPageShell,
   PublicFormPhoneLookup,
+  PublicFormPrimaryButton,
   PublicFormReviewActions,
   PublicFormReviewRow,
   PublicFormSubmitBar,
@@ -22,7 +23,6 @@ import {
 } from '@/components/forms/public-form-layout'
 import type { ChurchForm, ChurchFormField } from '@/lib/types'
 import { isValidPhone } from '@/lib/phone'
-import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { PublicFormLocationCapture } from '@/components/forms/public-form-location'
 import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-phone'
@@ -285,14 +285,20 @@ export default function PublicFormPage() {
 
   if (loading) return <PublicFormLoadingState />
   if (!form) return <PublicFormNotFound />
-  if (submitted) return <PublicFormSuccess title={form.title} />
+  if (submitted) {
+    return (
+      <PublicFormPageShell form={form}>
+        <PublicFormSuccess title={form.title} form={form} />
+      </PublicFormPageShell>
+    )
+  }
 
   if (step === 'review') {
     const reviewPhone = getRespondentPhone()
     const displayValues = applyWhatsappSameAsPhone(values, fields, reviewPhone, whatsappSameAsPhone)
     return (
-      <PublicFormPageShell>
-        <PublicFormDocument step="review" form={form}>
+      <PublicFormPageShell form={form}>
+        <PublicFormDocument step="review" form={form} groupName={campusGroupName}>
           {reviewPhone && !phoneField ? (
             <PublicFormReviewRow label="Phone number" value={reviewPhone} />
           ) : null}
@@ -324,14 +330,14 @@ export default function PublicFormPage() {
   }
 
   return (
-    <PublicFormPageShell>
+    <PublicFormPageShell form={form}>
       <form
         onSubmit={(event) => {
           event.preventDefault()
           goToReview()
         }}
       >
-        <PublicFormDocument step="fill" form={form}>
+        <PublicFormDocument step="fill" form={form} groupName={campusGroupName}>
           {showPhoneStep ? (
             <PublicFormPhoneLookup
               label={phoneLookupLabel}
@@ -351,6 +357,7 @@ export default function PublicFormPage() {
             <p className="px-6 py-10 text-center text-sm text-slate-500">No questions yet.</p>
           ) : (
             visibleFields.map((field, index) => {
+              const questionNumber = index + 1
               const isLastField =
                 index === visibleFields.length - 1 && !form.capture_respondent_location
 
@@ -365,6 +372,7 @@ export default function PublicFormPage() {
                     onSameAsPhoneChange={setWhatsappSameAsPhone}
                     onValueChange={(value) => setFieldValue(field.id, value)}
                     isLast={isLastField}
+                    questionNumber={questionNumber}
                   />
                 )
               }
@@ -373,7 +381,12 @@ export default function PublicFormPage() {
                 field.prefill_key === 'university' && Boolean(campusGroupName)
 
               return (
-                <PublicFormQuestionBlock key={field.id} field={field} isLast={isLastField}>
+                <PublicFormQuestionBlock
+                  key={field.id}
+                  field={field}
+                  isLast={isLastField}
+                  questionNumber={questionNumber}
+                >
                   <PublicFormFieldInput
                     field={field}
                     value={values[field.id]}
@@ -394,9 +407,9 @@ export default function PublicFormPage() {
         </PublicFormDocument>
 
         <PublicFormSubmitBar>
-          <Button type="submit" className="h-11 w-full" disabled={alreadySubmitted}>
+          <PublicFormPrimaryButton type="submit" disabled={alreadySubmitted}>
             Continue to review
-          </Button>
+          </PublicFormPrimaryButton>
         </PublicFormSubmitBar>
       </form>
     </PublicFormPageShell>

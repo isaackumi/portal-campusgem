@@ -839,6 +839,10 @@ export interface ChurchForm {
   status: ChurchFormStatus
   enable_profile_lookup: boolean
   capture_respondent_location: boolean
+  /** HTTPS URL for banner at top of public form */
+  cover_image_url?: string
+  /** Theme preset id (auto, indigo, emerald, …) */
+  accent_color?: string
   created_by?: string
   created_at: string
   updated_at: string

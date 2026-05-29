@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { usePublicFormTheme } from '@/components/forms/public-form-theme-context'
 import { Loader2, MapPin } from 'lucide-react'
 import { reverseGeocodeLabel, type RespondentLocation } from '@/lib/actions/reverse-geocode'
+import { cn } from '@/lib/utils'
 
 type Props = {
   value: RespondentLocation | null
@@ -11,6 +13,7 @@ type Props = {
 }
 
 export function PublicFormLocationCapture({ value, onChange }: Props) {
+  const theme = usePublicFormTheme()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -51,19 +54,19 @@ export function PublicFormLocationCapture({ value, onChange }: Props) {
   }
 
   return (
-    <div className="space-y-2 border-b border-slate-100 px-6 py-5">
-      <p className="text-sm font-medium text-slate-900">Your location (optional)</p>
-      <p className="text-sm text-slate-500">
-        Helps us plan outreach near you. Only shared if you tap the button below.
-      </p>
+    <div className="mx-4 mb-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+      <div>
+        <p className="text-base font-semibold text-slate-900">Your location (optional)</p>
+        <p className="mt-1 text-sm text-slate-500">Helps us plan outreach near you. Only shared if you tap below.</p>
+      </div>
       {value ? (
-        <div className="flex items-start gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
-          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <div className="flex items-start gap-2 rounded-xl bg-white px-3 py-3 text-sm text-slate-700 ring-1 ring-slate-200">
+          <MapPin className={cn('mt-0.5 h-4 w-4 shrink-0', theme.accentText)} />
           <div>
-            <p>{value.label ?? `${value.latitude.toFixed(5)}, ${value.longitude.toFixed(5)}`}</p>
+            <p className="text-base">{value.label ?? `${value.latitude.toFixed(5)}, ${value.longitude.toFixed(5)}`}</p>
             <button
               type="button"
-              className="mt-1 text-xs text-slate-500 underline hover:text-slate-700"
+              className="mt-1.5 text-sm font-medium text-slate-500 underline"
               onClick={() => onChange(null)}
             >
               Clear location
@@ -71,7 +74,13 @@ export function PublicFormLocationCapture({ value, onChange }: Props) {
           </div>
         </div>
       ) : (
-        <Button type="button" variant="outline" size="sm" onClick={() => void captureLocation()} disabled={loading}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-12 w-full rounded-xl border-slate-200 bg-white text-base"
+          onClick={() => void captureLocation()}
+          disabled={loading}
+        >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

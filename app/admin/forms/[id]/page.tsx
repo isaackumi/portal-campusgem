@@ -32,6 +32,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FORM_PREFILL_KEY_GROUPS } from '@/lib/forms/prefill'
+import { PUBLIC_FORM_ACCENT_OPTIONS, isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
 import {
   FieldOptionsEditor,
   fieldTypeUsesOptions,
@@ -240,6 +241,8 @@ export default function FormEditorPage() {
   const [status, setStatus] = useState<ChurchForm['status']>('draft')
   const [enableProfileLookup, setEnableProfileLookup] = useState(false)
   const [captureRespondentLocation, setCaptureRespondentLocation] = useState(false)
+  const [coverImageUrl, setCoverImageUrl] = useState('')
+  const [accentColor, setAccentColor] = useState('auto')
   const [fields, setFields] = useState<EditableField[]>([])
   const [creatorName, setCreatorName] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -293,6 +296,8 @@ export default function FormEditorPage() {
     setStatus(data.form.status)
     setEnableProfileLookup(data.form.enable_profile_lookup)
     setCaptureRespondentLocation(data.form.capture_respondent_location)
+    setCoverImageUrl(data.form.cover_image_url ?? '')
+    setAccentColor(data.form.accent_color ?? 'auto')
     setFields(data.fields.map(toEditableField))
     setLoading(false)
   }
@@ -333,6 +338,8 @@ export default function FormEditorPage() {
       slug: slug.trim(),
       enable_profile_lookup: enableProfileLookup,
       capture_respondent_location: captureRespondentLocation,
+      cover_image_url: coverImageUrl.trim() || null,
+      accent_color: accentColor === 'auto' ? null : accentColor,
       status: publish ? ('published' as const) : status,
     }
 
@@ -466,7 +473,45 @@ export default function FormEditorPage() {
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 rows={3}
+                placeholder="Shown in a colored box below the header on the public form"
               />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="cover-image">Header image URL (optional)</Label>
+              <Input
+                id="cover-image"
+                value={coverImageUrl}
+                onChange={(event) => setCoverImageUrl(event.target.value)}
+                placeholder="https://… banner or flyer (shown at top on mobile)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Paste a link to a banner, flyer, or photo. Leave empty for a colored gradient header.
+              </p>
+              {isValidCoverImageUrl(coverImageUrl) ? (
+                <div className="overflow-hidden rounded-lg border bg-slate-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={coverImageUrl.trim()}
+                    alt="Header preview"
+                    className="max-h-36 w-full object-cover"
+                  />
+                </div>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="accent">Public form color theme</Label>
+              <Select value={accentColor} onValueChange={setAccentColor}>
+                <SelectTrigger id="accent">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PUBLIC_FORM_ACCENT_OPTIONS.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>

@@ -31,6 +31,8 @@ function mapForm(doc: Record<string, unknown> | null | undefined): ChurchForm | 
     status: (doc.status as ChurchForm['status']) ?? 'draft',
     enable_profile_lookup: Boolean(doc.enable_profile_lookup),
     capture_respondent_location: Boolean(doc.capture_respondent_location),
+    cover_image_url: doc.cover_image_url != null ? String(doc.cover_image_url) : undefined,
+    accent_color: doc.accent_color != null ? String(doc.accent_color) : undefined,
     created_by: doc.created_by != null ? String(doc.created_by) : undefined,
     created_at: iso(doc._creationTime as number | undefined),
     updated_at: iso(doc.updated_at as number | undefined),
@@ -154,6 +156,8 @@ export async function updateFormInConvex(
     slug?: string
     enable_profile_lookup?: boolean
     capture_respondent_location?: boolean
+    cover_image_url?: string | null
+    accent_color?: string | null
   }
 ): Promise<ChurchForm> {
   const client = getConvexHttpClient()
