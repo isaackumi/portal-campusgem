@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatResponseValue } from '@/lib/forms/analytics'
 import { PublicFormFieldInput } from '@/components/forms/public-form-field'
-import { PublicFormSuccess } from '@/components/forms/public-form-layout'
+import { PublicFormPrimaryButton, PublicFormSuccess } from '@/components/forms/public-form-layout'
 import { PublicFormLocationCapture } from '@/components/forms/public-form-location'
 import { PublicFormPreviewBanner } from '@/components/forms/public-form-preview-banner'
-import { PublicFormSteppedShell } from '@/components/forms/public-form-stepped-shell'
+import {
+  PublicFormSteppedShell,
+  SteppedQuestionCard,
+} from '@/components/forms/public-form-stepped-shell'
 import { PublicFormToolbar } from '@/components/forms/public-form-toolbar'
 import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-phone'
 import { usePublicFormTheme } from '@/components/forms/public-form-theme-context'
@@ -16,6 +19,7 @@ import { isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
 import { isValidPhone } from '@/lib/phone'
 import type { PublicFormController } from '@/hooks/use-public-form'
 import type { ChurchFormField } from '@/lib/types'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Sparkles } from 'lucide-react'
@@ -25,10 +29,10 @@ type NavDirection = 'forward' | 'back'
 function getEncouragement(stepIndex: number, total: number): string | null {
   if (stepIndex <= 0 || total <= 2) return null
   const pct = stepIndex / (total - 1)
-  if (pct >= 0.9) return 'Almost there — you’re doing great!'
-  if (pct >= 0.65) return 'Nice progress — keep going!'
-  if (pct >= 0.35) return 'You’re on a roll!'
-  if (stepIndex === 1) return 'Let’s get started!'
+  if (pct >= 0.9) return 'Almost done — great job!'
+  if (pct >= 0.65) return 'Nice progress!'
+  if (pct >= 0.35) return 'You\'re doing well!'
+  if (stepIndex === 1) return 'Let\'s go!'
   return null
 }
 
@@ -37,32 +41,26 @@ function screenKey(screen: SteppedScreen): string {
   return screen.kind
 }
 
-function SteppedContinueButton({
-  onClick,
-  label = 'OK',
-  accentHex,
-  disabled,
+function SteppedActions({
+  onContinue,
+  label = 'Continue',
+  hint = true,
 }: {
-  onClick: () => void
+  onContinue: () => void
   label?: string
-  accentHex: string
-  disabled?: boolean
+  hint?: boolean
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-4 pt-6">
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="group inline-flex h-13 min-h-[3.25rem] items-center gap-2 rounded-full bg-white px-8 text-base font-semibold shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] disabled:opacity-60"
-        style={{ color: accentHex }}
-      >
+    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <PublicFormPrimaryButton type="button" onClick={onContinue} className="h-12 min-w-[160px] px-8">
         {label}
-        <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
-      </button>
-      <span className="text-sm text-white/55">
-        press <kbd className="rounded-md bg-white/15 px-2 py-0.5 font-mono text-xs">Enter ↵</kbd>
-      </span>
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </PublicFormPrimaryButton>
+      {hint ? (
+        <p className="text-sm text-slate-500">
+          Press <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-xs">Enter ↵</kbd>
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -238,16 +236,14 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
 
   const enterClass =
     direction === 'forward'
-      ? 'animate-in fade-in slide-in-from-right-10 duration-400'
-      : 'animate-in fade-in slide-in-from-left-10 duration-400'
+      ? 'animate-in fade-in slide-in-from-right-6 duration-300'
+      : 'animate-in fade-in slide-in-from-left-6 duration-300'
 
   if (submitted) {
     return (
-      <PublicFormSteppedShell form={form}>
+      <PublicFormSteppedShell form={form} progress={100}>
         {previewMode ? <PublicFormPreviewBanner /> : null}
-        <div className="mx-auto w-full max-w-lg px-4 py-10">
-          <PublicFormSuccess title={form.title} form={form} />
-        </div>
+        <PublicFormSuccess title={form.title} form={form} />
       </PublicFormSteppedShell>
     )
   }
@@ -261,82 +257,70 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
   )
 
   return (
-    <PublicFormSteppedShell form={form}>
+    <PublicFormSteppedShell form={form} progress={progress}>
       {previewMode ? <PublicFormPreviewBanner /> : null}
 
-      <div className="px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
-        <PublicFormToolbar form={form} campYearLabel={campYearLabel} previewMode={previewMode} />
+      <PublicFormToolbar form={form} campYearLabel={campYearLabel} previewMode={previewMode} />
+
+      <div className="mb-4 flex items-center justify-between gap-3">
+        {stepIndex > 0 ? (
+          <Button type="button" variant="ghost" size="sm" className="h-9 text-slate-600" onClick={goBack}>
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            Back
+          </Button>
+        ) : (
+          <span />
+        )}
+        <p className="text-sm font-medium text-slate-500">
+          Step {stepIndex + 1} of {totalSteps}
+        </p>
       </div>
 
-      <div className="h-1.5 w-full bg-black/15">
-        <div
-          className="h-full transition-all duration-700 ease-out"
-          style={{ width: `${Math.min(100, Math.max(4, progress))}%`, backgroundColor: '#ffffff' }}
-        />
-      </div>
-
-      {stepIndex > 0 ? (
-        <button
-          type="button"
-          onClick={goBack}
-          className="absolute left-4 top-[4.5rem] z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/15 text-white backdrop-blur-sm transition hover:bg-black/25 sm:left-6"
-          aria-label="Previous question"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+      {encouragement ? (
+        <p className={cn('mb-4 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium', theme.badge)}>
+          <Sparkles className="h-4 w-4" />
+          {encouragement}
+        </p>
       ) : null}
 
-      <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 sm:px-10 md:px-16">
-        <div ref={contentRef} className={cn('mx-auto w-full max-w-2xl', shake && 'animate-shake', enterClass)}>
-          {encouragement ? (
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium text-white/90 backdrop-blur-sm">
-              <Sparkles className="h-4 w-4" />
-              {encouragement}
-            </p>
-          ) : null}
-
+      <div ref={contentRef} className={cn(enterClass, shake && 'animate-shake')}>
+        <SteppedQuestionCard>
           {screen.kind === 'intro' ? (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {coverUrl ? (
-                <div className="overflow-hidden rounded-2xl border border-white/20 shadow-2xl">
+                <div className="overflow-hidden rounded-lg border border-slate-200">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={coverUrl} alt="" className="max-h-52 w-full object-cover" />
+                  <img src={coverUrl} alt="" className="max-h-44 w-full object-cover" />
                 </div>
               ) : null}
               <div>
                 {campYearLabel ? (
-                  <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-white/70">
-                    Camp Meeting {campYearLabel}
-                  </p>
+                  <p className="mb-2 text-sm font-semibold text-slate-500">Camp Meeting {campYearLabel}</p>
                 ) : campusGroupName ? (
-                  <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-white/70">
-                    {campusGroupName}
-                  </p>
+                  <p className="mb-2 text-sm font-semibold text-slate-500">{campusGroupName}</p>
                 ) : null}
-                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl md:text-5xl">{form.title}</h1>
+                <h1 className="text-2xl font-semibold leading-snug text-slate-900 sm:text-3xl">{form.title}</h1>
                 {form.description?.trim() ? (
-                  <p className="mt-5 whitespace-pre-wrap text-lg leading-relaxed text-white/85">
+                  <p className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-slate-600">
                     {form.description}
                   </p>
                 ) : null}
               </div>
-              <SteppedContinueButton onClick={goForward} label="Start" accentHex={theme.accentHex} />
+              <SteppedActions onContinue={goForward} label="Start" />
             </div>
           ) : null}
 
           {screen.kind === 'phone' ? (
-            <div className="space-y-2">
+            <div>
               <StepQuestionHeader
                 label={phoneLookupLabel}
                 required={phoneLookupRequired}
                 description={phoneLookupDescription}
                 stepLabel="Your contact"
               />
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Input
-                  className={cn(
-                    'h-14 flex-1 rounded-none border-0 border-b-2 border-white/40 bg-transparent text-2xl text-white shadow-none placeholder:text-white/40 focus-visible:border-white focus-visible:ring-0'
-                  )}
+                  className="h-12 flex-1 border-slate-300 bg-white text-base shadow-none"
                   inputMode="tel"
                   autoComplete="tel"
                   autoFocus
@@ -345,39 +329,42 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
                   placeholder="054 123 4567"
                 />
                 {!previewMode && form.enable_profile_lookup ? (
-                  <button
+                  <Button
                     type="button"
-                    className="h-12 shrink-0 rounded-full border border-white/30 bg-white/15 px-5 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/25"
+                    variant="outline"
+                    className="h-12 shrink-0 border-slate-300"
                     onClick={() => void handleLookup()}
                     disabled={lookupLoading}
                   >
-                    {lookupLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Find my details'}
-                  </button>
+                    {lookupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Find my details'}
+                  </Button>
                 ) : null}
               </div>
               {profileName ? (
-                <p className="mt-4 rounded-xl bg-white/15 px-4 py-3 text-base text-white backdrop-blur-sm">
+                <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                   Welcome back, <span className="font-semibold">{profileName}</span>!
                 </p>
               ) : null}
               {alreadySubmitted && !previewMode ? (
-                <p className="mt-3 flex items-start gap-2 rounded-xl bg-amber-400/25 px-4 py-3 text-sm text-white">
+                <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   Already submitted
                   {submittedAt ? ` on ${new Date(submittedAt).toLocaleDateString('en-GB')}` : ''}.
                 </p>
               ) : null}
-              <SteppedContinueButton onClick={validateCurrentAndAdvance} accentHex={theme.accentHex} />
+              <SteppedActions onContinue={validateCurrentAndAdvance} label="Continue" />
             </div>
           ) : null}
 
           {screen.kind === 'field' ? (
-            <div className="space-y-2">
+            <div>
               <StepQuestionHeader
                 label={screen.field.label}
                 required={screen.field.required}
                 description={screen.field.description}
-                stepLabel={questionNumber != null ? `Question ${questionNumber} of ${visibleFields.length}` : undefined}
+                stepLabel={
+                  questionNumber != null ? `Question ${questionNumber} of ${visibleFields.length}` : undefined
+                }
               />
               {whatsappField && screen.field.id === whatsappField.id ? (
                 <WhatsappSameAsPhoneBlock
@@ -387,14 +374,12 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
                   sameAsPhone={controller.whatsappSameAsPhone}
                   onSameAsPhoneChange={controller.setWhatsappSameAsPhone}
                   onValueChange={(value) => setFieldValue(screen.field.id, value)}
-                  variant="stepped"
                 />
               ) : (
                 <PublicFormFieldInput
                   field={screen.field}
                   value={values[screen.field.id]}
                   readOnly={screen.field.prefill_key === 'university' && Boolean(campusGroupName)}
-                  variant="stepped"
                   autoFocus
                   onChange={(value) => {
                     if (screen.field.field_type === 'radio') {
@@ -409,35 +394,33 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
                 />
               )}
               {screen.field.field_type !== 'radio' ? (
-                <SteppedContinueButton onClick={validateCurrentAndAdvance} accentHex={theme.accentHex} />
+                <SteppedActions onContinue={validateCurrentAndAdvance} label="Continue" />
               ) : (
-                <p className="pt-4 text-sm text-white/55">Tap an option to continue</p>
+                <p className="mt-6 text-sm text-slate-500">Select an option to continue</p>
               )}
             </div>
           ) : null}
 
           {screen.kind === 'location' ? (
-            <div className="space-y-2">
+            <div>
               <StepQuestionHeader
                 label="Share your location"
                 description="Optional — helps us know where respondents are joining from."
                 stepLabel="Almost done"
               />
-              <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
-                <PublicFormLocationCapture value={respondentLocation} onChange={setRespondentLocation} />
-              </div>
-              <SteppedContinueButton onClick={validateCurrentAndAdvance} label="Continue" accentHex={theme.accentHex} />
+              <PublicFormLocationCapture value={respondentLocation} onChange={setRespondentLocation} />
+              <SteppedActions onContinue={validateCurrentAndAdvance} label="Continue" />
             </div>
           ) : null}
 
           {screen.kind === 'review' ? (
-            <div className="space-y-4">
+            <div>
               <StepQuestionHeader
                 label="Review your answers"
                 description="Check everything looks correct, then submit."
                 stepLabel="Final step"
               />
-              <div className="max-h-[45vh] space-y-3 overflow-y-auto rounded-2xl border border-white/20 bg-black/15 p-4 backdrop-blur-sm">
+              <div className="max-h-[40vh] space-y-3 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/80 p-4">
                 {reviewPhone && !controller.phoneField ? (
                   <ReviewLine label="Phone" value={reviewPhone} />
                 ) : null}
@@ -458,46 +441,35 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
                   />
                 ) : null}
               </div>
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  type="button"
-                  className="h-12 rounded-full border border-white/30 bg-white/10 px-6 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/20"
-                  onClick={goBack}
-                >
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button type="button" variant="outline" className="h-11" onClick={goBack}>
                   Edit answers
-                </button>
-                <button
+                </Button>
+                <PublicFormPrimaryButton
                   type="button"
-                  className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-8 text-base font-semibold shadow-xl transition hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60"
-                  style={{ color: theme.accentHex }}
+                  className="h-11 min-w-[160px]"
                   onClick={() => void submitFromReview()}
                   disabled={(alreadySubmitted && !previewMode) || submitting}
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Submitting…
                     </>
                   ) : (
-                    'Submit response'
+                    'Submit'
                   )}
-                </button>
+                </PublicFormPrimaryButton>
               </div>
             </div>
           ) : null}
 
           {fieldError ? (
-            <p className="mt-4 rounded-xl bg-red-500/30 px-4 py-2.5 text-sm font-medium text-white backdrop-blur-sm">
+            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-800">
               {fieldError}
             </p>
           ) : null}
-        </div>
-      </div>
-
-      <div className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center">
-        <p className="text-xs font-medium tracking-wide text-white/45">
-          {stepIndex + 1} / {totalSteps}
-        </p>
+        </SteppedQuestionCard>
       </div>
     </PublicFormSteppedShell>
   )
@@ -517,14 +489,14 @@ function StepQuestionHeader({
   return (
     <div className="mb-6">
       {stepLabel ? (
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/55">{stepLabel}</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{stepLabel}</p>
       ) : null}
-      <h2 className="text-2xl font-semibold leading-tight sm:text-3xl md:text-[2rem]">
+      <h2 className="text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
         {label}
-        {required ? <span className="text-red-200"> *</span> : null}
+        {required ? <span className="text-red-600"> *</span> : null}
       </h2>
       {description ? (
-        <p className="mt-3 text-base leading-relaxed text-white/75 sm:text-lg">{description}</p>
+        <p className="mt-2 text-base leading-relaxed text-slate-600">{description}</p>
       ) : null}
     </div>
   )
@@ -533,9 +505,9 @@ function StepQuestionHeader({
 function ReviewLine({ label, value }: { label: string; value: string }) {
   const empty = value === '—' || !value.trim()
   return (
-    <div className="border-b border-white/10 pb-3 last:border-0">
-      <p className="text-xs font-semibold uppercase tracking-wide text-white/50">{label}</p>
-      <p className={cn('mt-1 text-base', empty ? 'italic text-white/35' : 'text-white')}>
+    <div className="border-b border-slate-200 pb-3 last:border-0">
+      <p className="text-sm font-medium text-slate-700">{label}</p>
+      <p className={cn('mt-1 text-base', empty ? 'italic text-slate-400' : 'text-slate-900')}>
         {empty ? 'No answer' : value}
       </p>
     </div>
