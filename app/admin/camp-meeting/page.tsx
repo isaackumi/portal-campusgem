@@ -11,6 +11,7 @@ import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { useAuth } from '@/components/providers'
 import { CampActiveYearEmpty } from '@/components/camp/camp-active-year-empty'
 import { CampMyFollowUpsCard } from '@/components/camp/camp-my-follow-ups-card'
+import { getPublishedCampFormForYear } from '@/lib/actions/forms'
 import { 
   Users, 
   QrCode, 
@@ -45,6 +46,18 @@ export default function CampAdminDashboard() {
     const [showRecentRegistrations, setShowRecentRegistrations] = useState(true)
     const [registrationLinkCopied, setRegistrationLinkCopied] = useState(false)
     const [refreshing, setRefreshing] = useState(false)
+    const [registrationFormPath, setRegistrationFormPath] = useState('/camp-meeting/register')
+
+    useEffect(() => {
+        if (!campYear?.id) return
+        void getPublishedCampFormForYear(campYear.id).then(({ data }) => {
+            if (data?.slug) {
+                setRegistrationFormPath(`/f/${data.slug}`)
+            } else {
+                setRegistrationFormPath('/camp-meeting/register')
+            }
+        })
+    }, [campYear?.id])
 
     // Redirect to auth if not logged in
     useEffect(() => {
@@ -127,8 +140,10 @@ export default function CampAdminDashboard() {
             : <ChevronDown className="h-4 w-4 ml-1" />
     }
 
+    const registrationUrl =
+        typeof window !== 'undefined' ? `${window.location.origin}${registrationFormPath}` : registrationFormPath
+
     const copyRegistrationLink = async () => {
-        const registrationUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/camp-meeting/register`
         try {
             await navigator.clipboard.writeText(registrationUrl)
             setRegistrationLinkCopied(true)
@@ -304,7 +319,7 @@ export default function CampAdminDashboard() {
                                 <input
                                     type="text"
                                     readOnly
-                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/camp-meeting/register`}
+                                    value={registrationUrl}
                                     className="flex-1 text-xs sm:text-sm font-mono bg-transparent border-none outline-none text-gray-700 truncate"
                                 />
                                 <Button

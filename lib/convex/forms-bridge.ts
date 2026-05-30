@@ -3,7 +3,7 @@ import 'server-only'
 import { getConvexHttpClient } from '@/lib/convex/http-client'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
-import type { ChurchForm, ChurchFormField, ChurchFormResponse } from '@/lib/types'
+import type { ChurchForm, ChurchFormField, ChurchFormResponse, ChurchFormSubmitResult } from '@/lib/types'
 
 export function requireCampAdminSecret(): string {
   const secret = process.env.CAMP_CONVEX_SERVER_SECRET
@@ -254,13 +254,39 @@ export async function submitFormResponseInConvex(input: {
   respondent_latitude?: number
   respondent_longitude?: number
   respondent_location_label?: string
-}): Promise<ChurchFormResponse> {
+}): Promise<ChurchFormSubmitResult> {
   const client = getConvexHttpClient()
   const doc = (await client.mutation(api.forms.submitFormResponsePublic, input)) as Record<
     string,
     unknown
   >
-  return mapResponse(doc)
+  const formResponseDoc = doc.form_response as Record<string, unknown> | undefined
+  const campReg = doc.camp_registration as Record<string, unknown> | null | undefined
+
+  if (!formResponseDoc) {
+    return { response: mapResponse(doc), camp_registration: null }
+  }
+
+  return {
+    response: mapResponse(formResponseDoc),
+    camp_registration: campReg
+      ? {
+          id: String(campReg.id ?? ''),
+          full_name: String(campReg.full_name ?? ''),
+          qr_code: String(campReg.qr_code ?? ''),
+        }
+      : null,
+  }
+}
+
+export async function getPublishedCampFormByCampYearFromConvex(
+  campYearId: string
+): Promise<ChurchForm | null> {
+  const client = getConvexHttpClient()
+  const doc = (await client.query(api.forms.getPublishedCampFormByCampYear, {
+    camp_year_id: campYearId,
+  })) as Record<string, unknown> | null
+  return mapForm(doc)
 }
 
 export async function checkFormSubmissionByPhoneFromConvex(

@@ -365,7 +365,8 @@ export default function FormEditorPage() {
       category: category.trim() || 'general',
       group_id: groupId || null,
       slug: slug.trim(),
-      enable_profile_lookup: enableProfileLookup,
+      enable_profile_lookup:
+        category === CAMP_MEETING_REGISTRATION_CATEGORY ? true : enableProfileLookup,
       capture_respondent_location: captureRespondentLocation,
       cover_image_url: coverImageUrl.trim() || null,
       accent_color: accentColor === 'auto' ? null : accentColor,
@@ -654,15 +655,20 @@ export default function FormEditorPage() {
             <div className="flex items-center gap-2 md:col-span-2">
               <Checkbox
                 id="profile-lookup"
-                checked={enableProfileLookup}
+                checked={category === CAMP_MEETING_REGISTRATION_CATEGORY ? true : enableProfileLookup}
+                disabled={category === CAMP_MEETING_REGISTRATION_CATEGORY}
                 onCheckedChange={(checked) => setEnableProfileLookup(checked === true)}
               />
               <div className="space-y-1">
-                <Label htmlFor="profile-lookup">Ask for phone first and prefill from camp records</Label>
+                <Label htmlFor="profile-lookup">
+                  {category === CAMP_MEETING_REGISTRATION_CATEGORY
+                    ? 'Search my details (always on for camp registration)'
+                    : 'Ask for phone first and prefill from camp records'}
+                </Label>
                 <p className="text-sm text-muted-foreground">
-                  Respondents see a phone step at the top of the public form (even if you do not add a separate Phone
-                  question). They can tap &quot;Find my details&quot; to fill fields that have a prefill key below.
-                  Add a Phone number question if you also want phone stored as its own answered field.
+                  {category === CAMP_MEETING_REGISTRATION_CATEGORY
+                    ? 'Camp meeting forms always start with phone lookup so returning campers can load their details and duplicates are blocked for the camp year.'
+                    : 'Respondents see a phone step at the top of the public form. They can tap "Find my details" to fill fields that have a prefill key below.'}
                 </p>
               </div>
             </div>

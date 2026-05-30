@@ -880,6 +880,15 @@ export interface ChurchFormResponse {
   updated_at: string
 }
 
+export type ChurchFormSubmitResult = {
+  response: ChurchFormResponse
+  camp_registration?: {
+    id: string
+    full_name: string
+    qr_code: string
+  } | null
+}
+
 export interface CampCamperDirectoryRow {
   phone_key: string
   full_name: string

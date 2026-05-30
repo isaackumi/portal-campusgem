@@ -3,6 +3,7 @@ import { query, mutation, type MutationCtx } from './_generated/server'
 import { requireAuth } from './lib/access'
 import { assertServerSecret } from './lib/serverSecret'
 import { extractBirthdayParts, memberDobIsoFromCampRegistration } from './lib/birthday'
+import { insertCampRegistrationPublic } from './lib/campRegistrationInsert'
 import {
   isValidGhanaPhone,
   normalizeGhanaPhone,
@@ -180,95 +181,7 @@ export const registerCamperPublic = mutation({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    const year = await ctx.db.get('camp_years', args.camp_year_id)
-    if (!year) {
-      throw new Error('Camp year not found.')
-    }
-    if (!year.registration_open) {
-      throw new Error('Registration is closed for this Camp Meeting.')
-    }
-
-    const yearIdStr = String(args.camp_year_id)
-    const normalizedPhone = normalizeGhanaPhone(args.phone)
-    const birthday =
-      args.birth_month != null && args.birth_day != null
-        ? { birth_month: args.birth_month, birth_day: args.birth_day }
-        : extractBirthdayParts(args.date_of_birth)
-
-    const existingPhone = await findRegistrationByPhoneForYear(ctx, yearIdStr, normalizedPhone)
-    if (existingPhone) {
-      throw new Error('This phone number is already registered for this event.')
-    }
-
-    const emailNorm = (args.email || '').trim()
-    if (emailNorm.length > 0) {
-      const existingEmail = await ctx.db
-        .query('camp_registrations')
-        .withIndex('by_camp_year_email', (q) =>
-          q.eq('camp_year_id', yearIdStr).eq('email', emailNorm)
-        )
-        .first()
-      if (existingEmail) {
-        throw new Error('This email is already registered for this event.')
-      }
-    }
-
-    let healthChallenges = args.health_challenges ?? []
-    if (args.other_health_challenge?.trim() && healthChallenges.includes('other')) {
-      healthChallenges = [...healthChallenges, `other: ${args.other_health_challenge.trim()}`]
-    }
-
-    const fullName =
-      args.full_name?.trim() || `${args.first_name} ${args.last_name}`.trim()
-    const isNewRegistrant = (args.times_attended || 0) === 0
-    const tempId = `CAMP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
-
-    const now = Date.now()
-    const regId = await ctx.db.insert('camp_registrations', {
-      camp_year_id: yearIdStr,
-      full_name: fullName,
-      first_name: args.first_name,
-      last_name: args.last_name,
-      email: emailNorm.length > 0 ? emailNorm : ' ',
-      phone: normalizedPhone,
-      facebook_username: args.facebook_username,
-      sex: args.sex,
-      date_of_birth: args.date_of_birth,
-      birth_month: birthday.birth_month,
-      birth_day: birthday.birth_day,
-      age_bracket: args.age_bracket as '1-12' | '13-19' | '20-29' | '30-39' | '40-49' | '50+',
-      address_school_work: args.address_school_work,
-      education_level: args.education_level,
-      highest_qualification: args.highest_qualification,
-      residence: args.residence,
-      times_attended: args.times_attended,
-      has_nhis_card: args.has_nhis_card,
-      nhis_card_expiry_date: args.nhis_card_expiry_date,
-      has_health_challenge: args.has_health_challenge,
-      health_challenges: healthChallenges,
-      parent_name: args.parent_name,
-      parent_contact: args.parent_contact,
-      role: args.role || 'Participant',
-      is_new_registrant: isNewRegistrant,
-      status: 'registered',
-      payment_status: 'pending',
-      payment_amount: 30.0,
-      qr_code: tempId,
-      updated_at: now,
-    })
-
-    const qrPayload = JSON.stringify({
-      id: regId,
-      name: fullName,
-      role: args.role || 'Participant',
-      year: year.year,
-      code: tempId,
-    })
-    await ctx.db.patch('camp_registrations', regId, {
-      qr_code: qrPayload,
-      updated_at: Date.now(),
-    })
-    return await ctx.db.get('camp_registrations', regId)
+    return await insertCampRegistrationPublic(ctx, args)
   },
 })
 

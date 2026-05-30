@@ -185,7 +185,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
     label: 'Campus member registration',
     description: 'Full onboarding with education, residence, and camp prefill keys.',
     category: CAMPUS_MEMBER_REGISTRATION_CATEGORY,
-    enable_profile_lookup: true,
+    enable_profile_lookup: false,
     capture_respondent_location: false,
     defaultTitle: (groupName) => (groupName ? `${groupName} — Member registration` : 'Member registration'),
     defaultDescription: (groupName) =>
@@ -200,7 +200,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
     description:
       'Full name, university, gender, program, level, hall, ministry & prayer, phone, WhatsApp, location & comments.',
     category: STUDENT_REGISTRATION_CATEGORY,
-    enable_profile_lookup: true,
+    enable_profile_lookup: false,
     capture_respondent_location: false,
     defaultTitle: (groupName) => (groupName ? `${groupName} — Student sign-up` : 'Student registration'),
     defaultDescription: (groupName) =>
@@ -232,7 +232,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
     label: 'Corporate Gem registration',
     description: 'Workers and graduates — join Corporate Gem after campus.',
     category: CORPORATE_GEM_REGISTRATION_CATEGORY,
-    enable_profile_lookup: true,
+    enable_profile_lookup: false,
     capture_respondent_location: false,
     defaultTitle: (groupName) => (groupName ? `${groupName} — Corporate Gem` : 'Corporate Gem registration'),
     defaultDescription: () =>
@@ -244,7 +244,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
     label: 'Outreach / event sign-up',
     description: 'Short sign-up with phone lookup and optional GPS location capture.',
     category: OUTREACH_SIGNUP_CATEGORY,
-    enable_profile_lookup: true,
+    enable_profile_lookup: false,
     capture_respondent_location: true,
     defaultTitle: (groupName) => (groupName ? `${groupName} — Sign up` : 'Outreach sign-up'),
     defaultDescription: (groupName) =>

@@ -2,7 +2,12 @@ import { v } from 'convex/values'
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
-import { isValidGhanaPhone, normalizeGhanaPhone, sanitizePhoneInput } from './lib/phone'
+import { isValidGhanaPhone, normalizeGhanaPhone, phoneLookupVariants, sanitizePhoneInput } from './lib/phone'
+import {
+  countPastCampRegistrationsForPhone,
+  insertCampRegistrationPublic,
+} from './lib/campRegistrationInsert'
+import { mapFormValuesToCampRegistrationInput } from './lib/campFormSubmit'
 
 const formFieldType = v.union(
   v.literal('short_text'),
@@ -152,6 +157,25 @@ export const getPublishedFormBySlug = query({
   },
 })
 
+export const getPublishedCampFormByCampYear = query({
+  args: { camp_year_id: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { camp_year_id }) => {
+    const id = camp_year_id.trim()
+    if (!id) return null
+    const siblings = await ctx.db
+      .query('forms')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', id))
+      .collect()
+    return (
+      siblings.find(
+        (row) =>
+          row.category === CAMP_MEETING_REGISTRATION_CATEGORY && row.status === 'published'
+      ) ?? null
+    )
+  },
+})
+
 /** Public check: has this phone already submitted this published form? */
 export const checkFormSubmissionByPhone = query({
   args: { slug: v.string(), phone: v.string() },
@@ -237,6 +261,11 @@ export const createFormWithSecret = mutation({
       slug = `${baseSlug}-${suffix}`
     }
 
+    const profileLookupDefault =
+      category === CAMP_MEETING_REGISTRATION_CATEGORY
+        ? true
+        : (args.enable_profile_lookup ?? false)
+
     const now = Date.now()
     const id = await ctx.db.insert('forms', {
       title,
@@ -246,7 +275,7 @@ export const createFormWithSecret = mutation({
       group_id: args.group_id,
       camp_year_id: campYearId,
       status: 'draft',
-      enable_profile_lookup: args.enable_profile_lookup ?? false,
+      enable_profile_lookup: profileLookupDefault,
       capture_respondent_location: args.capture_respondent_location ?? false,
       cover_image_url: args.cover_image_url?.trim() || undefined,
       accent_color: args.accent_color?.trim() || undefined,
@@ -295,7 +324,6 @@ export const updateFormWithSecret = mutation({
       }
     }
     if (args.status != null) patch.status = args.status
-    if (args.enable_profile_lookup != null) patch.enable_profile_lookup = args.enable_profile_lookup
     if (args.capture_respondent_location != null) {
       patch.capture_respondent_location = args.capture_respondent_location
     }
@@ -324,6 +352,13 @@ export const updateFormWithSecret = mutation({
 
     if (args.category != null) patch.category = nextCategory
     patch.camp_year_id = nextCampYearId
+
+    if (args.enable_profile_lookup != null) {
+      patch.enable_profile_lookup =
+        nextCategory === CAMP_MEETING_REGISTRATION_CATEGORY ? true : args.enable_profile_lookup
+    } else if (nextCategory === CAMP_MEETING_REGISTRATION_CATEGORY) {
+      patch.enable_profile_lookup = true
+    }
 
     await assertCampMeetingFormRules(ctx, nextCategory, nextCampYearId, String(args.form_id))
 
@@ -464,8 +499,35 @@ export const submitFormResponsePublic = mutation({
         ''
     ).trim()
 
+    const isCampMeetingForm = form.category === CAMP_MEETING_REGISTRATION_CATEGORY
+    const campYearId = form.camp_year_id?.trim()
+
+    if (isCampMeetingForm && !campYearId) {
+      throw new Error('This camp registration form is not linked to a camp year.')
+    }
+
     if (respondentPhone) {
       const normalized = normalizeGhanaPhone(respondentPhone)
+
+      if (isCampMeetingForm && campYearId) {
+        let alreadyRegisteredForYear = false
+        for (const variant of phoneLookupVariants(normalized)) {
+          const existingCamp = await ctx.db
+            .query('camp_registrations')
+            .withIndex('by_camp_year_phone', (q) =>
+              q.eq('camp_year_id', campYearId).eq('phone', variant)
+            )
+            .first()
+          if (existingCamp) {
+            alreadyRegisteredForYear = true
+            break
+          }
+        }
+        if (alreadyRegisteredForYear) {
+          throw new Error('This phone number is already registered for this Camp Meeting.')
+        }
+      }
+
       const existing = await ctx.db
         .query('form_responses')
         .withIndex('by_form_and_phone', (q) =>
@@ -518,7 +580,33 @@ export const submitFormResponsePublic = mutation({
       updated_at: now,
     })
 
-    return await ctx.db.get('form_responses', id)
+    const formResponse = await ctx.db.get('form_responses', id)
+
+    if (isCampMeetingForm && campYearId && respondentPhone) {
+      const normalized = normalizeGhanaPhone(respondentPhone)
+      const pastAttendances = await countPastCampRegistrationsForPhone(ctx, normalized, campYearId)
+      const campInput = mapFormValuesToCampRegistrationInput(
+        fields,
+        values,
+        campYearId as Id<'camp_years'>,
+        pastAttendances
+      )
+      campInput.phone = normalized
+
+      const registration = await insertCampRegistrationPublic(ctx, campInput)
+      return {
+        form_response: formResponse,
+        camp_registration: registration
+          ? {
+              id: String(registration._id),
+              full_name: registration.full_name,
+              qr_code: registration.qr_code,
+            }
+          : null,
+      }
+    }
+
+    return { form_response: formResponse, camp_registration: null }
   },
 })
 

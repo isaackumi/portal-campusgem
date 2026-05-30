@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { submitFormResponse } from '@/lib/actions/forms'
 import { lookupFormProfileByPhone } from '@/lib/actions/form-profile-lookup'
 import type { ChurchForm, ChurchFormField } from '@/lib/types'
@@ -12,6 +13,7 @@ import {
   shouldDefaultWhatsappSameAsPhone,
 } from '@/lib/forms/whatsapp-phone'
 import { validateFieldWithContext, prepareAndValidateSubmitValues } from '@/lib/forms/public-form-validation'
+import { formHasProfileLookup, isCampMeetingRegistrationForm } from '@/lib/forms/profile-lookup'
 import type { RespondentLocation } from '@/lib/actions/reverse-geocode'
 
 export type ClassicStep = 'fill' | 'review'
@@ -35,6 +37,7 @@ export function usePublicForm({
   campYearLabel = null,
   previewMode = false,
 }: UsePublicFormInput) {
+  const router = useRouter()
   const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [lookupLoading, setLookupLoading] = useState(false)
@@ -55,13 +58,15 @@ export function usePublicForm({
   const [respondentLocation, setRespondentLocation] = useState<RespondentLocation | null>(null)
   const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(true)
 
+  const profileLookupEnabled = formHasProfileLookup(form)
+  const isCampForm = isCampMeetingRegistrationForm(form)
   const phoneField = useMemo(() => findPhoneField(fields), [fields])
   const whatsappField = useMemo(() => findWhatsappField(fields), [fields])
   const isStepped = normalizeFormDisplayMode(form.display_mode) === 'stepped'
   const phoneFieldEarly = phoneField != null && phoneField.sort_order <= 3
   const showPhoneStep = Boolean(
     phoneField &&
-      (isStepped || ((form.enable_profile_lookup || phoneField) && phoneFieldEarly))
+      (isStepped || ((profileLookupEnabled || phoneField.required) && phoneFieldEarly))
   )
   const visibleFields = useMemo(() => {
     const sorted = [...fields].sort((a, b) => a.sort_order - b.sort_order)
@@ -105,6 +110,19 @@ export function usePublicForm({
     })
   }, [])
 
+  const blockedSubmitMessage = useCallback(
+    (alreadyRegisteredThisYear?: boolean) => {
+      if (alreadyRegisteredThisYear && isCampForm) {
+        return 'This phone number is already registered for this Camp Meeting.'
+      }
+      if (submittedAt) {
+        return `You submitted this form on ${new Date(submittedAt).toLocaleDateString()}.`
+      }
+      return 'This phone number already has a submission for this form.'
+    },
+    [isCampForm, submittedAt]
+  )
+
   const handleLookup = useCallback(async () => {
     const phone = getRespondentPhone()
     if (!isValidPhone(phone)) {
@@ -135,10 +153,8 @@ export function usePublicForm({
     if (result.already_submitted) {
       toast({
         variant: 'destructive',
-        title: 'Already submitted',
-        description: result.submitted_at
-          ? `You submitted this form on ${new Date(result.submitted_at).toLocaleDateString()}.`
-          : 'This phone number already has a submission for this form.',
+        title: result.already_registered_this_year ? 'Already registered' : 'Already submitted',
+        description: blockedSubmitMessage(result.already_registered_this_year),
       })
       return
     }
@@ -159,7 +175,7 @@ export function usePublicForm({
           ? `We prefilled ${result.filledCount} field${result.filledCount === 1 ? '' : 's'}. Review and edit anything below.`
           : 'Record found — review the form and edit as needed.',
     })
-  }, [form.slug, getRespondentPhone, phoneField, previewMode, toast, values])
+  }, [blockedSubmitMessage, form.slug, getRespondentPhone, phoneField, previewMode, toast, values])
 
   const validationContext = useMemo(
     () => ({
@@ -177,10 +193,10 @@ export function usePublicForm({
       values,
       phone,
       whatsappSameAsPhone,
-      requirePhoneLookup: showPhoneStep && form.enable_profile_lookup,
+      requirePhoneLookup: showPhoneStep && profileLookupEnabled,
     })
     return error
-  }, [fields, form.enable_profile_lookup, getRespondentPhone, showPhoneStep, values, whatsappSameAsPhone])
+  }, [fields, getRespondentPhone, profileLookupEnabled, showPhoneStep, values, whatsappSameAsPhone])
 
   const validateSingleField = useCallback(
     (field: ChurchFormField): string | null =>
@@ -209,8 +225,8 @@ export function usePublicForm({
         if (result.already_submitted) {
           toast({
             variant: 'destructive',
-            title: 'Already submitted',
-            description: 'This phone number has already submitted this form.',
+            title: result.already_registered_this_year ? 'Already registered' : 'Already submitted',
+            description: blockedSubmitMessage(result.already_registered_this_year),
           })
           return
         }
@@ -221,20 +237,20 @@ export function usePublicForm({
 
     setClassicStep('review')
     return true
-  }, [form.slug, getRespondentPhone, previewMode, toast, validateRequired, values])
+  }, [blockedSubmitMessage, form.slug, getRespondentPhone, previewMode, toast, validateRequired, values])
 
   const handleSubmit = useCallback(async () => {
     if (alreadySubmitted) {
       toast({
         variant: 'destructive',
         title: 'Cannot submit again',
-        description: 'This phone number already submitted this form.',
+        description: blockedSubmitMessage(),
       })
       return false
     }
 
     const phone = getRespondentPhone()
-    if (form.enable_profile_lookup && !isValidPhone(phone)) {
+    if (profileLookupEnabled && !isValidPhone(phone)) {
       toast({
         variant: 'destructive',
         title: 'Phone required',
@@ -263,7 +279,7 @@ export function usePublicForm({
       values,
       phone,
       whatsappSameAsPhone,
-      requirePhoneLookup: form.enable_profile_lookup,
+      requirePhoneLookup: profileLookupEnabled,
     })
 
     if (validationError) {
@@ -272,7 +288,7 @@ export function usePublicForm({
       return false
     }
 
-    const { error } = await submitFormResponse({
+    const { data, error } = await submitFormResponse({
       slug: form.slug,
       values: submitValues,
       respondent_phone: phone || undefined,
@@ -291,17 +307,30 @@ export function usePublicForm({
       return false
     }
 
+    const campReg = data?.camp_registration
+    if (campReg?.id) {
+      const params = new URLSearchParams({
+        id: campReg.id,
+        name: campReg.full_name,
+        qr: campReg.qr_code,
+      })
+      router.push(`/camp-meeting/success?${params.toString()}`)
+      return true
+    }
+
     setSubmitted(true)
     return true
   }, [
     alreadySubmitted,
+    blockedSubmitMessage,
     fields,
-    form.enable_profile_lookup,
     form.slug,
     getRespondentPhone,
     previewMode,
+    profileLookupEnabled,
     profileName,
     respondentLocation,
+    router,
     toast,
     values,
     whatsappSameAsPhone,
@@ -311,10 +340,10 @@ export function usePublicForm({
   const phoneLookupLabel = phoneField?.label ?? 'Phone number'
   const phoneLookupDescription =
     phoneField?.description ||
-    (form.enable_profile_lookup
+    (profileLookupEnabled
       ? 'Enter your Ghana mobile number to load your details and prevent duplicate submissions.'
       : 'Optional — used to find your existing records.')
-  const phoneLookupRequired = Boolean(phoneField?.required || form.enable_profile_lookup)
+  const phoneLookupRequired = Boolean(phoneField?.required || profileLookupEnabled)
 
   return {
     form,
@@ -322,6 +351,8 @@ export function usePublicForm({
     campusGroupName,
     campYearLabel,
     previewMode,
+    profileLookupEnabled,
+    isCampForm,
     submitting,
     lookupLoading,
     submitted,

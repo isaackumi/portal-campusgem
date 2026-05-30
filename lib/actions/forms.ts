@@ -1,6 +1,6 @@
 'use server'
 
-import type { ChurchForm, ChurchFormField, ChurchFormResponse } from '@/lib/types'
+import type { ChurchForm, ChurchFormField, ChurchFormResponse, ChurchFormSubmitResult } from '@/lib/types'
 
 function requireConvexEnv(): void {
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
@@ -197,6 +197,23 @@ export async function deleteForm(formId: string): Promise<{ error: string | null
   }
 }
 
+export async function getPublishedCampFormForYear(campYearId: string): Promise<{
+  data: ChurchForm | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { getPublishedCampFormByCampYearFromConvex } = await import('@/lib/convex/forms-bridge')
+    const data = await getPublishedCampFormByCampYearFromConvex(campYearId)
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load camp registration form',
+    }
+  }
+}
+
 export async function submitFormResponse(input: {
   slug: string
   values: Record<string, unknown>
@@ -206,7 +223,7 @@ export async function submitFormResponse(input: {
   respondent_latitude?: number
   respondent_longitude?: number
   respondent_location_label?: string
-}): Promise<{ data: ChurchFormResponse | null; error: string | null }> {
+}): Promise<{ data: ChurchFormSubmitResult | null; error: string | null }> {
   requireConvexEnv()
   try {
     const { submitFormResponseInConvex } = await import('@/lib/convex/forms-bridge')

@@ -335,7 +335,7 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
                   onChange={(event) => setRespondentPhone(event.target.value)}
                   placeholder="054 123 4567"
                 />
-                {!previewMode && form.enable_profile_lookup ? (
+                {!previewMode && controller.profileLookupEnabled ? (
                   <Button
                     type="button"
                     variant="outline"
