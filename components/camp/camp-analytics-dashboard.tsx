@@ -4,12 +4,16 @@ import type { AnalyticsSlice, CampAnalyticsReport, CampYearAnalyticsReport } fro
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
+  CampDemographicTrendTable,
+  CampFunnelSteps,
+  CampNewVsReturningChart,
   CampRegistrationVelocityChart,
   CampYearComparisonChart,
 } from '@/components/camp/camp-analytics-charts'
 import {
   BarChart3,
   Calendar,
+  DollarSign,
   GraduationCap,
   Heart,
   Lightbulb,
@@ -162,6 +166,21 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
 
       <InsightsPanel title="Key patterns this year" insights={report.insights} />
 
+      <Card className="border-2">
+        <CardHeader className="border-b bg-gray-50">
+          <CardTitle className="text-base">Registration funnel</CardTitle>
+          <CardDescription>Registered → checked in → paid → follow-up completed</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <CampFunnelSteps steps={report.funnel} />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatTile label="Return rate" value={`${report.returnRate}%`} hint="Returning campers this year" valueClassName="text-violet-600" />
+        <StatTile label="Data quality" value={`${report.dataQualityScore}%`} hint="Average field completeness" />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <AnalyticsBreakdownCard
           title="Gender"
@@ -308,20 +327,30 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
           valueClassName="text-indigo-600"
         />
         <StatTile
-          label="Avg per year"
-          value={combined.avgRegistrationsPerYear.toLocaleString()}
-          hint="Registration volume"
-          valueClassName="text-blue-600"
+          label="Revenue collected"
+          value={`₵${combined.revenue.totalPaid.toLocaleString()}`}
+          hint={`${combined.revenue.collectionRate}% collection rate`}
+          valueClassName="text-emerald-600"
+          icon={DollarSign}
         />
         <StatTile
-          label="Single-year only"
-          value={combined.singleYearCampers.toLocaleString()}
-          hint="Never returned yet"
-          valueClassName="text-slate-700"
+          label="Data quality"
+          value={`${combined.avgDataQualityScore}%`}
+          hint="Avg completeness across years"
         />
       </div>
 
       <InsightsPanel title="Cross-year patterns" insights={insights} />
+
+      <Card className="border-2">
+        <CardHeader className="border-b bg-gray-50">
+          <CardTitle className="text-base">All-years registration funnel</CardTitle>
+          <CardDescription>Combined journey across every camp year in the system</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <CampFunnelSteps steps={combined.overallFunnel} />
+        </CardContent>
+      </Card>
 
       <Card className="border-2">
         <CardHeader className="border-b bg-gray-50">
@@ -333,6 +362,16 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
         </CardHeader>
         <CardContent className="pt-6">
           <CampYearComparisonChart rows={combined.yearComparison} />
+        </CardContent>
+      </Card>
+
+      <Card className="border-2">
+        <CardHeader className="border-b bg-gray-50">
+          <CardTitle className="text-base">New vs returning by year</CardTitle>
+          <CardDescription>First-timers compared with returning campers each season</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <CampNewVsReturningChart rows={combined.newVsReturning} />
         </CardContent>
       </Card>
 
@@ -350,8 +389,10 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
                 <th className="pb-2 pr-4 font-medium">Growth</th>
                 <th className="pb-2 pr-4 font-medium">New</th>
                 <th className="pb-2 pr-4 font-medium">Returning</th>
+                <th className="pb-2 pr-4 font-medium">Return %</th>
                 <th className="pb-2 pr-4 font-medium">Check-in</th>
-                <th className="pb-2 font-medium">Paid</th>
+                <th className="pb-2 pr-4 font-medium">Paid</th>
+                <th className="pb-2 font-medium">Data quality</th>
               </tr>
             </thead>
             <tbody>
@@ -381,8 +422,10 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
                   </td>
                   <td className="py-3 pr-4">{row.newCampers}</td>
                   <td className="py-3 pr-4">{row.returningCampers}</td>
+                  <td className="py-3 pr-4">{row.returnRate}%</td>
                   <td className="py-3 pr-4">{row.checkInRate}%</td>
-                  <td className="py-3">{row.collectionRate}%</td>
+                  <td className="py-3 pr-4">{row.collectionRate}%</td>
+                  <td className="py-3">{row.dataQualityScore}%</td>
                 </tr>
               ))}
             </tbody>
@@ -429,6 +472,50 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
         />
       </div>
 
+      <Card className="border-2">
+        <CardHeader className="border-b bg-gray-50">
+          <CardTitle className="text-base">Demographic trends across years</CardTitle>
+          <CardDescription>How age, gender, and education mix shifts season over season (% of each year)</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <CampDemographicTrendTable title="Age bracket" rows={combined.demographicTrends.ageBracket} />
+          <CampDemographicTrendTable title="Gender" rows={combined.demographicTrends.gender} />
+          <CampDemographicTrendTable title="Education band" rows={combined.demographicTrends.educationBand} />
+        </CardContent>
+      </Card>
+
+      <Card className="border-2">
+        <CardHeader className="border-b bg-gray-50">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <DollarSign className="h-5 w-5 text-emerald-600" />
+            Revenue by camp year
+          </CardTitle>
+          <CardDescription>₵{combined.revenue.totalPending.toLocaleString()} still pending across all years</CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto pt-4">
+          <table className="w-full min-w-[480px] text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="pb-2 pr-4 font-medium">Year</th>
+                <th className="pb-2 pr-4 font-medium">Collected</th>
+                <th className="pb-2 pr-4 font-medium">Pending</th>
+                <th className="pb-2 font-medium">Collection rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {combined.revenue.byYear.map((row) => (
+                <tr key={row.year} className="border-b last:border-0">
+                  <td className="py-3 pr-4 font-semibold">{row.year}</td>
+                  <td className="py-3 pr-4">₵{row.paid.toLocaleString()}</td>
+                  <td className="py-3 pr-4">₵{row.pending.toLocaleString()}</td>
+                  <td className="py-3">{row.collectionRate}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Per-year snapshot</h2>
         <p className="text-sm text-muted-foreground">Quick comparison across each camp year</p>
@@ -455,7 +542,15 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Returning</span>
-                <span className="font-semibold">{yearReport.overview.returning}</span>
+                <span className="font-semibold">{yearReport.overview.returning} ({yearReport.returnRate}%)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Collection</span>
+                <span className="font-semibold">{yearReport.overview.collectionRate}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Data quality</span>
+                <span className="font-semibold">{yearReport.dataQualityScore}%</span>
               </div>
               {yearReport.insights[0] ? (
                 <p className="border-t pt-2 text-xs leading-relaxed text-slate-600">{yearReport.insights[0]}</p>

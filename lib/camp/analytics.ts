@@ -20,6 +20,7 @@ export type YearComparisonRow = {
   total: number
   newCampers: number
   returningCampers: number
+  returnRate: number
   checkedIn: number
   checkInRate: number
   paidCount: number
@@ -27,6 +28,35 @@ export type YearComparisonRow = {
   growthPercent: number | null
   peakDay: string | null
   peakDayCount: number
+  dataQualityScore: number
+}
+
+export type FunnelStep = {
+  label: string
+  count: number
+  percent: number
+  dropOffPercent?: number
+}
+
+export type NewVsReturningRow = {
+  year: number
+  yearId: string
+  newCampers: number
+  returningCampers: number
+  returnRate: number
+}
+
+export type DemographicTrendRow = {
+  label: string
+  values: Array<{ year: number; percent: number; count: number }>
+}
+
+export type CombinedRevenueSummary = {
+  totalPaid: number
+  totalPending: number
+  totalExpected: number
+  collectionRate: number
+  byYear: Array<{ year: number; paid: number; pending: number; collectionRate: number }>
 }
 
 export type RetentionBucket = {
@@ -84,6 +114,9 @@ export type CampYearAnalyticsReport = {
   }
   timeline: TimelinePoint[]
   dataQuality: DataQualityRow[]
+  dataQualityScore: number
+  returnRate: number
+  funnel: FunnelStep[]
   insights: string[]
 }
 
@@ -100,6 +133,15 @@ export type CampMultiYearAnalyticsReport = {
     retention: RetentionBucket[]
     demographics: CampYearAnalyticsReport['demographics']
     operations: CampYearAnalyticsReport['operations']
+    revenue: CombinedRevenueSummary
+    newVsReturning: NewVsReturningRow[]
+    demographicTrends: {
+      ageBracket: DemographicTrendRow[]
+      gender: DemographicTrendRow[]
+      educationBand: DemographicTrendRow[]
+    }
+    avgDataQualityScore: number
+    overallFunnel: FunnelStep[]
   }
   insights: string[]
 }
@@ -200,6 +242,124 @@ export function normalizeRole(role: string | undefined | null): string {
   const value = String(role ?? '').trim()
   if (!value) return 'Participant'
   return titleCase(value)
+}
+
+function computeDataQualityScore(rows: DataQualityRow[]): number {
+  if (rows.length === 0) return 0
+  return Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length)
+}
+
+function buildFunnel(
+  total: number,
+  checkedIn: number,
+  paid: number,
+  followUpCompleted: number
+): FunnelStep[] {
+  if (total <= 0) return []
+
+  const steps = [
+    { label: 'Registered', count: total },
+    { label: 'Checked in', count: checkedIn },
+    { label: 'Paid', count: paid },
+    { label: 'Follow-up done', count: followUpCompleted },
+  ]
+
+  return steps.map((step, index) => {
+    const prev = index > 0 ? steps[index - 1].count : step.count
+    const dropOffPercent =
+      index > 0 && prev > 0 ? Math.round(((prev - step.count) / prev) * 100) : undefined
+    return {
+      label: step.label,
+      count: step.count,
+      percent: Math.round((step.count / total) * 100),
+      dropOffPercent,
+    }
+  })
+}
+
+function buildCombinedRevenue(yearReports: CampYearAnalyticsReport[]): CombinedRevenueSummary {
+  let totalPaid = 0
+  let totalPending = 0
+  let totalExpected = 0
+
+  const byYear = yearReports.map((report) => {
+    totalPaid += report.overview.paidAmount
+    totalPending += report.overview.pendingAmount
+    totalExpected += report.overview.totalExpected
+    return {
+      year: report.year,
+      paid: report.overview.paidAmount,
+      pending: report.overview.pendingAmount,
+      collectionRate: report.overview.collectionRate,
+    }
+  })
+
+  return {
+    totalPaid,
+    totalPending,
+    totalExpected,
+    collectionRate: totalExpected > 0 ? Math.round((totalPaid / totalExpected) * 100) : 0,
+    byYear: byYear.sort((a, b) => a.year - b.year),
+  }
+}
+
+function buildNewVsReturningRows(yearReports: CampYearAnalyticsReport[]): NewVsReturningRow[] {
+  return [...yearReports]
+    .sort((a, b) => a.year - b.year)
+    .map((report) => ({
+      year: report.year,
+      yearId: report.yearId,
+      newCampers: report.overview.newRegistrants,
+      returningCampers: report.overview.returning,
+      returnRate:
+        report.total > 0 ? Math.round((report.overview.returning / report.total) * 100) : 0,
+    }))
+}
+
+function buildDemographicTrends(
+  yearReports: CampYearAnalyticsReport[],
+  dimension: keyof CampYearAnalyticsReport['demographics'],
+  maxLabels = 5
+): DemographicTrendRow[] {
+  const labelTotals = new Map<string, number>()
+  for (const report of yearReports) {
+    for (const slice of report.demographics[dimension]) {
+      if (slice.label === 'Not recorded' || slice.label === 'Unknown') continue
+      labelTotals.set(slice.label, (labelTotals.get(slice.label) ?? 0) + slice.count)
+    }
+  }
+
+  const topLabels = Array.from(labelTotals.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxLabels)
+    .map(([label]) => label)
+
+  return topLabels.map((label) => ({
+    label,
+    values: [...yearReports]
+      .sort((a, b) => a.year - b.year)
+      .map((report) => {
+        const slice = report.demographics[dimension].find((row) => row.label === label)
+        return {
+          year: report.year,
+          percent: slice?.percent ?? 0,
+          count: slice?.count ?? 0,
+        }
+      }),
+  }))
+}
+
+function buildOverallFunnel(yearReports: CampYearAnalyticsReport[]): FunnelStep[] {
+  const totals = yearReports.reduce(
+    (acc, report) => ({
+      total: acc.total + report.total,
+      checkedIn: acc.checkedIn + report.overview.checkedIn,
+      paid: acc.paid + report.overview.paid,
+      followUpCompleted: acc.followUpCompleted + report.overview.followUpCompleted,
+    }),
+    { total: 0, checkedIn: 0, paid: 0, followUpCompleted: 0 }
+  )
+  return buildFunnel(totals.total, totals.checkedIn, totals.paid, totals.followUpCompleted)
 }
 
 function countBy<T>(items: T[], getLabel: (item: T) => string): Map<string, number> {
@@ -485,6 +645,9 @@ export function buildCampYearAnalyticsReport(
     checkInRate: total > 0 ? Math.round((checkedIn / total) * 100) : 0,
   }
 
+  const dataQuality = buildDataQuality(registrations)
+  const dataQualityScore = computeDataQualityScore(dataQuality)
+
   const base = {
     scope: 'year' as const,
     yearId: campYear.id,
@@ -496,7 +659,10 @@ export function buildCampYearAnalyticsReport(
     demographics: buildDemographicsSlices(registrations, total),
     operations: buildOperationsSlices(registrations, total),
     timeline: buildTimeline(registrations),
-    dataQuality: buildDataQuality(registrations),
+    dataQuality,
+    dataQualityScore,
+    returnRate: total > 0 ? Math.round((overview.returning / total) * 100) : 0,
+    funnel: buildFunnel(total, checkedIn, overview.paid, overview.followUpCompleted),
   }
 
   return {
@@ -552,6 +718,7 @@ function buildYearComparison(
       total: report.total,
       newCampers: report.overview.newRegistrants,
       returningCampers: report.overview.returning,
+      returnRate: report.returnRate,
       checkedIn: report.overview.checkedIn,
       checkInRate: report.overview.checkInRate,
       paidCount: report.overview.paid,
@@ -559,6 +726,7 @@ function buildYearComparison(
       growthPercent,
       peakDay: peak?.label ?? null,
       peakDayCount: peak?.count ?? 0,
+      dataQualityScore: report.dataQualityScore,
     }
   })
 }
@@ -636,7 +804,20 @@ function buildMultiYearInsights(
     )
   }
 
-  return insights.slice(0, 7)
+  const avgQuality =
+    yearReports.length > 0
+      ? Math.round(yearReports.reduce((sum, row) => sum + row.dataQualityScore, 0) / yearReports.length)
+      : 0
+  if (avgQuality > 0 && avgQuality < 70) {
+    insights.push(`Average data completeness across years is ${avgQuality}% — tighten required fields on registration forms.`)
+  }
+
+  const highestReturn = [...yearComparison].sort((a, b) => b.returnRate - a.returnRate)[0]
+  if (highestReturn && highestReturn.returnRate >= 30 && yearReports.length > 1) {
+    insights.push(`Best return rate: Camp ${highestReturn.year} at ${highestReturn.returnRate}% returning campers.`)
+  }
+
+  return insights.slice(0, 8)
 }
 
 export function buildCampMultiYearAnalyticsReport(
@@ -673,6 +854,18 @@ export function buildCampMultiYearAnalyticsReport(
     retention: buildRetentionBuckets(byPhone, uniqueCampers),
     demographics: buildDemographicsSlices(uniqueRegistrations, total),
     operations: buildOperationsSlices(uniqueRegistrations, total),
+    revenue: buildCombinedRevenue(yearReports),
+    newVsReturning: buildNewVsReturningRows(yearReports),
+    demographicTrends: {
+      ageBracket: buildDemographicTrends(yearReports, 'ageBracket'),
+      gender: buildDemographicTrends(yearReports, 'gender'),
+      educationBand: buildDemographicTrends(yearReports, 'educationBand'),
+    },
+    avgDataQualityScore:
+      yearReports.length > 0
+        ? Math.round(yearReports.reduce((sum, row) => sum + row.dataQualityScore, 0) / yearReports.length)
+        : 0,
+    overallFunnel: buildOverallFunnel(yearReports),
   }
 
   return {

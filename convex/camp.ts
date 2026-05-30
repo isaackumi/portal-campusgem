@@ -306,6 +306,15 @@ export const createCampYearWithSecret = mutation({
       venue: args.venue,
       updated_at: now,
     })
+
+    if (args.is_active) {
+      for (const y of await ctx.db.query('camp_years').collect()) {
+        if (String(y._id) !== String(id)) {
+          await ctx.db.patch(y._id, { is_active: false, updated_at: now })
+        }
+      }
+    }
+
     return await ctx.db.get('camp_years', id)
   },
 })
@@ -336,6 +345,15 @@ export const updateCampYearWithSecret = mutation({
       venue: args.venue,
       updated_at: now,
     })
+
+    if (args.is_active) {
+      for (const y of await ctx.db.query('camp_years').collect()) {
+        if (String(y._id) !== String(args.yearId)) {
+          await ctx.db.patch(y._id, { is_active: false, updated_at: now })
+        }
+      }
+    }
+
     return await ctx.db.get('camp_years', args.yearId)
   },
 })
@@ -371,6 +389,18 @@ export const setActiveCampYearWithSecret = mutation({
       })
     }
     return null
+  },
+})
+
+export const deactivateCampYearWithSecret = mutation({
+  args: { secret: v.string(), yearId: v.id('camp_years') },
+  returns: v.any(),
+  handler: async (ctx, { secret, yearId }) => {
+    assertServerSecret(secret)
+    const year = await ctx.db.get('camp_years', yearId)
+    if (!year) throw new Error('Camp year not found.')
+    await ctx.db.patch(yearId, { is_active: false, updated_at: Date.now() })
+    return await ctx.db.get('camp_years', yearId)
   },
 })
 

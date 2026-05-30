@@ -5,9 +5,11 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
   bulkPatchCampRegistrations,
+  deactivateCampYear,
   getCampRegistrations,
   getCampYearById,
   recordCampCommunication,
+  setActiveCampYear,
 } from '@/lib/actions/camp'
 import { loadAllUsers } from '@/lib/actions/core-data'
 import type { AppUser, CampRegistration, CampYear } from '@/lib/types'
@@ -82,6 +84,7 @@ export default function CampYearHubPage() {
   )
   const [roundRobin, setRoundRobin] = useState(false)
   const [working, setWorking] = useState(false)
+  const [seasonBusy, setSeasonBusy] = useState(false)
 
   useEffect(() => {
     void loadPage()
@@ -109,6 +112,44 @@ export default function CampYearHubPage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function setAsActiveSeason() {
+    if (!campYear) return
+    setSeasonBusy(true)
+    try {
+      const result = await setActiveCampYear(campYear.id)
+      if (!result.success) throw new Error(result.error ?? 'Failed to activate year')
+      toast({ title: 'Active season updated', description: `Camp ${campYear.year} is now the active year.` })
+      await loadPage()
+    } catch (error: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not activate year',
+        description: error instanceof Error ? error.message : 'Try again',
+      })
+    } finally {
+      setSeasonBusy(false)
+    }
+  }
+
+  async function deactivateSeason() {
+    if (!campYear) return
+    setSeasonBusy(true)
+    try {
+      const result = await deactivateCampYear(campYear.id)
+      if (!result.success) throw new Error(result.error ?? 'Failed to deactivate year')
+      toast({ title: 'Season deactivated', description: `Camp ${campYear.year} is no longer active.` })
+      await loadPage()
+    } catch (error: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not deactivate year',
+        description: error instanceof Error ? error.message : 'Try again',
+      })
+    } finally {
+      setSeasonBusy(false)
     }
   }
 
@@ -264,6 +305,15 @@ export default function CampYearHubPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {campYear.is_active ? (
+            <Button variant="outline" disabled={seasonBusy} onClick={() => void deactivateSeason()}>
+              Deactivate season
+            </Button>
+          ) : (
+            <Button disabled={seasonBusy} onClick={() => void setAsActiveSeason()}>
+              Set as active season
+            </Button>
+          )}
           <Button variant="outline" asChild>
             <Link href={`/admin/camp-meeting/registrations?year=${campYear.id}`}>Registrations</Link>
           </Button>

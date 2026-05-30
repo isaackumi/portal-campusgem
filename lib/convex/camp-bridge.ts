@@ -322,6 +322,17 @@ export async function setActiveCampYearInConvex(activeYearId: string): Promise<v
   })
 }
 
+export async function deactivateCampYearInConvex(yearId: string): Promise<CampYear> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.camp.deactivateCampYearWithSecret, {
+    secret: requireCampAdminSecret(),
+    yearId: yearId as Id<'camp_years'>,
+  })) as Record<string, unknown>
+  const year = convexCampYearDocToCampYear(doc)
+  if (!year) throw new Error('Failed to deactivate camp year')
+  return year
+}
+
 export async function clearActiveCampYearInConvex(): Promise<void> {
   const client = getConvexHttpClient()
   await client.mutation(api.camp.clearActiveCampYearWithSecret, {

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
-import { getCampRegistrations, createCampYear, updateCampYear, toggleCampYearRegistration, setActiveCampYear, clearActiveCampYear, getAllCampYears } from '@/lib/actions/camp'
+import { getCampRegistrations, createCampYear, updateCampYear, toggleCampYearRegistration, setActiveCampYear, deactivateCampYear, getAllCampYears } from '@/lib/actions/camp'
 import { CampYear } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -271,14 +271,21 @@ export default function CampYearsPage() {
     }
 
 
-    async function clearActiveYear() {
+    async function deactivateYear(yearId: string) {
         try {
-            const result = await clearActiveCampYear()
-            if (!result.success) throw new Error(result.error || 'Failed to clear active year')
-            toast({ title: 'Active year cleared', description: 'No camp year is active until you choose one again.' })
+            const result = await deactivateCampYear(yearId)
+            if (!result.success) throw new Error(result.error || 'Failed to deactivate camp year')
+            toast({
+                title: 'Camp year deactivated',
+                description: 'This year is no longer the active season. Set another year active when ready.',
+            })
             loadYears()
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to clear active year' })
+        } catch (error: unknown) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Failed to deactivate camp year',
+            })
         }
     }
 
@@ -447,7 +454,7 @@ export default function CampYearsPage() {
                                         <div className="space-y-0.5 flex-1">
                                             <Label htmlFor="is_active">Set as Active Year</Label>
                                             <p className="text-sm text-muted-foreground">
-                                                Only one year can be active at a time
+                                                Only one year can be active. Uncheck to deactivate this year.
                                             </p>
                                         </div>
                                         <Checkbox
@@ -485,6 +492,22 @@ export default function CampYearsPage() {
                 </div>
 
                 {/* Overall Statistics */}
+                {activeYear ? (
+                    <Card className="border-2 border-blue-200 bg-blue-50/60">
+                        <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-blue-900">Active camp year</p>
+                                <p className="text-lg font-semibold text-blue-950">
+                                    {activeYear.year}
+                                    {activeYear.theme ? ` · ${activeYear.theme}` : ''}
+                                </p>
+                            </div>
+                            <Button variant="outline" className="border-amber-300 bg-white" onClick={() => deactivateYear(activeYear.id)}>
+                                Deactivate {activeYear.year}
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ) : null}
                 <div className="grid gap-4 md:grid-cols-4">
                     <Card>
                         <CardHeader className="pb-3">
@@ -702,10 +725,10 @@ export default function CampYearsPage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="w-full"
-                                            onClick={() => clearActiveYear()}
+                                            className="w-full border-amber-300 text-amber-900 hover:bg-amber-50"
+                                            onClick={() => deactivateYear(year.id)}
                                         >
-                                            Clear active year
+                                            Deactivate year
                                         </Button>
                                     ) : (
                                         <Button

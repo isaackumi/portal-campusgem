@@ -436,6 +436,23 @@ export async function setActiveCampYear(yearId: string): Promise<{ success: bool
   }
 }
 
+export async function deactivateCampYear(yearId: string): Promise<{ success: boolean; error?: string }> {
+  requireConvexEnv()
+  try {
+    const { deactivateCampYearInConvex } = await import('@/lib/convex/camp-bridge')
+    await deactivateCampYearInConvex(yearId)
+    revalidatePath('/admin/camp-meeting/years')
+    revalidatePath('/admin/camp-meeting')
+    revalidatePath(`/admin/camp-meeting/years/${yearId}`)
+    return { success: true }
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to deactivate camp year',
+    }
+  }
+}
+
 export async function clearActiveCampYear(): Promise<{ success: boolean; error?: string }> {
   requireConvexEnv()
   try {
