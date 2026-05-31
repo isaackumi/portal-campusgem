@@ -668,6 +668,10 @@ export const addPersonToRlcWithSecret = mutation({
 
     let user = args.user_id ? await ctx.db.get('users', args.user_id as Id<'users'>) : null
 
+    if (!user && member?.user_id) {
+      user = await ctx.db.get('users', member.user_id as Id<'users'>)
+    }
+
     if (!member && !user && args.camp_registration_id) {
       const reg = await ctx.db.get(
         'camp_registrations',

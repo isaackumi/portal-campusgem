@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { importToRlcAction, searchRlcImportAction } from '@/lib/actions/rlc'
 import type { RlcImportSearchResult } from '@/lib/types'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -63,7 +64,7 @@ export default function RlcImportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <PageContainer size="sm">
       <RlcPageHeader
         title="Import to RLC"
         subtitle="Pull contacts from Campus Gem members or camp registrations into the mother church."
@@ -144,6 +145,6 @@ export default function RlcImportPage() {
           )
         })}
       </div>
-    </div>
+    </PageContainer>
   )
 }

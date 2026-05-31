@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { addPersonToRlcAction } from '@/lib/actions/rlc'
+import { addPersonToRlcAction, preparePersonForRlcAction } from '@/lib/actions/rlc'
 import { RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
 import type { RlcRole } from '@/lib/types'
-import { ensureDirectoryUserFromCampContact } from '@/lib/actions/ensure-camp-directory-user'
-import { dataService } from '@/lib/services/data-service'
 import {
   Dialog,
   DialogContent,
@@ -53,7 +51,6 @@ export function AddToRlcDialog({
   const { toast } = useToast()
   const [selectedRoles, setSelectedRoles] = useState<RlcRole[]>(['member'])
   const [submitting, setSubmitting] = useState(false)
-  const [ensuringProfile, setEnsuringProfile] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -69,46 +66,40 @@ export function AddToRlcDialog({
   }
 
   async function handleSubmit() {
-    if (!user?.id) return
+    if (!user?.id) {
+      toast({ variant: 'destructive', title: 'Sign in required' })
+      return
+    }
     if (selectedRoles.length === 0) {
       toast({ variant: 'destructive', title: 'Select at least one role' })
       return
     }
 
     setSubmitting(true)
-    let userId = initialUserId
-    let memberId = initialMemberId
 
-    if (!userId && !memberId && campContact?.phone) {
-      setEnsuringProfile(true)
-      const ensured = await ensureDirectoryUserFromCampContact({
-        full_name: campContact.full_name || contactName,
-        phone: campContact.phone,
-        email: campContact.email,
-        registrationId: campContact.registrationId,
+    const prepared = await preparePersonForRlcAction({
+      userId: initialUserId,
+      memberId: initialMemberId,
+      fullName: campContact?.full_name || contactName,
+      phone: campContact?.phone,
+      email: campContact?.email,
+      campRegistrationId: campContact?.registrationId,
+    })
+
+    if (prepared.error || !prepared.data) {
+      setSubmitting(false)
+      toast({
+        variant: 'destructive',
+        title: 'Profile required',
+        description: prepared.error ?? 'Could not prepare member profile for RLC.',
       })
-      setEnsuringProfile(false)
-      if (ensured.error || !ensured.data) {
-        setSubmitting(false)
-        toast({
-          variant: 'destructive',
-          title: 'Profile required',
-          description: ensured.error ?? 'Could not create directory profile.',
-        })
-        return
-      }
-      userId = ensured.data.userId
-    }
-
-    if (!memberId && userId) {
-      const memberRes = await dataService.getMemberByUserId(userId)
-      memberId = memberRes.data?.id
+      return
     }
 
     const { data, error } = await addPersonToRlcAction({
       performedBy: user.id,
-      userId,
-      memberId,
+      userId: prepared.data.userId,
+      memberId: prepared.data.memberId,
       campRegistrationId: campContact?.registrationId,
       rlcRoles: selectedRoles,
     })
@@ -129,58 +120,58 @@ export function AddToRlcDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Church className="h-5 w-5 text-rose-700" />
-            Add to RLC
-          </DialogTitle>
-          <DialogDescription>
-            Assign one or more roles for <strong>{contactName}</strong> at Redemption Light Chapel.
-            Existing roles are merged — people can hold multiple ministry roles.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-h-[min(90vh,100dvh)] w-[calc(100vw-1.5rem)] max-w-lg gap-0 overflow-hidden p-0 sm:w-full">
+        <div className="max-h-[min(90vh,100dvh)] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 pr-8 text-left">
+              <Church className="h-5 w-5 shrink-0 text-rose-700" />
+              Add to RLC
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              Assign one or more roles for <strong>{contactName}</strong> at Redemption Light Chapel.
+              Existing roles are merged — people can hold multiple ministry roles.
+            </DialogDescription>
+          </DialogHeader>
 
-        {existingRoles.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {existingRoles.map((role) => (
-              <Badge key={role} variant="secondary">
-                {RLC_ROLE_LABELS[role as RlcRole] ?? role}
-              </Badge>
+          {existingRoles.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {existingRoles.map((role) => (
+                <Badge key={role} variant="secondary">
+                  {RLC_ROLE_LABELS[role as RlcRole] ?? role}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {RLC_ROLES.map((role) => (
+              <label
+                key={role}
+                className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 hover:bg-rose-50/50"
+              >
+                <Checkbox
+                  checked={selectedRoles.includes(role)}
+                  onCheckedChange={(v) => toggleRole(role, v === true)}
+                />
+                <p className="text-sm font-medium leading-snug">{RLC_ROLE_LABELS[role]}</p>
+              </label>
             ))}
           </div>
-        ) : null}
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          {RLC_ROLES.map((role) => (
-            <label
-              key={role}
-              className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 hover:bg-rose-50/50"
+          <DialogFooter className="mt-6 flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto"
+              disabled={submitting}
+              onClick={() => void handleSubmit()}
             >
-              <Checkbox
-                checked={selectedRoles.includes(role)}
-                onCheckedChange={(v) => toggleRole(role, v === true)}
-              />
-              <div>
-                <p className="text-sm font-medium">{RLC_ROLE_LABELS[role]}</p>
-              </div>
-            </label>
-          ))}
+              {submitting ? 'Saving…' : 'Add to RLC'}
+            </Button>
+          </DialogFooter>
         </div>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="bg-rose-700 hover:bg-rose-800"
-            disabled={submitting || ensuringProfile}
-            onClick={() => void handleSubmit()}
-          >
-            {submitting || ensuringProfile ? 'Saving…' : 'Add to RLC'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

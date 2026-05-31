@@ -6,6 +6,7 @@ import { loadRlcStatsAction, loadRlcVisitorsAction } from '@/lib/actions/rlc'
 import { buildRlcAnalyticsInsights, rlcPipelineFunnel } from '@/lib/rlc/analytics'
 import { RLC_SOURCE_LABELS } from '@/lib/constants/rlc'
 import type { RlcStats, Visitor } from '@/lib/types'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -37,7 +38,7 @@ export default function RlcAnalyticsPage() {
   const maxFunnel = Math.max(...funnel.map((f) => f.count), 1)
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <PageContainer>
       <RlcPageHeader title="RLC Analytics" subtitle="Conversion funnel, sources, and follow-up health." />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -128,6 +129,6 @@ export default function RlcAnalyticsPage() {
           ))}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   )
 }

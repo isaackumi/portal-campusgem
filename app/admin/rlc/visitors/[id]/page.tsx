@@ -23,6 +23,7 @@ import { generateRlcMembershipId } from '@/lib/membershipId'
 import { serviceSelectValueToLabel, visitorToForm } from '@/lib/rlc/visitor-form'
 import type { ConvertRlcVisitorForm, CreateVisitorForm, RlcInteraction, Visitor } from '@/lib/types'
 import { MemberMultiSelect, MemberSingleSelect } from '@/components/rlc/member-select'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -178,14 +179,14 @@ export default function RlcVisitorDetailPage() {
   const pipeline = visitor.pipeline_status ?? 'first_visit'
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <PageContainer size="md">
       <RlcPageHeader
         title={`${visitor.first_name} ${visitor.last_name ?? ''}`.trim()}
         subtitle={`Visit ${visitor.visit_date}${visitor.service_attended ? ` · ${visitor.service_attended}` : ''}`}
         backHref="/admin/rlc/visitors"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" asChild>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
               <Link href={`/admin/rlc/visitors/${id}/edit`}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
@@ -193,16 +194,16 @@ export default function RlcVisitorDetailPage() {
             </Button>
             {!visitor.converted_to_member ? (
               <>
-                <Button className="bg-rose-700 hover:bg-rose-800" onClick={() => setShowConvert(true)}>
+                <Button className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto" onClick={() => setShowConvert(true)}>
                   <UserCheck className="mr-2 h-4 w-4" />
                   Convert to member
                 </Button>
                 {visitor.is_active !== false ? (
-                  <Button variant="outline" onClick={archiveVisitor}>
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={archiveVisitor}>
                     Archive
                   </Button>
                 ) : null}
-                <Button variant="destructive" onClick={permanentDelete}>
+                <Button variant="destructive" className="w-full sm:w-auto" onClick={permanentDelete}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
@@ -484,6 +485,6 @@ export default function RlcVisitorDetailPage() {
           ) : null}
         </div>
       </div>
-    </div>
+    </PageContainer>
   )
 }

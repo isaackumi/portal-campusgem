@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers'
 import { loadRlcAttendanceAction, loadRlcMembersAction, loadRlcVisitorsAction, recordRlcAttendanceAction } from '@/lib/actions/rlc'
 import { RLC_SERVICES } from '@/lib/constants/rlc'
 import type { Attendance, Member, Visitor } from '@/lib/types'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -79,7 +80,7 @@ export default function RlcAttendancePage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <PageContainer>
       <RlcPageHeader
         title="RLC Attendance"
         subtitle="Record Sunday and midweek attendance for RLC members and visitors."
@@ -194,6 +195,6 @@ export default function RlcAttendancePage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   )
 }

@@ -32,8 +32,8 @@ export function AdminContextNav() {
   const pathname = usePathname()
 
   return (
-    <div className="mb-6 rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
-      <div className="flex flex-wrap gap-1">
+    <div className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white p-2 shadow-sm sm:mb-6">
+      <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
         {adminLinks.map((link) => {
           const isActive = link.match(pathname)
           return (

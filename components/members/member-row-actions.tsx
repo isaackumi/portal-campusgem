@@ -52,18 +52,20 @@ export function MemberRowActions({ memberId, userId, displayName, membershipId, 
             <Edit className="mr-2 h-4 w-4" />
             Edit profile
           </DropdownMenuItem>
-          {userId ? (
+          {userId || memberId ? (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setAddToRlcOpen(true)}>
                 <Church className="mr-2 h-4 w-4 text-rose-700" />
                 Add to RLC…
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setAddToGroupOpen(true)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add to group
-              </DropdownMenuItem>
             </>
+          ) : null}
+          {userId ? (
+            <DropdownMenuItem onClick={() => setAddToGroupOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add to group
+            </DropdownMenuItem>
           ) : null}
           {membershipId ? (
             <>
@@ -78,23 +80,23 @@ export function MemberRowActions({ memberId, userId, displayName, membershipId, 
       </DropdownMenu>
 
       {userId ? (
-        <>
-          <AddToGroupDialog
-            open={addToGroupOpen}
-            onOpenChange={setAddToGroupOpen}
-            userId={userId}
-            contactName={displayName}
-          />
-          <AddToRlcDialog
-            open={addToRlcOpen}
-            onOpenChange={setAddToRlcOpen}
-            contactName={displayName}
-            userId={userId}
-            memberId={memberId}
-            existingRoles={rlcRoles}
-            onSuccess={() => router.refresh()}
-          />
-        </>
+        <AddToGroupDialog
+          open={addToGroupOpen}
+          onOpenChange={setAddToGroupOpen}
+          userId={userId}
+          contactName={displayName}
+        />
+      ) : null}
+      {userId || memberId ? (
+        <AddToRlcDialog
+          open={addToRlcOpen}
+          onOpenChange={setAddToRlcOpen}
+          contactName={displayName}
+          userId={userId}
+          memberId={memberId}
+          existingRoles={rlcRoles}
+          onSuccess={() => router.refresh()}
+        />
       ) : null}
     </>
   )

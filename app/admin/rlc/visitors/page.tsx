@@ -11,6 +11,7 @@ import {
   RLC_SOURCE_LABELS,
 } from '@/lib/constants/rlc'
 import type { RlcPipelineStatus, Visitor } from '@/lib/types'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { RlcVisitorRowActions } from '@/components/rlc/rlc-visitor-row-actions'
 import { Badge } from '@/components/ui/badge'
@@ -75,12 +76,12 @@ function RlcVisitorsContent() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <PageContainer>
       <RlcPageHeader
         title="RLC Visitors"
         subtitle="Track every visitor from first visit through membership."
         actions={
-          <Button asChild className="bg-rose-700 hover:bg-rose-800">
+          <Button asChild className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto">
             <Link href="/admin/rlc/visitors/add">
               <UserPlus className="mr-2 h-4 w-4" />
               Register Visitor
@@ -89,7 +90,7 @@ function RlcVisitorsContent() {
         }
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Input placeholder="Search name, phone, email…" value={query} onChange={(e) => setQuery(e.target.value)} />
         <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
           <SelectTrigger className="sm:w-44">
@@ -170,6 +171,6 @@ function RlcVisitorsContent() {
           })
         )}
       </div>
-    </div>
+    </PageContainer>
   )
 }

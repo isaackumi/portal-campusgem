@@ -261,6 +261,86 @@ export async function searchRlcImportAction(query: string): Promise<ApiResponse<
   }
 }
 
+export async function preparePersonForRlcAction(args: {
+  userId?: string
+  memberId?: string
+  fullName: string
+  phone?: string
+  email?: string
+  campRegistrationId?: string
+}): Promise<ApiResponse<{ userId: string; memberId: string }>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+
+  try {
+    const {
+      fetchMemberFromConvex,
+      fetchMemberByUserIdFromConvex,
+      insertMemberInConvex,
+    } = await import('@/lib/convex/core-bridge')
+    const { ensureDirectoryUserFromCampContact } = await import('@/lib/actions/ensure-camp-directory-user')
+
+    let userId = args.userId?.trim()
+    let memberId = args.memberId?.trim()
+
+    if (memberId) {
+      const member = await fetchMemberFromConvex(memberId)
+      if (!member) {
+        return { data: null, error: 'Member profile not found', loading: false }
+      }
+      userId = member.user_id
+      memberId = member.id
+    }
+
+    if (userId && !memberId) {
+      let member = await fetchMemberByUserIdFromConvex(userId)
+      if (!member) {
+        member = await insertMemberInConvex({ user_id: userId, status: 'active' })
+      }
+      memberId = member.id
+    }
+
+    if (!userId && !memberId) {
+      const phone = args.phone?.trim()
+      if (!phone) {
+        return {
+          data: null,
+          error: 'Select a person with a phone number or an existing account.',
+          loading: false,
+        }
+      }
+      const ensured = await ensureDirectoryUserFromCampContact({
+        full_name: args.fullName,
+        phone,
+        email: args.email,
+        registrationId: args.campRegistrationId,
+      })
+      if (ensured.error || !ensured.data) {
+        return { data: null, error: ensured.error ?? 'Could not prepare directory profile', loading: false }
+      }
+      userId = ensured.data.userId
+      const member = await fetchMemberByUserIdFromConvex(userId)
+      if (!member) {
+        return { data: null, error: 'Member profile missing after setup', loading: false }
+      }
+      memberId = member.id
+    }
+
+    if (!userId || !memberId) {
+      return { data: null, error: 'Could not resolve a member profile for RLC', loading: false }
+    }
+
+    return { data: { userId, memberId }, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to prepare profile',
+      loading: false,
+    }
+  }
+}
+
 export async function addPersonToRlcAction(args: {
   performedBy: string
   userId?: string

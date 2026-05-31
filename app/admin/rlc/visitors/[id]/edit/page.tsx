@@ -7,6 +7,7 @@ import { loadRlcVisitorAction, updateRlcVisitorAction } from '@/lib/actions/rlc'
 import { serviceSelectValueToLabel, visitorToForm } from '@/lib/rlc/visitor-form'
 import type { CreateVisitorForm } from '@/lib/types'
 import { RlcVisitorForm } from '@/components/rlc/rlc-visitor-form'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -74,7 +75,7 @@ export default function EditRlcVisitorPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <PageContainer size="sm">
       <RlcPageHeader
         title={`Edit ${name}`}
         subtitle="Update visitor details if something was missed at registration."
@@ -93,6 +94,6 @@ export default function EditRlcVisitorPage() {
           </Button>
         </div>
       </form>
-    </div>
+    </PageContainer>
   )
 }

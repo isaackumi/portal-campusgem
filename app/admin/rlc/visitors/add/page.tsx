@@ -7,6 +7,7 @@ import { createRlcVisitorAction } from '@/lib/actions/rlc'
 import { serviceSelectValueToLabel } from '@/lib/rlc/visitor-form'
 import type { CreateVisitorForm } from '@/lib/types'
 import { RlcVisitorForm } from '@/components/rlc/rlc-visitor-form'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
@@ -65,7 +66,7 @@ export default function AddRlcVisitorPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <PageContainer size="sm">
       <RlcPageHeader
         title="Register RLC Visitor"
         subtitle="Capture complete visitor details for follow-up and conversion."
@@ -84,6 +85,6 @@ export default function AddRlcVisitorPage() {
           </Button>
         </div>
       </form>
-    </div>
+    </PageContainer>
   )
 }

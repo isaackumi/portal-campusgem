@@ -296,11 +296,14 @@ export default function UsersManagementPage() {
     router.push(`/admin/users/${user.id}`)
   }
 
-  async function openAddToRlc(user: AppUser) {
-    const memberRes = await dataService.getMemberByUserId(user.id)
+  function openAddToRlc(user: AppUser) {
     setRlcUser(user)
-    setRlcMemberId(memberRes.data?.id)
-    setRlcExistingRoles(memberRes.data?.rlc_roles ?? [])
+    setRlcMemberId(undefined)
+    setRlcExistingRoles([])
+    void dataService.getMemberByUserId(user.id).then((memberRes) => {
+      setRlcMemberId(memberRes.data?.id)
+      setRlcExistingRoles(memberRes.data?.rlc_roles ?? [])
+    })
   }
 
   async function handlePromoteToCorporateGem(user: AppUser) {
@@ -660,8 +663,11 @@ export default function UsersManagementPage() {
             ) : (
               <div className="space-y-4">
                 {filteredUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center space-x-4">
+                  <div
+                    key={user.id}
+                    className="flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex min-w-0 items-center gap-4">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                         {getRoleIcon(user.role)}
                       </div>
@@ -695,47 +701,49 @@ export default function UsersManagementPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
                         size="sm"
+                        className="flex-1 sm:flex-none"
                         onClick={() => void handleViewUser(user)}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
+                        <Eye className="mr-1 h-4 w-4" />
                         View
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-rose-200 text-rose-900 hover:bg-rose-50"
-                        onClick={() => void openAddToRlc(user)}
+                        className="flex-1 border-rose-200 text-rose-900 hover:bg-rose-50 sm:flex-none"
+                        onClick={() => openAddToRlc(user)}
                       >
                         RLC
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-violet-200 text-violet-900 hover:bg-violet-50"
+                        className="flex-1 border-violet-200 text-violet-900 hover:bg-violet-50 sm:flex-none"
                         disabled={promotingUserId === user.id}
                         onClick={() => void handlePromoteToCorporateGem(user)}
                       >
-                        {promotingUserId === user.id ? '…' : 'Corporate Gem'}
+                        {promotingUserId === user.id ? '…' : 'Corp Gem'}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
+                        className="flex-1 sm:flex-none"
                         onClick={() => {
                           void openEditDialog(user)
                         }}
                       >
-                        <Edit className="h-4 w-4 mr-1" />
+                        <Edit className="mr-1 h-4 w-4" />
                         Edit
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteUser(user.id, user.full_name || 'User')}
                         className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteUser(user.id, user.full_name || 'User')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

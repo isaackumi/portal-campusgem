@@ -7,6 +7,7 @@ import { loadRlcStatsAction } from '@/lib/actions/rlc'
 import { rlcFollowUpHref } from '@/lib/rlc/follow-up-sla'
 import { RLC_NAME } from '@/lib/constants/rlc'
 import type { RlcStats } from '@/lib/types'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -70,19 +71,19 @@ export default function RlcDashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <PageContainer className="space-y-8">
       <RlcPageHeader
         title="Mother Church Hub"
         subtitle={`Visitor pipeline, membership, attendance, and analytics for ${RLC_NAME}.`}
         actions={
           <>
-            <Button variant="outline" asChild>
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
               <Link href="/admin/rlc/visitors/add">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Register Visitor
               </Link>
             </Button>
-            <Button asChild className="bg-rose-700 hover:bg-rose-800">
+            <Button className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto" asChild>
               <Link href="/admin/rlc/import">
                 <Upload className="mr-2 h-4 w-4" />
                 Import
@@ -191,6 +192,6 @@ export default function RlcDashboardPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   )
 }

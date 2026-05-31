@@ -13,6 +13,7 @@ import {
 } from '@/lib/constants/rlc'
 import { classifyRlcFollowUpSla, type RlcFollowUpSlaBucket } from '@/lib/rlc/follow-up-sla'
 import type { AppUser, Visitor } from '@/lib/types'
+import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -75,7 +76,7 @@ function FollowUpContent() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <PageContainer>
       <RlcPageHeader
         title="RLC Follow-up Board"
         subtitle="Assign members, track SLA, and move visitors toward membership."
@@ -157,7 +158,7 @@ function FollowUpContent() {
           )
         })}
       </div>
-    </div>
+    </PageContainer>
   )
 }
 
