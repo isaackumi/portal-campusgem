@@ -568,6 +568,7 @@ export default function MembersPage() {
                       userId={member.user_id}
                       displayName={member.user?.full_name || 'Member'}
                       membershipId={member.user?.membership_id}
+                      rlcRoles={member.rlc_roles}
                     />
                   </div>
                 ))}

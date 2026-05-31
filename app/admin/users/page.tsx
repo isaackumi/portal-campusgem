@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { promoteUserToCorporateGem } from '@/lib/actions/corporate-gem'
+import { AddToRlcDialog } from '@/components/rlc/add-to-rlc-dialog'
 import { useAllUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/hooks/use-data'
 import { useAuth } from '@/components/providers'
 import { AppUser } from '@/lib/types'
@@ -54,6 +55,9 @@ export default function UsersManagementPage() {
   const [editingUser, setEditingUser] = useState<AppUser | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [promotingUserId, setPromotingUserId] = useState<string | null>(null)
+  const [rlcUser, setRlcUser] = useState<AppUser | null>(null)
+  const [rlcMemberId, setRlcMemberId] = useState<string | undefined>()
+  const [rlcExistingRoles, setRlcExistingRoles] = useState<string[]>([])
   
   // Form state for creating/editing users
   const [formData, setFormData] = useState({
@@ -290,6 +294,13 @@ export default function UsersManagementPage() {
       return
     }
     router.push(`/admin/users/${user.id}`)
+  }
+
+  async function openAddToRlc(user: AppUser) {
+    const memberRes = await dataService.getMemberByUserId(user.id)
+    setRlcUser(user)
+    setRlcMemberId(memberRes.data?.id)
+    setRlcExistingRoles(memberRes.data?.rlc_roles ?? [])
   }
 
   async function handlePromoteToCorporateGem(user: AppUser) {
@@ -696,6 +707,14 @@ export default function UsersManagementPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="border-rose-200 text-rose-900 hover:bg-rose-50"
+                        onClick={() => void openAddToRlc(user)}
+                      >
+                        RLC
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="border-violet-200 text-violet-900 hover:bg-violet-50"
                         disabled={promotingUserId === user.id}
                         onClick={() => void handlePromoteToCorporateGem(user)}
@@ -839,6 +858,23 @@ export default function UsersManagementPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {rlcUser ? (
+          <AddToRlcDialog
+            open={Boolean(rlcUser)}
+            onOpenChange={(open) => {
+              if (!open) setRlcUser(null)
+            }}
+            contactName={rlcUser.full_name}
+            userId={rlcUser.id}
+            memberId={rlcMemberId}
+            existingRoles={rlcExistingRoles}
+            onSuccess={() => {
+              setRlcUser(null)
+              refetch()
+            }}
+          />
+        ) : null}
     </div>
   )
 }

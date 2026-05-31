@@ -15,6 +15,27 @@ export type RlcVisitorSource =
   | 'referral'
   | 'other'
 export type RlcMembershipType = 'full_member' | 'associate' | 'visitor_converted'
+export type RlcRole =
+  | 'visitor'
+  | 'member'
+  | 'associate'
+  | 'full_member'
+  | 'pastor'
+  | 'assistant_pastor'
+  | 'elder'
+  | 'deacon'
+  | 'music_director'
+  | 'choir_director'
+  | 'worship_leader'
+  | 'usher'
+  | 'media'
+  | 'protocol'
+  | 'youth_leader'
+  | 'children_ministry'
+  | 'evangelism'
+  | 'intercessor'
+  | 'finance'
+  | 'administration'
 export type AttendanceMethod = 'qr' | 'kiosk' | 'admin' | 'pin' | 'mobile'
 export type ServiceType = 'sunday_service' | 'midweek_service' | 'prayer_meeting' | 'youth_service' | 'children_service' | 'special_event'
 
@@ -68,6 +89,7 @@ export interface Member {
   visitor_converted_to_member?: boolean
   congregation?: Congregation
   rlc_membership_type?: RlcMembershipType
+  rlc_roles?: RlcRole[]
   source_visitor_id?: string
   created_at: string
   updated_at: string
@@ -1014,4 +1036,7 @@ export interface CampCamperDirectoryRow {
   registration_count: number
   user_id?: string
   user_role?: string
+  member_id?: string
+  rlc_roles?: string[]
+  rlc_congregation?: Congregation
 }

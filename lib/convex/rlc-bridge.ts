@@ -330,6 +330,7 @@ export async function linkCampusMemberToRlcInConvex(args: {
   memberId: string
   performedBy: string
   rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
+  rlcRoles?: string[]
 }): Promise<Member> {
   const client = getConvexHttpClient()
   const doc = (await client.mutation(api.rlc.linkCampusMemberToRlcWithSecret, {
@@ -337,10 +338,35 @@ export async function linkCampusMemberToRlcInConvex(args: {
     member_id: args.memberId,
     performed_by: args.performedBy,
     rlc_membership_type: args.rlcMembershipType,
+    rlc_roles: args.rlcRoles,
   })) as Record<string, unknown>
   const { convexMemberDocToMember } = await import('@/lib/convex/core-bridge')
   const member = convexMemberDocToMember(doc)
   if (!member) throw new Error('Failed to link member to RLC')
+  return member
+}
+
+export async function addPersonToRlcInConvex(args: {
+  performedBy: string
+  userId?: string
+  memberId?: string
+  campRegistrationId?: string
+  rlcRoles: string[]
+  rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
+}): Promise<Member> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.rlc.addPersonToRlcWithSecret, {
+    secret: requireCoreServerSecret(),
+    performed_by: args.performedBy,
+    user_id: args.userId,
+    member_id: args.memberId,
+    camp_registration_id: args.campRegistrationId,
+    rlc_roles: args.rlcRoles,
+    rlc_membership_type: args.rlcMembershipType,
+  })) as Record<string, unknown>
+  const { convexMemberDocToMember } = await import('@/lib/convex/core-bridge')
+  const member = convexMemberDocToMember(doc)
+  if (!member) throw new Error('Failed to add person to RLC')
   return member
 }
 

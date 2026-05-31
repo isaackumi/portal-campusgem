@@ -239,6 +239,34 @@ export async function searchRlcImportAction(query: string): Promise<ApiResponse<
   }
 }
 
+export async function addPersonToRlcAction(args: {
+  performedBy: string
+  userId?: string
+  memberId?: string
+  campRegistrationId?: string
+  rlcRoles: string[]
+  rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
+}): Promise<ApiResponse<Member>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  if (args.rlcRoles.length === 0) {
+    return { data: null, error: 'Select at least one RLC role', loading: false }
+  }
+  try {
+    const { addPersonToRlcInConvex } = await import('@/lib/convex/rlc-bridge')
+    const member = await addPersonToRlcInConvex(args)
+    const [enriched] = await enrichRlcMembers([member])
+    return { data: enriched, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to add to RLC',
+      loading: false,
+    }
+  }
+}
+
 export async function importToRlcAction(args: {
   type: 'campus_member' | 'camp_registration'
   memberId?: string
@@ -246,6 +274,7 @@ export async function importToRlcAction(args: {
   performedBy: string
   linkAsMember?: boolean
   rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
+  rlcRoles?: string[]
 }): Promise<ApiResponse<Visitor | Member>> {
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
@@ -259,6 +288,7 @@ export async function importToRlcAction(args: {
           memberId: args.memberId,
           performedBy: args.performedBy,
           rlcMembershipType: args.rlcMembershipType ?? 'full_member',
+          rlcRoles: args.rlcRoles,
         })
         const [enriched] = await enrichRlcMembers([member])
         return { data: enriched, error: null, loading: false }

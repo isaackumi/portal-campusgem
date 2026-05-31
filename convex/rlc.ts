@@ -84,6 +84,26 @@ function normalizeMembershipForLookup(raw: string): string {
   return raw.replace(/\W+/g, '').toUpperCase()
 }
 
+function mergeRlcRoles(existing: string[] | undefined, incoming: string[]): string[] {
+  return Array.from(new Set([...(existing ?? []), ...incoming]))
+}
+
+function resolveRlcCongregation(current?: 'rlc' | 'campus_gem' | 'both'): 'rlc' | 'campus_gem' | 'both' {
+  if (current === 'rlc' || current === 'both') return current
+  if (current === 'campus_gem') return 'both'
+  return 'rlc'
+}
+
+function inferRlcMembershipType(
+  roles: string[],
+  current?: 'full_member' | 'associate' | 'visitor_converted'
+): 'full_member' | 'associate' | 'visitor_converted' {
+  if (roles.includes('full_member')) return 'full_member'
+  if (roles.includes('associate')) return 'associate'
+  if (roles.includes('visitor')) return 'visitor_converted'
+  return current ?? 'full_member'
+}
+
 function generateRlcMembershipId(phone?: string, joinYear?: number): string {
   const year = joinYear ?? new Date().getFullYear()
   let digits: string
@@ -542,6 +562,7 @@ export const linkCampusMemberToRlcWithSecret = mutation({
     rlc_membership_type: v.optional(
       v.union(v.literal('full_member'), v.literal('associate'), v.literal('visitor_converted'))
     ),
+    rlc_roles: v.optional(v.array(v.string())),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -549,20 +570,167 @@ export const linkCampusMemberToRlcWithSecret = mutation({
     const member = await ctx.db.get('members', args.member_id as Id<'members'>)
     if (!member) throw new Error('Member not found.')
 
-    const congregation =
-      member.congregation === 'rlc' || member.congregation === 'both'
-        ? member.congregation
-        : member.congregation === 'campus_gem'
-          ? 'both'
-          : 'rlc'
+    const mergedRoles = mergeRlcRoles(member.rlc_roles, args.rlc_roles ?? ['member'])
+    const congregation = resolveRlcCongregation(member.congregation)
 
     await ctx.db.patch('members', args.member_id as Id<'members'>, {
       congregation,
-      rlc_membership_type: args.rlc_membership_type ?? 'full_member',
+      rlc_membership_type:
+        args.rlc_membership_type ?? inferRlcMembershipType(mergedRoles, member.rlc_membership_type),
+      rlc_roles: mergedRoles,
       updated_at: Date.now(),
     })
 
     return await ctx.db.get('members', args.member_id as Id<'members'>)
+  },
+})
+
+export const addPersonToRlcWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    performed_by: v.string(),
+    user_id: v.optional(v.string()),
+    member_id: v.optional(v.string()),
+    camp_registration_id: v.optional(v.string()),
+    rlc_roles: v.array(v.string()),
+    rlc_membership_type: v.optional(
+      v.union(v.literal('full_member'), v.literal('associate'), v.literal('visitor_converted'))
+    ),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    if (args.rlc_roles.length === 0) throw new Error('Select at least one RLC role.')
+
+    const now = Date.now()
+    let member = args.member_id
+      ? await ctx.db.get('members', args.member_id as Id<'members'>)
+      : null
+
+    if (!member && args.user_id) {
+      member = await ctx.db
+        .query('members')
+        .withIndex('by_user_id', (q) => q.eq('user_id', args.user_id!))
+        .first()
+    }
+
+    let user = args.user_id ? await ctx.db.get('users', args.user_id as Id<'users'>) : null
+
+    if (!member && !user && args.camp_registration_id) {
+      const reg = await ctx.db.get(
+        'camp_registrations',
+        args.camp_registration_id as Id<'camp_registrations'>
+      )
+      if (!reg) throw new Error('Camp registration not found.')
+      if (reg.phone) {
+        for (const candidate of phoneLookupVariants(reg.phone)) {
+          const byPhone = await ctx.db
+            .query('users')
+            .withIndex('by_phone', (q) => q.eq('phone', candidate))
+            .first()
+          if (byPhone) {
+            user = byPhone
+            break
+          }
+        }
+      }
+      if (!user) {
+        const phone = reg.phone ? normalizeGhanaPhone(reg.phone) : undefined
+        const userId = await ctx.db.insert('users', {
+          full_name: reg.full_name,
+          first_name: reg.first_name,
+          last_name: reg.last_name,
+          phone,
+          email: reg.email,
+          role: 'member',
+          membership_id: generateRlcMembershipId(phone),
+          auth_uid: `rlc-import-${Date.now()}`,
+          join_year: new Date().getFullYear(),
+          updated_at: now,
+        })
+        user = await ctx.db.get('users', userId)
+      }
+    }
+
+    if (!member && user) {
+      member = await ctx.db
+        .query('members')
+        .withIndex('by_user_id', (q) => q.eq('user_id', String(user!._id)))
+        .first()
+      if (!member) {
+        const memberId = await ctx.db.insert('members', {
+          user_id: String(user._id),
+          emergency_contacts: [],
+          documents: [],
+          status: 'active',
+          updated_at: now,
+        })
+        member = await ctx.db.get('members', memberId)
+      }
+    }
+
+    if (!member) throw new Error('Could not resolve a member profile for RLC.')
+
+    const mergedRoles = mergeRlcRoles(member.rlc_roles, args.rlc_roles)
+    const congregation = resolveRlcCongregation(member.congregation)
+
+    await ctx.db.patch('members', member._id, {
+      congregation,
+      rlc_roles: mergedRoles,
+      rlc_membership_type:
+        args.rlc_membership_type ?? inferRlcMembershipType(mergedRoles, member.rlc_membership_type),
+      updated_at: now,
+    })
+
+    member = await ctx.db.get('members', member._id)
+    if (!member) throw new Error('Member profile missing after RLC update.')
+
+    if (mergedRoles.includes('visitor')) {
+      const allVisitors = await ctx.db.query('visitors').collect()
+      const userIdStr = user ? String(user._id) : member.user_id
+      const hasActiveVisitor = allVisitors.some(
+        (v) =>
+          v.congregation === 'rlc' &&
+          v.is_active &&
+          !v.converted_to_member &&
+          (v.source_user_id === userIdStr ||
+            (user?.phone && v.phone && normalizeGhanaPhone(v.phone) === normalizeGhanaPhone(user.phone)))
+      )
+
+      if (!hasActiveVisitor && user) {
+        const visitorId = await ctx.db.insert('visitors', {
+          first_name: user.first_name ?? user.full_name.split(' ')[0] ?? user.full_name,
+          last_name: user.last_name ?? (user.full_name.split(' ').slice(1).join(' ') || undefined),
+          phone: user.phone,
+          email: user.email,
+          address: member.address,
+          visit_date: new Date().toISOString().split('T')[0],
+          service_attended: 'RLC Service',
+          source: args.camp_registration_id ? 'camp' : 'campus_gem',
+          source_user_id: String(user._id),
+          source_camp_registration_id: args.camp_registration_id,
+          follow_up_status: 'pending',
+          follow_up_completed: false,
+          pipeline_status: 'first_visit',
+          gender: member.gender,
+          date_of_birth: member.dob,
+          occupation: user.occupation,
+          marital_status: user.marital_status,
+          congregation: 'rlc',
+          converted_to_member: false,
+          is_active: true,
+          updated_at: now,
+        })
+        await logInteraction(ctx, {
+          visitor_id: String(visitorId),
+          performed_by: args.performed_by,
+          interaction_type: 'note',
+          notes: `Added to RLC with visitor role (${mergedRoles.join(', ')})`,
+        })
+      }
+    }
+
+    return member
   },
 })
 
@@ -700,7 +868,10 @@ export const listRlcMembersWithSecret = query({
     return members.filter(
       (m) =>
         m.status === 'active' &&
-        (m.congregation === 'rlc' || m.congregation === 'both' || m.source_visitor_id != null)
+        (m.congregation === 'rlc' ||
+          m.congregation === 'both' ||
+          m.source_visitor_id != null ||
+          (m.rlc_roles != null && m.rlc_roles.length > 0))
     )
   },
 })

@@ -26,7 +26,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
-import { canAccessPath } from '@/lib/auth/roles'
+import { canAccessPath, hasPermission, type Permission } from '@/lib/auth/roles'
 import type { UserRole } from '@/lib/types'
 
 export type SidebarNavItem = {
@@ -34,6 +34,7 @@ export type SidebarNavItem = {
   href: string
   icon: LucideIcon
   roles?: UserRole[]
+  permission?: Permission
   description?: string
 }
 
@@ -50,6 +51,53 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
       { name: 'Members', href: '/members', icon: Users },
       { name: 'Visitors', href: '/visitors', icon: UserPlus },
       { name: 'Groups', href: '/groups', icon: Group },
+    ],
+  },
+  {
+    title: 'REDEMPTION LIGHT CHAPEL',
+    items: [
+      {
+        name: 'RLC Dashboard',
+        href: '/admin/rlc',
+        icon: Church,
+        permission: 'rlc.view',
+      },
+      {
+        name: 'RLC Visitors',
+        href: '/admin/rlc/visitors',
+        icon: UserPlus,
+        permission: 'rlc.view',
+      },
+      {
+        name: 'RLC Members',
+        href: '/admin/rlc/members',
+        icon: Users,
+        permission: 'rlc.view',
+      },
+      {
+        name: 'Follow-up Board',
+        href: '/admin/rlc/follow-up',
+        icon: UserCheck,
+        permission: 'rlc.manage',
+      },
+      {
+        name: 'Import from Campus/Camp',
+        href: '/admin/rlc/import',
+        icon: Upload,
+        permission: 'rlc.manage',
+      },
+      {
+        name: 'RLC Analytics',
+        href: '/admin/rlc/analytics',
+        icon: BarChart3,
+        permission: 'rlc.view',
+      },
+      {
+        name: 'RLC Attendance',
+        href: '/admin/rlc/attendance',
+        icon: Calendar,
+        permission: 'rlc.view',
+      },
     ],
   },
   {
@@ -97,53 +145,6 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         href: '/communication/notifications',
         icon: Bell,
         roles: ['admin', 'pastor', 'elder', 'finance_officer'],
-      },
-    ],
-  },
-  {
-    title: 'REDEMPTION LIGHT CHAPEL',
-    items: [
-      {
-        name: 'RLC Dashboard',
-        href: '/admin/rlc',
-        icon: Church,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'RLC Visitors',
-        href: '/admin/rlc/visitors',
-        icon: UserPlus,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'RLC Members',
-        href: '/admin/rlc/members',
-        icon: Users,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'Follow-up Board',
-        href: '/admin/rlc/follow-up',
-        icon: UserCheck,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'Import from Campus/Camp',
-        href: '/admin/rlc/import',
-        icon: Upload,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'RLC Analytics',
-        href: '/admin/rlc/analytics',
-        icon: BarChart3,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'RLC Attendance',
-        href: '/admin/rlc/attendance',
-        icon: Calendar,
-        roles: ['admin', 'pastor', 'elder'],
       },
     ],
   },
@@ -230,6 +231,12 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
     title: 'ADMINISTRATION',
     items: [
       { name: 'Admin Overview', href: '/admin', icon: LayoutDashboard, roles: ['admin', 'pastor', 'elder', 'finance_officer'] },
+      {
+        name: 'Redemption Light Chapel',
+        href: '/admin/rlc',
+        icon: Church,
+        permission: 'rlc.view',
+      },
       { name: 'User Management', href: '/admin/users', icon: Users, roles: ['admin'] },
       { name: 'Admin Management', href: '/admin/admins', icon: Shield, roles: ['admin'] },
       { name: 'Group Management', href: '/admin/groups', icon: Group, roles: ['admin', 'pastor', 'elder'] },
@@ -258,6 +265,7 @@ export function navHrefPath(href: string): string {
 
 export function canSeeNavItem(role: UserRole | undefined, item: SidebarNavItem): boolean {
   if (!role) return true
+  if (item.permission && !hasPermission(role, item.permission)) return false
   if (item.roles && !item.roles.includes(role)) return false
   return canAccessPath(role, navHrefPath(item.href))
 }

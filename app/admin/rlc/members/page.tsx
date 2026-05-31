@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { loadRlcMembersAction } from '@/lib/actions/rlc'
-import { RLC_MEMBERSHIP_TYPE_LABELS } from '@/lib/constants/rlc'
+import { RLC_MEMBERSHIP_TYPE_LABELS, RLC_ROLE_LABELS } from '@/lib/constants/rlc'
 import { formatMembershipIdForDisplay } from '@/lib/membershipId'
 import type { Member } from '@/lib/types'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
@@ -72,6 +72,11 @@ export default function RlcMembersPage() {
                     <Badge variant="secondary">{RLC_MEMBERSHIP_TYPE_LABELS[m.rlc_membership_type]}</Badge>
                   ) : null}
                   {m.congregation === 'both' ? <Badge variant="outline">Campus Gem + RLC</Badge> : null}
+                  {(m.rlc_roles ?? []).map((role) => (
+                    <Badge key={role} variant="outline" className="border-rose-200 text-rose-800">
+                      {RLC_ROLE_LABELS[role as keyof typeof RLC_ROLE_LABELS] ?? role}
+                    </Badge>
+                  ))}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {m.user?.membership_id ? formatMembershipIdForDisplay(m.user.membership_id) : ''}

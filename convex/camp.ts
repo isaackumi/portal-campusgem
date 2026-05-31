@@ -1088,14 +1088,21 @@ export const listCamperDirectoryWithSecret = query({
       userByPhone.set(normalizeGhanaPhone(user.phone), user)
     }
 
+    const members = await ctx.db.query('members').collect()
+    const memberByUserId = new Map(members.map((m) => [m.user_id, m]))
+
     return Array.from(buckets.values())
       .map((bucket) => {
         const user = userByPhone.get(bucket.phone_key)
+        const member = user ? memberByUserId.get(String(user._id)) : undefined
         return {
           ...bucket,
           years: bucket.years.sort((a, b) => b.year - a.year),
           user_id: user ? String(user._id) : undefined,
           user_role: user?.role,
+          member_id: member ? String(member._id) : undefined,
+          rlc_roles: member?.rlc_roles,
+          rlc_congregation: member?.congregation,
         }
       })
       .sort((a, b) => a.full_name.localeCompare(b.full_name))

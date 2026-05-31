@@ -11,10 +11,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { AddToGroupDialog, type CampContactForGroup } from '@/components/groups/add-to-group-dialog'
+import { AddToRlcDialog, type CampContactForRlc } from '@/components/rlc/add-to-rlc-dialog'
 import { PromoteCorporateGemDialog, PromoteStaffRoleDialog } from '@/components/contacts/promote-contact-dialogs'
 import { useAuth } from '@/components/providers'
 import { hasPermission, isStaffRole } from '@/lib/auth/roles'
-import { Copy, ExternalLink, Gem, MoreHorizontal, Shield, UserPlus, Users } from 'lucide-react'
+import { Copy, ExternalLink, Gem, Church, MoreHorizontal, Shield, UserPlus, Users } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { UserRole } from '@/lib/types'
 
@@ -27,6 +28,9 @@ type Props = {
   latestRegistrationId?: string
   showFollowUp?: boolean
   showPromotions?: boolean
+  memberId?: string
+  rlcRoles?: string[]
+  showRlc?: boolean
   onPromoted?: () => void
 }
 
@@ -37,22 +41,28 @@ export function ContactRowActions({
   userId,
   userRole,
   latestRegistrationId,
+  memberId,
+  rlcRoles,
   showFollowUp = true,
   showPromotions = false,
+  showRlc = true,
   onPromoted,
 }: Props) {
   const router = useRouter()
   const { user: currentUser } = useAuth()
   const { toast } = useToast()
   const [addToGroupOpen, setAddToGroupOpen] = useState(false)
+  const [addToRlcOpen, setAddToRlcOpen] = useState(false)
   const [corporateGemOpen, setCorporateGemOpen] = useState(false)
   const [staffRoleOpen, setStaffRoleOpen] = useState(false)
 
   const actorRole = currentUser?.role as UserRole | undefined
   const canManageGroups = Boolean(actorRole && hasPermission(actorRole, 'groups.manage'))
   const canManageUsers = Boolean(actorRole && hasPermission(actorRole, 'users.manage'))
+  const canManageRlc = Boolean(actorRole && hasPermission(actorRole, 'rlc.manage'))
   const canPromoteCorporateGem = showPromotions && canManageGroups && Boolean(phone?.trim())
   const canPromoteStaff = showPromotions && canManageUsers && Boolean(phone?.trim())
+  const canAddToRlc = showRlc && canManageRlc && Boolean(phone?.trim() || userId)
   const hasStaffAccess = isStaffRole(userRole)
 
   function campContactInput() {
@@ -113,6 +123,12 @@ export function ContactRowActions({
               Add to group (needs phone)
             </DropdownMenuItem>
           )}
+          {canAddToRlc ? (
+            <DropdownMenuItem onClick={() => setAddToRlcOpen(true)}>
+              <Church className="mr-2 h-4 w-4 text-rose-700" />
+              Add to RLC…
+            </DropdownMenuItem>
+          ) : null}
           {canPromoteCorporateGem ? (
             <DropdownMenuItem onClick={() => setCorporateGemOpen(true)}>
               <Gem className="mr-2 h-4 w-4 text-violet-600" />
@@ -152,6 +168,26 @@ export function ContactRowActions({
             : undefined
         }
         contactName={contactName}
+        onSuccess={afterPromote}
+      />
+
+      <AddToRlcDialog
+        open={addToRlcOpen}
+        onOpenChange={setAddToRlcOpen}
+        contactName={contactName}
+        userId={userId}
+        memberId={memberId}
+        existingRoles={rlcRoles}
+        campContact={
+          phone
+            ? ({
+                full_name: contactName,
+                phone,
+                email,
+                registrationId: latestRegistrationId,
+              } satisfies CampContactForRlc)
+            : undefined
+        }
         onSuccess={afterPromote}
       />
 

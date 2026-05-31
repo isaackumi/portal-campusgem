@@ -53,6 +53,7 @@ export function convexMemberDocToMember(doc: Record<string, unknown> | null | un
       doc.visitor_converted_to_member != null ? Boolean(doc.visitor_converted_to_member) : undefined,
     congregation: doc.congregation as Member['congregation'],
     rlc_membership_type: doc.rlc_membership_type as Member['rlc_membership_type'],
+    rlc_roles: Array.isArray(doc.rlc_roles) ? (doc.rlc_roles as Member['rlc_roles']) : undefined,
     source_visitor_id: doc.source_visitor_id != null ? String(doc.source_visitor_id) : undefined,
     created_at: isoFromMs(ct) || new Date().toISOString(),
     updated_at: isoFromMs(ut) || isoFromMs(ct) || new Date().toISOString(),

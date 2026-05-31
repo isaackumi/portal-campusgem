@@ -114,6 +114,7 @@ export default defineSchema({
       v.union(v.literal('full_member'), v.literal('associate'), v.literal('visitor_converted'))
     ),
     source_visitor_id: v.optional(v.string()),
+    rlc_roles: v.optional(v.array(v.string())),
     updated_at: v.number(),
   })
     .index('by_user_id', ['user_id'])

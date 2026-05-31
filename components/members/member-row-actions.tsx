@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { AddToGroupDialog } from '@/components/groups/add-to-group-dialog'
-import { Copy, Edit, Eye, MoreHorizontal, UserPlus } from 'lucide-react'
+import { AddToRlcDialog } from '@/components/rlc/add-to-rlc-dialog'
+import { Copy, Edit, Eye, MoreHorizontal, UserPlus, Church } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 type Props = {
@@ -19,12 +20,14 @@ type Props = {
   userId?: string
   displayName: string
   membershipId?: string
+  rlcRoles?: string[]
 }
 
-export function MemberRowActions({ memberId, userId, displayName, membershipId }: Props) {
+export function MemberRowActions({ memberId, userId, displayName, membershipId, rlcRoles }: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [addToGroupOpen, setAddToGroupOpen] = useState(false)
+  const [addToRlcOpen, setAddToRlcOpen] = useState(false)
 
   function copyMembershipId() {
     if (!membershipId) return
@@ -52,6 +55,10 @@ export function MemberRowActions({ memberId, userId, displayName, membershipId }
           {userId ? (
             <>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setAddToRlcOpen(true)}>
+                <Church className="mr-2 h-4 w-4 text-rose-700" />
+                Add to RLC…
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setAddToGroupOpen(true)}>
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add to group
@@ -71,12 +78,23 @@ export function MemberRowActions({ memberId, userId, displayName, membershipId }
       </DropdownMenu>
 
       {userId ? (
-        <AddToGroupDialog
-          open={addToGroupOpen}
-          onOpenChange={setAddToGroupOpen}
-          userId={userId}
-          contactName={displayName}
-        />
+        <>
+          <AddToGroupDialog
+            open={addToGroupOpen}
+            onOpenChange={setAddToGroupOpen}
+            userId={userId}
+            contactName={displayName}
+          />
+          <AddToRlcDialog
+            open={addToRlcOpen}
+            onOpenChange={setAddToRlcOpen}
+            contactName={displayName}
+            userId={userId}
+            memberId={memberId}
+            existingRoles={rlcRoles}
+            onSuccess={() => router.refresh()}
+          />
+        </>
       ) : null}
     </>
   )

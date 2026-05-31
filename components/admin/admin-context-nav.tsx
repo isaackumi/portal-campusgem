@@ -7,6 +7,11 @@ import { cn } from '@/lib/utils'
 const adminLinks = [
   { href: '/admin', label: 'Overview', match: (path: string) => path === '/admin' },
   {
+    href: '/admin/rlc',
+    label: 'RLC',
+    match: (path: string) => path.startsWith('/admin/rlc'),
+  },
+  {
     href: '/admin/camp-meeting',
     label: 'Camp',
     match: (path: string) => path.startsWith('/admin/camp-meeting'),

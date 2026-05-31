@@ -5,6 +5,7 @@ import { Mail, Phone, Shield, UserRound } from 'lucide-react'
 
 import { ContactRowActions } from '@/components/contacts/contact-row-actions'
 import type { CampCamperDirectoryRow } from '@/lib/types'
+import { RLC_ROLE_LABELS } from '@/lib/constants/rlc'
 import { Badge } from '@/components/ui/badge'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 
@@ -76,6 +77,26 @@ export function createCamperDirectoryColumns(
       cell: ({ row }) => <span className="text-sm">{row.original.registration_count}</span>,
     },
     {
+      id: 'rlc',
+      accessorFn: (row) => row.rlc_roles?.join(', ') ?? '',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="RLC" />,
+      cell: ({ row }) =>
+        row.original.rlc_roles && row.original.rlc_roles.length > 0 ? (
+          <div className="flex max-w-[220px] flex-wrap gap-1">
+            {row.original.rlc_roles.slice(0, 3).map((role) => (
+              <Badge key={role} variant="outline" className="border-rose-200 text-rose-800">
+                {RLC_ROLE_LABELS[role as keyof typeof RLC_ROLE_LABELS] ?? role}
+              </Badge>
+            ))}
+            {row.original.rlc_roles.length > 3 ? (
+              <Badge variant="secondary">+{row.original.rlc_roles.length - 3}</Badge>
+            ) : null}
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        ),
+    },
+    {
       id: 'account',
       accessorFn: (row) => row.user_role ?? '',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Account" />,
@@ -106,6 +127,8 @@ export function createCamperDirectoryColumns(
             email={row.original.email}
             userId={row.original.user_id}
             userRole={row.original.user_role}
+            memberId={row.original.member_id}
+            rlcRoles={row.original.rlc_roles}
             latestRegistrationId={latest?.registration_id}
             showFollowUp={false}
             showPromotions

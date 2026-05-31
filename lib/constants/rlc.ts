@@ -78,3 +78,59 @@ export const RLC_SERVICES = [
   { value: 'children_service', label: "Children's Service" },
   { value: 'special_event', label: 'Special Event' },
 ] as const
+
+/** Ministry and membership roles at RLC — a person may hold several at once. */
+export const RLC_ROLES = [
+  'visitor',
+  'member',
+  'associate',
+  'full_member',
+  'pastor',
+  'assistant_pastor',
+  'elder',
+  'deacon',
+  'music_director',
+  'choir_director',
+  'worship_leader',
+  'usher',
+  'media',
+  'protocol',
+  'youth_leader',
+  'children_ministry',
+  'evangelism',
+  'intercessor',
+  'finance',
+  'administration',
+] as const satisfies readonly import('@/lib/types').RlcRole[]
+
+export const RLC_ROLE_LABELS: Record<(typeof RLC_ROLES)[number], string> = {
+  visitor: 'Visitor',
+  member: 'Member',
+  associate: 'Associate',
+  full_member: 'Full Member',
+  pastor: 'Pastor',
+  assistant_pastor: 'Assistant Pastor',
+  elder: 'Elder',
+  deacon: 'Deacon',
+  music_director: 'Music Director',
+  choir_director: 'Choir Director',
+  worship_leader: 'Worship Leader',
+  usher: 'Usher',
+  media: 'Media / Tech',
+  protocol: 'Protocol',
+  youth_leader: 'Youth Leader',
+  children_ministry: "Children's Ministry",
+  evangelism: 'Evangelism',
+  intercessor: 'Intercessor',
+  finance: 'Finance',
+  administration: 'Administration',
+}
+
+export function mergeRlcRoles(existing: string[] | undefined, incoming: string[]): string[] {
+  return Array.from(new Set([...(existing ?? []), ...incoming]))
+}
+
+export function formatRlcRoles(roles: string[] | undefined): string {
+  if (!roles?.length) return ''
+  return roles.map((r) => RLC_ROLE_LABELS[r as keyof typeof RLC_ROLE_LABELS] ?? r).join(', ')
+}
