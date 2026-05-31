@@ -244,6 +244,27 @@ export async function convertRlcVisitorInConvex(
   return { visitor, member }
 }
 
+export function convexImportSearchDocToResult(
+  doc: Record<string, unknown> | null | undefined
+): RlcImportSearchResult | null {
+  if (!doc || typeof doc !== 'object') return null
+  const type = doc.type
+  if (type !== 'campus_member' && type !== 'camp_registration') return null
+  return {
+    type,
+    user_id: doc.user_id != null ? String(doc.user_id) : undefined,
+    member_id: doc.member_id != null ? String(doc.member_id) : undefined,
+    camp_registration_id:
+      doc.camp_registration_id != null ? String(doc.camp_registration_id) : undefined,
+    full_name: String(doc.full_name ?? ''),
+    phone: doc.phone != null ? String(doc.phone) : undefined,
+    email: doc.email != null ? String(doc.email) : undefined,
+    membership_id: doc.membership_id != null ? String(doc.membership_id) : undefined,
+    congregation: doc.congregation as RlcImportSearchResult['congregation'],
+    camp_year_id: doc.camp_year_id != null ? String(doc.camp_year_id) : undefined,
+  }
+}
+
 export async function getRlcStatsFromConvex(): Promise<RlcStats> {
   const client = getConvexHttpClient()
   return (await client.query(api.rlc.getRlcStatsWithSecret, {
@@ -253,11 +274,14 @@ export async function getRlcStatsFromConvex(): Promise<RlcStats> {
 
 export async function searchRlcImportFromConvex(query: string): Promise<RlcImportSearchResult[]> {
   const client = getConvexHttpClient()
-  return (await client.query(api.rlc.searchPeopleForRlcImportWithSecret, {
+  const docs = (await client.query(api.rlc.searchPeopleForRlcImportWithSecret, {
     secret: requireCoreServerSecret(),
     query,
     limit: 25,
-  })) as RlcImportSearchResult[]
+  })) as Record<string, unknown>[]
+  return docs
+    .map((d) => convexImportSearchDocToResult(d))
+    .filter((r): r is RlcImportSearchResult => r != null)
 }
 
 export async function importCampRegistrationToRlcInConvex(args: {
