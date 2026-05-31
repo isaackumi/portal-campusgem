@@ -1,10 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { Briefcase, Building2, Calendar, ClipboardList, Group, Shield, Users } from 'lucide-react'
+import { Briefcase, Building2, Calendar, Church, ClipboardList, Group, Shield, Users } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const adminSections = [
+  {
+    href: '/admin/rlc',
+    title: 'Redemption Light Chapel',
+    description: 'Mother church — visitors, members, follow-up, attendance, and analytics.',
+    icon: Church,
+  },
   {
     href: '/admin/camp-meeting',
     title: 'Camp Meeting',

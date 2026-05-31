@@ -36,6 +36,8 @@ export type Permission =
   | 'camp.payments'
   | 'camp.settings'
   | 'forms.manage'
+  | 'rlc.view'
+  | 'rlc.manage'
   | 'users.manage'
   | 'admins.manage'
   | 'financial.view'
@@ -60,6 +62,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'camp.payments',
     'camp.settings',
     'forms.manage',
+    'rlc.view',
+    'rlc.manage',
     'users.manage',
     'admins.manage',
     'financial.view',
@@ -82,6 +86,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'camp.manage',
     'camp.payments',
     'forms.manage',
+    'rlc.view',
+    'rlc.manage',
     'financial.view',
   ],
   elder: [
@@ -99,6 +105,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'camp.view',
     'camp.manage',
     'forms.manage',
+    'rlc.view',
+    'rlc.manage',
     'financial.view',
   ],
   finance_officer: [
@@ -121,6 +129,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 }
 
 const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
+  { prefix: '/admin/rlc/follow-up', permission: 'rlc.manage' },
+  { prefix: '/admin/rlc', permission: 'rlc.view' },
   { prefix: '/admin/admins', permission: 'admins.manage' },
   { prefix: '/admin/users', permission: 'users.manage' },
   { prefix: '/admin/groups', permission: 'groups.manage' },
@@ -178,6 +188,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'camp.payments': 'Manage camp payments',
   'camp.settings': 'Camp settings',
   'forms.manage': 'Manage forms',
+  'rlc.view': 'View RLC (mother church)',
+  'rlc.manage': 'Manage RLC visitors & members',
   'users.manage': 'Manage users',
   'admins.manage': 'Manage administrators',
   'financial.view': 'View financials',

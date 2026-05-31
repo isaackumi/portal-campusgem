@@ -4,6 +4,17 @@
 
 export type UserRole = 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
 export type MemberStatus = 'active' | 'visitor' | 'transferred' | 'inactive'
+export type Congregation = 'rlc' | 'campus_gem' | 'both'
+export type RlcPipelineStatus = 'first_visit' | 'follow_up' | 'new_member' | 'full_member' | 'inactive'
+export type VisitorFollowUpStatus = 'pending' | 'in_progress' | 'completed'
+export type RlcVisitorSource =
+  | 'walk_in'
+  | 'camp'
+  | 'campus_gem'
+  | 'corporate_gem'
+  | 'referral'
+  | 'other'
+export type RlcMembershipType = 'full_member' | 'associate' | 'visitor_converted'
 export type AttendanceMethod = 'qr' | 'kiosk' | 'admin' | 'pin' | 'mobile'
 export type ServiceType = 'sunday_service' | 'midweek_service' | 'prayer_meeting' | 'youth_service' | 'children_service' | 'special_event'
 
@@ -55,6 +66,9 @@ export interface Member {
   is_visitor?: boolean
   visitor_since?: string
   visitor_converted_to_member?: boolean
+  congregation?: Congregation
+  rlc_membership_type?: RlcMembershipType
+  source_visitor_id?: string
   created_at: string
   updated_at: string
   // Joined data
@@ -153,23 +167,81 @@ export interface Visitor {
   service_attended?: string
   how_heard_about_church?: string
   invited_by_member_id?: string
+  invited_by_member_ids?: string[]
+  assigned_follow_up_member_id?: string
   follow_up_notes?: string
   follow_up_date?: string
+  follow_up_status?: VisitorFollowUpStatus
   follow_up_completed: boolean
+  pipeline_status?: RlcPipelineStatus
+  source?: RlcVisitorSource
+  source_user_id?: string
+  source_camp_registration_id?: string
+  gender?: 'male' | 'female' | 'other'
+  date_of_birth?: string
+  occupation?: string
+  marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
+  congregation?: Congregation
   converted_to_member: boolean
   converted_member_id?: string
+  converted_at?: string
   is_active: boolean
   created_at: string
   updated_at: string
   // Joined data
   invited_by?: Member
+  invited_by_members?: Member[]
+  assigned_follow_up?: Member
   converted_member?: Member
+}
+
+export interface RlcInteraction {
+  id: string
+  visitor_id: string
+  performed_by: string
+  interaction_type: 'call' | 'visit' | 'note' | 'status_change' | 'sms' | 'email' | 'conversion'
+  notes?: string
+  metadata?: Record<string, unknown>
+  created_at: string
+  updated_at: string
+  performer?: AppUser
+}
+
+export interface RlcStats {
+  total_visitors: number
+  active_visitors: number
+  converted_visitors: number
+  conversion_rate: number
+  pending_follow_up: number
+  in_progress_follow_up: number
+  rlc_members: number
+  full_members: number
+  new_members: number
+  today_attendance: number
+  week_attendance: number
+  pipeline_counts: Record<RlcPipelineStatus, number>
+  source_counts: Record<string, number>
+}
+
+export interface RlcImportSearchResult {
+  type: 'campus_member' | 'camp_registration'
+  user_id?: string
+  member_id?: string
+  camp_registration_id?: string
+  full_name: string
+  phone?: string
+  email?: string
+  membership_id?: string
+  congregation?: Congregation
+  camp_year_id?: string
 }
 
 export interface Attendance {
   id: string
   member_id?: string
   dependant_id?: string
+  visitor_id?: string
+  congregation?: Congregation
   service_date: string
   service_type?: ServiceType
   check_in_time: string
@@ -493,8 +565,45 @@ export interface CreateVisitorForm {
   service_attended?: string
   how_heard_about_church?: string
   invited_by_member_id?: string
+  invited_by_member_ids?: string[]
+  assigned_follow_up_member_id?: string
   follow_up_notes?: string
   follow_up_date?: string
+  follow_up_status?: VisitorFollowUpStatus
+  pipeline_status?: RlcPipelineStatus
+  source?: RlcVisitorSource
+  gender?: 'male' | 'female' | 'other'
+  date_of_birth?: string
+  occupation?: string
+  marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
+  congregation?: Congregation
+}
+
+export interface ConvertRlcVisitorForm {
+  membership_id?: string
+  full_name?: string
+  phone?: string
+  email?: string
+  dob?: string
+  gender?: 'male' | 'female' | 'other'
+  address?: string
+  occupation?: string
+  place_of_work?: string
+  marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
+  spouse_name?: string
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+  emergency_contact_relation?: string
+  date_of_baptism?: string
+  holy_ghost_baptism?: boolean
+  date_of_holy_ghost_baptism?: string
+  previous_church?: string
+  reason_for_leaving?: string
+  special_skills?: string[]
+  interests?: string[]
+  notes?: string
+  rlc_membership_type?: RlcMembershipType
+  link_existing_user_id?: string
 }
 
 export interface CreateDependantForm {

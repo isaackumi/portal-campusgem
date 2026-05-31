@@ -38,6 +38,22 @@ export function convexMemberDocToMember(doc: Record<string, unknown> | null | un
     documents: Array.isArray(doc.documents) ? (doc.documents as Member['documents']) : [],
     status: (doc.status as Member['status']) ?? 'active',
     notes: doc.notes != null ? String(doc.notes) : undefined,
+    date_of_baptism: doc.date_of_baptism != null ? String(doc.date_of_baptism) : undefined,
+    holy_ghost_baptism: doc.holy_ghost_baptism != null ? Boolean(doc.holy_ghost_baptism) : undefined,
+    date_of_holy_ghost_baptism:
+      doc.date_of_holy_ghost_baptism != null ? String(doc.date_of_holy_ghost_baptism) : undefined,
+    previous_church: doc.previous_church != null ? String(doc.previous_church) : undefined,
+    reason_for_leaving: doc.reason_for_leaving != null ? String(doc.reason_for_leaving) : undefined,
+    special_skills: Array.isArray(doc.special_skills) ? (doc.special_skills as string[]) : undefined,
+    interests: Array.isArray(doc.interests) ? (doc.interests as string[]) : undefined,
+    profile_photo_url: doc.profile_photo_url != null ? String(doc.profile_photo_url) : undefined,
+    is_visitor: doc.is_visitor != null ? Boolean(doc.is_visitor) : undefined,
+    visitor_since: doc.visitor_since != null ? String(doc.visitor_since) : undefined,
+    visitor_converted_to_member:
+      doc.visitor_converted_to_member != null ? Boolean(doc.visitor_converted_to_member) : undefined,
+    congregation: doc.congregation as Member['congregation'],
+    rlc_membership_type: doc.rlc_membership_type as Member['rlc_membership_type'],
+    source_visitor_id: doc.source_visitor_id != null ? String(doc.source_visitor_id) : undefined,
     created_at: isoFromMs(ct) || new Date().toISOString(),
     updated_at: isoFromMs(ut) || isoFromMs(ct) || new Date().toISOString(),
   }
@@ -96,6 +112,8 @@ export function convexAttendanceDocToAttendance(
     id,
     member_id: doc.member_id != null ? String(doc.member_id) : undefined,
     dependant_id: doc.dependant_id != null ? String(doc.dependant_id) : undefined,
+    visitor_id: doc.visitor_id != null ? String(doc.visitor_id) : undefined,
+    congregation: doc.congregation as Attendance['congregation'],
     service_date: String(doc.service_date ?? ''),
     service_type: doc.service_type as Attendance['service_type'],
     check_in_time: String(doc.check_in_time ?? ''),
@@ -358,11 +376,30 @@ export function convexVisitorDocToVisitor(doc: Record<string, unknown> | null | 
     service_attended: doc.service_attended != null ? String(doc.service_attended) : undefined,
     how_heard_about_church: doc.how_heard_about_church != null ? String(doc.how_heard_about_church) : undefined,
     invited_by_member_id: doc.invited_by_member_id != null ? String(doc.invited_by_member_id) : undefined,
+    invited_by_member_ids: Array.isArray(doc.invited_by_member_ids)
+      ? (doc.invited_by_member_ids as string[])
+      : doc.invited_by_member_id
+        ? [String(doc.invited_by_member_id)]
+        : undefined,
+    assigned_follow_up_member_id:
+      doc.assigned_follow_up_member_id != null ? String(doc.assigned_follow_up_member_id) : undefined,
     follow_up_notes: doc.follow_up_notes != null ? String(doc.follow_up_notes) : undefined,
     follow_up_date: doc.follow_up_date != null ? String(doc.follow_up_date) : undefined,
+    follow_up_status: doc.follow_up_status as Visitor['follow_up_status'],
     follow_up_completed: Boolean(doc.follow_up_completed),
+    pipeline_status: doc.pipeline_status as Visitor['pipeline_status'],
+    source: doc.source as Visitor['source'],
+    source_user_id: doc.source_user_id != null ? String(doc.source_user_id) : undefined,
+    source_camp_registration_id:
+      doc.source_camp_registration_id != null ? String(doc.source_camp_registration_id) : undefined,
+    gender: doc.gender as Visitor['gender'],
+    date_of_birth: doc.date_of_birth != null ? String(doc.date_of_birth) : undefined,
+    occupation: doc.occupation != null ? String(doc.occupation) : undefined,
+    marital_status: doc.marital_status as Visitor['marital_status'],
+    congregation: doc.congregation as Visitor['congregation'],
     converted_to_member: Boolean(doc.converted_to_member),
     converted_member_id: doc.converted_member_id != null ? String(doc.converted_member_id) : undefined,
+    converted_at: doc.converted_at != null ? String(doc.converted_at) : undefined,
     is_active: Boolean(doc.is_active ?? true),
     created_at: created,
     updated_at: isoFromMs(ut) || created,
@@ -433,6 +470,9 @@ export async function listVisitorsFromConvex(): Promise<Visitor[]> {
 
 export async function createVisitorInConvex(visitor: Partial<Visitor>): Promise<Visitor> {
   const client = getConvexHttpClient()
+  const sponsorIds =
+    visitor.invited_by_member_ids ??
+    (visitor.invited_by_member_id ? [visitor.invited_by_member_id] : undefined)
   const doc = (await client.mutation(api.core.createVisitorWithSecret, {
     secret: requireCoreServerSecret(),
     first_name: visitor.first_name ?? 'Visitor',
@@ -441,9 +481,28 @@ export async function createVisitorInConvex(visitor: Partial<Visitor>): Promise<
     email: visitor.email,
     address: visitor.address,
     visit_date: visitor.visit_date ?? new Date().toISOString().split('T')[0],
+    service_attended: visitor.service_attended,
+    how_heard_about_church: visitor.how_heard_about_church,
+    invited_by_member_id: visitor.invited_by_member_id,
+    invited_by_member_ids: sponsorIds,
+    assigned_follow_up_member_id: visitor.assigned_follow_up_member_id,
+    follow_up_notes: visitor.follow_up_notes,
+    follow_up_date: visitor.follow_up_date,
+    follow_up_status: visitor.follow_up_status,
     follow_up_completed: visitor.follow_up_completed ?? false,
     converted_to_member: visitor.converted_to_member ?? false,
     is_active: visitor.is_active ?? true,
+    congregation:
+      visitor.congregation === 'both' || visitor.congregation === 'rlc'
+        ? 'rlc'
+        : visitor.congregation === 'campus_gem'
+          ? 'campus_gem'
+          : undefined,
+    pipeline_status: visitor.pipeline_status,
+    source: visitor.source,
+    gender: visitor.gender,
+    date_of_birth: visitor.date_of_birth,
+    occupation: visitor.occupation,
   })) as Record<string, unknown>
   const v = convexVisitorDocToVisitor(doc)
   if (!v) throw new Error('Failed to create visitor')

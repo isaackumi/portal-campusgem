@@ -20,6 +20,7 @@ import type * as lib_campRegistrationInsert from "../lib/campRegistrationInsert.
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_serverSecret from "../lib/serverSecret.js";
 import type * as members from "../members.js";
+import type * as rlc from "../rlc.js";
 import type * as users from "../users.js";
 import type * as visitors from "../visitors.js";
 
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   "lib/phone": typeof lib_phone;
   "lib/serverSecret": typeof lib_serverSecret;
   members: typeof members;
+  rlc: typeof rlc;
   users: typeof users;
   visitors: typeof visitors;
 }>;

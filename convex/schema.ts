@@ -107,12 +107,23 @@ export default defineSchema({
     is_visitor: v.optional(v.boolean()),
     visitor_since: v.optional(v.string()),
     visitor_converted_to_member: v.optional(v.boolean()),
+    congregation: v.optional(
+      v.union(v.literal('rlc'), v.literal('campus_gem'), v.literal('both'))
+    ),
+    rlc_membership_type: v.optional(
+      v.union(v.literal('full_member'), v.literal('associate'), v.literal('visitor_converted'))
+    ),
+    source_visitor_id: v.optional(v.string()),
     updated_at: v.number(),
-  }).index('by_user_id', ['user_id']),
+  })
+    .index('by_user_id', ['user_id'])
+    .index('by_congregation', ['congregation']),
 
   attendance: defineTable({
     member_id: v.optional(v.string()),
     dependant_id: v.optional(v.string()),
+    visitor_id: v.optional(v.string()),
+    congregation: v.optional(v.union(v.literal('rlc'), v.literal('campus_gem'))),
     service_date: v.string(),
     service_type: v.optional(serviceType),
     check_in_time: v.string(),
@@ -132,7 +143,9 @@ export default defineSchema({
     .index('by_member_id', ['member_id'])
     .index('by_service_date', ['service_date'])
     .index('by_member_and_date', ['member_id', 'service_date'])
-    .index('by_client_uuid', ['client_uuid']),
+    .index('by_client_uuid', ['client_uuid'])
+    .index('by_congregation_and_date', ['congregation', 'service_date'])
+    .index('by_visitor_id', ['visitor_id']),
 
   groups: defineTable({
     name: v.string(),
@@ -185,16 +198,76 @@ export default defineSchema({
     service_attended: v.optional(v.string()),
     how_heard_about_church: v.optional(v.string()),
     invited_by_member_id: v.optional(v.string()),
+    invited_by_member_ids: v.optional(v.array(v.string())),
+    assigned_follow_up_member_id: v.optional(v.string()),
     follow_up_notes: v.optional(v.string()),
     follow_up_date: v.optional(v.string()),
+    follow_up_status: v.optional(
+      v.union(v.literal('pending'), v.literal('in_progress'), v.literal('completed'))
+    ),
     follow_up_completed: v.boolean(),
+    pipeline_status: v.optional(
+      v.union(
+        v.literal('first_visit'),
+        v.literal('follow_up'),
+        v.literal('new_member'),
+        v.literal('full_member'),
+        v.literal('inactive')
+      )
+    ),
+    source: v.optional(
+      v.union(
+        v.literal('walk_in'),
+        v.literal('camp'),
+        v.literal('campus_gem'),
+        v.literal('corporate_gem'),
+        v.literal('referral'),
+        v.literal('other')
+      )
+    ),
+    source_user_id: v.optional(v.string()),
+    source_camp_registration_id: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'), v.literal('other'))),
+    date_of_birth: v.optional(v.string()),
+    occupation: v.optional(v.string()),
+    marital_status: v.optional(
+      v.union(
+        v.literal('single'),
+        v.literal('married'),
+        v.literal('divorced'),
+        v.literal('widowed'),
+        v.literal('separated')
+      )
+    ),
+    congregation: v.optional(v.union(v.literal('rlc'), v.literal('campus_gem'))),
     converted_to_member: v.boolean(),
     converted_member_id: v.optional(v.string()),
+    converted_at: v.optional(v.string()),
     is_active: v.boolean(),
     updated_at: v.number(),
   })
     .index('by_visit_date', ['visit_date'])
-    .index('by_active', ['is_active']),
+    .index('by_active', ['is_active'])
+    .index('by_congregation', ['congregation'])
+    .index('by_pipeline_status', ['pipeline_status'])
+    .index('by_assigned_follow_up', ['assigned_follow_up_member_id']),
+
+  rlc_interactions: defineTable({
+    visitor_id: v.string(),
+    performed_by: v.string(),
+    interaction_type: v.union(
+      v.literal('call'),
+      v.literal('visit'),
+      v.literal('note'),
+      v.literal('status_change'),
+      v.literal('sms'),
+      v.literal('email'),
+      v.literal('conversion')
+    ),
+    notes: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    updated_at: v.number(),
+  }).index('by_visitor_id', ['visitor_id']),
 
   camp_years: defineTable({
     year: v.number(),

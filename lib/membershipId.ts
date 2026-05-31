@@ -20,9 +20,7 @@ export function normalizeMembershipId(raw: string): string {
  */
 export function isValidMembershipId(id: string): boolean {
   const normalized = normalizeMembershipId(id)
-  // Should be CG followed by 4 digits and 4 year digits
-  const regex = /^CG\d{8}$/
-  return regex.test(normalized)
+  return /^(CG|RLC)\d{8}$/.test(normalized)
 }
 
 /**
@@ -37,10 +35,10 @@ export function formatMembershipIdForDisplay(id: string): string {
     return id // Return original if invalid
   }
   
-  // Extract parts: CG + 4 digits + 4 year digits
-  const prefix = normalized.substring(0, 2) // CG
-  const digits = normalized.substring(2, 6) // XXXX
-  const year = normalized.substring(6, 10) // YYYY
+  const prefix = normalized.substring(0, normalized.startsWith('RLC') ? 3 : 2)
+  const digitStart = prefix.length
+  const digits = normalized.substring(digitStart, digitStart + 4)
+  const year = normalized.substring(digitStart + 4, digitStart + 8)
   
   return `${prefix}-${digits}-${year}`
 }
@@ -67,19 +65,21 @@ export function extractYearFromMembershipId(id: string): number | null {
  * @param joinYear - Year joined (defaults to current year)
  * @returns New membership ID
  */
-export function generateMembershipId(phone?: string, joinYear?: number): string {
+export function generateMembershipId(phone?: string, joinYear?: number, prefix: 'CG' | 'RLC' = 'CG'): string {
   const year = joinYear || new Date().getFullYear()
   
   let digits: string
   if (phone && phone.length >= 4) {
-    // Extract last 4 digits from phone
     digits = phone.replace(/\D/g, '').slice(-4)
   } else {
-    // Generate random 4 digits
     digits = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
   }
   
-  return `CG-${digits}-${year}`
+  return `${prefix}-${digits}-${year}`
+}
+
+export function generateRlcMembershipId(phone?: string, joinYear?: number): string {
+  return generateMembershipId(phone, joinYear, 'RLC')
 }
 
 /**
@@ -98,11 +98,16 @@ export function parseMembershipId(id: string): {
   if (!isValidMembershipId(normalized)) {
     return null
   }
+
+  const prefix = normalized.startsWith('RLC') ? 'RLC' : 'CG'
+  const digitStart = prefix.length
+  const digits = normalized.substring(digitStart, digitStart + 4)
+  const year = normalized.substring(digitStart + 4, digitStart + 8)
   
   return {
-    prefix: normalized.substring(0, 2),
-    digits: normalized.substring(2, 6),
-    year: normalized.substring(6, 10),
+    prefix,
+    digits,
+    year,
     full: normalized
   }
 }

@@ -7,6 +7,7 @@ import {
   Cake,
   Calendar,
   CheckSquare,
+  Church,
   ClipboardList,
   Clock,
   CreditCard,
@@ -96,6 +97,53 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         href: '/communication/notifications',
         icon: Bell,
         roles: ['admin', 'pastor', 'elder', 'finance_officer'],
+      },
+    ],
+  },
+  {
+    title: 'REDEMPTION LIGHT CHAPEL',
+    items: [
+      {
+        name: 'RLC Dashboard',
+        href: '/admin/rlc',
+        icon: Church,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'RLC Visitors',
+        href: '/admin/rlc/visitors',
+        icon: UserPlus,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'RLC Members',
+        href: '/admin/rlc/members',
+        icon: Users,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'Follow-up Board',
+        href: '/admin/rlc/follow-up',
+        icon: UserCheck,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'Import from Campus/Camp',
+        href: '/admin/rlc/import',
+        icon: Upload,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'RLC Analytics',
+        href: '/admin/rlc/analytics',
+        icon: BarChart3,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'RLC Attendance',
+        href: '/admin/rlc/attendance',
+        icon: Calendar,
+        roles: ['admin', 'pastor', 'elder'],
       },
     ],
   },
@@ -239,6 +287,13 @@ export function isSidebarItemActive(
   }
 
   if (base === '/admin/camp-meeting/follow-up') {
+    if (pathname !== base) return false
+    const wantsMine = expected?.get('mine') === '1'
+    const isMine = searchParams?.get('mine') === '1'
+    return wantsMine ? isMine : !isMine
+  }
+
+  if (base === '/admin/rlc/follow-up') {
     if (pathname !== base) return false
     const wantsMine = expected?.get('mine') === '1'
     const isMine = searchParams?.get('mine') === '1'

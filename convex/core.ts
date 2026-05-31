@@ -624,14 +624,48 @@ export const createVisitorWithSecret = mutation({
     email: v.optional(v.string()),
     address: v.optional(v.string()),
     visit_date: v.string(),
+    service_attended: v.optional(v.string()),
+    how_heard_about_church: v.optional(v.string()),
+    invited_by_member_id: v.optional(v.string()),
+    invited_by_member_ids: v.optional(v.array(v.string())),
+    assigned_follow_up_member_id: v.optional(v.string()),
+    follow_up_notes: v.optional(v.string()),
+    follow_up_date: v.optional(v.string()),
+    follow_up_status: v.optional(
+      v.union(v.literal('pending'), v.literal('in_progress'), v.literal('completed'))
+    ),
     follow_up_completed: v.boolean(),
     converted_to_member: v.boolean(),
     is_active: v.boolean(),
+    congregation: v.optional(v.union(v.literal('rlc'), v.literal('campus_gem'))),
+    pipeline_status: v.optional(
+      v.union(
+        v.literal('first_visit'),
+        v.literal('follow_up'),
+        v.literal('new_member'),
+        v.literal('full_member'),
+        v.literal('inactive')
+      )
+    ),
+    source: v.optional(
+      v.union(
+        v.literal('walk_in'),
+        v.literal('camp'),
+        v.literal('campus_gem'),
+        v.literal('corporate_gem'),
+        v.literal('referral'),
+        v.literal('other')
+      )
+    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'), v.literal('other'))),
+    date_of_birth: v.optional(v.string()),
+    occupation: v.optional(v.string()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
     assertServerSecret(args.secret)
     const now = Date.now()
+    const sponsorIds = args.invited_by_member_ids ?? (args.invited_by_member_id ? [args.invited_by_member_id] : [])
     const id = await ctx.db.insert('visitors', {
       first_name: args.first_name,
       last_name: args.last_name,
@@ -639,7 +673,21 @@ export const createVisitorWithSecret = mutation({
       email: args.email,
       address: args.address,
       visit_date: args.visit_date,
+      service_attended: args.service_attended,
+      how_heard_about_church: args.how_heard_about_church,
+      invited_by_member_id: sponsorIds[0] ?? args.invited_by_member_id,
+      invited_by_member_ids: sponsorIds.length ? sponsorIds : undefined,
+      assigned_follow_up_member_id: args.assigned_follow_up_member_id,
+      follow_up_notes: args.follow_up_notes,
+      follow_up_date: args.follow_up_date,
+      follow_up_status: args.follow_up_status ?? (args.follow_up_completed ? 'completed' : 'pending'),
       follow_up_completed: args.follow_up_completed,
+      pipeline_status: args.pipeline_status ?? 'first_visit',
+      source: args.source,
+      gender: args.gender,
+      date_of_birth: args.date_of_birth,
+      occupation: args.occupation,
+      congregation: args.congregation,
       converted_to_member: args.converted_to_member,
       is_active: args.is_active,
       updated_at: now,
