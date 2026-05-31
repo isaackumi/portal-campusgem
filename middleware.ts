@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { canAccessPath, isUserRole } from '@/lib/auth/roles'
 import { CHMS_AUTH_SESSION_COOKIE } from '@/lib/auth/session-cookie'
 
-const publicRoutes = ['/', '/auth', '/camp-meeting/register', '/camp-meeting/success', '/f']
+const publicRoutes = ['/', '/auth', '/camp-meeting/register', '/camp-meeting/success', '/f', '/rlc/visit']
 
 const protectedPrefixes = [
   '/dashboard',

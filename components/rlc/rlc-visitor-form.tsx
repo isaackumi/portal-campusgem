@@ -8,22 +8,25 @@ import {
   RLC_VISITOR_SOURCES,
 } from '@/lib/constants/rlc'
 import type { CreateVisitorForm } from '@/lib/types'
-import { MemberMultiSelect, MemberSingleSelect } from '@/components/rlc/member-select'
-
-const EMPTY_MEMBER_IDS: string[] = []
+import { MemberSingleSelect } from '@/components/rlc/member-select'
+import { RlcSponsorMultiSelect } from '@/components/rlc/rlc-sponsor-multi-select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
+const EMPTY_MEMBER_IDS: string[] = []
+
 type Props = {
   form: CreateVisitorForm
   onChange: (form: CreateVisitorForm) => void
   showPipelineFields?: boolean
+  /** Public kiosk omits staff-only follow-up assignment fields. */
+  publicMode?: boolean
 }
 
-export function RlcVisitorForm({ form, onChange, showPipelineFields }: Props) {
+export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode }: Props) {
   return (
     <div className="space-y-6">
       <Card>
@@ -199,26 +202,42 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Sponsors & follow-up</CardTitle>
+          <CardTitle>{publicMode ? 'Who invited you?' : 'Sponsors & follow-up'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <MemberMultiSelect
+          <RlcSponsorMultiSelect
+            label={publicMode ? 'Member or friend who brought you' : 'Members who brought visitor'}
             value={form.invited_by_member_ids ?? EMPTY_MEMBER_IDS}
             onChange={(ids) => onChange({ ...form, invited_by_member_ids: ids })}
           />
-          <MemberSingleSelect
-            value={form.assigned_follow_up_member_id}
-            onChange={(id) => onChange({ ...form, assigned_follow_up_member_id: id })}
-          />
-          <div className="space-y-2">
-            <Label htmlFor="follow_up_notes">Notes</Label>
-            <Textarea
-              id="follow_up_notes"
-              value={form.follow_up_notes ?? ''}
-              onChange={(e) => onChange({ ...form, follow_up_notes: e.target.value })}
-              rows={3}
-            />
-          </div>
+          {!publicMode ? (
+            <>
+              <MemberSingleSelect
+                value={form.assigned_follow_up_member_id}
+                onChange={(id) => onChange({ ...form, assigned_follow_up_member_id: id })}
+              />
+              <div className="space-y-2">
+                <Label htmlFor="follow_up_notes">Notes</Label>
+                <Textarea
+                  id="follow_up_notes"
+                  value={form.follow_up_notes ?? ''}
+                  onChange={(e) => onChange({ ...form, follow_up_notes: e.target.value })}
+                  rows={3}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="follow_up_notes">Anything else we should know? (optional)</Label>
+              <Textarea
+                id="follow_up_notes"
+                value={form.follow_up_notes ?? ''}
+                onChange={(e) => onChange({ ...form, follow_up_notes: e.target.value })}
+                rows={2}
+                placeholder="Prayer requests, how you heard about us, etc."
+              />
+            </div>
+          )}
           {showPipelineFields ? (
             <>
               <div className="space-y-2">

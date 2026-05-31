@@ -8,6 +8,20 @@ import type {
 export const RLC_NAME = 'Redemption Light Chapel'
 export const RLC_SHORT = 'RLC'
 
+/** Audit id for kiosk / QR public visitor registrations (no signed-in user). */
+export const PUBLIC_RLC_PERFORMED_BY = 'public:rlc-visitor-kiosk'
+
+export const RLC_PUBLIC_VISIT_PATH = '/rlc/visit'
+
+export function getRlcPublicVisitUrl(origin?: string): string {
+  const base =
+    origin ??
+    (typeof window !== 'undefined' ? window.location.origin : undefined) ??
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
+    ''
+  return `${base}${RLC_PUBLIC_VISIT_PATH}`
+}
+
 export const RLC_PIPELINE_STATUSES: RlcPipelineStatus[] = [
   'first_visit',
   'follow_up',

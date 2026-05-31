@@ -22,7 +22,8 @@ import {
 import { generateRlcMembershipId } from '@/lib/membershipId'
 import { serviceSelectValueToLabel, visitorToForm } from '@/lib/rlc/visitor-form'
 import type { ConvertRlcVisitorForm, CreateVisitorForm, RlcInteraction, Visitor } from '@/lib/types'
-import { MemberMultiSelect, MemberSingleSelect } from '@/components/rlc/member-select'
+import { MemberSingleSelect } from '@/components/rlc/member-select'
+import { RlcSponsorMultiSelect } from '@/components/rlc/rlc-sponsor-multi-select'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Badge } from '@/components/ui/badge'
@@ -415,7 +416,7 @@ export default function RlcVisitorDetailPage() {
               <CardTitle>Sponsors</CardTitle>
             </CardHeader>
             <CardContent>
-              <MemberMultiSelect
+              <RlcSponsorMultiSelect
                 value={visitor.invited_by_member_ids ?? EMPTY_MEMBER_IDS}
                 onChange={(ids) => saveAssignment({ invited_by_member_ids: ids })}
               />

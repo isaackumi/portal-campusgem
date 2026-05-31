@@ -78,6 +78,9 @@ export default function RlcDashboardPage() {
         actions={
           <>
             <Button variant="outline" className="w-full sm:w-auto" asChild>
+              <Link href="/admin/rlc/visitors/qr">Visitor QR</Link>
+            </Button>
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
               <Link href="/admin/rlc/visitors/add">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Register Visitor

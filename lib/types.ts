@@ -258,6 +258,20 @@ export interface RlcImportSearchResult {
   camp_year_id?: string
 }
 
+/** Unified sponsor lookup — church members, Campus Gem, or camp directory. */
+export interface RlcSponsorSearchResult {
+  key: string
+  full_name: string
+  phone?: string
+  email?: string
+  membership_id?: string
+  member_id?: string
+  user_id?: string
+  camp_registration_id?: string
+  source: 'member' | 'campus_member' | 'camp_registration'
+  badge?: string
+}
+
 export interface Attendance {
   id: string
   member_id?: string

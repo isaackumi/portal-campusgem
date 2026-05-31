@@ -81,12 +81,17 @@ function RlcVisitorsContent() {
         title="RLC Visitors"
         subtitle="Track every visitor from first visit through membership."
         actions={
-          <Button asChild className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto">
-            <Link href="/admin/rlc/visitors/add">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Register Visitor
-            </Link>
-          </Button>
+          <>
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
+              <Link href="/admin/rlc/visitors/qr">QR code</Link>
+            </Button>
+            <Button asChild className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto">
+              <Link href="/admin/rlc/visitors/add">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Register Visitor
+              </Link>
+            </Button>
+          </>
         }
       />
 
