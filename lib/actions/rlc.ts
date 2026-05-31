@@ -74,6 +74,7 @@ export async function loadRlcVisitorsAction(filters?: {
   pipeline_status?: RlcPipelineStatus
   follow_up_status?: VisitorFollowUpStatus
   assigned_to?: string
+  include_inactive?: boolean
 }): Promise<ApiResponse<Visitor[]>> {
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
@@ -166,6 +167,27 @@ export async function updateRlcVisitorAction(
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to update visitor',
+      loading: false,
+    }
+  }
+}
+
+export async function deleteRlcVisitorAction(
+  id: string,
+  performedBy: string,
+  hardDelete?: boolean
+): Promise<ApiResponse<{ id: string; hard_delete: boolean }>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  try {
+    const { deleteRlcVisitorInConvex } = await import('@/lib/convex/rlc-bridge')
+    const data = await deleteRlcVisitorInConvex(id, performedBy, hardDelete)
+    return { data, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to delete visitor',
       loading: false,
     }
   }

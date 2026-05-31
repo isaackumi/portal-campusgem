@@ -12,13 +12,14 @@ import {
 } from '@/lib/constants/rlc'
 import type { RlcPipelineStatus, Visitor } from '@/lib/types'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
+import { RlcVisitorRowActions } from '@/components/rlc/rlc-visitor-row-actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Eye, Phone, UserPlus } from 'lucide-react'
+import { Phone, UserPlus } from 'lucide-react'
 
 export default function RlcVisitorsPage() {
   return (
@@ -38,17 +39,26 @@ function RlcVisitorsContent() {
   const [statusFilter, setStatusFilter] = useState<string>('active')
 
   useEffect(() => {
-    loadRlcVisitorsAction().then(({ data }) => {
+    const includeInactive = statusFilter === 'archived' || statusFilter === 'all'
+    loadRlcVisitorsAction({ include_inactive: includeInactive }).then(({ data }) => {
       setVisitors(data ?? [])
       setLoading(false)
     })
-  }, [])
+  }, [statusFilter])
+
+  const reload = () => {
+    const includeInactive = statusFilter === 'archived' || statusFilter === 'all'
+    loadRlcVisitorsAction({ include_inactive: includeInactive }).then(({ data }) => {
+      setVisitors(data ?? [])
+    })
+  }
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return visitors.filter((v) => {
-      if (statusFilter === 'active' && (!v.is_active || v.converted_to_member)) return false
+      if (statusFilter === 'active' && (v.is_active === false || v.converted_to_member)) return false
       if (statusFilter === 'converted' && !v.converted_to_member) return false
+      if (statusFilter === 'archived' && v.is_active !== false) return false
       if (pipelineFilter !== 'all' && (v.pipeline_status ?? 'first_visit') !== pipelineFilter) return false
       if (!needle) return true
       const hay = [v.first_name, v.last_name, v.phone, v.email].filter(Boolean).join(' ').toLowerCase()
@@ -101,6 +111,7 @@ function RlcVisitorsContent() {
           <SelectContent>
             <SelectItem value="active">Active pipeline</SelectItem>
             <SelectItem value="converted">Converted</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
             <SelectItem value="all">All records</SelectItem>
           </SelectContent>
         </Select>
@@ -152,12 +163,7 @@ function RlcVisitorsContent() {
                       ) : null}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/admin/rlc/visitors/${v.id}`}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
-                    </Link>
-                  </Button>
+                  <RlcVisitorRowActions visitor={v} onDeleted={reload} />
                 </CardContent>
               </Card>
             )

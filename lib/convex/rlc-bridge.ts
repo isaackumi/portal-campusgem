@@ -96,6 +96,7 @@ export async function listRlcVisitorsFromConvex(filters?: {
   pipeline_status?: RlcPipelineStatus
   follow_up_status?: VisitorFollowUpStatus
   assigned_to?: string
+  include_inactive?: boolean
 }): Promise<Visitor[]> {
   const client = getConvexHttpClient()
   const docs = (await client.query(api.rlc.listRlcVisitorsWithSecret, {
@@ -103,6 +104,7 @@ export async function listRlcVisitorsFromConvex(filters?: {
     pipeline_status: filters?.pipeline_status,
     follow_up_status: filters?.follow_up_status,
     assigned_to: filters?.assigned_to,
+    include_inactive: filters?.include_inactive,
   })) as Record<string, unknown>[]
   return docs.map((d) => convexRlcVisitorDocToVisitor(d)).filter((v): v is Visitor => v != null)
 }
@@ -191,11 +193,31 @@ export async function updateRlcVisitorInConvex(
     follow_up_date: form.follow_up_date,
     follow_up_status: form.follow_up_status,
     pipeline_status: form.pipeline_status,
+    source: form.source,
+    gender: form.gender,
+    date_of_birth: form.date_of_birth,
+    occupation: form.occupation,
+    marital_status: form.marital_status,
   })) as Record<string, unknown>
 
   const v = convexRlcVisitorDocToVisitor(doc)
   if (!v) throw new Error('Failed to update RLC visitor')
   return v
+}
+
+export async function deleteRlcVisitorInConvex(
+  id: string,
+  performedBy: string,
+  hardDelete?: boolean
+): Promise<{ id: string; hard_delete: boolean }> {
+  const client = getConvexHttpClient()
+  const result = (await client.mutation(api.rlc.deleteRlcVisitorWithSecret, {
+    secret: requireCoreServerSecret(),
+    id,
+    performed_by: performedBy,
+    hard_delete: hardDelete,
+  })) as { id: string; hard_delete: boolean }
+  return result
 }
 
 export async function addRlcInteractionInConvex(args: {

@@ -167,6 +167,7 @@ export const listRlcVisitorsWithSecret = query({
     pipeline_status: v.optional(pipelineStatus),
     follow_up_status: v.optional(followUpStatus),
     assigned_to: v.optional(v.string()),
+    include_inactive: v.optional(v.boolean()),
   },
   returns: v.array(v.any()),
   handler: async (ctx, args) => {
@@ -182,6 +183,10 @@ export const listRlcVisitorsWithSecret = query({
       rows = all.filter((v) => !v.congregation || v.congregation === 'rlc')
     }
 
+    if (!args.include_inactive) {
+      rows = rows.filter((v) => v.is_active !== false)
+    }
+
     if (args.pipeline_status) {
       rows = rows.filter((v) => (v.pipeline_status ?? 'first_visit') === args.pipeline_status)
     }
@@ -192,7 +197,7 @@ export const listRlcVisitorsWithSecret = query({
       rows = rows.filter((v) => v.assigned_follow_up_member_id === args.assigned_to)
     }
 
-    return rows.filter((v) => v.is_active !== false)
+    return rows
   },
 })
 
@@ -329,6 +334,53 @@ export const updateRlcVisitorWithSecret = mutation({
     })
 
     return await ctx.db.get('visitors', args.id as Id<'visitors'>)
+  },
+})
+
+export const deleteRlcVisitorWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    id: v.string(),
+    performed_by: v.string(),
+    hard_delete: v.optional(v.boolean()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const existing = await ctx.db.get('visitors', args.id as Id<'visitors'>)
+    if (!existing) throw new Error('Visitor not found.')
+    if (existing.converted_to_member && !args.hard_delete) {
+      throw new Error('Converted visitors cannot be archived. Use permanent delete if required.')
+    }
+
+    const now = Date.now()
+
+    if (args.hard_delete) {
+      const interactions = await ctx.db
+        .query('rlc_interactions')
+        .withIndex('by_visitor_id', (q) => q.eq('visitor_id', args.id))
+        .collect()
+      for (const row of interactions) {
+        await ctx.db.delete('rlc_interactions', row._id)
+      }
+      await ctx.db.delete('visitors', args.id as Id<'visitors'>)
+      return { id: args.id, hard_delete: true }
+    }
+
+    await ctx.db.patch('visitors', args.id as Id<'visitors'>, {
+      is_active: false,
+      pipeline_status: 'inactive',
+      updated_at: now,
+    })
+
+    await logInteraction(ctx, {
+      visitor_id: args.id,
+      performed_by: args.performed_by,
+      interaction_type: 'status_change',
+      notes: 'Visitor record archived',
+    })
+
+    return { id: args.id, hard_delete: false }
   },
 })
 

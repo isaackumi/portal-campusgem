@@ -7,6 +7,7 @@ import { useAuth } from '@/components/providers'
 import {
   addRlcInteractionAction,
   convertRlcVisitorAction,
+  deleteRlcVisitorAction,
   loadRlcInteractionsAction,
   loadRlcVisitorAction,
   updateRlcVisitorAction,
@@ -19,6 +20,7 @@ import {
   RLC_SOURCE_LABELS,
 } from '@/lib/constants/rlc'
 import { generateRlcMembershipId } from '@/lib/membershipId'
+import { serviceSelectValueToLabel, visitorToForm } from '@/lib/rlc/visitor-form'
 import type { ConvertRlcVisitorForm, CreateVisitorForm, RlcInteraction, Visitor } from '@/lib/types'
 import { MemberMultiSelect, MemberSingleSelect } from '@/components/rlc/member-select'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
@@ -31,7 +33,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
-import { CheckCircle2, MessageSquare, UserCheck } from 'lucide-react'
+import { CheckCircle2, MessageSquare, Pencil, Trash2, UserCheck } from 'lucide-react'
+
+const EMPTY_MEMBER_IDS: string[] = []
 
 export default function RlcVisitorDetailPage() {
   const params = useParams()
@@ -80,21 +84,11 @@ export default function RlcVisitorDetailPage() {
 
   async function saveAssignment(form: Partial<CreateVisitorForm>) {
     if (!visitor || !user?.id) return
+    const base = visitorToForm(visitor)
     const payload: CreateVisitorForm = {
-      first_name: visitor.first_name,
-      last_name: visitor.last_name,
-      phone: visitor.phone,
-      email: visitor.email,
-      address: visitor.address,
-      visit_date: visitor.visit_date,
-      service_attended: visitor.service_attended,
-      how_heard_about_church: visitor.how_heard_about_church,
-      invited_by_member_ids: form.invited_by_member_ids ?? visitor.invited_by_member_ids,
-      assigned_follow_up_member_id:
-        form.assigned_follow_up_member_id ?? visitor.assigned_follow_up_member_id,
-      follow_up_notes: visitor.follow_up_notes,
-      follow_up_status: form.follow_up_status ?? visitor.follow_up_status,
-      pipeline_status: form.pipeline_status ?? visitor.pipeline_status,
+      ...base,
+      ...form,
+      service_attended: serviceSelectValueToLabel(base.service_attended),
     }
     const { error } = await updateRlcVisitorAction(id, payload, user.id)
     if (error) {
@@ -137,6 +131,38 @@ export default function RlcVisitorDetailPage() {
     router.push('/admin/rlc/members')
   }
 
+  async function archiveVisitor() {
+    if (!user?.id || !visitor) return
+    const name = [visitor.first_name, visitor.last_name].filter(Boolean).join(' ')
+    if (!confirm(`Archive ${name}? They will be hidden from the active pipeline.`)) return
+    const { error } = await deleteRlcVisitorAction(id, user.id, false)
+    if (error) {
+      toast({ variant: 'destructive', title: 'Archive failed', description: error })
+      return
+    }
+    toast({ title: 'Visitor archived' })
+    router.push('/admin/rlc/visitors')
+  }
+
+  async function permanentDelete() {
+    if (!user?.id || !visitor) return
+    const name = [visitor.first_name, visitor.last_name].filter(Boolean).join(' ')
+    if (
+      !confirm(
+        `Permanently delete ${name}? This removes the record and all follow-up history. This cannot be undone.`
+      )
+    ) {
+      return
+    }
+    const { error } = await deleteRlcVisitorAction(id, user.id, true)
+    if (error) {
+      toast({ variant: 'destructive', title: 'Delete failed', description: error })
+      return
+    }
+    toast({ title: 'Visitor deleted' })
+    router.push('/admin/rlc/visitors')
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -158,17 +184,36 @@ export default function RlcVisitorDetailPage() {
         subtitle={`Visit ${visitor.visit_date}${visitor.service_attended ? ` · ${visitor.service_attended}` : ''}`}
         backHref="/admin/rlc/visitors"
         actions={
-          !visitor.converted_to_member ? (
-            <Button className="bg-rose-700 hover:bg-rose-800" onClick={() => setShowConvert(true)}>
-              <UserCheck className="mr-2 h-4 w-4" />
-              Convert to member
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/admin/rlc/visitors/${id}/edit`}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
             </Button>
-          ) : (
-            <Badge className="bg-emerald-100 text-emerald-800">
-              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-              Converted
-            </Badge>
-          )
+            {!visitor.converted_to_member ? (
+              <>
+                <Button className="bg-rose-700 hover:bg-rose-800" onClick={() => setShowConvert(true)}>
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  Convert to member
+                </Button>
+                {visitor.is_active !== false ? (
+                  <Button variant="outline" onClick={archiveVisitor}>
+                    Archive
+                  </Button>
+                ) : null}
+                <Button variant="destructive" onClick={permanentDelete}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              </>
+            ) : (
+              <Badge className="bg-emerald-100 text-emerald-800">
+                <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                Converted
+              </Badge>
+            )}
+          </div>
         }
       >
         <div className="flex flex-wrap gap-2">
@@ -370,7 +415,7 @@ export default function RlcVisitorDetailPage() {
             </CardHeader>
             <CardContent>
               <MemberMultiSelect
-                value={visitor.invited_by_member_ids ?? []}
+                value={visitor.invited_by_member_ids ?? EMPTY_MEMBER_IDS}
                 onChange={(ids) => saveAssignment({ invited_by_member_ids: ids })}
               />
             </CardContent>

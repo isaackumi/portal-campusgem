@@ -315,10 +315,10 @@ export default function VisitorsPage() {
                         {getStatusText(visitor)}
                       </Badge>
                       <div className="flex items-center space-x-1">
-                        <Button variant="ghost" size="sm" onClick={() => router.push(`/visitors/${visitor.id}`)}>
+                        <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/rlc/visitors/${visitor.id}`)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/rlc/visitors/${visitor.id}/edit`)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm">
