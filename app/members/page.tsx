@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay, EmptyState } from '@/components/ui/error-display'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { ContactActions } from '@/components/contact/contact-actions'
 import { MemberRowActions } from '@/components/members/member-row-actions'
 import { 
   Users, 
@@ -523,23 +524,17 @@ export default function MembersPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
+                        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
                           <span className="flex items-center">
                             <Copy className="h-3 w-3 mr-1" />
                             {formatMembershipIdForDisplay(member.user?.membership_id || '')}
                           </span>
-                          {member.user?.phone && (
-                            <span className="flex items-center">
-                              <Phone className="h-3 w-3 mr-1" />
-                              {member.user.phone}
-                            </span>
-                          )}
-                          {member.user?.email && (
-                            <span className="flex items-center">
-                              <Mail className="h-3 w-3 mr-1" />
-                              {member.user.email}
-                            </span>
-                          )}
+                          <ContactActions
+                            phone={member.user?.phone}
+                            email={member.user?.email}
+                            compact
+                            size="sm"
+                          />
                           {member.user?.join_year && (
                             <span className="flex items-center">
                               <Calendar className="h-3 w-3 mr-1" />

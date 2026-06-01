@@ -20,7 +20,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Phone, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
+import { ContactActions } from '@/components/contact/contact-actions'
 
 export default function RlcVisitorsPage() {
   return (
@@ -151,13 +152,8 @@ function RlcVisitorsContent() {
                       Visit {v.visit_date}
                       {v.service_attended ? ` · ${v.service_attended}` : ''}
                     </p>
-                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      {v.phone ? (
-                        <span className="inline-flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {v.phone}
-                        </span>
-                      ) : null}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ContactActions phone={v.phone} email={v.email} compact size="sm" />
                       {v.invited_by_members && v.invited_by_members.length > 0 ? (
                         <span>
                           Brought by:{' '}

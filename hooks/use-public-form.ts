@@ -314,6 +314,10 @@ export function usePublicForm({
         name: campReg.full_name,
         qr: campReg.qr_code,
       })
+      if (typeof window !== 'undefined') {
+        const registerUrl = `${window.location.origin}/f/${form.slug}`
+        params.set('register', encodeURIComponent(registerUrl))
+      }
       router.push(`/camp-meeting/success?${params.toString()}`)
       return true
     }

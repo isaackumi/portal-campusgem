@@ -7,6 +7,7 @@ import { useAuth } from '@/components/providers'
 import { createFormFromTemplate } from '@/lib/actions/form-templates'
 import { FORM_TEMPLATES, getFormTemplate, type FormTemplateId } from '@/lib/forms/templates'
 import {
+  ensureCampMeetingFeedbackForm,
   ensureCampMeetingRegistrationForm,
   ensureEaglesCampMeetingGroup,
 } from '@/lib/actions/camp-meeting-form'
@@ -92,6 +93,7 @@ function FormsAdminContent() {
   const [creating, setCreating] = useState(false)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [creatingCampMeetingTemplate, setCreatingCampMeetingTemplate] = useState(false)
+  const [creatingCampMeetingFeedback, setCreatingCampMeetingFeedback] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -207,7 +209,10 @@ function FormsAdminContent() {
     let groupId = selectedGroupId
     let groupName = groupId ? groupMap.get(groupId)?.name : undefined
 
-    if (templateId === 'camp_meeting_registration') {
+    const isCampYearForm =
+      templateId === 'camp_meeting_registration' || templateId === 'camp_meeting_feedback'
+
+    if (isCampYearForm) {
       if (!selectedCampYearId) {
         toast({
           variant: 'destructive',
@@ -237,7 +242,7 @@ function FormsAdminContent() {
       title: title.trim(),
       description: description.trim() || undefined,
       category: category.trim() || undefined,
-      camp_year_id: templateId === 'camp_meeting_registration' ? selectedCampYearId : undefined,
+      camp_year_id: isCampYearForm ? selectedCampYearId : undefined,
       created_by: user?.id,
     })
     setCreating(false)
@@ -267,7 +272,7 @@ function FormsAdminContent() {
     const template = getFormTemplate(next)
     let groupName = selectedGroupId ? groupMap.get(selectedGroupId)?.name : undefined
 
-    if (next === 'camp_meeting_registration') {
+    if (next === 'camp_meeting_registration' || next === 'camp_meeting_feedback') {
       const group = await applyCampMeetingGroupSelection()
       if (group) groupName = group.name
     }
@@ -302,6 +307,35 @@ function FormsAdminContent() {
       description: created
         ? `Created under ${DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME} — review and publish when ready.`
         : `Opening existing camp meeting form for ${DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}.`,
+    })
+    router.push(`/admin/forms/${data.id}`)
+  }
+
+  async function handleCreateCampMeetingFeedbackTemplate() {
+    if (!selectedCampYearId) {
+      toast({
+        variant: 'destructive',
+        title: 'Select a camp year',
+        description: 'Camp review forms must be linked to one camp year.',
+      })
+      return
+    }
+
+    setCreatingCampMeetingFeedback(true)
+    const { data, created, error } = await ensureCampMeetingFeedbackForm(selectedCampYearId)
+    setCreatingCampMeetingFeedback(false)
+
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Setup failed', description: error ?? 'Unknown error' })
+      return
+    }
+
+    await invalidateFormsHub()
+    toast({
+      title: created ? 'Camp review form ready' : 'Form already exists',
+      description: created
+        ? 'Share after camp — review and publish when ready.'
+        : 'Opening existing camp review form.',
     })
     router.push(`/admin/forms/${data.id}`)
   }
@@ -428,10 +462,14 @@ function FormsAdminContent() {
                     <FormGroupSelect
                       groups={groups}
                       value={selectedGroupId}
-                      disabled={templateId === 'camp_meeting_registration'}
+                      disabled={
+                        templateId === 'camp_meeting_registration' ||
+                        templateId === 'camp_meeting_feedback'
+                      }
                       onValueChange={(v) => setSelectedGroupId(v === '__none__' ? '' : v)}
                     />
-                    {templateId === 'camp_meeting_registration' ? (
+                    {templateId === 'camp_meeting_registration' ||
+                    templateId === 'camp_meeting_feedback' ? (
                       <>
                         <p className="text-sm text-muted-foreground">
                           Camp meeting forms are assigned to{' '}
@@ -589,14 +627,24 @@ function FormsAdminContent() {
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              variant="secondary"
-              className="border-indigo-300 bg-white hover:bg-indigo-50"
-              disabled={creatingCampMeetingTemplate}
-              onClick={() => void handleCreateCampMeetingRegistrationTemplate()}
-            >
-              {creatingCampMeetingTemplate ? 'Setting up...' : 'Create camp meeting form'}
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                variant="secondary"
+                className="min-h-11 border-indigo-300 bg-white hover:bg-indigo-50"
+                disabled={creatingCampMeetingTemplate}
+                onClick={() => void handleCreateCampMeetingRegistrationTemplate()}
+              >
+                {creatingCampMeetingTemplate ? 'Setting up...' : 'Registration form'}
+              </Button>
+              <Button
+                variant="outline"
+                className="min-h-11"
+                disabled={creatingCampMeetingFeedback}
+                onClick={() => void handleCreateCampMeetingFeedbackTemplate()}
+              >
+                {creatingCampMeetingFeedback ? 'Setting up...' : 'Post-camp review form'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

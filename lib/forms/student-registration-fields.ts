@@ -1,4 +1,5 @@
 import type { FormTemplateField } from '@/lib/forms/templates'
+import { optionalDateOfBirthField } from '@/lib/forms/form-dob-field'
 
 export const STUDENT_LEVEL_OPTIONS = [
   'Level 100',
@@ -37,13 +38,14 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     options: ['Male', 'Female'],
     sort_order: 2,
   },
+  optionalDateOfBirthField(3),
   {
     label: 'Program of study',
     description: 'e.g. BSc Computer Science, MBA, MPhil Theology',
     field_type: 'short_text',
     required: true,
     prefill_key: 'program_of_study',
-    sort_order: 3,
+    sort_order: 4,
   },
   {
     label: 'Level',
@@ -52,7 +54,7 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     required: true,
     prefill_key: 'academic_level',
     options: [...STUDENT_LEVEL_OPTIONS],
-    sort_order: 4,
+    sort_order: 5,
   },
   {
     label: 'Student ID',
@@ -60,21 +62,21 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     field_type: 'short_text',
     required: false,
     prefill_key: 'student_id',
-    sort_order: 5,
+    sort_order: 6,
   },
   {
     label: 'Hall / residence',
     field_type: 'short_text',
     required: true,
     prefill_key: 'hall_of_residence',
-    sort_order: 6,
+    sort_order: 7,
   },
   {
     label: 'Room number',
     field_type: 'short_text',
     required: false,
     prefill_key: 'room_number',
-    sort_order: 7,
+    sort_order: 8,
   },
   {
     label: 'What can you do in our ministry?',
@@ -82,14 +84,14 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     field_type: 'long_text',
     required: false,
     prefill_key: 'ministry_contribution',
-    sort_order: 8,
+    sort_order: 9,
   },
   {
     label: 'Prayer request',
     field_type: 'long_text',
     required: false,
     prefill_key: 'prayer_request',
-    sort_order: 9,
+    sort_order: 10,
   },
   {
     label: 'Phone number',
@@ -97,7 +99,7 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     field_type: 'phone',
     required: true,
     prefill_key: 'phone',
-    sort_order: 10,
+    sort_order: 11,
   },
   {
     label: 'WhatsApp number',
@@ -105,7 +107,7 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     field_type: 'phone',
     required: false,
     prefill_key: 'whatsapp',
-    sort_order: 11,
+    sort_order: 12,
   },
   {
     label: 'Location',
@@ -113,13 +115,13 @@ export const STUDENT_REGISTRATION_FIELDS: FormTemplateField[] = [
     field_type: 'short_text',
     required: false,
     prefill_key: 'residence',
-    sort_order: 12,
+    sort_order: 13,
   },
   {
     label: 'Comments',
     description: 'Optional — anything else you want us to know',
     field_type: 'long_text',
     required: false,
-    sort_order: 13,
+    sort_order: 14,
   },
 ]

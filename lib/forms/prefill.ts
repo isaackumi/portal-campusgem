@@ -170,7 +170,10 @@ export function campRegistrationToPrefillProfile(reg: CampRegistration): FormPre
   }
 }
 
-export function appUserToPrefillProfile(user: AppUser): FormPrefillProfile {
+export function appUserToPrefillProfile(
+  user: AppUser,
+  member?: { dob?: string | null } | null
+): FormPrefillProfile {
   const parts = user.full_name?.trim().split(/\s+/).filter(Boolean) ?? []
   return {
     first_name: user.first_name ?? parts[0],
@@ -178,6 +181,7 @@ export function appUserToPrefillProfile(user: AppUser): FormPrefillProfile {
     full_name: user.full_name,
     email: user.email,
     phone: user.phone,
+    date_of_birth: member?.dob?.trim() || undefined,
     role: user.role,
   }
 }

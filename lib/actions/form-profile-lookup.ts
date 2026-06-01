@@ -108,7 +108,9 @@ export async function lookupFormProfileByPhone(
       const { findUserByPhoneFromConvex } = await import('@/lib/convex/core-bridge')
       const user = await findUserByPhoneFromConvex(phone)
       if (user) {
-        profile = appUserToPrefillProfile(user)
+        const { fetchMemberByUserIdFromConvex } = await import('@/lib/convex/core-bridge')
+        const member = await fetchMemberByUserIdFromConvex(user.id)
+        profile = appUserToPrefillProfile(user, member)
         source = 'directory'
         display_name = user.full_name
       }

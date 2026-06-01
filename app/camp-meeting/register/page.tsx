@@ -265,6 +265,9 @@ function CampRegistrationPageContent() {
             params.set('id', res.data.id)
             params.set('qr', res.data.qr_code)
             params.set('name', `${formData.first_name} ${formData.last_name}`)
+            if (typeof window !== 'undefined') {
+                params.set('register', encodeURIComponent(`${window.location.origin}/camp-meeting/register`))
+            }
 
             router.push(`/camp-meeting/success?${params.toString()}`)
         } else {

@@ -226,8 +226,24 @@ export async function submitFormResponse(input: {
 }): Promise<{ data: ChurchFormSubmitResult | null; error: string | null }> {
   requireConvexEnv()
   try {
-    const { submitFormResponseInConvex } = await import('@/lib/convex/forms-bridge')
+    const { getPublishedFormBySlugFromConvex, submitFormResponseInConvex } = await import(
+      '@/lib/convex/forms-bridge'
+    )
+    const published = await getPublishedFormBySlugFromConvex(input.slug)
     const data = await submitFormResponseInConvex(input)
+
+    if (published?.fields?.length) {
+      const { syncDirectoryProfileFromFormSubmit } = await import('@/lib/actions/sync-form-profile')
+      await syncDirectoryProfileFromFormSubmit({
+        fields: published.fields,
+        values: input.values,
+        respondent_phone: input.respondent_phone,
+        respondent_name: input.respondent_name,
+        respondent_email: input.respondent_email,
+        camp_registration_id: data.camp_registration?.id,
+      })
+    }
+
     return { data, error: null }
   } catch (error: unknown) {
     return {

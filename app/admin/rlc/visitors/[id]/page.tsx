@@ -22,6 +22,7 @@ import {
 import { generateRlcMembershipId } from '@/lib/membershipId'
 import { serviceSelectValueToLabel, visitorToForm } from '@/lib/rlc/visitor-form'
 import type { ConvertRlcVisitorForm, CreateVisitorForm, RlcInteraction, Visitor } from '@/lib/types'
+import { ContactActions } from '@/components/contact/contact-actions'
 import { MemberSingleSelect } from '@/components/rlc/member-select'
 import { RlcSponsorMultiSelect } from '@/components/rlc/rlc-sponsor-multi-select'
 import { PageContainer } from '@/components/layout/page-container'
@@ -234,6 +235,9 @@ export default function RlcVisitorDetailPage() {
               <CardTitle>Contact & profile</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <ContactActions phone={visitor.phone} email={visitor.email} />
+              </div>
               {[
                 ['Phone', visitor.phone],
                 ['Email', visitor.email],

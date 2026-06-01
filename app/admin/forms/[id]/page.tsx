@@ -24,7 +24,10 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useAuth } from '@/components/providers'
 import { getFormAdmin, saveFormFields, updateForm } from '@/lib/actions/forms'
-import { CAMP_MEETING_REGISTRATION_CATEGORY } from '@/lib/constants/camp-meeting'
+import {
+  CAMP_MEETING_FEEDBACK_CATEGORY,
+  CAMP_MEETING_REGISTRATION_CATEGORY,
+} from '@/lib/constants/camp-meeting'
 import { getAllCampYears } from '@/lib/actions/camp'
 import { buildFormWhatsAppShareUrl } from '@/lib/forms/whatsapp-share'
 import type { ChurchForm, CampYear, ChurchFormField, ChurchFormFieldType } from '@/lib/types'
@@ -348,7 +351,11 @@ export default function FormEditorPage() {
   async function handleSave(publish = false) {
     if (!form) return
 
-    if (category === CAMP_MEETING_REGISTRATION_CATEGORY && !campYearId) {
+    const isCampYearForm =
+      category === CAMP_MEETING_REGISTRATION_CATEGORY ||
+      category === CAMP_MEETING_FEEDBACK_CATEGORY
+
+    if (isCampYearForm && !campYearId) {
       toast({
         variant: 'destructive',
         title: 'Camp year required',
@@ -365,14 +372,12 @@ export default function FormEditorPage() {
       category: category.trim() || 'general',
       group_id: groupId || null,
       slug: slug.trim(),
-      enable_profile_lookup:
-        category === CAMP_MEETING_REGISTRATION_CATEGORY ? true : enableProfileLookup,
+      enable_profile_lookup: isCampYearForm ? true : enableProfileLookup,
       capture_respondent_location: captureRespondentLocation,
       cover_image_url: coverImageUrl.trim() || null,
       accent_color: accentColor === 'auto' ? null : accentColor,
       display_mode: displayMode,
-      camp_year_id:
-        category === CAMP_MEETING_REGISTRATION_CATEGORY ? campYearId || null : null,
+      camp_year_id: isCampYearForm ? campYearId || null : null,
       status: publish ? ('published' as const) : status,
     }
 
@@ -582,7 +587,8 @@ export default function FormEditorPage() {
               <Label htmlFor="category">Category</Label>
               <Input id="category" value={category} onChange={(event) => setCategory(event.target.value)} />
             </div>
-            {category === CAMP_MEETING_REGISTRATION_CATEGORY ? (
+            {category === CAMP_MEETING_REGISTRATION_CATEGORY ||
+            category === CAMP_MEETING_FEEDBACK_CATEGORY ? (
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="camp-year">Camp year</Label>
                 <Select value={campYearId || undefined} onValueChange={setCampYearId}>
@@ -597,7 +603,11 @@ export default function FormEditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Only one camp meeting registration form is allowed per year.</p>
+                <p className="text-xs text-muted-foreground">
+                  {category === CAMP_MEETING_FEEDBACK_CATEGORY
+                    ? 'Post-camp review forms are tied to one camp year for reporting.'
+                    : 'Only one camp meeting registration form is allowed per year.'}
+                </p>
               </div>
             ) : null}
             <div className="space-y-2">
@@ -655,20 +665,32 @@ export default function FormEditorPage() {
             <div className="flex items-center gap-2 md:col-span-2">
               <Checkbox
                 id="profile-lookup"
-                checked={category === CAMP_MEETING_REGISTRATION_CATEGORY ? true : enableProfileLookup}
-                disabled={category === CAMP_MEETING_REGISTRATION_CATEGORY}
+                checked={
+                  category === CAMP_MEETING_REGISTRATION_CATEGORY ||
+                  category === CAMP_MEETING_FEEDBACK_CATEGORY
+                    ? true
+                    : enableProfileLookup
+                }
+                disabled={
+                  category === CAMP_MEETING_REGISTRATION_CATEGORY ||
+                  category === CAMP_MEETING_FEEDBACK_CATEGORY
+                }
                 onCheckedChange={(checked) => setEnableProfileLookup(checked === true)}
               />
               <div className="space-y-1">
                 <Label htmlFor="profile-lookup">
-                  {category === CAMP_MEETING_REGISTRATION_CATEGORY
-                    ? 'Search my details (always on for camp registration)'
-                    : 'Ask for phone first and prefill from camp records'}
+                  {category === CAMP_MEETING_FEEDBACK_CATEGORY
+                    ? 'Search my details (always on for camp review)'
+                    : category === CAMP_MEETING_REGISTRATION_CATEGORY
+                      ? 'Search my details (always on for camp registration)'
+                      : 'Ask for phone first and prefill from camp records'}
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   {category === CAMP_MEETING_REGISTRATION_CATEGORY
                     ? 'Camp meeting forms always start with phone lookup so returning campers can load their details and duplicates are blocked for the camp year.'
-                    : 'Respondents see a phone step at the top of the public form. They can tap "Find my details" to fill fields that have a prefill key below.'}
+                    : category === CAMP_MEETING_FEEDBACK_CATEGORY
+                      ? 'Review forms use phone lookup to prefill camper details. Multiple submissions per phone are allowed.'
+                      : 'Respondents see a phone step at the top of the public form. They can tap "Find my details" to fill fields that have a prefill key below.'}
                 </p>
               </div>
             </div>

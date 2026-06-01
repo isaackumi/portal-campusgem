@@ -3,6 +3,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { Mail, Phone, Shield, UserRound } from 'lucide-react'
 
+import { ContactActions } from '@/components/contact/contact-actions'
 import { ContactRowActions } from '@/components/contacts/contact-row-actions'
 import type { CampCamperDirectoryRow } from '@/lib/types'
 import { RLC_ROLE_LABELS } from '@/lib/constants/rlc'
@@ -32,10 +33,7 @@ export function createCamperDirectoryColumns(
       accessorKey: 'phone',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Phone" />,
       cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm">
-          <Phone className="h-4 w-4 text-blue-600" />
-          <span>{row.original.phone}</span>
-        </div>
+        <ContactActions phone={row.original.phone} email={row.original.email} compact size="sm" />
       ),
     },
     {

@@ -1,8 +1,11 @@
 import type { ChurchFormField } from '@/lib/types'
 import {
+  CAMP_MEETING_FEEDBACK_CATEGORY,
   CAMP_MEETING_REGISTRATION_CATEGORY,
   DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME,
 } from '@/lib/constants/camp-meeting'
+import { CAMP_MEETING_FEEDBACK_FIELDS } from '@/lib/forms/camp-meeting-feedback-fields'
+import { optionalDateOfBirthField } from '@/lib/forms/form-dob-field'
 import {
   CORPORATE_GEM_REGISTRATION_CATEGORY,
   STUDENT_REGISTRATION_CATEGORY,
@@ -17,6 +20,7 @@ export {
   STUDENT_REGISTRATION_CATEGORY,
   CORPORATE_GEM_REGISTRATION_CATEGORY,
   CAMP_MEETING_REGISTRATION_CATEGORY,
+  CAMP_MEETING_FEEDBACK_CATEGORY,
 }
 
 export type FormTemplateId =
@@ -25,6 +29,7 @@ export type FormTemplateId =
   | 'student_registration'
   | 'corporate_gem_registration'
   | 'camp_meeting_registration'
+  | 'camp_meeting_feedback'
   | 'outreach_signup'
 
 export type FormTemplateField = {
@@ -61,27 +66,28 @@ export const CAMPUS_REGISTRATION_FIELDS: FormTemplateField[] = [
     sort_order: 2,
   },
   { label: 'Email', field_type: 'email', required: false, prefill_key: 'email', sort_order: 3 },
+  optionalDateOfBirthField(4),
   {
     label: 'Sex',
     field_type: 'dropdown',
     required: true,
     prefill_key: 'sex',
     options: ['Male', 'Female'],
-    sort_order: 4,
+    sort_order: 5,
   },
   {
     label: 'Residence / area',
     field_type: 'short_text',
     required: true,
     prefill_key: 'residence',
-    sort_order: 5,
+    sort_order: 6,
   },
   {
     label: 'School / work address',
     field_type: 'long_text',
     required: false,
     prefill_key: 'address_school_work',
-    sort_order: 6,
+    sort_order: 7,
   },
   {
     label: 'Education level',
@@ -103,7 +109,7 @@ export const CAMPUS_REGISTRATION_FIELDS: FormTemplateField[] = [
       'GRADUATED',
       'POSTGRADUATE',
     ],
-    sort_order: 7,
+    sort_order: 8,
   },
   {
     label: 'Age bracket',
@@ -111,21 +117,21 @@ export const CAMPUS_REGISTRATION_FIELDS: FormTemplateField[] = [
     required: true,
     prefill_key: 'age_bracket',
     options: ['1-12', '13-19', '20-29', '30-39', '40-49', '50+'],
-    sort_order: 8,
+    sort_order: 9,
   },
   {
     label: 'Parent / guardian name',
     field_type: 'short_text',
     required: false,
     prefill_key: 'parent_name',
-    sort_order: 9,
+    sort_order: 10,
   },
   {
     label: 'Parent / guardian phone',
     field_type: 'phone',
     required: false,
     prefill_key: 'parent_contact',
-    sort_order: 10,
+    sort_order: 11,
   },
 ]
 
@@ -146,25 +152,26 @@ const OUTREACH_SIGNUP_FIELDS: FormTemplateField[] = [
     sort_order: 1,
   },
   { label: 'Email', field_type: 'email', required: false, prefill_key: 'email', sort_order: 2 },
+  optionalDateOfBirthField(3),
   {
     label: 'Area / neighbourhood',
     field_type: 'short_text',
     required: false,
     prefill_key: 'residence',
-    sort_order: 3,
+    sort_order: 4,
   },
   {
     label: 'How did you hear about us?',
     field_type: 'dropdown',
     required: false,
     options: ['Friend', 'Social media', 'Campus visit', 'Church service', 'Other'],
-    sort_order: 4,
+    sort_order: 5,
   },
   {
     label: 'Anything else you want us to know?',
     field_type: 'long_text',
     required: false,
-    sort_order: 5,
+    sort_order: 6,
   },
 ]
 
@@ -226,6 +233,22 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         ? `Register for ${groupName}.`
         : `Register for ${DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}.`,
     fields: CAMP_MEETING_REGISTRATION_FIELDS,
+  },
+  {
+    id: 'camp_meeting_feedback',
+    label: 'Camp meeting review',
+    description:
+      'Post-event feedback with phone lookup — share after camp for attendees to review their experience.',
+    category: CAMP_MEETING_FEEDBACK_CATEGORY,
+    enable_profile_lookup: true,
+    capture_respondent_location: false,
+    defaultTitle: (groupName) =>
+      groupName ? `${groupName} — Review` : `${DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME} review`,
+    defaultDescription: (groupName) =>
+      groupName
+        ? `Share your feedback about ${groupName}. Your input helps us improve next year.`
+        : 'Post–camp meeting review and feedback form.',
+    fields: CAMP_MEETING_FEEDBACK_FIELDS,
   },
   {
     id: 'corporate_gem_registration',
