@@ -11,20 +11,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <Sidebar />
       </div>
 
       {/* Main Content */}
-      <div className="lg:pl-72">
+      <div className="lg:pl-64">
         {/* Mobile Header */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm lg:hidden">
+        <div className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-x-3 border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-sm lg:hidden">
           <MobileSidebar />
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-              Campus Gem Ministries
-            </h1>
-            <p className="text-sm text-gray-600">Campus Ministry</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base font-semibold text-slate-900">Campus Gem Ministries</h1>
           </div>
         </div>
 

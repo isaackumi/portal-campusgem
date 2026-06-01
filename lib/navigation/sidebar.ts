@@ -13,6 +13,7 @@ import {
   CreditCard,
   DollarSign,
   FileText,
+  Gift,
   Group,
   LayoutDashboard,
   Mail,
@@ -43,79 +44,121 @@ export type SidebarNavSection = {
   items: SidebarNavItem[]
 }
 
+/** Lean sidebar IA — deep links live on each module dashboard. */
 export const sidebarNavigationSections: SidebarNavSection[] = [
   {
-    title: 'CORE MANAGEMENT',
+    title: 'Main',
     items: [
       { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { name: 'Members', href: '/members', icon: Users },
       { name: 'Visitors', href: '/visitors', icon: UserPlus },
       { name: 'Groups', href: '/groups', icon: Group },
+      { name: 'Recommendations', href: '/recommendations', icon: Gift },
     ],
   },
   {
-    title: 'REDEMPTION LIGHT CHAPEL',
+    title: 'Attendance',
+    items: [
+      { name: 'Attendance', href: '/attendance', icon: Calendar },
+      { name: 'QR Scanner', href: '/attendance/scanner', icon: QrCode },
+      { name: 'Kiosk', href: '/attendance/kiosk', icon: Monitor },
+      { name: 'Manual check-in', href: '/attendance/manual', icon: CheckSquare },
+      { name: 'Analytics', href: '/attendance/analytics', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'Camp meeting',
     items: [
       {
-        name: 'RLC Dashboard',
+        name: 'Overview',
+        href: '/admin/camp-meeting',
+        icon: LayoutDashboard,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'Registrations',
+        href: '/admin/camp-meeting/registrations',
+        icon: Users,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'Directory',
+        href: '/admin/camp-meeting/directory',
+        icon: ClipboardList,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'Follow-up',
+        href: '/admin/camp-meeting/follow-up',
+        icon: UserCheck,
+        roles: ['admin', 'pastor', 'elder', 'finance_officer'],
+      },
+      {
+        name: 'Analytics',
+        href: '/admin/camp-meeting/analytics',
+        icon: BarChart3,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'Check-in scan',
+        href: '/admin/camp-meeting/scan',
+        icon: QrCode,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'Camp years',
+        href: '/admin/camp-meeting/years',
+        icon: Calendar,
+        roles: ['admin'],
+      },
+      {
+        name: 'Import data',
+        href: '/admin/camp-meeting/import',
+        icon: Upload,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+    ],
+  },
+  {
+    title: 'Redemption Light',
+    items: [
+      {
+        name: 'RLC overview',
         href: '/admin/rlc',
         icon: Church,
         permission: 'rlc.view',
       },
       {
-        name: 'RLC Visitors',
+        name: 'Visitors',
         href: '/admin/rlc/visitors',
         icon: UserPlus,
         permission: 'rlc.view',
       },
       {
-        name: 'RLC Members',
+        name: 'Members',
         href: '/admin/rlc/members',
         icon: Users,
         permission: 'rlc.view',
       },
       {
-        name: 'Follow-up Board',
+        name: 'Follow-up',
         href: '/admin/rlc/follow-up',
         icon: UserCheck,
         permission: 'rlc.manage',
       },
       {
-        name: 'Import from Campus/Camp',
-        href: '/admin/rlc/import',
-        icon: Upload,
-        permission: 'rlc.manage',
-      },
-      {
-        name: 'RLC Analytics',
+        name: 'Analytics',
         href: '/admin/rlc/analytics',
         icon: BarChart3,
         permission: 'rlc.view',
       },
-      {
-        name: 'RLC Attendance',
-        href: '/admin/rlc/attendance',
-        icon: Calendar,
-        permission: 'rlc.view',
-      },
     ],
   },
   {
-    title: 'ATTENDANCE SYSTEM',
-    items: [
-      { name: 'Attendance Hub', href: '/attendance', icon: Calendar },
-      { name: 'QR Scanner', href: '/attendance/scanner', icon: QrCode },
-      { name: 'Kiosk Mode', href: '/attendance/kiosk', icon: Monitor },
-      { name: 'Manual Check-in', href: '/attendance/manual', icon: CheckSquare },
-      { name: 'Bulk Attendance', href: '/attendance/bulk', icon: Users },
-      { name: 'Attendance Analytics', href: '/attendance/analytics', icon: BarChart3 },
-    ],
-  },
-  {
-    title: 'FORMS & OUTREACH',
+    title: 'Outreach',
     items: [
       {
-        name: 'Campus & Activities',
+        name: 'Campus activities',
         href: '/admin/campus-activities',
         icon: Building2,
         roles: ['admin', 'pastor', 'elder'],
@@ -127,7 +170,7 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         roles: ['admin', 'pastor', 'elder'],
       },
       {
-        name: 'Forms Hub',
+        name: 'Forms',
         href: '/admin/forms',
         icon: ClipboardList,
         roles: ['admin', 'pastor', 'elder'],
@@ -135,11 +178,16 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
     ],
   },
   {
-    title: 'COMMUNICATIONS',
+    title: 'Communications',
     items: [
-      { name: 'SMS Management', href: '/sms', icon: MessageSquare },
-      { name: 'Birthdays & Anniversaries', href: '/celebrations', icon: Cake },
-      { name: 'Email', href: '/communication/email', icon: Mail, roles: ['admin', 'pastor', 'elder', 'finance_officer'] },
+      { name: 'SMS', href: '/sms', icon: MessageSquare },
+      { name: 'Celebrations', href: '/celebrations', icon: Cake },
+      {
+        name: 'Email',
+        href: '/communication/email',
+        icon: Mail,
+        roles: ['admin', 'pastor', 'elder', 'finance_officer'],
+      },
       {
         name: 'Notifications',
         href: '/communication/notifications',
@@ -149,101 +197,21 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
     ],
   },
   {
-    title: 'CAMP MEETING',
+    title: 'Administration',
     items: [
-      { name: 'Camp Dashboard', href: '/admin/camp-meeting', icon: Calendar, roles: ['admin', 'pastor', 'elder'] },
       {
-        name: 'Camper Directory',
-        href: '/admin/camp-meeting/directory',
-        icon: Users,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'Registrations',
-        href: '/admin/camp-meeting/registrations',
-        icon: Users,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'Camp Activities',
-        href: '/admin/camp-meeting/activities',
-        icon: ClipboardList,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'Analytics',
-        href: '/admin/camp-meeting/analytics',
-        icon: BarChart3,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'Follow-up Management',
-        href: '/admin/camp-meeting/follow-up',
-        icon: UserCheck,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'My follow-ups',
-        href: '/admin/camp-meeting/follow-up?mine=1',
-        icon: UserCheck,
+        name: 'Admin hub',
+        href: '/admin',
+        icon: LayoutDashboard,
         roles: ['admin', 'pastor', 'elder', 'finance_officer'],
       },
-      {
-        name: 'Bulk Communications',
-        href: '/admin/camp-meeting/communications',
-        icon: MessageSquare,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'Payment Management',
-        href: '/admin/camp-meeting/payments',
-        icon: DollarSign,
-        roles: ['admin', 'pastor', 'elder', 'finance_officer'],
-      },
-      {
-        name: 'Notification Settings',
-        href: '/admin/camp-meeting/notifications',
-        icon: Bell,
-        roles: ['admin'],
-      },
-      {
-        name: 'Camp Years Management',
-        href: '/admin/camp-meeting/years',
-        icon: Calendar,
-        roles: ['admin'],
-        description: 'Manage all camp years',
-      },
-      {
-        name: 'Historical Import',
-        href: '/admin/camp-meeting/import',
-        icon: Upload,
-        roles: ['admin', 'pastor', 'elder'],
-      },
-      {
-        name: 'QR Scanner',
-        href: '/admin/camp-meeting/scan',
-        icon: QrCode,
-        roles: ['admin', 'pastor', 'elder'],
-      },
+      { name: 'Users', href: '/admin/users', icon: Users, roles: ['admin'] },
+      { name: 'Admins', href: '/admin/admins', icon: Shield, roles: ['admin'] },
+      { name: 'Groups', href: '/admin/groups', icon: Group, roles: ['admin', 'pastor', 'elder'] },
     ],
   },
   {
-    title: 'ADMINISTRATION',
-    items: [
-      { name: 'Admin Overview', href: '/admin', icon: LayoutDashboard, roles: ['admin', 'pastor', 'elder', 'finance_officer'] },
-      {
-        name: 'Redemption Light Chapel',
-        href: '/admin/rlc',
-        icon: Church,
-        permission: 'rlc.view',
-      },
-      { name: 'User Management', href: '/admin/users', icon: Users, roles: ['admin'] },
-      { name: 'Admin Management', href: '/admin/admins', icon: Shield, roles: ['admin'] },
-      { name: 'Group Management', href: '/admin/groups', icon: Group, roles: ['admin', 'pastor', 'elder'] },
-    ],
-  },
-  {
-    title: 'FINANCIAL',
+    title: 'Finance',
     items: [
       { name: 'Donations', href: '/financial/donations', icon: DollarSign },
       { name: 'Payments', href: '/financial/payments', icon: CreditCard },
