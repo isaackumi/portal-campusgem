@@ -92,6 +92,8 @@ function RegistrationsPageContent() {
             reg.full_name?.toLowerCase().includes(search.toLowerCase()) ||
             reg.email?.toLowerCase().includes(search.toLowerCase()) ||
             reg.phone?.toLowerCase().includes(search.toLowerCase()) ||
+            reg.parent_contact?.toLowerCase().includes(search.toLowerCase()) ||
+            reg.parent_name?.toLowerCase().includes(search.toLowerCase()) ||
             reg.qr_code?.toLowerCase().includes(search.toLowerCase()) ||
             `${reg.first_name} ${reg.last_name}`.toLowerCase().includes(search.toLowerCase())
 

@@ -8,6 +8,11 @@ import { Suspense, useMemo } from 'react'
 import QRCode from 'react-qr-code'
 import { WhatsappLogo } from '@/components/icons/whatsapp-logo'
 import { buildCampRegistrationInviteShareUrl } from '@/lib/forms/whatsapp-share'
+import {
+  campQrDisplayName,
+  campQrDisplayRole,
+  parseCampQrPayload,
+} from '@/lib/camp/qr-payload'
 
 function SuccessContent() {
   const searchParams = useSearchParams()
@@ -32,6 +37,10 @@ function SuccessContent() {
     }
     return '/camp-meeting/register'
   }, [registerUrlParam])
+
+  const qrPayload = useMemo(() => parseCampQrPayload(qrCode), [qrCode])
+  const displayName = campQrDisplayName(qrPayload, name)
+  const displayRole = campQrDisplayRole(qrPayload, searchParams.get('role'))
 
   const whatsappInviteHref = useMemo(
     () =>
@@ -79,7 +88,16 @@ function SuccessContent() {
             <div className="mx-auto w-fit rounded-xl border bg-white p-4 shadow-sm">
               <QRCode value={qrCode} size={Math.min(192, typeof window !== 'undefined' ? window.innerWidth - 120 : 192)} />
             </div>
-            <p className="break-all font-mono text-xs text-gray-500">{qrCode}</p>
+            {(displayName || displayRole) && (
+              <div className="space-y-0.5">
+                {displayName ? (
+                  <p className="text-base font-semibold text-gray-900">{displayName}</p>
+                ) : null}
+                {displayRole ? (
+                  <p className="text-sm text-gray-600">{displayRole}</p>
+                ) : null}
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-center text-sm text-gray-600">

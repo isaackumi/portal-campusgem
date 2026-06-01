@@ -432,13 +432,7 @@ export default function RegistrationDetailPage() {
     }
 
     const fullName = data.full_name || `${data.first_name} ${data.last_name}`.trim()
-    let qrCodeValue = data.qr_code
-    try {
-        const parsed = JSON.parse(data.qr_code)
-        qrCodeValue = typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
-    } catch {
-        // Use as is if not JSON
-    }
+    const qrScanValue = data.qr_code
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -803,17 +797,14 @@ export default function RegistrationDetailPage() {
                                     <div className="bg-white p-4 rounded-lg border-2 border-dashed">
                                         <QRCode
                                             id="qr-code-svg"
-                                            value={qrCodeValue}
+                                            value={qrScanValue}
                                             size={200}
                                             level="H"
                                         />
                                     </div>
-                                    <div className="w-full">
-                                        <p className="text-xs font-mono bg-gray-100 p-2 rounded text-center break-all">
-                                            {typeof qrCodeValue === 'string' && qrCodeValue.length > 50 
-                                                ? qrCodeValue.slice(0, 50) + '...' 
-                                                : qrCodeValue}
-                                        </p>
+                                    <div className="w-full space-y-0.5 rounded bg-gray-100 p-3 text-center">
+                                        <p className="font-semibold text-gray-900">{fullName}</p>
+                                        <p className="text-sm text-gray-600">{data.role || 'Participant'}</p>
                                     </div>
                                     <Button
                                         variant="outline"

@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import { cn } from '@/lib/utils'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
+import { CampManualCheckInPanel } from '@/components/camp/camp-manual-check-in-panel'
 
 interface CheckInStats {
     totalRegistrations: number
@@ -44,6 +45,7 @@ export default function CampScannerPage() {
         percentage: 0
     })
     const [recentCheckIns, setRecentCheckIns] = useState<RecentCheckIn[]>([])
+    const [registrations, setRegistrations] = useState<CampRegistration[]>([])
     const [loading, setLoading] = useState(true)
     const [scanning, setScanning] = useState(false)
     const scannerRef = useRef<Html5QrcodeScanner | null>(null)
@@ -81,14 +83,15 @@ export default function CampScannerPage() {
         if (!campYear) return
         
         try {
-            const { data: registrations } = await campService.getCampRegistrations(campYear.id)
-            if (registrations) {
+            const { data: campRegs } = await campService.getCampRegistrations(campYear.id)
+            if (campRegs) {
+                setRegistrations(campRegs)
                 const today = new Date().toISOString().split('T')[0]
-                const total = registrations.length
-                const checkedInTotal = registrations.filter(r => r.status === 'checked_in').length
+                const total = campRegs.length
+                const checkedInTotal = campRegs.filter(r => r.status === 'checked_in').length
                 
                 // Get registrations checked in today (based on updated_at)
-                const todayCheckIns = registrations.filter(r => {
+                const todayCheckIns = campRegs.filter(r => {
                     if (r.status !== 'checked_in') return false
                     const updatedDate = new Date(r.updated_at).toISOString().split('T')[0]
                     return updatedDate === today
@@ -308,8 +311,13 @@ export default function CampScannerPage() {
         }
     }
 
+    function refreshCheckInData() {
+        void loadStats()
+        void loadRecentCheckIns()
+    }
+
     const handleManualCheckIn = () => {
-        router.push('/admin/camp-meeting/registrations')
+        document.getElementById('manual-check-in')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
 
     if (loading) {
@@ -344,7 +352,7 @@ export default function CampScannerPage() {
                     actions={
                         <>
                             <Button variant="outline" onClick={handleManualCheckIn}>
-                                Manual Check-In
+                                Manual check-in
                             </Button>
                             <Button
                                 variant="outline"
@@ -478,6 +486,15 @@ export default function CampScannerPage() {
                                 )}
                             </CardContent>
                         </Card>
+
+                        <div id="manual-check-in">
+                            <CampManualCheckInPanel
+                                campYearId={campYear.id}
+                                registrations={registrations}
+                                performedByUserId={user?.id}
+                                onCheckInComplete={refreshCheckInData}
+                            />
+                        </div>
                     </div>
 
                     {/* Recent Check-ins - Sidebar */}
