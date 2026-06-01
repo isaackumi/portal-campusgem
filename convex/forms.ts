@@ -506,6 +506,16 @@ export const submitFormResponsePublic = mutation({
       throw new Error('This camp registration form is not linked to a camp year.')
     }
 
+    if (isCampMeetingForm && campYearId) {
+      const campYear = await ctx.db.get('camp_years', campYearId as Id<'camp_years'>)
+      if (!campYear) {
+        throw new Error('Camp year not found.')
+      }
+      if (!campYear.registration_open) {
+        throw new Error('Registration is closed for this Camp Meeting.')
+      }
+    }
+
     if (respondentPhone) {
       const normalized = normalizeGhanaPhone(respondentPhone)
 

@@ -5,9 +5,11 @@ import { useParams } from 'next/navigation'
 import { getPublishedFormBySlug } from '@/lib/actions/forms'
 import { PublicFormRenderer } from '@/components/forms/public-form-renderer'
 import {
+  PublicCampRegistrationClosed,
   PublicFormLoadingState,
   PublicFormNotFound,
 } from '@/components/forms/public-form-layout'
+import { CAMP_MEETING_REGISTRATION_CATEGORY } from '@/lib/constants/camp-meeting'
 import type { ChurchForm, ChurchFormField } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
 
@@ -19,6 +21,7 @@ export default function PublicFormPage() {
   const [fields, setFields] = useState<ChurchFormField[]>([])
   const [campusGroupName, setCampusGroupName] = useState<string | null>(null)
   const [campYearLabel, setCampYearLabel] = useState<string | null>(null)
+  const [campRegistrationOpen, setCampRegistrationOpen] = useState<boolean | undefined>(undefined)
 
   useEffect(() => {
     void loadForm()
@@ -40,11 +43,19 @@ export default function PublicFormPage() {
     setFields([...data.fields].sort((a, b) => a.sort_order - b.sort_order))
     setCampusGroupName(data.group_name ?? null)
     setCampYearLabel(data.camp_year_label ?? null)
+    setCampRegistrationOpen(data.camp_registration_open)
     setLoading(false)
   }
 
   if (loading) return <PublicFormLoadingState />
   if (!form) return <PublicFormNotFound />
+
+  if (
+    form.category === CAMP_MEETING_REGISTRATION_CATEGORY &&
+    campRegistrationOpen === false
+  ) {
+    return <PublicCampRegistrationClosed campYearLabel={campYearLabel} />
+  }
 
   return (
     <PublicFormRenderer

@@ -55,6 +55,7 @@ export async function getPublishedFormBySlug(slug: string): Promise<{
     fields: ChurchFormField[]
     group_name?: string
     camp_year_label?: string
+    camp_registration_open?: boolean
   } | null
   error: string | null
 }> {
@@ -72,15 +73,20 @@ export async function getPublishedFormBySlug(slug: string): Promise<{
     }
 
     let camp_year_label: string | undefined
+    let camp_registration_open: boolean | undefined
     if (data.form.camp_year_id) {
       const { getCampYearById } = await import('@/lib/actions/camp')
+      const { CAMP_MEETING_REGISTRATION_CATEGORY } = await import('@/lib/constants/camp-meeting')
       const yearRes = await getCampYearById(data.form.camp_year_id)
       if (yearRes.data) {
         camp_year_label = `${yearRes.data.year}${yearRes.data.theme ? ` · ${yearRes.data.theme}` : ''}`
+        if (data.form.category === CAMP_MEETING_REGISTRATION_CATEGORY) {
+          camp_registration_open = yearRes.data.registration_open
+        }
       }
     }
 
-    return { data: { ...data, group_name, camp_year_label }, error: null }
+    return { data: { ...data, group_name, camp_year_label, camp_registration_open }, error: null }
   } catch (error: unknown) {
     return {
       data: null,

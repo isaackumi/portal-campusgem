@@ -275,6 +275,31 @@ export function PublicFormNotFound() {
   )
 }
 
+export function PublicCampRegistrationClosed({
+  campYearLabel,
+}: {
+  campYearLabel?: string | null
+}) {
+  return (
+    <PublicFormPageShell>
+      <Card className="shadow-sm">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+            <AlertTriangle className="h-8 w-8 text-slate-500" />
+          </div>
+          <CardTitle>
+            {campYearLabel ? `Camp Meeting ${campYearLabel}` : 'Camp Meeting registration'}
+          </CardTitle>
+          <CardDescription className="text-base">
+            Registration is not open for this camp year yet. Check back later or contact the church
+            office if you think this is a mistake.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </PublicFormPageShell>
+  )
+}
+
 export function PublicFormSuccess({ title }: { title: string; form?: ChurchForm }) {
   const theme = usePublicFormTheme()
 
