@@ -1,9 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { loadRlcStatsAction, loadRlcVisitorsAction } from '@/lib/actions/rlc'
-import { buildRlcAnalyticsInsights, rlcPipelineFunnel } from '@/lib/rlc/analytics'
+import {
+  buildRlcAnalyticsInsights,
+  rlcFollowUpBreakdown,
+  rlcPipelineFunnel,
+  rlcSourceSlices,
+  rlcVisitorTimeline,
+} from '@/lib/rlc/analytics'
 import { RLC_SOURCE_LABELS } from '@/lib/constants/rlc'
 import type { RlcStats, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
@@ -11,6 +17,12 @@ import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { rlcFollowUpHref } from '@/lib/rlc/follow-up-sla'
+import { AnalyticsPieChart } from '@/components/charts/analytics-pie-chart'
+import {
+  AnalyticsCumulativeChart,
+  AnalyticsHorizontalBarChart,
+} from '@/components/charts/analytics-charts'
+import { BarChart3, LineChart, PieChartIcon } from 'lucide-react'
 
 export default function RlcAnalyticsPage() {
   const [stats, setStats] = useState<RlcStats | null>(null)
@@ -25,6 +37,17 @@ export default function RlcAnalyticsPage() {
     })
   }, [])
 
+  const sourceSlices = useMemo(() => {
+    if (!stats) return []
+    return rlcSourceSlices(stats).map((row) => ({
+      label: RLC_SOURCE_LABELS[row.label as keyof typeof RLC_SOURCE_LABELS] ?? row.label.replace(/_/g, ' '),
+      count: row.count,
+    }))
+  }, [stats])
+
+  const timeline = useMemo(() => rlcVisitorTimeline(visitors), [visitors])
+  const followUpRows = useMemo(() => rlcFollowUpBreakdown(visitors), [visitors])
+
   if (loading || !stats) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -35,11 +58,15 @@ export default function RlcAnalyticsPage() {
 
   const insights = buildRlcAnalyticsInsights(stats, visitors)
   const funnel = rlcPipelineFunnel(stats)
-  const maxFunnel = Math.max(...funnel.map((f) => f.count), 1)
+  const funnelData = funnel.map((stage) => ({
+    name: stage.stage,
+    value: stage.count,
+    percent: stats.total_visitors > 0 ? Math.round((stage.count / stats.total_visitors) * 100) : 0,
+  }))
 
   return (
     <PageContainer>
-      <RlcPageHeader title="RLC Analytics" subtitle="Conversion funnel, sources, and follow-up health." />
+      <RlcPageHeader title="RLC Analytics" subtitle="Conversion funnel, sources, visitor trends, and follow-up health." />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
@@ -57,49 +84,68 @@ export default function RlcAnalyticsPage() {
         ))}
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LineChart className="h-5 w-5 text-rose-600" />
+            Visitor arrivals over time
+          </CardTitle>
+          <CardDescription>Daily first visits and cumulative RLC visitors.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AnalyticsCumulativeChart points={timeline} height={280} emptyMessage="No visit dates recorded yet" />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Pipeline funnel</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-rose-600" />
+              Pipeline funnel
+            </CardTitle>
+            <CardDescription>Stage counts across the RLC membership journey.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {funnel.map((stage) => (
-              <div key={stage.stage}>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span>{stage.stage}</span>
-                  <span className="font-medium tabular-nums">{stage.count}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-rose-600"
-                    style={{ width: `${(stage.count / maxFunnel) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+          <CardContent>
+            <AnalyticsHorizontalBarChart data={funnelData} barColor="#e11d48" />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Visitor sources</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <PieChartIcon className="h-5 w-5 text-violet-600" />
+              Visitor sources
+            </CardTitle>
+            <CardDescription>Where RLC visitors heard about the church.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {Object.entries(stats.source_counts).length === 0 ? (
+          <CardContent>
+            {sourceSlices.length === 0 ? (
               <p className="text-sm text-muted-foreground">No source data yet.</p>
             ) : (
-              Object.entries(stats.source_counts)
-                .sort((a, b) => b[1] - a[1])
-                .map(([src, count]) => (
-                  <div key={src} className="flex items-center justify-between text-sm">
-                    <span>{RLC_SOURCE_LABELS[src as keyof typeof RLC_SOURCE_LABELS] ?? src}</span>
-                    <span className="font-semibold tabular-nums">{count}</span>
-                  </div>
-                ))
+              <AnalyticsPieChart slices={sourceSlices} height={260} />
             )}
           </CardContent>
         </Card>
       </div>
+
+      {followUpRows.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Follow-up pipeline</CardTitle>
+            <CardDescription>Active visitor follow-up status and SLA health.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AnalyticsHorizontalBarChart
+              data={followUpRows.map((row) => ({
+                name: row.label,
+                value: row.count,
+              }))}
+              barColor="#8b5cf6"
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

@@ -10,6 +10,8 @@ import {
   CampRegistrationVelocityChart,
   CampYearComparisonChart,
 } from '@/components/camp/camp-analytics-charts'
+import { AnalyticsPieChart } from '@/components/charts/analytics-pie-chart'
+import { AnalyticsHorizontalBarChart, AnalyticsRevenueChart } from '@/components/charts/analytics-charts'
 import {
   BarChart3,
   Calendar,
@@ -53,26 +55,37 @@ export function AnalyticsBreakdownCard({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="max-h-[400px] space-y-4 overflow-y-auto">
-          {slices.map((slice) => (
-            <div key={slice.label} className="space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-gray-700">{slice.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-gray-900">{slice.count}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {slice.percent}%
-                  </Badge>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <AnalyticsPieChart
+            slices={slices.map((s) => ({
+              label: s.label,
+              count: s.count,
+              percent: s.percent,
+            }))}
+            height={240}
+            innerRadius="48%"
+          />
+          <div className="max-h-[400px] space-y-4 overflow-y-auto">
+            {slices.map((slice) => (
+              <div key={slice.label} className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-gray-700">{slice.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-900">{slice.count}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {slice.percent}%
+                    </Badge>
+                  </div>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${barClassName}`}
+                    style={{ width: `${slice.percent}%` }}
+                  />
                 </div>
               </div>
-              <div className="h-3 overflow-hidden rounded-full bg-gray-100">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${barClassName}`}
-                  style={{ width: `${slice.percent}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
         {total > 0 ? (
           <p className="mt-4 text-xs text-muted-foreground">Based on {total.toLocaleString()} records</p>
@@ -282,21 +295,32 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
             <CardTitle className="text-base">Data completeness</CardTitle>
             <CardDescription>How complete registration records are for this year</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-            {dataQuality.map((row) => (
-              <div key={row.field} className="rounded-lg border bg-slate-50 p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-slate-700">{row.field}</span>
-                  <Badge variant={row.percent >= 80 ? 'default' : 'outline'}>{row.percent}%</Badge>
+          <CardContent className="space-y-6 pt-6">
+            <AnalyticsHorizontalBarChart
+              data={dataQuality.map((row) => ({
+                name: row.field,
+                value: row.percent,
+                percent: row.percent,
+                fill: row.percent >= 80 ? '#10b981' : row.percent >= 50 ? '#f59e0b' : '#f87171',
+              }))}
+              barColor="#10b981"
+            />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {dataQuality.map((row) => (
+                <div key={row.field} className="rounded-lg border bg-slate-50 p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-slate-700">{row.field}</span>
+                    <Badge variant={row.percent >= 80 ? 'default' : 'outline'}>{row.percent}%</Badge>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                    <div
+                      className={`h-full rounded-full ${row.percent >= 80 ? 'bg-emerald-500' : row.percent >= 50 ? 'bg-amber-500' : 'bg-rose-400'}`}
+                      style={{ width: `${row.percent}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
-                  <div
-                    className={`h-full rounded-full ${row.percent >= 80 ? 'bg-emerald-500' : row.percent >= 50 ? 'bg-amber-500' : 'bg-rose-400'}`}
-                    style={{ width: `${row.percent}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
       ) : null}
@@ -492,7 +516,9 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
           </CardTitle>
           <CardDescription>₵{combined.revenue.totalPending.toLocaleString()} still pending across all years</CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto pt-4">
+        <CardContent className="space-y-6 pt-6">
+          <AnalyticsRevenueChart rows={combined.revenue.byYear} height={300} />
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr className="border-b text-left text-muted-foreground">
@@ -513,6 +539,7 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
               ))}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
 

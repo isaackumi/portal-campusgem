@@ -77,3 +77,52 @@ export function rlcPipelineFunnel(stats: RlcStats): Array<{ stage: string; count
     { stage: 'Full Member', count: stats.pipeline_counts.full_member },
   ]
 }
+
+export function rlcSourceSlices(stats: RlcStats): Array<{ label: string; count: number }> {
+  return Object.entries(stats.source_counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([src, count]) => ({ label: src, count }))
+}
+
+export function rlcVisitorTimeline(visitors: Visitor[]): Array<{ label: string; count: number; cumulative: number }> {
+  const dayCounts = new Map<string, number>()
+  for (const visitor of visitors) {
+    const day = visitor.visit_date?.slice(0, 10)
+    if (!day) continue
+    dayCounts.set(day, (dayCounts.get(day) ?? 0) + 1)
+  }
+  const sorted = Array.from(dayCounts.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  let running = 0
+  return sorted.map(([date, count]) => {
+    running += count
+    const label = new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    return { label, count, cumulative: running }
+  })
+}
+
+export function rlcFollowUpBreakdown(visitors: Visitor[]): Array<{ label: string; count: number }> {
+  const active = visitors.filter((v) => v.is_active && !v.converted_to_member)
+  const buckets = new Map<string, number>([
+    ['Pending', 0],
+    ['In progress', 0],
+    ['Overdue SLA', 0],
+    ['Completed', 0],
+  ])
+  for (const v of visitors) {
+    if (v.converted_to_member) {
+      buckets.set('Completed', (buckets.get('Completed') ?? 0) + 1)
+      continue
+    }
+    if (!v.is_active) continue
+    const sla = classifyRlcFollowUpSla(v)
+    if (sla === 'overdue') buckets.set('Overdue SLA', (buckets.get('Overdue SLA') ?? 0) + 1)
+    else if (v.follow_up_status === 'in_progress') buckets.set('In progress', (buckets.get('In progress') ?? 0) + 1)
+    else buckets.set('Pending', (buckets.get('Pending') ?? 0) + 1)
+  }
+  if (active.length === 0 && visitors.every((v) => v.converted_to_member || !v.is_active)) {
+    // still show completed
+  }
+  return Array.from(buckets.entries())
+    .filter(([, count]) => count > 0)
+    .map(([label, count]) => ({ label, count }))
+}

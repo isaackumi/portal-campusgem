@@ -55,6 +55,7 @@
     "react-dom": "^18",
     "react-hook-form": "^7.48.2",
     "react-qr-code": "^2.0.12",
+    "recharts": "^3.8.1",
     "sharp": "^0.34.4",
     "tailwind-merge": "^2.2.0",
     "tailwindcss-animate": "^1.0.7",

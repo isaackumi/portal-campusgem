@@ -5,9 +5,9 @@ import type { ChurchFormField, ChurchFormResponse } from '@/lib/types'
 import { buildFormAnalyticsReport } from '@/lib/forms/analytics'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { PieChart } from '@/components/forms/pie-chart'
-import { CumulativeChart } from '@/components/forms/cumulative-chart'
-import { BarChart3, LineChart, PieChartIcon } from 'lucide-react'
+import { AnalyticsPieChart } from '@/components/charts/analytics-pie-chart'
+import { AnalyticsCumulativeChart, AnalyticsCompletionChart, AnalyticsHorizontalBarChart } from '@/components/charts/analytics-charts'
+import { BarChart3, LineChart, PieChartIcon, ListChecks } from 'lucide-react'
 
 type Props = {
   fields: ChurchFormField[]
@@ -16,6 +16,17 @@ type Props = {
 
 export function FormAnalyticsDashboard({ fields, responses }: Props) {
   const report = useMemo(() => buildFormAnalyticsReport(fields, responses), [fields, responses])
+
+  const completionRows = useMemo(
+    () =>
+      report.fieldAnalytics.map((field) => ({
+        name: field.label,
+        rate: field.total > 0 ? Math.round((field.answered / field.total) * 100) : 0,
+        answered: field.answered,
+        total: field.total,
+      })),
+    [report.fieldAnalytics]
+  )
 
   if (responses.length === 0) {
     return <p className="text-sm text-muted-foreground">No responses yet — analytics will appear here.</p>
@@ -27,25 +38,25 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total responses</CardDescription>
-            <CardTitle className="text-3xl">{report.totalResponses}</CardTitle>
+            <CardTitle className="text-3xl tabular-nums">{report.totalResponses}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Unique phones</CardDescription>
-            <CardTitle className="text-3xl">{report.uniquePhones}</CardTitle>
+            <CardTitle className="text-3xl tabular-nums">{report.uniquePhones}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Last 7 days</CardDescription>
-            <CardTitle className="text-3xl">{report.last7Days}</CardTitle>
+            <CardTitle className="text-3xl tabular-nums">{report.last7Days}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Avg completion</CardDescription>
-            <CardTitle className="text-3xl">{report.averageCompletion}%</CardTitle>
+            <CardTitle className="text-3xl tabular-nums">{report.averageCompletion}%</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -54,12 +65,25 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <LineChart className="h-5 w-5 text-blue-600" />
-            Cumulative submissions
+            Submission timeline
           </CardTitle>
-          <CardDescription>Running total of form responses over time.</CardDescription>
+          <CardDescription>Daily responses and cumulative total — hover or tap data points for details.</CardDescription>
         </CardHeader>
         <CardContent>
-          <CumulativeChart points={report.cumulative} />
+          <AnalyticsCumulativeChart points={report.cumulative} height={300} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ListChecks className="h-5 w-5 text-emerald-600" />
+            Completion by question
+          </CardTitle>
+          <CardDescription>How fully each question is answered across all submissions.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AnalyticsCompletionChart rows={completionRows} />
         </CardContent>
       </Card>
 
@@ -80,7 +104,7 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
                     <h3 className="font-medium text-slate-900">{chart.title}</h3>
                     <Badge variant="outline">{chart.answered} answered</Badge>
                   </div>
-                  <PieChart slices={chart.slices} />
+                  <AnalyticsPieChart slices={chart.slices} height={240} />
                 </div>
               ))}
             </div>
@@ -94,12 +118,12 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
             <BarChart3 className="h-5 w-5 text-emerald-600" />
             Question breakdown
           </CardTitle>
-          <CardDescription>Per-question distributions and completion rates.</CardDescription>
+          <CardDescription>Per-question distributions with interactive charts for choice-based fields.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {report.fieldAnalytics.map((field) => (
             <div key={field.fieldId} className="rounded-lg border p-4">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-medium">{field.label}</h3>
                 <div className="flex gap-2">
                   <Badge variant="secondary" className="capitalize">
@@ -111,26 +135,19 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
                 </div>
               </div>
               {field.slices.length > 0 ? (
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <PieChart slices={field.slices} size={140} />
-                  <div className="space-y-2">
-                    {field.slices.map((slice) => (
-                      <div key={slice.label} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="truncate pr-2">{slice.label}</span>
-                          <span className="text-muted-foreground">
-                            {slice.count} ({slice.percent}%)
-                          </span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className="h-full rounded-full"
-                            style={{ width: `${slice.percent}%`, backgroundColor: slice.color }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {field.slices.length <= 8 ? (
+                    <AnalyticsPieChart slices={field.slices} height={220} innerRadius="45%" />
+                  ) : null}
+                  <AnalyticsHorizontalBarChart
+                    data={field.slices.map((slice) => ({
+                      name: slice.label,
+                      value: slice.count,
+                      percent: slice.percent,
+                      fill: slice.color,
+                    }))}
+                    barColor="#10b981"
+                  />
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No answers for this question yet.</p>
