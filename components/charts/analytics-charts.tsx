@@ -301,6 +301,148 @@ export function AnalyticsDemographicTrendChart({ rows, height = 320 }: { rows: T
   )
 }
 
+type MetricSeriesInput = {
+  key: string
+  label: string
+  values: Array<{ year: number; value: number }>
+}
+
+/** Multi-line chart from metric trend series (KPI rates, operations, etc.). */
+export function AnalyticsMetricTrendChart({
+  series,
+  height = 300,
+  yUnit = '%',
+  maxSeries = 6,
+}: {
+  series: MetricSeriesInput[]
+  height?: number
+  yUnit?: string
+  maxSeries?: number
+}) {
+  const active = series.filter((s) => s.values.some((v) => v.value > 0)).slice(0, maxSeries)
+  if (active.length === 0) {
+    return <ChartContainer empty emptyMessage="No trend data" height={height} />
+  }
+
+  const years = Array.from(new Set(active.flatMap((s) => s.values.map((v) => v.year)))).sort((a, b) => a - b)
+  const data = years.map((year) => {
+    const point: Record<string, string | number> = { name: String(year) }
+    for (const row of active) {
+      point[row.key] = row.values.find((v) => v.year === year)?.value ?? 0
+    }
+    return point
+  })
+
+  return (
+    <ChartContainer height={height}>
+      <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 4 }}>
+        <CartesianGrid {...CHART_GRID} />
+        <XAxis dataKey="name" tick={CHART_AXIS.tick} axisLine={CHART_AXIS.axisLine} tickLine={CHART_AXIS.tickLine} />
+        <YAxis tick={CHART_AXIS.tick} axisLine={false} tickLine={false} width={40} domain={[0, 100]} unit={yUnit} />
+        <Tooltip content={<AnalyticsChartTooltip valueFormatter={(v) => `${v}${yUnit}`} />} />
+        <Legend formatter={(v) => active.find((s) => s.key === v)?.label ?? v} />
+        {active.map((row, i) => (
+          <Line
+            key={row.key}
+            type="monotone"
+            dataKey={row.key}
+            name={row.key}
+            stroke={chartColor(i)}
+            strokeWidth={2.5}
+            dot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
+          />
+        ))}
+      </ComposedChart>
+    </ChartContainer>
+  )
+}
+
+type GrowthRow = { year: number; name: string; total: number; growthPercent: number | null }
+
+/** Registration volume with year-on-year growth overlay. */
+export function AnalyticsRegistrationGrowthChart({ rows, height = 300 }: { rows: GrowthRow[]; height?: number }) {
+  const data = rows.map((row) => ({
+    name: row.name,
+    total: row.total,
+    growth: row.growthPercent ?? 0,
+    hasGrowth: row.growthPercent != null,
+  }))
+
+  return (
+    <ChartContainer empty={rows.length === 0} emptyMessage="Need 2+ camp years for growth trends" height={height}>
+      <ComposedChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 4 }}>
+        <CartesianGrid {...CHART_GRID} />
+        <XAxis dataKey="name" tick={CHART_AXIS.tick} axisLine={CHART_AXIS.axisLine} tickLine={CHART_AXIS.tickLine} />
+        <YAxis
+          yAxisId="left"
+          tick={CHART_AXIS.tick}
+          axisLine={false}
+          tickLine={false}
+          width={40}
+          tickFormatter={formatCompactNumber}
+        />
+        <YAxis
+          yAxisId="right"
+          orientation="right"
+          tick={CHART_AXIS.tick}
+          axisLine={false}
+          tickLine={false}
+          width={44}
+          unit="%"
+        />
+        <Tooltip
+          content={
+            <AnalyticsChartTooltip
+              valueFormatter={(v, name) =>
+                name === 'growth' || name === 'YoY growth' ? `${v}%` : v.toLocaleString()
+              }
+            />
+          }
+        />
+        <Legend formatter={(v) => (v === 'total' ? 'Registrations' : 'YoY growth')} />
+        <Bar yAxisId="left" dataKey="total" name="total" fill="#6366f1" radius={[6, 6, 0, 0]} maxBarSize={48} />
+        <Line
+          yAxisId="right"
+          type="monotone"
+          dataKey="growth"
+          name="growth"
+          stroke="#f59e0b"
+          strokeWidth={2.5}
+          dot={{ r: 4, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }}
+          connectNulls
+        />
+      </ComposedChart>
+    </ChartContainer>
+  )
+}
+
+type FunnelRateRow = { year: number; name: string; checkInRate: number; collectionRate: number; followUpRate: number }
+
+export function AnalyticsFunnelRateTrendChart({ rows, height = 280 }: { rows: FunnelRateRow[]; height?: number }) {
+  return (
+    <AnalyticsMetricTrendChart
+      height={height}
+      series={[
+        {
+          key: 'checkInRate',
+          label: 'Check-in',
+          values: rows.map((r) => ({ year: r.year, value: r.checkInRate })),
+        },
+        {
+          key: 'collectionRate',
+          label: 'Fee collection',
+          values: rows.map((r) => ({ year: r.year, value: r.collectionRate })),
+        },
+        {
+          key: 'followUpRate',
+          label: 'Follow-up done',
+          values: rows.map((r) => ({ year: r.year, value: r.followUpRate })),
+        },
+      ]}
+    />
+  )
+}
+
 type CompletionRow = { name: string; rate: number; answered: number; total: number }
 
 export function AnalyticsCompletionChart({ rows, height }: { rows: CompletionRow[]; height?: number }) {

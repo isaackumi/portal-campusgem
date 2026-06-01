@@ -4,14 +4,14 @@ import type { AnalyticsSlice, CampAnalyticsReport, CampYearAnalyticsReport } fro
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
-  CampDemographicTrendTable,
   CampFunnelSteps,
   CampNewVsReturningChart,
   CampRegistrationVelocityChart,
   CampYearComparisonChart,
 } from '@/components/camp/camp-analytics-charts'
 import { AnalyticsPieChart } from '@/components/charts/analytics-pie-chart'
-import { AnalyticsHorizontalBarChart, AnalyticsRevenueChart } from '@/components/charts/analytics-charts'
+import { AnalyticsHorizontalBarChart } from '@/components/charts/analytics-charts'
+import { CampTrendAnalysisPanel } from '@/components/camp/camp-trend-analysis-panel'
 import {
   BarChart3,
   Calendar,
@@ -366,6 +366,8 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
 
       <InsightsPanel title="Cross-year patterns" insights={insights} />
 
+      <CampTrendAnalysisPanel trends={combined.trends} revenue={combined.revenue} yearCount={years.length} />
+
       <Card className="border-2">
         <CardHeader className="border-b bg-gray-50">
           <CardTitle className="text-base">All-years registration funnel</CardTitle>
@@ -495,53 +497,6 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
           barClassName="bg-gradient-to-r from-red-500 to-red-600"
         />
       </div>
-
-      <Card className="border-2">
-        <CardHeader className="border-b bg-gray-50">
-          <CardTitle className="text-base">Demographic trends across years</CardTitle>
-          <CardDescription>How age, gender, and education mix shifts season over season (% of each year)</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          <CampDemographicTrendTable title="Age bracket" rows={combined.demographicTrends.ageBracket} />
-          <CampDemographicTrendTable title="Gender" rows={combined.demographicTrends.gender} />
-          <CampDemographicTrendTable title="Education band" rows={combined.demographicTrends.educationBand} />
-        </CardContent>
-      </Card>
-
-      <Card className="border-2">
-        <CardHeader className="border-b bg-gray-50">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <DollarSign className="h-5 w-5 text-emerald-600" />
-            Revenue by camp year
-          </CardTitle>
-          <CardDescription>₵{combined.revenue.totalPending.toLocaleString()} still pending across all years</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          <AnalyticsRevenueChart rows={combined.revenue.byYear} height={300} />
-          <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="pb-2 pr-4 font-medium">Year</th>
-                <th className="pb-2 pr-4 font-medium">Collected</th>
-                <th className="pb-2 pr-4 font-medium">Pending</th>
-                <th className="pb-2 font-medium">Collection rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {combined.revenue.byYear.map((row) => (
-                <tr key={row.year} className="border-b last:border-0">
-                  <td className="py-3 pr-4 font-semibold">{row.year}</td>
-                  <td className="py-3 pr-4">₵{row.paid.toLocaleString()}</td>
-                  <td className="py-3 pr-4">₵{row.pending.toLocaleString()}</td>
-                  <td className="py-3">{row.collectionRate}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        </CardContent>
-      </Card>
 
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Per-year snapshot</h2>

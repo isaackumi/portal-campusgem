@@ -51,6 +51,53 @@ export type DemographicTrendRow = {
   values: Array<{ year: number; percent: number; count: number }>
 }
 
+export type MetricTrendSeries = {
+  key: string
+  label: string
+  description?: string
+  unit: 'percent' | 'count' | 'currency'
+  values: Array<{ year: number; value: number }>
+}
+
+/** Cross-year KPI and operations trend bundle for multi-year camp analytics. */
+export type CampTrendAnalysis = {
+  kpiByYear: Array<{
+    year: number
+    theme?: string
+    total: number
+    growthPercent: number | null
+    checkInRate: number
+    returnRate: number
+    collectionRate: number
+    dataQualityScore: number
+    newCampers: number
+    returningCampers: number
+    checkedIn: number
+    paidCount: number
+    followUpCompletedRate: number
+  }>
+  /** Rate metrics (%): check-in, return, collection, data quality, follow-up completion. */
+  kpiRateSeries: MetricTrendSeries[]
+  /** YoY registration growth and volume. */
+  registrationGrowth: Array<{ year: number; name: string; total: number; growthPercent: number | null }>
+  /** Operations planning signals tracked year-over-year. */
+  operationsSeries: MetricTrendSeries[]
+  /** Funnel conversion rates by camp year. */
+  funnelRates: Array<{
+    year: number
+    name: string
+    checkInRate: number
+    collectionRate: number
+    followUpRate: number
+  }>
+  demographicTrends: {
+    ageBracket: DemographicTrendRow[]
+    gender: DemographicTrendRow[]
+    educationBand: DemographicTrendRow[]
+    residence: DemographicTrendRow[]
+  }
+}
+
 export type CombinedRevenueSummary = {
   totalPaid: number
   totalPending: number
@@ -140,6 +187,7 @@ export type CampMultiYearAnalyticsReport = {
       gender: DemographicTrendRow[]
       educationBand: DemographicTrendRow[]
     }
+    trends: CampTrendAnalysis
     avgDataQualityScore: number
     overallFunnel: FunnelStep[]
   }
@@ -347,6 +395,161 @@ function buildDemographicTrends(
         }
       }),
   }))
+}
+
+function findSlicePercent(slices: AnalyticsSlice[], matcher: (label: string) => boolean): number {
+  const slice = slices.find((row) => matcher(row.label))
+  return slice?.percent ?? 0
+}
+
+function buildOperationsMetricSeries(yearReports: CampYearAnalyticsReport[]): MetricTrendSeries[] {
+  const sorted = [...yearReports].sort((a, b) => a.year - b.year)
+
+  const build = (
+    key: string,
+    label: string,
+    description: string,
+    pick: (report: CampYearAnalyticsReport) => number
+  ): MetricTrendSeries => ({
+    key,
+    label,
+    description,
+    unit: 'percent',
+    values: sorted.map((report) => ({ year: report.year, value: pick(report) })),
+  })
+
+  return [
+    build('nhis', 'NHIS card holders', 'Registrants who reported having NHIS', (report) =>
+      findSlicePercent(report.operations.nhis, (l) => l.includes('Has NHIS'))
+    ),
+    build('health', 'Health challenges reported', 'Self-reported health challenges', (report) =>
+      findSlicePercent(report.operations.health, (l) => l.includes('Reported'))
+    ),
+    build('followUp', 'Follow-up completed', 'Post-camp follow-up marked complete', (report) =>
+      findSlicePercent(report.operations.followUp, (l) => l === 'Completed')
+    ),
+    build('parentContact', 'Complete parent/guardian contact', 'Both parent name and contact on file', (report) =>
+      findSlicePercent(report.operations.parentContact, (l) => l.includes('Complete'))
+    ),
+    build('paid', 'Payment collected', 'Camp fees marked paid or confirmed', (report) =>
+      findSlicePercent(report.operations.paymentStatus, (l) => l === 'Paid')
+    ),
+  ]
+}
+
+export function buildCampTrendAnalysis(
+  yearReports: CampYearAnalyticsReport[],
+  yearComparison: YearComparisonRow[]
+): CampTrendAnalysis {
+  const emptyTrends: CampTrendAnalysis = {
+    kpiByYear: [],
+    kpiRateSeries: [],
+    registrationGrowth: [],
+    operationsSeries: [],
+    funnelRates: [],
+    demographicTrends: {
+      ageBracket: [],
+      gender: [],
+      educationBand: [],
+      residence: [],
+    },
+  }
+
+  if (yearReports.length === 0 || yearComparison.length === 0) {
+    return emptyTrends
+  }
+
+  const sortedComparison = [...yearComparison].sort((a, b) => a.year - b.year)
+  const sortedReports = [...yearReports].sort((a, b) => a.year - b.year)
+
+  const kpiByYear = sortedComparison.map((row) => {
+    const report = sortedReports.find((r) => r.yearId === row.yearId)
+    const total = report?.total ?? row.total
+    const followUpCompleted = report?.overview.followUpCompleted ?? 0
+    return {
+      year: row.year,
+      theme: row.theme,
+      total: row.total,
+      growthPercent: row.growthPercent,
+      checkInRate: row.checkInRate,
+      returnRate: row.returnRate,
+      collectionRate: row.collectionRate,
+      dataQualityScore: row.dataQualityScore,
+      newCampers: row.newCampers,
+      returningCampers: row.returningCampers,
+      checkedIn: row.checkedIn,
+      paidCount: row.paidCount,
+      followUpCompletedRate: total > 0 ? Math.round((followUpCompleted / total) * 100) : 0,
+    }
+  })
+
+  const kpiRateSeries: MetricTrendSeries[] = [
+    {
+      key: 'checkInRate',
+      label: 'Check-in rate',
+      description: 'Registered campers who checked in',
+      unit: 'percent',
+      values: kpiByYear.map((row) => ({ year: row.year, value: row.checkInRate })),
+    },
+    {
+      key: 'returnRate',
+      label: 'Return rate',
+      description: 'Returning campers as % of registrations',
+      unit: 'percent',
+      values: kpiByYear.map((row) => ({ year: row.year, value: row.returnRate })),
+    },
+    {
+      key: 'collectionRate',
+      label: 'Fee collection',
+      description: 'Camp fees collected vs expected',
+      unit: 'percent',
+      values: kpiByYear.map((row) => ({ year: row.year, value: row.collectionRate })),
+    },
+    {
+      key: 'dataQualityScore',
+      label: 'Data quality',
+      description: 'Average registration field completeness',
+      unit: 'percent',
+      values: kpiByYear.map((row) => ({ year: row.year, value: row.dataQualityScore })),
+    },
+    {
+      key: 'followUpCompletedRate',
+      label: 'Follow-up completed',
+      description: 'Registrations with follow-up marked complete',
+      unit: 'percent',
+      values: kpiByYear.map((row) => ({ year: row.year, value: row.followUpCompletedRate })),
+    },
+  ]
+
+  const registrationGrowth = sortedComparison.map((row) => ({
+    year: row.year,
+    name: String(row.year),
+    total: row.total,
+    growthPercent: row.growthPercent,
+  }))
+
+  const funnelRates = sortedReports.map((report) => ({
+    year: report.year,
+    name: String(report.year),
+    checkInRate: report.overview.checkInRate,
+    collectionRate: report.overview.collectionRate,
+    followUpRate:
+      report.total > 0 ? Math.round((report.overview.followUpCompleted / report.total) * 100) : 0,
+  }))
+
+  return {
+    kpiByYear,
+    kpiRateSeries,
+    registrationGrowth,
+    operationsSeries: buildOperationsMetricSeries(sortedReports),
+    funnelRates,
+    demographicTrends: {
+      ageBracket: buildDemographicTrends(sortedReports, 'ageBracket'),
+      gender: buildDemographicTrends(sortedReports, 'gender'),
+      educationBand: buildDemographicTrends(sortedReports, 'educationBand'),
+      residence: buildDemographicTrends(sortedReports, 'residence', 6),
+    },
+  }
 }
 
 function buildOverallFunnel(yearReports: CampYearAnalyticsReport[]): FunnelStep[] {
@@ -843,6 +1046,8 @@ export function buildCampMultiYearAnalyticsReport(
     registrationsByYear.set(year.id, registrationsByYearId[year.id] ?? [])
   }
 
+  const yearComparison = buildYearComparison(yearReports, registrationsByYear)
+
   const combined = {
     totalRegistrations: allRegistrations.length,
     uniqueCampers,
@@ -850,7 +1055,7 @@ export function buildCampMultiYearAnalyticsReport(
     singleYearCampers: uniqueCampers - multiYearCampers,
     avgRegistrationsPerYear:
       sortedYears.length > 0 ? Math.round(allRegistrations.length / sortedYears.length) : 0,
-    yearComparison: buildYearComparison(yearReports, registrationsByYear),
+    yearComparison,
     retention: buildRetentionBuckets(byPhone, uniqueCampers),
     demographics: buildDemographicsSlices(uniqueRegistrations, total),
     operations: buildOperationsSlices(uniqueRegistrations, total),
@@ -861,6 +1066,7 @@ export function buildCampMultiYearAnalyticsReport(
       gender: buildDemographicTrends(yearReports, 'gender'),
       educationBand: buildDemographicTrends(yearReports, 'educationBand'),
     },
+    trends: buildCampTrendAnalysis(yearReports, yearComparison),
     avgDataQualityScore:
       yearReports.length > 0
         ? Math.round(yearReports.reduce((sum, row) => sum + row.dataQualityScore, 0) / yearReports.length)
