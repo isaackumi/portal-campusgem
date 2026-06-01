@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CampRegistration, CampYear } from '@/lib/types'
 import { campRegistrationsToGoogleFormCsv } from '@/lib/camp/google-form-import'
+import { backfillCampCheckInCodes } from '@/lib/actions/camp'
 import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { useAuth } from '@/components/providers'
 import { Input } from '@/components/ui/input'
@@ -65,6 +66,7 @@ function RegistrationsPageContent() {
     
     // Selection
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [backfillingCodes, setBackfillingCodes] = useState(false)
 
     // Redirect to auth if not logged in
     useEffect(() => {
@@ -94,6 +96,7 @@ function RegistrationsPageContent() {
             reg.phone?.toLowerCase().includes(search.toLowerCase()) ||
             reg.parent_contact?.toLowerCase().includes(search.toLowerCase()) ||
             reg.parent_name?.toLowerCase().includes(search.toLowerCase()) ||
+            reg.check_in_code?.toLowerCase().includes(search.toLowerCase()) ||
             reg.qr_code?.toLowerCase().includes(search.toLowerCase()) ||
             `${reg.first_name} ${reg.last_name}`.toLowerCase().includes(search.toLowerCase())
 
@@ -282,6 +285,24 @@ function RegistrationsPageContent() {
         }
     }
 
+    const missingCheckInCodes = registrations.filter((r) => !r.check_in_code?.trim()).length
+
+    async function assignMissingCheckInCodes() {
+        if (!campYear?.id) return
+        setBackfillingCodes(true)
+        const { data, error } = await backfillCampCheckInCodes(campYear.id)
+        setBackfillingCodes(false)
+        if (error || !data) {
+            toast({ variant: 'destructive', title: 'Failed', description: error ?? 'Unknown error' })
+            return
+        }
+        await refresh()
+        toast({
+            title: 'Camp codes assigned',
+            description: `Added GEM codes to ${data.updated} registration(s).`,
+        })
+    }
+
     const uniqueRoles = Array.from(new Set(registrations.map(r => r.role).filter(Boolean)))
     const stats = {
         total: registrations.length,
@@ -314,6 +335,18 @@ function RegistrationsPageContent() {
                                 <Download className="mr-2 h-4 w-4" />
                                 Export CSV
                             </Button>
+                            {missingCheckInCodes > 0 ? (
+                                <Button
+                                    variant="secondary"
+                                    className="shadow-sm"
+                                    disabled={backfillingCodes}
+                                    onClick={() => void assignMissingCheckInCodes()}
+                                >
+                                    {backfillingCodes
+                                        ? 'Assigning codes…'
+                                        : `Assign camp codes (${missingCheckInCodes})`}
+                                </Button>
+                            ) : null}
                         </>
                     }
                 />

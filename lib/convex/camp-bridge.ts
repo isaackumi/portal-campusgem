@@ -193,6 +193,7 @@ export function convexRegistrationDocToCampRegistration(
     status: (doc.status as CampRegistration['status']) ?? 'registered',
     assigned_to: doc.assigned_to != null ? String(doc.assigned_to) : undefined,
     follow_up_status: doc.follow_up_status as CampRegistration['follow_up_status'],
+    check_in_code: doc.check_in_code != null ? String(doc.check_in_code) : undefined,
     qr_code: String(doc.qr_code ?? ''),
     created_at: iso(ct) || new Date().toISOString(),
     updated_at: iso(ut) || iso(ct) || new Date().toISOString(),

@@ -53,6 +53,7 @@ import { useGroups } from '@/lib/hooks/use-data'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { cn, formatDateTime } from '@/lib/utils'
+import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft, CalendarClock, Copy, Eye, GripVertical, Link2, Plus, Save, Trash2, UserRound } from 'lucide-react'
 
 type EditableField = {
@@ -153,7 +154,7 @@ function SortableQuestionCard({
             <Button
               variant="ghost"
               size="icon"
-              className="shrink-0 text-muted-foreground hover:text-destructive"
+              className="h-11 w-11 shrink-0 text-muted-foreground hover:text-destructive"
               onClick={() => onRemove(field.client_id)}
               aria-label="Delete question"
             >
@@ -161,10 +162,14 @@ function SortableQuestionCard({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-4 pt-5 md:grid-cols-2">
-          <div className="space-y-2 md:col-span-2">
+        <CardContent className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
             <Label>Question</Label>
-            <Input value={field.label} onChange={(event) => onUpdate(field.client_id, { label: event.target.value })} />
+            <Input
+              className="min-h-11 text-base sm:text-sm"
+              value={field.label}
+              onChange={(event) => onUpdate(field.client_id, { label: event.target.value })}
+            />
           </div>
           <div className="space-y-2">
             <Label>Type</Label>
@@ -172,7 +177,7 @@ function SortableQuestionCard({
               value={field.field_type}
               onValueChange={(value) => onUpdate(field.client_id, { field_type: value as ChurchFormFieldType })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="min-h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -190,7 +195,7 @@ function SortableQuestionCard({
               value={field.prefill_key}
               onValueChange={(value) => onUpdate(field.client_id, { prefill_key: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="min-h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="max-h-72">
@@ -207,9 +212,10 @@ function SortableQuestionCard({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2 md:col-span-2">
+          <div className="space-y-2 sm:col-span-2">
             <Label>Help text</Label>
             <Input
+              className="min-h-11 text-base sm:text-sm"
               value={field.description}
               onChange={(event) => onUpdate(field.client_id, { description: event.target.value })}
             />
@@ -221,12 +227,12 @@ function SortableQuestionCard({
               onChange={(options) => onUpdate(field.client_id, { options })}
             />
           ) : null}
-          <div className="flex items-center gap-2 md:col-span-2">
+          <div className="flex min-h-11 items-center gap-3 sm:col-span-2">
             <Checkbox
               checked={field.required}
               onCheckedChange={(checked) => onUpdate(field.client_id, { required: checked === true })}
             />
-            <Label>Required</Label>
+            <Label className="leading-snug">Required</Label>
           </div>
         </CardContent>
       </Card>
@@ -461,42 +467,80 @@ export default function FormEditorPage() {
     )
   }
 
+  const actionButtons = (
+    <>
+      <Button variant="outline" className="min-h-11 flex-1 sm:flex-none" asChild>
+        <Link href={`/admin/forms/${form.id}/preview`} target="_blank">
+          <Eye className="mr-2 h-4 w-4 shrink-0" />
+          Preview
+        </Link>
+      </Button>
+      <Button
+        variant="outline"
+        className="min-h-11 flex-1 sm:flex-none"
+        onClick={() => router.push(`/admin/forms/${form.id}/responses`)}
+      >
+        Responses
+      </Button>
+      <Button
+        variant="outline"
+        className="min-h-11 flex-1 text-red-600 hover:bg-red-50 hover:text-red-700 sm:flex-none"
+        onClick={() => setDeleteOpen(true)}
+      >
+        <Trash2 className="mr-2 h-4 w-4 shrink-0" />
+        Delete
+      </Button>
+      <Button
+        variant="outline"
+        className="min-h-11 flex-1 sm:flex-none"
+        onClick={() => void handleSave(false)}
+        disabled={saving}
+      >
+        <Save className="mr-2 h-4 w-4 shrink-0" />
+        Save
+      </Button>
+      <Button className="min-h-11 flex-1 sm:flex-none" onClick={() => void handleSave(true)} disabled={saving}>
+        Publish
+      </Button>
+    </>
+  )
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="mx-auto max-w-5xl space-y-6 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button variant="ghost" onClick={() => router.push('/admin/forms')}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-8">
+      <div className="mx-auto max-w-5xl space-y-4 px-3 py-4 sm:space-y-6 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button variant="ghost" className="-ml-2 w-fit min-h-10" onClick={() => router.push('/admin/forms')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to forms
           </Button>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link href={`/admin/forms/${form.id}/preview`} target="_blank">
-                <Eye className="mr-2 h-4 w-4" />
-                Preview
-              </Link>
-            </Button>
-            <Button variant="outline" onClick={() => router.push(`/admin/forms/${form.id}/responses`)}>
-              View responses
-            </Button>
-            <Button
-              variant="outline"
-              className="text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
-            <Button variant="outline" onClick={() => void handleSave(false)} disabled={saving}>
-              <Save className="mr-2 h-4 w-4" />
-              Save draft
-            </Button>
-            <Button onClick={() => void handleSave(true)} disabled={saving}>
-              Publish
-            </Button>
-          </div>
+          <div className="hidden flex-wrap justify-end gap-2 lg:flex">{actionButtons}</div>
         </div>
 
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold text-slate-900 sm:text-2xl">{title || 'Untitled form'}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {status === 'published' ? 'Published' : status === 'closed' ? 'Closed' : 'Draft'} · {fields.length}{' '}
+            question{fields.length === 1 ? '' : 's'}
+          </p>
+        </div>
+
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+          <div className="mx-auto flex max-w-5xl flex-wrap gap-2">{actionButtons}</div>
+        </div>
+
+        <Tabs defaultValue="questions" className="space-y-0">
+          <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100/95 px-3 py-2 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+            <ScrollableTabsList className="w-full">
+              <TabsTrigger value="settings" className="flex-1 sm:flex-none sm:px-5">
+                Settings
+              </TabsTrigger>
+              <TabsTrigger value="questions" className="flex-1 sm:flex-none sm:px-5">
+                Questions ({fields.length})
+              </TabsTrigger>
+            </ScrollableTabsList>
+          </div>
+
+          <TabsContent value="settings" className="mt-4 space-y-4 focus-visible:outline-none sm:mt-6">
         <Card className="border-blue-200">
           <CardHeader>
             <CardTitle>Form settings</CardTitle>
@@ -513,15 +557,21 @@ export default function FormEditorPage() {
               </span>
             </div>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2 md:col-span-2">
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="title">Form title</Label>
-              <Input id="title" value={title} onChange={(event) => setTitle(event.target.value)} />
+              <Input
+                id="title"
+                className="min-h-11 text-base sm:text-sm"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+              />
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
+                className="min-h-[88px] text-base sm:text-sm"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 rows={3}
@@ -634,13 +684,18 @@ export default function FormEditorPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="slug">Public link slug</Label>
-              <div className="flex gap-2">
-                <Input id="slug" value={slug} onChange={(event) => setSlug(event.target.value)} />
-                <Button type="button" variant="outline" onClick={() => void copyLink()}>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="slug"
+                  className="min-h-11 flex-1 text-base sm:text-sm"
+                  value={slug}
+                  onChange={(event) => setSlug(event.target.value)}
+                />
+                <Button type="button" variant="outline" className="min-h-11 shrink-0" onClick={() => void copyLink()}>
                   <Copy className="mr-2 h-4 w-4" />
-                  Copy
+                  Copy link
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -662,9 +717,10 @@ export default function FormEditorPage() {
                 </a>
               ) : null}
             </div>
-            <div className="flex items-center gap-2 md:col-span-2">
+            <div className="flex items-start gap-3 sm:col-span-2">
               <Checkbox
                 id="profile-lookup"
+                className="mt-1"
                 checked={
                   category === CAMP_MEETING_REGISTRATION_CATEGORY ||
                   category === CAMP_MEETING_FEEDBACK_CATEGORY
@@ -694,9 +750,10 @@ export default function FormEditorPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 md:col-span-2">
+            <div className="flex items-start gap-3 sm:col-span-2">
               <Checkbox
                 id="capture-location"
+                className="mt-1"
                 checked={captureRespondentLocation}
                 onCheckedChange={(checked) => setCaptureRespondentLocation(checked === true)}
               />
@@ -710,16 +767,12 @@ export default function FormEditorPage() {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
 
-        <div className="space-y-2">
-          <div className="flex flex-col gap-1 px-0.5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">Questions</h2>
-              <p className="text-sm text-muted-foreground">
-                Drag the grip handle to reorder. Order is saved when you save or publish the form.
-              </p>
-            </div>
-          </div>
+          <TabsContent value="questions" className="mt-4 space-y-4 focus-visible:outline-none sm:mt-6">
+          <p className="text-sm text-muted-foreground px-0.5">
+            Drag the grip handle to reorder. Order is saved when you save or publish the form.
+          </p>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -764,12 +817,17 @@ export default function FormEditorPage() {
               ) : null}
             </DragOverlay>
           </DndContext>
-        </div>
 
-        <Button variant="outline" onClick={() => setFields((current) => [...current, createEmptyField(current.length)])}>
+        <Button
+          variant="outline"
+          className="min-h-11 w-full sm:w-auto"
+          onClick={() => setFields((current) => [...current, createEmptyField(current.length)])}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add question
         </Button>
+          </TabsContent>
+        </Tabs>
 
         <DeleteFormDialog
           form={form}

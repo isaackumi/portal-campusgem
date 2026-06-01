@@ -1,5 +1,6 @@
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
+import { allocateCampCheckInCode } from './campCheckInCode'
 import { extractBirthdayParts } from './birthday'
 import { normalizeGhanaPhone, phoneLookupVariants } from './phone'
 
@@ -119,7 +120,8 @@ export async function insertCampRegistrationPublic(
   const fullName =
     args.full_name?.trim() || `${args.first_name} ${args.last_name}`.trim()
   const isNewRegistrant = (args.times_attended || 0) === 0
-  const tempId = `CAMP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
+  const role = args.role || 'Participant'
+  const checkInCode = await allocateCampCheckInCode(ctx, yearIdStr, year.year)
 
   const now = Date.now()
   const regId = await ctx.db.insert('camp_registrations', {
@@ -146,25 +148,28 @@ export async function insertCampRegistrationPublic(
     health_challenges: healthChallenges,
     parent_name: args.parent_name,
     parent_contact: args.parent_contact,
-    role: args.role || 'Participant',
+    role,
     is_new_registrant: isNewRegistrant,
     status: 'registered',
     payment_status: 'pending',
     payment_amount: 30.0,
     follow_up_status: 'pending',
-    qr_code: tempId,
+    check_in_code: checkInCode,
+    qr_code: checkInCode,
     updated_at: now,
   })
 
   const qrPayload = JSON.stringify({
     id: regId,
     name: fullName,
-    role: args.role || 'Participant',
+    role,
     year: year.year,
-    code: tempId,
+    code: checkInCode,
+    check_in_code: checkInCode,
   })
   await ctx.db.patch('camp_registrations', regId, {
     qr_code: qrPayload,
+    check_in_code: checkInCode,
     updated_at: Date.now(),
   })
 

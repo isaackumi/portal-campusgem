@@ -16,6 +16,7 @@ import { useAuth } from '@/components/providers'
 import { cn } from '@/lib/utils'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { CampManualCheckInPanel } from '@/components/camp/camp-manual-check-in-panel'
+import { findCampRegistrationFromScan } from '@/lib/camp/resolve-registration-from-scan'
 
 interface CheckInStats {
     totalRegistrations: number
@@ -198,18 +199,7 @@ export default function CampScannerPage() {
         console.log('QR Code scanned:', decodedText)
 
         try {
-            let qrCodeValue = decodedText
-            try {
-                const parsed = JSON.parse(decodedText)
-                qrCodeValue = parsed.id || parsed.code || decodedText
-            } catch {
-                // use as is
-            }
-
-            const { data: registrations } = await campService.getCampRegistrations(campYear!.id)
-            const registration = registrations?.find(
-              r => r.qr_code === qrCodeValue || r.qr_code === decodedText || r.id === qrCodeValue
-            )
+            const registration = findCampRegistrationFromScan(registrations, decodedText)
 
             if (!registration) {
                 setScanResult({

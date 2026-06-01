@@ -394,16 +394,16 @@ function FormsAdminContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/40">
-      <div className="mx-auto max-w-7xl space-y-8 p-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:space-y-8 sm:p-6">
+        <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
-            <Button variant="ghost" className="-ml-2" onClick={() => router.push('/admin')}>
+            <Button variant="ghost" className="-ml-2 min-h-10 w-fit" onClick={() => router.push('/admin')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Admin
             </Button>
             <div>
               <p className="text-sm font-medium uppercase tracking-wide text-indigo-600">Forms & Outreach</p>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Forms Hub</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Forms Hub</h1>
               <p className="mt-2 max-w-2xl text-muted-foreground">
                 Professional forms for campus ministries and church-wide activities — publish shareable links and
                 review responses in one place.

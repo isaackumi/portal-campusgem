@@ -3,6 +3,7 @@ import { query, mutation, type MutationCtx } from './_generated/server'
 import { requireAuth } from './lib/access'
 import { assertServerSecret } from './lib/serverSecret'
 import { extractBirthdayParts, memberDobIsoFromCampRegistration } from './lib/birthday'
+import { allocateCampCheckInCode } from './lib/campCheckInCode'
 import { insertCampRegistrationPublic } from './lib/campRegistrationInsert'
 import {
   isValidGhanaPhone,
@@ -937,7 +938,8 @@ export const importCampRegistrationsWithSecret = mutation({
       rememberPhone(existingPhones, phone)
 
       const timesAttended = Number(row.times_attended ?? 0)
-      const tempId = `CAMP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
+      const role = row.role != null ? String(row.role) : 'Participant'
+      const checkInCode = await allocateCampCheckInCode(ctx, yearIdStr, year.year)
       const now = Date.now()
       const regId = await ctx.db.insert('camp_registrations', {
         camp_year_id: yearIdStr,
@@ -978,25 +980,28 @@ export const importCampRegistrationsWithSecret = mutation({
           : undefined,
         parent_name: row.parent_name != null ? String(row.parent_name) : ' ',
         parent_contact: row.parent_contact != null ? String(row.parent_contact) : ' ',
-        role: row.role != null ? String(row.role) : 'Participant',
+        role,
         is_new_registrant: timesAttended === 0,
         status: 'registered',
         payment_status: 'pending',
         payment_amount: 30.0,
         follow_up_status: 'pending',
-        qr_code: tempId,
+        check_in_code: checkInCode,
+        qr_code: checkInCode,
         updated_at: now,
       })
 
       const qrPayload = JSON.stringify({
         id: regId,
         name: fullName,
-        role: row.role != null ? String(row.role) : 'Participant',
+        role,
         year: year.year,
-        code: tempId,
+        code: checkInCode,
+        check_in_code: checkInCode,
       })
       await ctx.db.patch('camp_registrations', regId, {
         qr_code: qrPayload,
+        check_in_code: checkInCode,
         updated_at: Date.now(),
       })
       successful++
@@ -1106,5 +1111,46 @@ export const listCamperDirectoryWithSecret = query({
         }
       })
       .sort((a, b) => a.full_name.localeCompare(b.full_name))
+  },
+})
+
+/** Assign GEM-XX-XXXX codes to registrations that predate the check_in_code field. */
+export const backfillCampCheckInCodesWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    camp_year_id: v.string(),
+  },
+  returns: v.object({ updated: v.number() }),
+  handler: async (ctx, { secret, camp_year_id }) => {
+    assertServerSecret(secret)
+    const yearIdStr = camp_year_id.trim()
+    const year = await ctx.db.get('camp_years', yearIdStr as import('./_generated/dataModel').Id<'camp_years'>)
+    if (!year) throw new Error('Camp year not found')
+
+    const regs = await ctx.db
+      .query('camp_registrations')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', yearIdStr))
+      .collect()
+
+    let updated = 0
+    for (const reg of regs) {
+      if (reg.check_in_code?.trim()) continue
+      const checkInCode = await allocateCampCheckInCode(ctx, yearIdStr, year.year)
+      const qrPayload = JSON.stringify({
+        id: reg._id,
+        name: reg.full_name,
+        role: reg.role,
+        year: year.year,
+        code: checkInCode,
+        check_in_code: checkInCode,
+      })
+      await ctx.db.patch(reg._id, {
+        check_in_code: checkInCode,
+        qr_code: qrPayload,
+        updated_at: Date.now(),
+      })
+      updated++
+    }
+    return { updated }
   },
 })

@@ -265,6 +265,8 @@ function CampRegistrationPageContent() {
             params.set('id', res.data.id)
             params.set('qr', res.data.qr_code)
             params.set('name', `${formData.first_name} ${formData.last_name}`)
+            if (res.data.check_in_code) params.set('code', res.data.check_in_code)
+            if (res.data.role) params.set('role', res.data.role)
             if (typeof window !== 'undefined') {
                 params.set('register', encodeURIComponent(`${window.location.origin}/camp-meeting/register`))
             }

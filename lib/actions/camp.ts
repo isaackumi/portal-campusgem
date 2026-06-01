@@ -127,6 +127,35 @@ export async function registerCamper(formData: CampRegistrationForm): Promise<{
   }
 }
 
+export async function backfillCampCheckInCodes(campYearId: string): Promise<{
+  data: { updated: number } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  const secret = process.env.CAMP_CONVEX_SERVER_SECRET
+  if (!secret) {
+    return { data: null, error: 'Server secret not configured for camp code backfill.' }
+  }
+  try {
+    const { getConvexHttpClient } = await import('@/lib/convex/http-client')
+    const { api } = await import('@/convex/_generated/api')
+    const client = getConvexHttpClient()
+    const result = (await client.mutation(api.camp.backfillCampCheckInCodesWithSecret, {
+      secret,
+      camp_year_id: campYearId,
+    })) as { updated: number }
+    revalidatePath('/admin/camp-meeting')
+    revalidatePath('/admin/camp-meeting/registrations')
+    revalidatePath('/admin/camp-meeting/scan')
+    return { data: result, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to assign camp codes',
+    }
+  }
+}
+
 export async function getCampRegistrations(campYearId: string): Promise<{
   data: CampRegistration[] | null
   error: string | null

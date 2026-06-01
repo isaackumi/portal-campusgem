@@ -105,11 +105,17 @@ function PrintQRCodesContent() {
                     const qrValue = reg.qr_code || ''
                     const fullName = reg.full_name || `${reg.first_name} ${reg.last_name}`
                     const role = reg.role || 'Participant'
+                    const campCode = reg.check_in_code?.trim()
                     
                     return (
                         <div key={reg.id} className="qr-card border border-gray-300 p-4 text-center">
                             <div className="font-bold text-sm mb-2">{fullName}</div>
-                            <div className="text-xs text-gray-600 mb-3">{role}</div>
+                            <div className="text-xs text-gray-600 mb-1">{role}</div>
+                            {campCode ? (
+                                <div className="font-mono text-sm font-bold tracking-wide text-indigo-900 mb-2">
+                                    {campCode}
+                                </div>
+                            ) : null}
                             <div className="flex justify-center mb-2">
                                 <div className="bg-white p-2 border border-gray-200">
                                     <QRCode

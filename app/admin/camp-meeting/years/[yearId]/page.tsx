@@ -20,7 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
@@ -286,7 +286,7 @@ export default function CampYearHubPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:px-0 sm:py-0">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <Button variant="ghost" onClick={() => router.push('/admin/camp-meeting/years')}>
@@ -334,11 +334,20 @@ export default function CampYearHubPage() {
       </div>
 
       <Tabs defaultValue="analysis" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="analysis"><BarChart3 className="mr-2 h-4 w-4" />Analysis</TabsTrigger>
-          <TabsTrigger value="outreach"><MessageSquare className="mr-2 h-4 w-4" />Bulk SMS</TabsTrigger>
-          <TabsTrigger value="assign"><UserCheck className="mr-2 h-4 w-4" />Assignments</TabsTrigger>
-        </TabsList>
+        <ScrollableTabsList>
+          <TabsTrigger value="analysis">
+            <BarChart3 className="mr-2 h-4 w-4 shrink-0" />
+            Analysis
+          </TabsTrigger>
+          <TabsTrigger value="outreach">
+            <MessageSquare className="mr-2 h-4 w-4 shrink-0" />
+            Bulk SMS
+          </TabsTrigger>
+          <TabsTrigger value="assign">
+            <UserCheck className="mr-2 h-4 w-4 shrink-0" />
+            Assignments
+          </TabsTrigger>
+        </ScrollableTabsList>
 
         <TabsContent value="analysis" className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">

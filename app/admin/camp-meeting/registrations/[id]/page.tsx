@@ -802,9 +802,17 @@ export default function RegistrationDetailPage() {
                                             level="H"
                                         />
                                     </div>
-                                    <div className="w-full space-y-0.5 rounded bg-gray-100 p-3 text-center">
+                                    <div className="w-full space-y-1 rounded bg-gray-100 p-3 text-center">
                                         <p className="font-semibold text-gray-900">{fullName}</p>
                                         <p className="text-sm text-gray-600">{data.role || 'Participant'}</p>
+                                        {data.check_in_code ? (
+                                            <p className="font-mono text-lg font-bold tracking-wide text-indigo-900">
+                                                {data.check_in_code}
+                                            </p>
+                                        ) : null}
+                                        <p className="text-xs text-muted-foreground">
+                                            Check-in: code, name, phone, or QR
+                                        </p>
                                     </div>
                                     <Button
                                         variant="outline"

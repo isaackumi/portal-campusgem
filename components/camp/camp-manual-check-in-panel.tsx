@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { CampRegistration } from '@/lib/types'
 import { campService } from '@/lib/services/camp-service'
+import { resolveCampCheckInCode } from '@/lib/camp/check-in-code'
 import {
   campRegistrationDisplayName,
   searchCampRegistrationsForManualCheckIn,
@@ -127,8 +128,8 @@ export function CampManualCheckInPanel({
           Manual check-in
         </CardTitle>
         <CardDescription>
-          For campers without a phone or QR — search by name, camper phone, or guardian phone.
-          One guardian number can list several family members.
+          Check in by camp code (e.g. GEM-26-K7M3), name, phone, guardian phone, or QR.
+          Each registrant has their own code — one guardian number may list several people.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
@@ -137,7 +138,7 @@ export function CampManualCheckInPanel({
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Name, phone, guardian phone, or camp code…"
+            placeholder="Camp code (GEM-26-XXXX), name, or phone…"
             className="min-h-11 pl-9 text-base"
             inputMode="search"
             autoComplete="off"
@@ -146,6 +147,13 @@ export function CampManualCheckInPanel({
 
         {query.trim().length >= 2 ? (
           <>
+            {mode === 'code' && results.length === 1 ? (
+              <p className="rounded-lg border border-indigo-200 bg-indigo-50/80 px-3 py-2 text-sm text-indigo-900">
+                Matched camp code{' '}
+                <span className="font-mono font-semibold">{resolveCampCheckInCode(results[0]!)}</span>
+              </p>
+            ) : null}
+
             {mode === 'phone' && results.length > 1 ? (
               <div className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50/80 p-3 text-sm text-blue-900 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-2">
@@ -188,6 +196,7 @@ export function CampManualCheckInPanel({
                     reg.parent_contact !== reg.phone
                       ? reg.parent_contact
                       : null
+                  const campCode = resolveCampCheckInCode(reg)
 
                   return (
                     <li
@@ -212,6 +221,11 @@ export function CampManualCheckInPanel({
                           )}
                         </div>
                         <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                          {campCode ? (
+                            <span className="font-mono font-semibold text-indigo-800">
+                              Code: {campCode}
+                            </span>
+                          ) : null}
                           {reg.phone?.trim() ? <span>Camper phone: {reg.phone}</span> : null}
                           {guardian ? <span>Guardian phone: {guardian}</span> : null}
                           {reg.parent_name?.trim() && reg.parent_name !== 'N/A' ? (

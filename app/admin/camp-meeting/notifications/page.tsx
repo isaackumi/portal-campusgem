@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -236,20 +236,20 @@ export default function NotificationSettingsPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-6xl mx-auto p-6 space-y-6">
+            <div className="mx-auto max-w-6xl space-y-6 px-3 py-4 sm:p-6">
                 <CampAdminPageHeader title="Notification Settings" campYear={campYear} />
 
                 <Tabs defaultValue="email" className="space-y-6">
-                    <TabsList>
+                    <ScrollableTabsList>
                         <TabsTrigger value="email">
-                            <Mail className="mr-2 h-4 w-4" />
-                            Email Notifications
+                            <Mail className="mr-2 h-4 w-4 shrink-0" />
+                            Email
                         </TabsTrigger>
                         <TabsTrigger value="sms">
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            SMS Notifications
+                            <MessageSquare className="mr-2 h-4 w-4 shrink-0" />
+                            SMS
                         </TabsTrigger>
-                    </TabsList>
+                    </ScrollableTabsList>
 
                     {/* Email Configuration */}
                     <TabsContent value="email" className="space-y-6">

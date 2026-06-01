@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -299,20 +299,20 @@ export default function BulkCommunicationsPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+            <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:p-6">
                 <CampAdminPageHeader title="Bulk Communications" campYear={campYear} />
 
                 <Tabs defaultValue="send" className="space-y-6">
-                    <TabsList>
+                    <ScrollableTabsList>
                         <TabsTrigger value="send">
-                            <Send className="mr-2 h-4 w-4" />
-                            Send Messages
+                            <Send className="mr-2 h-4 w-4 shrink-0" />
+                            Send
                         </TabsTrigger>
                         <TabsTrigger value="history">
-                            <FileText className="mr-2 h-4 w-4" />
-                            Communication History
+                            <FileText className="mr-2 h-4 w-4 shrink-0" />
+                            History
                         </TabsTrigger>
-                    </TabsList>
+                    </ScrollableTabsList>
 
                     {/* Send Messages Tab */}
                     <TabsContent value="send" className="space-y-6">

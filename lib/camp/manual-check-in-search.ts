@@ -1,5 +1,6 @@
 import type { CampRegistration } from '@/lib/types'
 import { isValidGhanaPhone, normalizeGhanaPhone, sanitizePhoneInput } from '@/lib/camp/phone'
+import { isCampCheckInCodeFormat, normalizeCampCheckInCode, resolveCampCheckInCode } from '@/lib/camp/check-in-code'
 import { parseCampQrPayload } from '@/lib/camp/qr-payload'
 
 export function campRegistrationDisplayName(reg: CampRegistration): string {
@@ -41,9 +42,15 @@ function sortForManualCheckIn(regs: CampRegistration[]): CampRegistration[] {
 export function searchCampRegistrationsForManualCheckIn(
   registrations: CampRegistration[],
   rawQuery: string
-): { results: CampRegistration[]; mode: 'phone' | 'text' } {
+): { results: CampRegistration[]; mode: 'phone' | 'text' | 'code' } {
   const query = rawQuery.trim()
   if (!query) return { results: [], mode: 'text' }
+
+  if (isCampCheckInCodeFormat(query)) {
+    const normalized = normalizeCampCheckInCode(query)
+    const match = registrations.find((r) => resolveCampCheckInCode(r) === normalized)
+    return { results: match ? sortForManualCheckIn([match]) : [], mode: 'code' }
+  }
 
   const digitsOnly = query.replace(/\D/g, '')
   const isPhoneSearch =
@@ -65,6 +72,8 @@ export function searchCampRegistrationsForManualCheckIn(
     if (r.qr_code?.toLowerCase().includes(lower)) return true
     const payload = parseCampQrPayload(r.qr_code)
     if (payload?.code?.toLowerCase().includes(lower)) return true
+    const code = resolveCampCheckInCode(r)
+    if (code?.toLowerCase().includes(lower)) return true
     return false
   })
 

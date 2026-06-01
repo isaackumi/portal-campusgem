@@ -314,6 +314,8 @@ export function usePublicForm({
         name: campReg.full_name,
         qr: campReg.qr_code,
       })
+      if (campReg.check_in_code) params.set('code', campReg.check_in_code)
+      if (campReg.role) params.set('role', campReg.role)
       if (typeof window !== 'undefined') {
         const registerUrl = `${window.location.origin}/f/${form.slug}`
         params.set('register', encodeURIComponent(registerUrl))

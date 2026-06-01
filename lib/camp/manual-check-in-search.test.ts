@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'bun:test'
 import type { CampRegistration } from '@/lib/types'
-import { searchCampRegistrationsForManualCheckIn } from '@/lib/camp/manual-check-in-search'
+import {
+  campRegistrationDisplayName,
+  searchCampRegistrationsForManualCheckIn,
+} from '@/lib/camp/manual-check-in-search'
 
 function reg(partial: Partial<CampRegistration> & Pick<CampRegistration, 'id'>): CampRegistration {
   return {
@@ -35,5 +38,21 @@ describe('searchCampRegistrationsForManualCheckIn', () => {
     const { results } = searchCampRegistrationsForManualCheckIn(list, 'Adult')
     expect(results).toHaveLength(1)
     expect(results[0]?.id).toBe('3')
+  })
+
+  it('finds exact camp check-in code', () => {
+    const withCode = [
+      ...list,
+      reg({
+        id: '4',
+        full_name: 'Child Code',
+        check_in_code: 'GEM-26-ABCD',
+        qr_code: JSON.stringify({ check_in_code: 'GEM-26-ABCD' }),
+      }),
+    ]
+    const { results, mode } = searchCampRegistrationsForManualCheckIn(withCode, 'gem-26-abcd')
+    expect(mode).toBe('code')
+    expect(results).toHaveLength(1)
+    expect(campRegistrationDisplayName(results[0]!)).toBe('Child Code')
   })
 })

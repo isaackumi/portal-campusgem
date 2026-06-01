@@ -3,7 +3,9 @@ export type CampQrPayload = {
   name?: string
   role?: string
   year?: number
+  /** Legacy internal id; new registrations use check_in_code here too. */
   code?: string
+  check_in_code?: string
 }
 
 /** Parse stored camp QR JSON for display (check-in still uses the full encoded value). */

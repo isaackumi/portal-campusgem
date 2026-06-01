@@ -15,6 +15,7 @@ import type * as forms from "../forms.js";
 import type * as groups from "../groups.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_birthday from "../lib/birthday.js";
+import type * as lib_campCheckInCode from "../lib/campCheckInCode.js";
 import type * as lib_campFormSubmit from "../lib/campFormSubmit.js";
 import type * as lib_campRegistrationInsert from "../lib/campRegistrationInsert.js";
 import type * as lib_phone from "../lib/phone.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   groups: typeof groups;
   "lib/access": typeof lib_access;
   "lib/birthday": typeof lib_birthday;
+  "lib/campCheckInCode": typeof lib_campCheckInCode;
   "lib/campFormSubmit": typeof lib_campFormSubmit;
   "lib/campRegistrationInsert": typeof lib_campRegistrationInsert;
   "lib/phone": typeof lib_phone;

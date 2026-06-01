@@ -845,6 +845,8 @@ export interface CampRegistration {
   status: 'registered' | 'checked_in' | 'cancelled'
   assigned_to?: string
   follow_up_status?: 'pending' | 'in_progress' | 'completed'
+  /** Desk check-in code, e.g. GEM-26-K7M3 */
+  check_in_code?: string
   qr_code: string
   created_at: string
   updated_at: string
@@ -1031,6 +1033,8 @@ export type ChurchFormSubmitResult = {
     id: string
     full_name: string
     qr_code: string
+    check_in_code?: string
+    role?: string
   } | null
 }
 

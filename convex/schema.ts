@@ -331,12 +331,15 @@ export default defineSchema({
     follow_up_status: v.optional(
       v.union(v.literal('pending'), v.literal('in_progress'), v.literal('completed'))
     ),
+    /** Easy-to-say desk check-in code, e.g. GEM-26-K7M3 (unique per camp year). */
+    check_in_code: v.optional(v.string()),
     qr_code: v.string(),
     updated_at: v.number(),
   })
     .index('by_camp_year', ['camp_year_id'])
     .index('by_camp_year_phone', ['camp_year_id', 'phone'])
     .index('by_camp_year_email', ['camp_year_id', 'email'])
+    .index('by_camp_year_check_in_code', ['camp_year_id', 'check_in_code'])
     .index('by_qr_code', ['qr_code'])
     .index('by_phone', ['phone'])
     .index('by_email', ['email']),
