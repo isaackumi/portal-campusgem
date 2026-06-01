@@ -15,7 +15,8 @@
     "convex:push": "convex dev --once",
     "convex:deploy": "convex deploy",
     "convex:codegen": "convex codegen",
-    "bootstrap:admin": "bun scripts/bootstrap-admin.ts"
+    "bootstrap:admin": "bun scripts/bootstrap-admin.ts",
+    "delete:camp-year": "bun scripts/delete-camp-year.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

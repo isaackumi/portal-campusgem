@@ -15,6 +15,7 @@ export interface ImportRegistrationResult {
   successful: number
   failed: number
   skipped: number
+  warned: number
   errors: Array<{ row: number; errors: string[] }>
   skipped_rows: Array<{ row: number; reason: string }>
 }
@@ -68,6 +69,7 @@ export async function importCampRegistrations(
       successful: 0,
       failed: registrations.length,
       skipped: 0,
+      warned: 0,
       errors: [{ row: 0, errors: ['NEXT_PUBLIC_CONVEX_URL is not configured'] }],
       skipped_rows: [],
     }
@@ -82,6 +84,7 @@ export async function importCampRegistrations(
       successful: result.successful,
       failed: result.failed,
       skipped: result.skipped,
+      warned: result.warned,
       errors: result.errors,
       skipped_rows: result.skipped_rows,
     }
@@ -97,6 +100,7 @@ export async function importCampRegistrations(
       successful: 0,
       failed: registrations.length,
       skipped: 0,
+      warned: 0,
       errors: [
         {
           row: 0,

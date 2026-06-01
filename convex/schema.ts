@@ -331,6 +331,8 @@ export default defineSchema({
     follow_up_status: v.optional(
       v.union(v.literal('pending'), v.literal('in_progress'), v.literal('completed'))
     ),
+    /** Non-blocking issues from historical import (invalid email/phone, etc.). */
+    import_warnings: v.optional(v.array(v.string())),
     /** Easy-to-say desk check-in code, e.g. GEM-26-K7M3 (unique per camp year). */
     check_in_code: v.optional(v.string()),
     qr_code: v.string(),

@@ -23,6 +23,7 @@ import {
     Heart, Shield, Clock, CreditCard, Send, Cake, Sparkles
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
+import { ImportContactWarningsBadge, ImportContactWarningsList } from '@/components/camp/import-contact-warnings'
 import {
     memberDobIsoFromCampRegistration,
     MEMBER_DOB_PLACEHOLDER_YEAR,
@@ -554,6 +555,7 @@ export default function RegistrationDetailPage() {
                                             <Badge className="border border-indigo-200 bg-indigo-50 text-indigo-950 shadow-none">
                                                 {data.role}
                                             </Badge>
+                                            <ImportContactWarningsBadge warnings={data.import_warnings} />
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -563,6 +565,7 @@ export default function RegistrationDetailPage() {
                                     <div className="space-y-4">
                                         <div>
                                             <Label className="text-xs text-gray-500 uppercase">Contact Information</Label>
+                                            <ImportContactWarningsList warnings={data.import_warnings} />
                                             <div className="space-y-2 mt-2">
                                                 {data.email && (
                                                     <div className="flex items-center text-sm">

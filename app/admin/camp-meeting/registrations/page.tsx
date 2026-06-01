@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { ImportContactWarningsBadge } from '@/components/camp/import-contact-warnings'
 import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { 
@@ -603,6 +604,10 @@ function RegistrationsPageContent() {
                                                                 New
                                                             </Badge>
                                                         )}
+                                                        <ImportContactWarningsBadge
+                                                            warnings={reg.import_warnings}
+                                                            className="mt-1"
+                                                        />
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="space-y-1">

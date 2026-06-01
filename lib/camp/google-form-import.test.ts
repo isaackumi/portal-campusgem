@@ -2,6 +2,7 @@ import {
   autoDetectGoogleFormColumnMapping,
   isIgnorableGoogleFormImportRow,
   mapGoogleFormImportRow,
+  validateGoogleFormImportRow,
 } from '@/lib/camp/google-form-import'
 import { sanitizePhoneInput } from '@/lib/camp/phone'
 
@@ -81,5 +82,32 @@ describe('isIgnorableGoogleFormImportRow', () => {
 describe('sanitizePhoneInput', () => {
   it('restores leading zero from spreadsheet numeric phones', () => {
     expect(sanitizePhoneInput(241234567)).toBe('0241234567')
+  })
+})
+
+describe('validateGoogleFormImportRow', () => {
+  it('blocks rows without a name but not invalid contact fields', () => {
+    const result = validateGoogleFormImportRow({
+      phone: 'not-a-phone',
+      email: 'bad-email',
+    })
+
+    expect(result.blocking).toContain('Name is required (first_name, last_name, or full_name)')
+    expect(result.warnings).toContain('Invalid phone number format')
+    expect(result.warnings).toContain('Invalid email format')
+  })
+
+  it('allows import when contact fields are invalid but name is present', () => {
+    const result = validateGoogleFormImportRow({
+      first_name: 'Ama',
+      last_name: 'Mensah',
+      phone: '123',
+      email: 'not-an-email',
+    })
+
+    expect(result.blocking).toHaveLength(0)
+    expect(result.warnings).toEqual(
+      expect.arrayContaining(['Invalid phone number format', 'Invalid email format'])
+    )
   })
 })

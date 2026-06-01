@@ -193,6 +193,9 @@ export function convexRegistrationDocToCampRegistration(
     status: (doc.status as CampRegistration['status']) ?? 'registered',
     assigned_to: doc.assigned_to != null ? String(doc.assigned_to) : undefined,
     follow_up_status: doc.follow_up_status as CampRegistration['follow_up_status'],
+    import_warnings: Array.isArray(doc.import_warnings)
+      ? (doc.import_warnings as string[])
+      : undefined,
     check_in_code: doc.check_in_code != null ? String(doc.check_in_code) : undefined,
     qr_code: String(doc.qr_code ?? ''),
     created_at: iso(ct) || new Date().toISOString(),
@@ -339,6 +342,34 @@ export async function clearActiveCampYearInConvex(): Promise<void> {
   await client.mutation(api.camp.clearActiveCampYearWithSecret, {
     secret: requireCampAdminSecret(),
   })
+}
+
+export type DeleteCampYearResult = {
+  deleted: boolean
+  year: number
+  counts: {
+    registrations: number
+    interactions: number
+    activities: number
+    communications: number
+    forms: number
+    form_fields: number
+    form_responses: number
+  }
+}
+
+export async function deleteCampYearInConvex(args: {
+  yearId?: string
+  calendarYear?: number
+  confirmYear: number
+}): Promise<DeleteCampYearResult> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.camp.deleteCampYearWithSecret, {
+    secret: requireCampAdminSecret(),
+    yearId: args.yearId ? (args.yearId as Id<'camp_years'>) : undefined,
+    calendarYear: args.calendarYear,
+    confirmYear: args.confirmYear,
+  })) as DeleteCampYearResult
 }
 
 export async function bulkPatchRegistrationsInConvex(args: {
@@ -571,6 +602,7 @@ export async function importCampRegistrationsInConvex(
   successful: number
   failed: number
   skipped: number
+  warned: number
   errors: Array<{ row: number; errors: string[] }>
   skipped_rows: Array<{ row: number; reason: string }>
 }> {
@@ -583,6 +615,7 @@ export async function importCampRegistrationsInConvex(
     successful: number
     failed: number
     skipped: number
+    warned: number
     errors: Array<{ row: number; errors: string[] }>
     skipped_rows: Array<{ row: number; reason: string }>
   }

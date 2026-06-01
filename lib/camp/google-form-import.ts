@@ -1,5 +1,6 @@
 import type { CampRegistration, CampRegistrationForm } from '@/lib/types'
 import { extractBirthdayParts } from '@/lib/camp/birthday'
+import { collectImportContactWarnings } from '@/lib/camp/import-contact'
 import { isValidGhanaPhone, sanitizePhoneInput } from '@/lib/camp/phone'
 
 /** Radix Select cannot use an empty string as an item value. */
@@ -243,23 +244,25 @@ export function isIgnorableGoogleFormImportRow(
   return !hasName && !hasPhone
 }
 
-export function validateGoogleFormImportRow(mapped: Partial<CampRegistrationForm>): string[] {
-  const errors: string[] = []
+export type GoogleFormImportValidation = {
+  /** Must be fixed before import can proceed. */
+  blocking: string[]
+  /** Contact issues — row can still be imported. */
+  warnings: string[]
+}
+
+export function validateGoogleFormImportRow(
+  mapped: Partial<CampRegistrationForm>
+): GoogleFormImportValidation {
+  const blocking: string[] = []
+  const warnings: string[] = []
 
   if (!mapped.first_name && !mapped.full_name && !mapped.last_name) {
-    errors.push('Name is required (first_name, last_name, or full_name)')
-  }
-  if (!mapped.phone) {
-    errors.push('Phone number is required')
-  } else if (!isValidGhanaPhone(String(mapped.phone))) {
-    errors.push('Invalid phone number format')
-  }
-  if (mapped.email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(mapped.email)) {
-      errors.push('Invalid email format')
-    }
+    blocking.push('Name is required (first_name, last_name, or full_name)')
   }
 
-  return errors
+  const contactWarnings = collectImportContactWarnings(mapped.phone, mapped.email)
+  warnings.push(...contactWarnings)
+
+  return { blocking, warnings }
 }

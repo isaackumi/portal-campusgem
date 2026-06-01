@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
-import { getCampRegistrations, createCampYear, updateCampYear, toggleCampYearRegistration, setActiveCampYear, deactivateCampYear, getAllCampYears } from '@/lib/actions/camp'
+import { getCampRegistrations, createCampYear, updateCampYear, toggleCampYearRegistration, setActiveCampYear, deactivateCampYear, deleteCampYear, getAllCampYears } from '@/lib/actions/camp'
 import { CampYear } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,8 @@ import {
     LayoutGrid,
     List,
     ArrowUpDown,
-    Sparkles
+    Sparkles,
+    Trash2,
 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -76,6 +77,9 @@ export default function CampYearsPage() {
     })
     const [sortBy, setSortBy] = useState<'year' | 'registrations' | 'theme'>('year')
     const [viewMode, setViewMode] = useState<'cards' | 'grid' | 'list'>('cards')
+    const [deleteTarget, setDeleteTarget] = useState<CampYear | null>(null)
+    const [deleteConfirmValue, setDeleteConfirmValue] = useState('')
+    const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -310,6 +314,52 @@ export default function CampYearsPage() {
                 title: 'Error',
                 description: error.message || 'Failed to set active year',
             })
+        }
+    }
+
+    function openDeleteDialog(year: CampYear) {
+        setDeleteTarget(year)
+        setDeleteConfirmValue('')
+    }
+
+    async function confirmDeleteYear() {
+        if (!deleteTarget) return
+        const confirmYear = Number(deleteConfirmValue)
+        if (confirmYear !== deleteTarget.year) {
+            toast({
+                variant: 'destructive',
+                title: 'Confirmation failed',
+                description: `Type ${deleteTarget.year} to confirm deletion.`,
+            })
+            return
+        }
+
+        setDeleting(true)
+        try {
+            const result = await deleteCampYear({
+                yearId: deleteTarget.id,
+                confirmYear: deleteTarget.year,
+            })
+            if (!result.success || !result.data) {
+                throw new Error(result.error || 'Failed to delete camp year')
+            }
+
+            const { counts } = result.data
+            toast({
+                title: 'Camp year deleted',
+                description: `Removed ${deleteTarget.year}: ${counts.registrations} registrations, ${counts.interactions} interactions, ${counts.activities} activities, ${counts.communications} communications, ${counts.forms} forms.`,
+            })
+            setDeleteTarget(null)
+            setDeleteConfirmValue('')
+            loadYears()
+        } catch (error: unknown) {
+            toast({
+                variant: 'destructive',
+                title: 'Delete failed',
+                description: error instanceof Error ? error.message : 'Failed to delete camp year',
+            })
+        } finally {
+            setDeleting(false)
         }
     }
 
@@ -742,6 +792,18 @@ export default function CampYearsPage() {
                                         </Button>
                                     )}
                                     </div>
+
+                                    <div onClick={(event) => event.stopPropagation()}>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full border-red-200 text-red-700 hover:bg-red-50"
+                                            onClick={() => openDeleteDialog(year)}
+                                        >
+                                            <Trash2 className="mr-2 h-3 w-3" />
+                                            Delete year
+                                        </Button>
+                                    </div>
                                 </CardContent>
                             </Card>
                         )
@@ -760,6 +822,53 @@ export default function CampYearsPage() {
                         </CardContent>
                     </Card>
                 )}
+
+                <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Delete camp year {deleteTarget?.year}?</DialogTitle>
+                            <DialogDescription>
+                                This permanently removes the camp year and all associated data: registrations,
+                                follow-up notes, activities, communications, and any registration forms linked
+                                to this year. This cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-2">
+                            <Label htmlFor="delete_confirm_year">
+                                Type <strong>{deleteTarget?.year}</strong> to confirm
+                            </Label>
+                            <Input
+                                id="delete_confirm_year"
+                                inputMode="numeric"
+                                value={deleteConfirmValue}
+                                onChange={(e) => setDeleteConfirmValue(e.target.value)}
+                                placeholder={deleteTarget ? String(deleteTarget.year) : ''}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setDeleteTarget(null)}
+                                disabled={deleting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={() => void confirmDeleteYear()}
+                                disabled={
+                                    deleting ||
+                                    !deleteTarget ||
+                                    Number(deleteConfirmValue) !== deleteTarget.year
+                                }
+                            >
+                                {deleting ? 'Deleting…' : `Delete ${deleteTarget?.year}`}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     )

@@ -30,6 +30,7 @@ interface ImportRow {
     [key: string]: any
     _rowIndex: number
     _errors?: string[]
+    _warnings?: string[]
 }
 
 interface ImportResult {
@@ -37,6 +38,7 @@ interface ImportResult {
     successful: number
     failed: number
     skipped: number
+    warned: number
     errors: Array<{ row: number; errors: string[] }>
     skipped_rows: Array<{ row: number; reason: string }>
 }
@@ -188,7 +190,7 @@ function CampImportPageContent() {
         setColumnMapping(autoDetectGoogleFormColumnMapping(headers))
     }
 
-    const validateRow = (row: ImportRow): string[] => {
+    const validateRow = (row: ImportRow) => {
         return validateGoogleFormImportRow(getMappedRow(row))
     }
 
@@ -198,18 +200,25 @@ function CampImportPageContent() {
 
     const validateAllRows = () => {
         const validated = parsedData.map(row => {
-            const errors = validateRow(row)
-            return { ...row, _errors: errors }
+            const { blocking, warnings } = validateRow(row)
+            return { ...row, _errors: blocking, _warnings: warnings }
         })
         setParsedData(validated)
         setPreviewData(validated.slice(0, 5))
 
-        const totalErrors = validated.filter(r => r._errors && r._errors.length > 0).length
-        if (totalErrors > 0) {
+        const blockingCount = validated.filter(r => r._errors && r._errors.length > 0).length
+        const warningCount = validated.filter(r => r._warnings && r._warnings.length > 0).length
+
+        if (blockingCount > 0) {
             toast({
                 variant: 'destructive',
                 title: 'Validation Errors',
-                description: `${totalErrors} rows have validation errors. Please fix them before importing.`,
+                description: `${blockingCount} rows are missing required data (name). Fix those before importing.`,
+            })
+        } else if (warningCount > 0) {
+            toast({
+                title: 'Ready to Import',
+                description: `${warningCount} rows have invalid contact info but will still be imported and flagged in the portal.`,
             })
         } else {
             toast({
@@ -249,16 +258,21 @@ function CampImportPageContent() {
                 (row) => !isIgnorableGoogleFormImportRow(row, columnMapping)
             )
 
-            const validatedRows = participantRows.map((row) => ({
-                ...row,
-                _errors: validateRow(row),
-            }))
+            const validatedRows = participantRows.map((row) => {
+                const { blocking, warnings } = validateRow(row)
+                return {
+                    ...row,
+                    _errors: blocking,
+                    _warnings: warnings,
+                }
+            })
 
             const validRows = validatedRows
                 .filter((row) => !row._errors || row._errors.length === 0)
                 .map((row) => ({
                     ...getMappedRow(row),
                     source_row: row._rowIndex,
+                    import_warnings: row._warnings,
                 }))
 
             const result = await importCampRegistrations(selectedYear.id, validRows)
@@ -280,6 +294,7 @@ function CampImportPageContent() {
                 successful: result.successful,
                 failed: result.failed + validationErrors.length,
                 skipped: result.skipped + ignoredSkippedRows.length,
+                warned: result.warned,
                 errors: [...result.errors, ...validationErrors],
                 skipped_rows: [...result.skipped_rows, ...ignoredSkippedRows],
             }
@@ -289,7 +304,7 @@ function CampImportPageContent() {
             if (finalResult.successful > 0 || finalResult.skipped > 0) {
                 toast({
                     title: 'Import Complete',
-                    description: `Imported ${finalResult.successful} registrations. ${finalResult.skipped} duplicate rows were skipped.`,
+                    description: `Imported ${finalResult.successful} registrations${finalResult.warned > 0 ? ` (${finalResult.warned} flagged with invalid contact)` : ''}. ${finalResult.skipped} duplicate rows were skipped.`,
                 })
             }
 
@@ -508,8 +523,18 @@ function CampImportPageContent() {
                                         {previewData.map((row, idx) => {
                                             const mapped = getMappedRow(row)
                                             const hasErrors = row._errors && row._errors.length > 0
+                                            const hasWarnings = row._warnings && row._warnings.length > 0
                                             return (
-                                                <TableRow key={idx} className={hasErrors ? 'bg-red-50' : ''}>
+                                                <TableRow
+                                                    key={idx}
+                                                    className={
+                                                        hasErrors
+                                                            ? 'bg-red-50'
+                                                            : hasWarnings
+                                                              ? 'bg-amber-50'
+                                                              : ''
+                                                    }
+                                                >
                                                     <TableCell>{row._rowIndex}</TableCell>
                                                     <TableCell>{mapped.first_name || 'N/A'}</TableCell>
                                                     <TableCell>{mapped.last_name || 'N/A'}</TableCell>
@@ -522,6 +547,11 @@ function CampImportPageContent() {
                                                             <Badge variant="destructive">
                                                                 <XCircle className="h-3 w-3 mr-1" />
                                                                 {row._errors?.length} error(s)
+                                                            </Badge>
+                                                        ) : hasWarnings ? (
+                                                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-900">
+                                                                <AlertCircle className="h-3 w-3 mr-1" />
+                                                                {row._warnings?.length} warning(s)
                                                             </Badge>
                                                         ) : (
                                                             <Badge variant="default">
@@ -580,7 +610,7 @@ function CampImportPageContent() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                                <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
                                     <div className="text-center p-4 bg-blue-50 rounded-lg">
                                         <div className="text-2xl font-bold text-blue-600">{importResult.total}</div>
                                         <div className="text-sm text-gray-600">Total Rows</div>
@@ -588,6 +618,10 @@ function CampImportPageContent() {
                                     <div className="text-center p-4 bg-green-50 rounded-lg">
                                         <div className="text-2xl font-bold text-green-600">{importResult.successful}</div>
                                         <div className="text-sm text-gray-600">Imported</div>
+                                    </div>
+                                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                                        <div className="text-2xl font-bold text-yellow-700">{importResult.warned}</div>
+                                        <div className="text-sm text-gray-600">Invalid Contact</div>
                                     </div>
                                     <div className="text-center p-4 bg-amber-50 rounded-lg">
                                         <div className="text-2xl font-bold text-amber-600">{importResult.skipped}</div>

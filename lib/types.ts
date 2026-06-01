@@ -845,6 +845,8 @@ export interface CampRegistration {
   status: 'registered' | 'checked_in' | 'cancelled'
   assigned_to?: string
   follow_up_status?: 'pending' | 'in_progress' | 'completed'
+  /** Non-blocking issues flagged during historical import. */
+  import_warnings?: string[]
   /** Desk check-in code, e.g. GEM-26-K7M3 */
   check_in_code?: string
   qr_code: string

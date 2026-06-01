@@ -18,6 +18,7 @@ import type * as lib_birthday from "../lib/birthday.js";
 import type * as lib_campCheckInCode from "../lib/campCheckInCode.js";
 import type * as lib_campFormSubmit from "../lib/campFormSubmit.js";
 import type * as lib_campRegistrationInsert from "../lib/campRegistrationInsert.js";
+import type * as lib_importContact from "../lib/importContact.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_serverSecret from "../lib/serverSecret.js";
 import type * as members from "../members.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   "lib/campCheckInCode": typeof lib_campCheckInCode;
   "lib/campFormSubmit": typeof lib_campFormSubmit;
   "lib/campRegistrationInsert": typeof lib_campRegistrationInsert;
+  "lib/importContact": typeof lib_importContact;
   "lib/phone": typeof lib_phone;
   "lib/serverSecret": typeof lib_serverSecret;
   members: typeof members;

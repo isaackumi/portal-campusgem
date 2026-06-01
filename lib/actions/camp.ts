@@ -482,6 +482,37 @@ export async function deactivateCampYear(yearId: string): Promise<{ success: boo
   }
 }
 
+export async function deleteCampYear(args: {
+  yearId?: string
+  calendarYear?: number
+  confirmYear: number
+}): Promise<{
+  success: boolean
+  data: import('@/lib/convex/camp-bridge').DeleteCampYearResult | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { deleteCampYearInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await deleteCampYearInConvex(args)
+    revalidatePath('/admin/camp-meeting/years')
+    revalidatePath('/admin/camp-meeting')
+    revalidatePath('/admin/camp-meeting/registrations')
+    revalidatePath('/admin/camp-meeting/analytics')
+    revalidatePath('/admin/camp-meeting/import')
+    if (args.yearId) {
+      revalidatePath(`/admin/camp-meeting/years/${args.yearId}`)
+    }
+    return { success: true, data, error: null }
+  } catch (error: unknown) {
+    return {
+      success: false,
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to delete camp year',
+    }
+  }
+}
+
 export async function clearActiveCampYear(): Promise<{ success: boolean; error?: string }> {
   requireConvexEnv()
   try {

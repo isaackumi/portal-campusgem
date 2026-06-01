@@ -11,6 +11,12 @@ import {
   phoneLookupVariants,
   sanitizePhoneInput,
 } from './lib/phone'
+import {
+  collectImportContactWarnings,
+  importPhoneDedupeKey,
+  isValidImportEmail,
+  resolveImportPhoneForStorage,
+} from './lib/importContact'
 
 const directoryRoleValue = v.union(
   v.literal('admin'),
@@ -418,6 +424,125 @@ export const clearActiveCampYearWithSecret = mutation({
       }
     }
     return null
+  },
+})
+
+export const deleteCampYearWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    yearId: v.optional(v.id('camp_years')),
+    calendarYear: v.optional(v.number()),
+    confirmYear: v.number(),
+  },
+  returns: v.object({
+    deleted: v.boolean(),
+    year: v.number(),
+    counts: v.object({
+      registrations: v.number(),
+      interactions: v.number(),
+      activities: v.number(),
+      communications: v.number(),
+      forms: v.number(),
+      form_fields: v.number(),
+      form_responses: v.number(),
+    }),
+  }),
+  handler: async (ctx, { secret, yearId, calendarYear, confirmYear }) => {
+    assertServerSecret(secret)
+
+    let yearDoc = yearId ? await ctx.db.get('camp_years', yearId) : null
+    if (!yearDoc && calendarYear != null) {
+      yearDoc = await ctx.db
+        .query('camp_years')
+        .withIndex('by_year', (q) => q.eq('year', calendarYear))
+        .first()
+    }
+    if (!yearDoc) {
+      throw new Error('Camp year not found.')
+    }
+    if (yearDoc.year !== confirmYear) {
+      throw new Error(
+        `Confirmation failed: type ${yearDoc.year} to confirm deletion, not ${confirmYear}.`
+      )
+    }
+
+    const yearIdStr = String(yearDoc._id)
+    const counts = {
+      registrations: 0,
+      interactions: 0,
+      activities: 0,
+      communications: 0,
+      forms: 0,
+      form_fields: 0,
+      form_responses: 0,
+    }
+
+    const registrations = await ctx.db
+      .query('camp_registrations')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', yearIdStr))
+      .collect()
+
+    for (const registration of registrations) {
+      const registrationId = String(registration._id)
+      const interactions = await ctx.db
+        .query('camp_interactions')
+        .withIndex('by_registration', (q) => q.eq('registration_id', registrationId))
+        .collect()
+      for (const interaction of interactions) {
+        await ctx.db.delete('camp_interactions', interaction._id)
+        counts.interactions++
+      }
+      await ctx.db.delete('camp_registrations', registration._id)
+      counts.registrations++
+    }
+
+    const activities = await ctx.db
+      .query('camp_activities')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', yearIdStr))
+      .collect()
+    for (const activity of activities) {
+      await ctx.db.delete('camp_activities', activity._id)
+      counts.activities++
+    }
+
+    const communications = await ctx.db
+      .query('camp_communications')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', yearIdStr))
+      .collect()
+    for (const communication of communications) {
+      await ctx.db.delete('camp_communications', communication._id)
+      counts.communications++
+    }
+
+    const forms = await ctx.db
+      .query('forms')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', yearIdStr))
+      .collect()
+    for (const form of forms) {
+      const formIdStr = String(form._id)
+      const fields = await ctx.db
+        .query('form_fields')
+        .withIndex('by_form', (q) => q.eq('form_id', formIdStr))
+        .collect()
+      for (const field of fields) {
+        await ctx.db.delete('form_fields', field._id)
+        counts.form_fields++
+      }
+      const responses = await ctx.db
+        .query('form_responses')
+        .withIndex('by_form', (q) => q.eq('form_id', formIdStr))
+        .collect()
+      for (const response of responses) {
+        await ctx.db.delete('form_responses', response._id)
+        counts.form_responses++
+      }
+      await ctx.db.delete('forms', form._id)
+      counts.forms++
+    }
+
+    await ctx.db.delete('camp_years', yearDoc._id)
+
+    return { deleted: true, year: yearDoc.year, counts }
   },
 })
 
@@ -846,6 +971,7 @@ export const importCampRegistrationsWithSecret = mutation({
     successful: v.number(),
     failed: v.number(),
     skipped: v.number(),
+    warned: v.number(),
     errors: v.array(v.object({ row: v.number(), errors: v.array(v.string()) })),
     skipped_rows: v.array(v.object({ row: v.number(), reason: v.string() })),
   }),
@@ -860,6 +986,7 @@ export const importCampRegistrationsWithSecret = mutation({
     let successful = 0
     let failed = 0
     let skipped = 0
+    let warned = 0
     const errors: Array<{ row: number; errors: string[] }> = []
     const skippedRows: Array<{ row: number; reason: string }> = []
     const seenPhonesThisBatch = new Set<string>()
@@ -877,7 +1004,8 @@ export const importCampRegistrationsWithSecret = mutation({
         firstName ||
         lastName
       const rawPhone = sanitizePhoneInput(row.phone ?? row.parent_contact ?? '')
-      const phone = rawPhone ? normalizeGhanaPhone(rawPhone) : ''
+      const phone = resolveImportPhoneForStorage(rawPhone, sourceRow)
+      const phoneDedupeKey = importPhoneDedupeKey(rawPhone, sourceRow)
       const emailNorm = String(row.email ?? '').trim()
       const birthday =
         row.birth_month != null && row.birth_day != null
@@ -887,11 +1015,6 @@ export const importCampRegistrationsWithSecret = mutation({
       if (!fullName) {
         rowErrors.push('Name is required (first_name, last_name, or full_name)')
       }
-      if (!rawPhone) {
-        rowErrors.push('Phone number is required')
-      } else if (!isValidGhanaPhone(rawPhone)) {
-        rowErrors.push('Invalid phone number format')
-      }
 
       if (rowErrors.length > 0) {
         failed++
@@ -899,7 +1022,17 @@ export const importCampRegistrationsWithSecret = mutation({
         continue
       }
 
-      if (seenPhonesThisBatch.has(phone)) {
+      const clientWarnings = Array.isArray(row.import_warnings)
+        ? (row.import_warnings as string[]).filter((w) => typeof w === 'string' && w.trim())
+        : []
+      const importWarnings = Array.from(
+        new Set([...clientWarnings, ...collectImportContactWarnings(rawPhone, emailNorm)])
+      )
+      if (importWarnings.length > 0) {
+        warned++
+      }
+
+      if (seenPhonesThisBatch.has(phoneDedupeKey)) {
         skipped++
         skippedRows.push({
           row: sourceRow,
@@ -908,7 +1041,7 @@ export const importCampRegistrationsWithSecret = mutation({
         continue
       }
 
-      if (isPhoneAlreadyRegistered(existingPhones, phone)) {
+      if (rawPhone && isValidGhanaPhone(rawPhone) && isPhoneAlreadyRegistered(existingPhones, phone)) {
         skipped++
         skippedRows.push({
           row: sourceRow,
@@ -917,7 +1050,7 @@ export const importCampRegistrationsWithSecret = mutation({
         continue
       }
 
-      if (emailNorm.length > 0) {
+      if (emailNorm.length > 0 && isValidImportEmail(emailNorm)) {
         const existingEmail = await ctx.db
           .query('camp_registrations')
           .withIndex('by_camp_year_email', (q) =>
@@ -934,8 +1067,10 @@ export const importCampRegistrationsWithSecret = mutation({
         }
       }
 
-      seenPhonesThisBatch.add(phone)
-      rememberPhone(existingPhones, phone)
+      seenPhonesThisBatch.add(phoneDedupeKey)
+      if (rawPhone && isValidGhanaPhone(rawPhone)) {
+        rememberPhone(existingPhones, phone)
+      }
 
       const timesAttended = Number(row.times_attended ?? 0)
       const role = row.role != null ? String(row.role) : 'Participant'
@@ -986,6 +1121,7 @@ export const importCampRegistrationsWithSecret = mutation({
         payment_status: 'pending',
         payment_amount: 30.0,
         follow_up_status: 'pending',
+        import_warnings: importWarnings.length > 0 ? importWarnings : undefined,
         check_in_code: checkInCode,
         qr_code: checkInCode,
         updated_at: now,
@@ -1007,7 +1143,7 @@ export const importCampRegistrationsWithSecret = mutation({
       successful++
     }
 
-    return { successful, failed, skipped, errors, skipped_rows: skippedRows }
+    return { successful, failed, skipped, warned, errors, skipped_rows: skippedRows }
   },
 })
 
