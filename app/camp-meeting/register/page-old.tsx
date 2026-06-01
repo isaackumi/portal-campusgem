@@ -94,7 +94,7 @@ export default function CampRegistrationPage() {
 
     if (!campYear) {
         return (
-            <div className="h-screen flex items-center justify-center bg-gray-50">
+            <div className="h-screen flex items-center justify-center bg-slate-50">
                 <Card className="max-w-md w-full">
                     <CardHeader>
                         <CardTitle>No Active Camp Meeting</CardTitle>
@@ -106,12 +106,12 @@ export default function CampRegistrationPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+        <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
             <div className="max-w-md w-full space-y-8">
                 <div className="text-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Campus GEM Camp Meeting</h1>
-                    <p className="mt-2 text-xl text-blue-600 font-semibold">{campYear.year}: {campYear.theme}</p>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <h1 className="text-3xl font-bold text-slate-900">Campus GEM Camp Meeting</h1>
+                    <p className="mt-2 text-xl text-primary font-semibold">{campYear.year}: {campYear.theme}</p>
+                    <p className="mt-1 text-sm text-slate-500">
                         {new Date(campYear.start_date).toLocaleDateString()} - {new Date(campYear.end_date).toLocaleDateString()}
                     </p>
                 </div>
@@ -187,7 +187,7 @@ export default function CampRegistrationPage() {
                                 <Label htmlFor="is_new">I am a First Timer / New Attendee</Label>
                             </div>
 
-                            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={submitting}>
+                            <Button type="submit" className="w-full" disabled={submitting}>
                                 {submitting ? <LoadingSpinner size="sm" className="mr-2" /> : null}
                                 {submitting ? 'Registering...' : 'Register'}
                             </Button>

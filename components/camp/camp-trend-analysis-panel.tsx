@@ -70,7 +70,7 @@ function TrendDelta({
 export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
   if (yearCount < 2) {
     return (
-      <Card className="border-2 border-dashed border-indigo-200 bg-indigo-50/40">
+      <Card className="border-2 border-dashed border-slate-200 bg-slate-50/40">
         <CardContent className="py-8 text-center text-sm text-slate-600">
           Add at least <strong>two camp years</strong> with registrations to unlock cross-year trend analysis.
         </CardContent>
@@ -83,7 +83,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/50 p-4 sm:p-6">
+      <div className="rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50/80 via-white to-slate-100/50 p-4 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Cross-year analysis</p>
@@ -180,7 +180,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
         <TabsContent value="performance" className="mt-0 space-y-6 focus-visible:outline-none">
           <div className="grid gap-6 lg:grid-cols-2">
             <Card className="border-2">
-              <CardHeader className="border-b bg-gray-50">
+              <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <TrendingUp className="h-5 w-5 text-indigo-600" />
                   Registration growth
@@ -193,9 +193,9 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
             </Card>
 
             <Card className="border-2">
-              <CardHeader className="border-b bg-gray-50">
+              <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <LineChart className="h-5 w-5 text-blue-600" />
+                  <LineChart className="h-5 w-5 text-primary" />
                   KPI rate trends
                 </CardTitle>
                 <CardDescription>Check-in, retention, payments, data quality, and follow-up completion</CardDescription>
@@ -207,7 +207,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           </div>
 
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Activity className="h-5 w-5 text-violet-600" />
                 Funnel conversion over time
@@ -222,7 +222,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           </Card>
 
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="text-base">Year-by-year KPI table</CardTitle>
               <CardDescription>Full metrics for planning and leadership reports</CardDescription>
             </CardHeader>
@@ -270,7 +270,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
         <TabsContent value="velocity" className="mt-0 space-y-6 focus-visible:outline-none">
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Zap className="h-5 w-5 text-amber-600" />
                 Registration velocity overlay
@@ -288,7 +288,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
         <TabsContent value="cohorts" className="mt-0 space-y-6 focus-visible:outline-none">
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Users className="h-5 w-5 text-violet-600" />
                 First-time camper cohort retention
@@ -336,7 +336,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
         <TabsContent value="operations" className="mt-0 space-y-6 focus-visible:outline-none">
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center gap-2 text-base">
                 <BarChart3 className="h-5 w-5 text-teal-600" />
                 Operations & planning signals
@@ -353,7 +353,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
         <TabsContent value="demographics" className="mt-0 space-y-8 focus-visible:outline-none">
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="text-base">Age bracket mix over time</CardTitle>
               <CardDescription>Share of each age group per camp year (% of that year&apos;s registrations)</CardDescription>
             </CardHeader>
@@ -363,7 +363,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           </Card>
 
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="text-base">Gender mix over time</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
@@ -372,7 +372,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           </Card>
 
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="text-base">Education band over time</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
@@ -381,7 +381,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           </Card>
 
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center gap-2 text-base">
                 <MapPin className="h-5 w-5 text-red-600" />
                 Top residence regions over time
@@ -395,7 +395,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
           {trends.roleTrends.length > 0 ? (
             <Card className="border-2">
-              <CardHeader className="border-b bg-gray-50">
+              <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="text-base">Role mix over time</CardTitle>
                 <CardDescription>Participants, workers, volunteers, and other roles per camp year</CardDescription>
               </CardHeader>
@@ -408,7 +408,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
         <TabsContent value="revenue" className="mt-0 space-y-6 focus-visible:outline-none">
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="text-base">Revenue collected vs pending</CardTitle>
               <CardDescription>Camp fee collection trend by year (₵)</CardDescription>
             </CardHeader>
@@ -418,7 +418,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           </Card>
 
           <Card className="border-2">
-            <CardHeader className="border-b bg-gray-50">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="text-base">Collection rate trend</CardTitle>
             </CardHeader>
             <CardContent className="pt-6">

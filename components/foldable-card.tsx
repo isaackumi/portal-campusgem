@@ -28,7 +28,7 @@ export function FoldableCard({
   return (
     <Card className={className}>
       <CardHeader 
-        className="cursor-pointer hover:bg-gray-50 transition-colors"
+        className="cursor-pointer hover:bg-slate-50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
@@ -39,9 +39,9 @@ export function FoldableCard({
           <div className="flex items-center space-x-2">
             {badge}
             {isExpanded ? (
-              <ChevronUp className="h-4 w-4 text-gray-600" />
+              <ChevronUp className="h-4 w-4 text-slate-600" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-gray-600" />
+              <ChevronDown className="h-4 w-4 text-slate-600" />
             )}
           </div>
         </div>

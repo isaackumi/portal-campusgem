@@ -137,11 +137,11 @@ export default function AttendancePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 flex items-center" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                <Calendar className="h-8 w-8 mr-3 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 flex items-center">
+                <Calendar className="h-8 w-8 mr-3 text-primary" />
                 Attendance Management
               </h1>
-              <p className="text-gray-600">Track and manage church attendance</p>
+              <p className="text-slate-600">Track and manage church attendance</p>
             </div>
             <div className="flex items-center space-x-3">
               <Button variant="outline" onClick={exportAttendance}>
@@ -169,11 +169,11 @@ export default function AttendancePage() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Today</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.today_attendance}</p>
+                    <p className="text-sm font-medium text-slate-600">Today</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.today_attendance}</p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Users className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                    <Users className="h-6 w-6 text-primary" />
                   </div>
                 </div>
               </CardContent>
@@ -183,8 +183,8 @@ export default function AttendancePage() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">This Week</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.weekly_attendance}</p>
+                    <p className="text-sm font-medium text-slate-600">This Week</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.weekly_attendance}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <BarChart3 className="h-6 w-6 text-green-600" />
@@ -197,8 +197,8 @@ export default function AttendancePage() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">This Month</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.monthly_attendance}</p>
+                    <p className="text-sm font-medium text-slate-600">This Month</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.monthly_attendance}</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <TrendingUp className="h-6 w-6 text-purple-600" />
@@ -211,8 +211,8 @@ export default function AttendancePage() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.total_attendance}</p>
+                    <p className="text-sm font-medium text-slate-600">Total</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.total_attendance}</p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <Calendar className="h-6 w-6 text-orange-600" />
@@ -302,7 +302,7 @@ export default function AttendancePage() {
                     <LoadingSpinner />
                   </div>
                 ) : filteredAttendance.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-slate-500">
                     <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>No attendance records found</p>
                     <p className="text-sm">Try adjusting your filters or date range</p>
@@ -312,26 +312,26 @@ export default function AttendancePage() {
                     {filteredAttendance.map((record) => (
                       <div
                         key={record.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50"
                       >
                         <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Users className="h-5 w-5 text-blue-600" />
+                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                            <Users className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h3 className="font-medium text-gray-900">
+                            <h3 className="font-medium text-slate-900">
                               {record.member.full_name}
                             </h3>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-slate-600">
                               {formatMembershipIdForDisplay(record.member.membership_id)}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-slate-900">
                             {record.service_type}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-slate-600">
                             {formatDateTime(record.check_in_time)}
                           </p>
                         </div>
@@ -351,7 +351,7 @@ export default function AttendancePage() {
                   <CardDescription>Weekly attendance patterns</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-slate-500">
                     <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>Analytics coming soon</p>
                     <p className="text-sm">Charts and trends will be displayed here</p>
@@ -365,7 +365,7 @@ export default function AttendancePage() {
                   <CardDescription>Most attended service types</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-slate-500">
                     <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>Service analytics coming soon</p>
                     <p className="text-sm">Popular services will be shown here</p>

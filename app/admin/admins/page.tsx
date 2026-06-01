@@ -85,8 +85,8 @@ export default function AdminManagementPage() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600 mb-4">You must be an administrator to access this page.</p>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Access Denied</h2>
+            <p className="text-slate-600 mb-4">You must be an administrator to access this page.</p>
             <Button onClick={() => router.push('/dashboard')}>
               Go to Dashboard
             </Button>
@@ -220,8 +220,8 @@ export default function AdminManagementPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Management</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <h1 className="text-3xl font-bold text-slate-900">Admin Management</h1>
+            <p className="mt-1 text-sm text-slate-500">
               Manage system administrators. Only admins can access this page.
             </p>
           </div>
@@ -239,7 +239,7 @@ export default function AdminManagementPage() {
               <CardTitle className="text-3xl">{stats.total}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-slate-500">
                 Active: {stats.active}
               </div>
             </CardContent>
@@ -251,8 +251,8 @@ export default function AdminManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-start space-x-2">
-                <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div className="text-sm text-gray-600">
+                <Shield className="h-5 w-5 text-primary mt-0.5" />
+                <div className="text-sm text-slate-600">
                   Admin users have full system access. Only create admins you trust.
                 </div>
               </div>
@@ -291,7 +291,7 @@ export default function AdminManagementPage() {
               {/* Admin List */}
               <div className="space-y-2">
                 {filteredAdmins.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
+                  <div className="text-center py-12 text-slate-500">
                     <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                     <p>No administrators found.</p>
                     {searchTerm && (
@@ -304,15 +304,15 @@ export default function AdminManagementPage() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <Shield className="h-5 w-5 text-blue-600" />
+                            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                              <Shield className="h-5 w-5 text-primary" />
                             </div>
                             <div>
                               <div className="flex items-center space-x-2">
-                                <h3 className="font-semibold text-gray-900">{admin.full_name}</h3>
-                                <Badge variant="default" className="bg-blue-600">Admin</Badge>
+                                <h3 className="font-semibold text-slate-900">{admin.full_name}</h3>
+                                <Badge variant="default" className="bg-primary">Admin</Badge>
                               </div>
-                              <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                              <div className="flex items-center space-x-4 mt-1 text-sm text-slate-500">
                                 {admin.phone && (
                                   <div className="flex items-center space-x-1">
                                     <Phone className="h-3 w-3" />
@@ -511,10 +511,10 @@ export default function AdminManagementPage() {
                 />
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                 <div className="flex items-center space-x-2">
-                  <Shield className="h-5 w-5 text-gray-600" />
-                  <span className="text-sm text-gray-600">
+                  <Shield className="h-5 w-5 text-slate-600" />
+                  <span className="text-sm text-slate-600">
                     Role: <strong>Administrator</strong> (cannot be changed)
                   </span>
                 </div>

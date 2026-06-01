@@ -52,7 +52,7 @@ export function CampAdminPageHeader({
             <div className="mt-2.5 flex flex-wrap items-center gap-2">
               <Badge
                 variant="outline"
-                className="border-indigo-200 bg-indigo-50 font-semibold text-indigo-900 hover:bg-indigo-50"
+                className="border-slate-200 bg-slate-50 font-semibold text-slate-900 hover:bg-slate-50"
               >
                 <Calendar className="mr-1 h-3 w-3" />
                 {campYear.year}

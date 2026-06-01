@@ -26,13 +26,13 @@ interface LoadingCardProps {
 
 export function LoadingCard({ className, title = 'Loading...', description }: LoadingCardProps) {
   return (
-    <div className={cn('bg-white rounded-lg border border-gray-200 p-6', className)}>
+    <div className={cn('bg-white rounded-lg border border-slate-200 p-6', className)}>
       <div className="flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+          <h3 className="text-lg font-medium text-slate-900 mb-2">{title}</h3>
           {description && (
-            <p className="text-sm text-gray-500">{description}</p>
+            <p className="text-sm text-slate-500">{description}</p>
           )}
         </div>
       </div>
@@ -49,7 +49,7 @@ export function LoadingGrid({ count = 6, className }: LoadingGridProps) {
   return (
     <div className={cn('grid gap-6 md:grid-cols-2 lg:grid-cols-3', className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
+        <div key={i} className="bg-white rounded-lg border border-slate-200 p-6">
           <div className="animate-pulse">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
@@ -75,10 +75,10 @@ interface LoadingTableProps {
 
 export function LoadingTable({ rows = 5, columns = 4, className }: LoadingTableProps) {
   return (
-    <div className={cn('bg-white rounded-lg border border-gray-200', className)}>
+    <div className={cn('bg-white rounded-lg border border-slate-200', className)}>
       <div className="animate-pulse">
         {/* Header */}
-        <div className="border-b border-gray-200 p-4">
+        <div className="border-b border-slate-200 p-4">
           <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
             {Array.from({ length: columns }).map((_, i) => (
               <div key={i} className="h-4 bg-gray-200 rounded"></div>
@@ -88,7 +88,7 @@ export function LoadingTable({ rows = 5, columns = 4, className }: LoadingTableP
         
         {/* Rows */}
         {Array.from({ length: rows }).map((_, rowIndex) => (
-          <div key={rowIndex} className="border-b border-gray-100 p-4 last:border-b-0">
+          <div key={rowIndex} className="border-b border-slate-100 p-4 last:border-b-0">
             <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
               {Array.from({ length: columns }).map((_, colIndex) => (
                 <div key={colIndex} className="h-4 bg-gray-100 rounded"></div>
@@ -109,7 +109,7 @@ interface LoadingPageProps {
 
 export function LoadingPage({ title = 'Loading...', description, className }: LoadingPageProps) {
   return (
-    <div className={cn('min-h-screen bg-gray-50 p-8', className)}>
+    <div className={cn('min-h-screen bg-slate-50 p-8', className)}>
       <div className="max-w-7xl mx-auto">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -122,9 +122,9 @@ export function LoadingPage({ title = 'Loading...', description, className }: Lo
         
         <div className="text-center py-12">
           <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+          <h3 className="text-lg font-medium text-slate-900 mb-2">{title}</h3>
           {description && (
-            <p className="text-sm text-gray-500">{description}</p>
+            <p className="text-sm text-slate-500">{description}</p>
           )}
         </div>
       </div>
@@ -145,7 +145,7 @@ export function LoadingStats({ count = 4, className }: LoadingStatsProps) {
       {Array.from({ length: count }).map((_, i) => {
         const Icon = icons[i % icons.length]
         return (
-          <div key={i} className="bg-white shadow-sm border border-gray-100 rounded-lg p-4">
+          <div key={i} className="bg-white shadow-sm border border-slate-100 rounded-lg p-4">
             <div className="animate-pulse">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">

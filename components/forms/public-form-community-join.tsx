@@ -61,7 +61,7 @@ export function PublicFormCommunityJoin() {
 
   return (
     <section className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
-      <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/60 px-4 py-4">
+      <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-slate-100/60 px-4 py-4">
         <h2 className="text-base font-bold text-slate-900">Stay connected with Campus Gem</h2>
         <p className="mt-1 text-sm leading-relaxed text-slate-600">
           Join our community channels for prayer, Bible study, and updates.

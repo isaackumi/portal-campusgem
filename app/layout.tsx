@@ -35,7 +35,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#1e3a8a',
+  themeColor: '#020617',
 }
 
 /** App-wide: skip broken static path generation for Convex-backed dynamic routes */
@@ -110,7 +110,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link 
-          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&family=Space+Grotesk:wght@300..700&display=swap" 
+          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap" 
           rel="stylesheet" 
         />
         <meta name="mobile-web-app-capable" content="yes" />

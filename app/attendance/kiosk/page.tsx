@@ -145,11 +145,11 @@ export default function KioskPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 flex items-center" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                <Monitor className="h-8 w-8 mr-3 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 flex items-center">
+                <Monitor className="h-8 w-8 mr-3 text-primary" />
                 Kiosk Mode
               </h1>
-              <p className="text-gray-600">Self-service attendance check-in for members</p>
+              <p className="text-slate-600">Self-service attendance check-in for members</p>
             </div>
             <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -186,7 +186,7 @@ export default function KioskPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2 text-blue-600" />
+                  <User className="h-5 w-5 mr-2 text-primary" />
                   Member Check-in
                 </CardTitle>
                 <CardDescription>
@@ -221,10 +221,10 @@ export default function KioskPage() {
                         <User className="h-6 w-6 text-green-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-slate-900">
                           {checkInResult.member.full_name}
                         </h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-slate-600">
                           {formatMembershipIdForDisplay(checkInResult.member.membership_id)}
                         </p>
                       </div>
@@ -233,12 +233,12 @@ export default function KioskPage() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-gray-600">Service:</span>
+                        <span className="text-slate-600">Service:</span>
                         <span className="ml-2 font-medium">{checkInResult.service_type}</span>
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-gray-600">Time:</span>
+                        <span className="text-slate-600">Time:</span>
                         <span className="ml-2 font-medium">
                           {formatDateTime(checkInResult.timestamp)}
                         </span>
@@ -249,11 +249,11 @@ export default function KioskPage() {
                       <div className="mt-4">
                         <div className="flex items-center mb-2">
                           <Users className="h-4 w-4 mr-2 text-gray-400" />
-                          <span className="text-sm font-medium text-gray-600">Dependants:</span>
+                          <span className="text-sm font-medium text-slate-600">Dependants:</span>
                         </div>
                         <div className="space-y-1">
                           {checkInResult.dependants.map((dependant) => (
-                            <div key={dependant.id} className="text-sm text-gray-600">
+                            <div key={dependant.id} className="text-sm text-slate-600">
                               • {dependant.name} ({dependant.relationship})
                             </div>
                           ))}
@@ -275,15 +275,15 @@ export default function KioskPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Monitor className="h-5 w-5 mr-2 text-blue-600" />
+                    <Monitor className="h-5 w-5 mr-2 text-primary" />
                     Instructions
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3 text-sm text-gray-600">
+                  <div className="space-y-3 text-sm text-slate-600">
                     <div className="flex items-start">
-                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                        <span className="text-xs font-semibold text-blue-600">1</span>
+                      <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+                        <span className="text-xs font-semibold text-primary">1</span>
                       </div>
                       <div>
                         <p className="font-medium">Search for Member</p>
@@ -291,8 +291,8 @@ export default function KioskPage() {
                       </div>
                     </div>
                     <div className="flex items-start">
-                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                        <span className="text-xs font-semibold text-blue-600">2</span>
+                      <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+                        <span className="text-xs font-semibold text-primary">2</span>
                       </div>
                       <div>
                         <p className="font-medium">Select Dependants</p>
@@ -300,8 +300,8 @@ export default function KioskPage() {
                       </div>
                     </div>
                     <div className="flex items-start">
-                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                        <span className="text-xs font-semibold text-blue-600">3</span>
+                      <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+                        <span className="text-xs font-semibold text-primary">3</span>
                       </div>
                       <div>
                         <p className="font-medium">Confirm Check-in</p>
@@ -310,9 +310,9 @@ export default function KioskPage() {
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h4 className="font-medium text-blue-900 mb-2">Service Information</h4>
-                    <div className="text-sm text-blue-700">
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h4 className="font-medium text-slate-900 mb-2">Service Information</h4>
+                    <div className="text-sm text-slate-700">
                       <p><strong>Service:</strong> {serviceTypes.find(s => s.value === serviceType)?.label}</p>
                       <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
                       <p><strong>Time:</strong> {new Date().toLocaleTimeString()}</p>

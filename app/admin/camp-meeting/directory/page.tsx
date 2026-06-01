@@ -59,7 +59,7 @@ export default function CampDirectoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-3">
@@ -68,7 +68,7 @@ export default function CampDirectoryPage() {
               Back to Camp Admin
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">Camper Directory</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Camper Directory</h1>
               <p className="mt-1 max-w-3xl text-muted-foreground">
                 One row per phone number across every imported and live camp year. Year chips open that
                 year&apos;s registration. New public registration still uses phone lookup to prefill the

@@ -362,46 +362,46 @@ export default function CampScannerPage() {
                 <div className="grid gap-4 md:grid-cols-4">
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <Users className="h-4 w-4" />
                                 Total Registered
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-gray-900">{stats.totalRegistrations}</div>
+                            <div className="text-3xl font-bold text-slate-900">{stats.totalRegistrations}</div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <CheckCircle className="h-4 w-4 text-green-600" />
                                 Checked In Total
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-green-600">{stats.checkedInTotal}</div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1">
                                 {stats.percentage}% Attendance
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-blue-600" />
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-primary" />
                                 Checked In Today
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-blue-600">{stats.checkedInToday}</div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <div className="text-3xl font-bold text-primary">{stats.checkedInToday}</div>
+                            <p className="text-xs text-slate-500 mt-1">
                                 Today's check-ins
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4 text-purple-600" />
                                 Remaining
                             </CardTitle>
@@ -410,7 +410,7 @@ export default function CampScannerPage() {
                             <div className="text-3xl font-bold text-purple-600">
                                 {stats.totalRegistrations - stats.checkedInTotal}
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1">
                                 Still pending
                             </p>
                         </CardContent>
@@ -421,7 +421,7 @@ export default function CampScannerPage() {
                     {/* Scanner - Main */}
                     <div className="lg:col-span-2 space-y-6">
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <QrCodeIcon className="h-5 w-5" />
                                     QR Code Scanner
@@ -455,7 +455,7 @@ export default function CampScannerPage() {
                                                 </p>
                                                 {scanResult.data && (
                                                     <div className="space-y-1 text-sm">
-                                                        <p className="font-semibold text-gray-900">
+                                                        <p className="font-semibold text-slate-900">
                                                             {scanResult.data.full_name || `${scanResult.data.first_name} ${scanResult.data.last_name}`}
                                                         </p>
                                                         <div className="flex items-center gap-2">
@@ -490,7 +490,7 @@ export default function CampScannerPage() {
                     {/* Recent Check-ins - Sidebar */}
                     <div className="space-y-6">
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <Clock className="h-5 w-5" />
                                     Recent Check-ins
@@ -501,7 +501,7 @@ export default function CampScannerPage() {
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {recentCheckIns.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500 text-sm">
+                                    <div className="text-center py-8 text-slate-500 text-sm">
                                         No check-ins yet
                                     </div>
                                 ) : (
@@ -509,10 +509,10 @@ export default function CampScannerPage() {
                                         {recentCheckIns.map((checkIn) => (
                                             <div
                                                 key={checkIn.id}
-                                                className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                                                className="p-3 bg-slate-50 rounded-lg hover:bg-gray-100 transition-colors border border-slate-200"
                                             >
                                                 <div className="flex items-start justify-between mb-1">
-                                                    <p className="font-semibold text-sm text-gray-900 truncate">
+                                                    <p className="font-semibold text-sm text-slate-900 truncate">
                                                         {checkIn.full_name}
                                                     </p>
                                                     <Badge variant="default" className="text-xs ml-2">
@@ -520,7 +520,7 @@ export default function CampScannerPage() {
                                                         In
                                                     </Badge>
                                                 </div>
-                                                <div className="flex items-center justify-between text-xs text-gray-600">
+                                                <div className="flex items-center justify-between text-xs text-slate-600">
                                                     <span className="truncate">{checkIn.role}</span>
                                                     <span>
                                                         {new Date(checkIn.checked_in_at).toLocaleTimeString('en-US', {

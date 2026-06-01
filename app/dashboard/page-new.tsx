@@ -43,7 +43,7 @@ function DashboardContent() {
   // Show error state
   if (statsError) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-slate-50 p-8">
         <div className="max-w-7xl mx-auto">
           <ErrorDisplay
             error={statsError}
@@ -129,15 +129,15 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Dashboard
             </h1>
-            <p className="text-gray-600">Welcome back, {user?.full_name || 'User'}!</p>
+            <p className="text-slate-600">Welcome back, {user?.full_name || 'User'}!</p>
           </div>
           <div className="flex items-center space-x-3">
             <Button variant="outline" onClick={() => router.push('/members/add')}>
@@ -153,32 +153,32 @@ function DashboardContent() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Total Members</p>
-                  <p className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-sm font-medium text-slate-500 mb-1">Total Members</p>
+                  <p className="text-3xl font-bold text-slate-900">
                     {stats?.total_members || 0}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Active members</p>
+                  <p className="text-xs text-slate-500 mt-1">Active members</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Users className="h-6 w-6 text-blue-600" />
+                <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center">
+                  <Users className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Groups & Ministries</p>
-                  <p className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-sm font-medium text-slate-500 mb-1">Groups & Ministries</p>
+                  <p className="text-3xl font-bold text-slate-900">
                     {stats?.groups_count || 0}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Active groups</p>
+                  <p className="text-xs text-slate-500 mt-1">Active groups</p>
                 </div>
                 <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
                   <Calendar className="h-6 w-6 text-green-600" />
@@ -187,15 +187,15 @@ function DashboardContent() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Recent Attendance</p>
-                  <p className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-sm font-medium text-slate-500 mb-1">Recent Attendance</p>
+                  <p className="text-3xl font-bold text-slate-900">
                     {stats?.attendance_rate || 0}%
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
+                  <p className="text-xs text-slate-500 mt-1">Last 30 days</p>
                 </div>
                 <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-purple-600" />
@@ -204,15 +204,15 @@ function DashboardContent() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Recent Visitors</p>
-                  <p className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-sm font-medium text-slate-500 mb-1">Recent Visitors</p>
+                  <p className="text-3xl font-bold text-slate-900">
                     {stats?.recent_visitors || 0}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
+                  <p className="text-xs text-slate-500 mt-1">Last 30 days</p>
                 </div>
                 <div className="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center">
                   <UserPlus className="h-6 w-6 text-yellow-600" />
@@ -230,7 +230,7 @@ function DashboardContent() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                    <Calendar className="h-5 w-5 mr-2 text-primary" />
                     Upcoming Events
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => router.push('/members')}>
@@ -249,7 +249,7 @@ function DashboardContent() {
                     {/* Birthdays */}
                     {upcomingEvents?.birthdays && upcomingEvents.birthdays.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+                        <h4 className="text-sm font-medium text-slate-500 mb-3 flex items-center">
                           <Cake className="h-4 w-4 mr-2" />
                           Upcoming Birthdays
                         </h4>
@@ -257,17 +257,17 @@ function DashboardContent() {
                           {upcomingEvents.birthdays.slice(0, 5).map((member, index) => {
                             const daysUntil = getUpcomingEventDays(member.dob!, 'birthday')
                             return (
-                              <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                              <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                                 <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <Cake className="h-4 w-4 text-blue-600" />
+                                  <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                                    <Cake className="h-4 w-4 text-primary" />
                                   </div>
                                   <div>
-                                    <p className="font-medium text-gray-900">{member.user?.full_name}</p>
-                                    <p className="text-sm text-gray-500">{formatDate(member.dob!)}</p>
+                                    <p className="font-medium text-slate-900">{member.user?.full_name}</p>
+                                    <p className="text-sm text-slate-500">{formatDate(member.dob!)}</p>
                                   </div>
                                 </div>
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-700">
                                   {daysUntil === 0 ? 'Today' : `${daysUntil} day${daysUntil === 1 ? '' : 's'}`}
                                 </Badge>
                               </div>
@@ -280,7 +280,7 @@ function DashboardContent() {
                     {/* Anniversaries */}
                     {upcomingEvents?.anniversaries && upcomingEvents.anniversaries.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+                        <h4 className="text-sm font-medium text-slate-500 mb-3 flex items-center">
                           <Heart className="h-4 w-4 mr-2" />
                           Upcoming Anniversaries
                         </h4>
@@ -294,8 +294,8 @@ function DashboardContent() {
                                     <Heart className="h-4 w-4 text-pink-600" />
                                   </div>
                                   <div>
-                                    <p className="font-medium text-gray-900">{member.user?.full_name}</p>
-                                    <p className="text-sm text-gray-500">{formatDate(member.user?.anniversary_date!)}</p>
+                                    <p className="font-medium text-slate-900">{member.user?.full_name}</p>
+                                    <p className="text-sm text-slate-500">{formatDate(member.user?.anniversary_date!)}</p>
                                   </div>
                                 </div>
                                 <Badge variant="secondary" className="bg-pink-100 text-pink-800">
@@ -376,7 +376,7 @@ function DashboardContent() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Clock className="h-5 w-5 mr-2 text-gray-600" />
+                  <Clock className="h-5 w-5 mr-2 text-slate-600" />
                   Recent Activity
                 </CardTitle>
               </CardHeader>
@@ -393,23 +393,23 @@ function DashboardContent() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <MapPin className="h-5 w-5 mr-2 text-blue-600" />
+                  <MapPin className="h-5 w-5 mr-2 text-primary" />
                   Campus Gem Ministries
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Location</p>
-                    <p className="text-sm text-gray-900">Odorkor Area, Gbawe CP District</p>
+                    <p className="text-sm font-medium text-slate-500">Location</p>
+                    <p className="text-sm text-slate-900">Odorkor Area, Gbawe CP District</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Services</p>
-                    <p className="text-sm text-gray-900">Sundays 7:00 AM & 9:00 AM</p>
+                    <p className="text-sm font-medium text-slate-500">Services</p>
+                    <p className="text-sm text-slate-900">Sundays 7:00 AM & 9:00 AM</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Contact</p>
-                    <p className="text-sm text-gray-900">+233 XX XXX XXXX</p>
+                    <p className="text-sm font-medium text-slate-500">Contact</p>
+                    <p className="text-sm text-slate-900">+233 XX XXX XXXX</p>
                   </div>
                 </div>
 

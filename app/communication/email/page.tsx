@@ -16,10 +16,10 @@ export default function CommunicationEmailPage() {
             Dashboard
           </Link>
         </Button>
-        <Card className="border-blue-100 shadow-sm">
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Mail className="h-6 w-6 text-blue-600" />
+              <Mail className="h-6 w-6 text-primary" />
               <CardTitle>Email</CardTitle>
             </div>
             <CardDescription>Bulk and transactional email from the church office.</CardDescription>

@@ -65,7 +65,7 @@ export default function AdminPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Administration</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Administration</h1>
         <p className="mt-1 text-muted-foreground">
           Choose an area to manage church operations and camp meeting data.
         </p>
@@ -79,13 +79,13 @@ export default function AdminPage() {
               <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Icon className="h-5 w-5 text-blue-600" />
+                    <Icon className="h-5 w-5 text-primary" />
                     {section.title}
                   </CardTitle>
                   <CardDescription>{section.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <span className="text-sm font-medium text-blue-600">Open</span>
+                  <span className="text-sm font-medium text-primary">Open</span>
                 </CardContent>
               </Card>
             </Link>

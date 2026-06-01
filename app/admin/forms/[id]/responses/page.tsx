@@ -88,14 +88,14 @@ export default function FormResponsesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-violet-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50/30 to-slate-100/30">
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <Button variant="ghost" onClick={() => router.push(`/admin/forms/${form.id}`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to editor
         </Button>
 
-        <Card className="border-blue-200/80 bg-gradient-to-r from-blue-50 to-white">
+        <Card className="border-slate-200/80 bg-gradient-to-r from-slate-50 to-white">
           <CardHeader>
             <CardTitle>{form.title} — Analytics</CardTitle>
             <CardDescription>

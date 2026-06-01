@@ -92,7 +92,7 @@ function DashboardContent() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Contact" />,
         cell: ({ row }) => (
           <div className="min-w-[170px]">
-            <p className="font-medium text-gray-900">{row.original.full_name}</p>
+            <p className="font-medium text-slate-900">{row.original.full_name}</p>
             <p className="text-xs text-muted-foreground">{row.original.phone}</p>
           </div>
         ),
@@ -306,8 +306,8 @@ function DashboardContent() {
       <div className="mx-auto max-w-7xl space-y-6 rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Member Tracking & Follow-up</h1>
-            <p className="mt-1 text-sm text-gray-600">
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Member Tracking & Follow-up</h1>
+            <p className="mt-1 text-sm text-slate-600">
               A workflow-first dashboard for contacts, registration history, and follow-up.
             </p>
           </div>
@@ -324,7 +324,7 @@ function DashboardContent() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+          <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-white">
             <CardHeader className="pb-2">
               <CardDescription>Total admins</CardDescription>
               <CardTitle className="text-3xl">{usersLoading ? '...' : totalAdmins}</CardTitle>
@@ -496,7 +496,7 @@ function DashboardContent() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-white">
+          <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-white">
             <CardHeader>
               <CardTitle>My assigned follow-ups</CardTitle>
               <CardDescription>
@@ -544,7 +544,7 @@ function DashboardContent() {
               <CardTitle>Admin access setup</CardTitle>
               <CardDescription>Make a member an admin so they can log in and manage the system.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-gray-700">
+            <CardContent className="space-y-3 text-sm text-slate-700">
               <p>
                 Go to <span className="font-medium">User Management</span>, edit the user, and set <span className="font-medium">Role = Admin</span>.
               </p>
@@ -563,7 +563,7 @@ function DashboardContent() {
 
         <Card className="overflow-hidden border-slate-200 shadow-sm">
           <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gradient-to-r from-slate-50 to-blue-50 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gradient-to-r from-slate-50 to-slate-50 p-3">
               <div>
                 <CardTitle>Camp Contacts & Registrations</CardTitle>
                 <CardDescription>
@@ -573,7 +573,7 @@ function DashboardContent() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
+                className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                 onClick={() => void loadCampDirectory()}
                 disabled={campLoading}
               >
@@ -623,22 +623,22 @@ function DashboardContent() {
             <FoldableCard
               title="Campus Gem Ministries"
               description="Church information"
-              icon={<MapPin className="h-5 w-5 text-blue-600" />}
+              icon={<MapPin className="h-5 w-5 text-primary" />}
               badge={<Badge variant="secondary">Info</Badge>}
               defaultExpanded={true}
             >
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Location</p>
-                  <p className="text-sm text-gray-900">Kokomlemle, Accra</p>
+                  <p className="text-sm font-medium text-slate-500">Location</p>
+                  <p className="text-sm text-slate-900">Kokomlemle, Accra</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Services</p>
-                  <p className="text-sm text-gray-900">Sundays 7:00 AM & 9:00 AM</p>
+                  <p className="text-sm font-medium text-slate-500">Services</p>
+                  <p className="text-sm text-slate-900">Sundays 7:00 AM & 9:00 AM</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Contact</p>
-                  <p className="text-sm text-gray-900">+233 XX XXX XXXX</p>
+                  <p className="text-sm font-medium text-slate-500">Contact</p>
+                  <p className="text-sm text-slate-900">+233 XX XXX XXXX</p>
                 </div>
               </div>
             </FoldableCard>
@@ -646,7 +646,7 @@ function DashboardContent() {
             <FoldableCard
               title="Operations"
               description="System health and sync"
-              icon={<Calendar className="h-5 w-5 text-gray-600" />}
+              icon={<Calendar className="h-5 w-5 text-slate-600" />}
               badge={<Badge variant="secondary">Status</Badge>}
               defaultExpanded={false}
             >

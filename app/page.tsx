@@ -24,7 +24,7 @@ export default function HomePage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <LoadingSpinner />
-        <p className="mt-4 text-gray-600">Redirecting...</p>
+        <p className="mt-4 text-slate-600">Redirecting...</p>
       </div>
     </div>
   )

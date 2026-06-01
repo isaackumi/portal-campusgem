@@ -74,7 +74,7 @@ export function CampFunnelSteps({ steps }: { steps: FunnelStep[] }) {
             ) : null}
             {index < steps.length - 1 ? (
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white">
-                <div className="h-full rounded-full bg-indigo-500" style={{ width: `${step.percent}%` }} />
+                <div className="h-full rounded-full bg-slate-800" style={{ width: `${step.percent}%` }} />
               </div>
             ) : null}
           </div>

@@ -117,8 +117,8 @@ export default function GroupsManagementPage() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Access Denied</h2>
+            <p className="text-slate-600 mb-4">You don't have permission to access this page.</p>
             <Button onClick={() => router.push('/dashboard')}>
               Go to Dashboard
             </Button>
@@ -294,8 +294,8 @@ export default function GroupsManagementPage() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading groups...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading groups...</p>
         </div>
       </div>
     )
@@ -307,8 +307,8 @@ export default function GroupsManagementPage() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <Users className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Groups</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Error Loading Groups</h2>
+            <p className="text-slate-600 mb-4">{error}</p>
             <Button onClick={() => refetch()}>
               Try Again
             </Button>
@@ -324,12 +324,12 @@ export default function GroupsManagementPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Group Management</h1>
-              <p className="text-gray-600 mt-2">Manage campus fellowships, event activities, and ministry groups</p>
+              <h1 className="text-3xl font-bold text-slate-900">Group Management</h1>
+              <p className="text-slate-600 mt-2">Manage campus fellowships, event activities, and ministry groups</p>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
+                <Button className="">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Group
                 </Button>
@@ -443,10 +443,10 @@ export default function GroupsManagementPage() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-primary" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Groups</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-sm font-medium text-slate-600">Total Groups</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
                 </div>
               </div>
             </CardContent>
@@ -455,10 +455,10 @@ export default function GroupsManagementPage() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-primary" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Campuses</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.campuses}</p>
+                  <p className="text-sm font-medium text-slate-600">Campuses</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.campuses}</p>
                 </div>
               </div>
             </CardContent>
@@ -469,8 +469,8 @@ export default function GroupsManagementPage() {
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Activities</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.activities}</p>
+                  <p className="text-sm font-medium text-slate-600">Activities</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.activities}</p>
                 </div>
               </div>
             </CardContent>
@@ -481,8 +481,8 @@ export default function GroupsManagementPage() {
               <div className="flex items-center">
                 <Calendar className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Fellowships</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.fellowships}</p>
+                  <p className="text-sm font-medium text-slate-600">Fellowships</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.fellowships}</p>
                 </div>
               </div>
             </CardContent>
@@ -491,10 +491,10 @@ export default function GroupsManagementPage() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-gray-600" />
+                <Users className="h-8 w-8 text-slate-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Other</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.other}</p>
+                  <p className="text-sm font-medium text-slate-600">Other</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.other}</p>
                 </div>
               </div>
             </CardContent>
@@ -548,8 +548,8 @@ export default function GroupsManagementPage() {
             {filteredGroups.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No groups found</h3>
-                <p className="text-gray-600">Try adjusting your search or filters.</p>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No groups found</h3>
+                <p className="text-slate-600">Try adjusting your search or filters.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -558,7 +558,7 @@ export default function GroupsManagementPage() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
                             {getGroupTypeIcon(group.group_type || '')}
                           </div>
                           <div>
@@ -596,10 +596,10 @@ export default function GroupsManagementPage() {
                     </CardHeader>
                     <CardContent>
                       {group.description && (
-                        <p className="text-gray-600 text-sm mb-4">{group.description}</p>
+                        <p className="text-slate-600 text-sm mb-4">{group.description}</p>
                       )}
                       
-                      <div className="space-y-2 text-sm text-gray-500">
+                      <div className="space-y-2 text-sm text-slate-500">
                         {group.meeting_location && (
                           <div className="flex items-center">
                             <MapPin className="h-3 w-3 mr-2" />
@@ -709,7 +709,7 @@ export default function GroupsManagementPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-slate-600">
                   {selectedGroup?.members?.length || 0} members
                 </p>
                 <Button onClick={() => setShowAddMemberDialog(true)}>
@@ -723,12 +723,12 @@ export default function GroupsManagementPage() {
                   {selectedGroup.members.map((member) => (
                     <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-blue-600" />
+                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
                         </div>
                         <div>
                           <p className="font-medium">{member.member?.user?.full_name || 'Unknown'}</p>
-                          <p className="text-sm text-gray-500">{member.role}</p>
+                          <p className="text-sm text-slate-500">{member.role}</p>
                         </div>
                       </div>
                       <Button
@@ -745,7 +745,7 @@ export default function GroupsManagementPage() {
               ) : (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No members in this group yet.</p>
+                  <p className="text-slate-600">No members in this group yet.</p>
                 </div>
               )}
             </div>
@@ -783,14 +783,14 @@ export default function GroupsManagementPage() {
               {users && users.length > 0 ? (
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-blue-600" />
+                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
                         </div>
                         <div>
                           <p className="font-medium">{user.full_name}</p>
-                          <p className="text-sm text-gray-500">{user.role}</p>
+                          <p className="text-sm text-slate-500">{user.role}</p>
                         </div>
                       </div>
                       <Button
@@ -806,7 +806,7 @@ export default function GroupsManagementPage() {
               ) : (
                 <div className="text-center py-8">
                   <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No users available.</p>
+                  <p className="text-slate-600">No users available.</p>
                 </div>
               )}
             </div>

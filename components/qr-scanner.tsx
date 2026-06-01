@@ -154,7 +154,7 @@ export function QRScanner({ onScanSuccess, onScanError, className }: QRScannerPr
         <CardContent>
           <div className="text-center space-y-4">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
-            <p className="text-gray-600">
+            <p className="text-slate-600">
               Please enable camera access in your browser settings and refresh the page.
             </p>
             <Button onClick={() => window.location.reload()}>
@@ -222,9 +222,9 @@ export function QRScanner({ onScanSuccess, onScanError, className }: QRScannerPr
 
           {/* Instructions */}
           {!isScanning && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">How to use:</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <h4 className="font-medium text-slate-900 mb-2">How to use:</h4>
+              <ul className="text-sm text-slate-700 space-y-1">
                 <li>• Click "Start Scanning" to begin</li>
                 <li>• Point your camera at the member's QR code</li>
                 <li>• Hold steady until the code is recognized</li>

@@ -20,7 +20,7 @@ export function createCamperDirectoryColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
       cell: ({ row }) => (
         <div className="min-w-[180px]">
-          <div className="font-medium text-gray-900">{row.original.full_name}</div>
+          <div className="font-medium text-slate-900">{row.original.full_name}</div>
           {row.original.first_name || row.original.last_name ? (
             <div className="text-xs text-muted-foreground">
               {[row.original.first_name, row.original.last_name].filter(Boolean).join(' ')}

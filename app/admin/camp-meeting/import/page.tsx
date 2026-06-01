@@ -356,7 +356,7 @@ function CampImportPageContent() {
                             Back
                         </Button>
                         <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+                            <h1 className="text-4xl font-bold tracking-tight text-slate-900">
                                 Import Historical Camp Data
                             </h1>
                             <p className="text-muted-foreground mt-1">
@@ -432,7 +432,7 @@ function CampImportPageContent() {
                                     Choose File
                                 </Button>
                                 {file && (
-                                    <p className="mt-2 text-sm text-gray-600">
+                                    <p className="mt-2 text-sm text-slate-600">
                                         Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
                                     </p>
                                 )}
@@ -611,25 +611,25 @@ function CampImportPageContent() {
                         <CardContent>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-                                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-blue-600">{importResult.total}</div>
-                                        <div className="text-sm text-gray-600">Total Rows</div>
+                                    <div className="text-center p-4 bg-slate-50 rounded-lg">
+                                        <div className="text-2xl font-bold text-primary">{importResult.total}</div>
+                                        <div className="text-sm text-slate-600">Total Rows</div>
                                     </div>
                                     <div className="text-center p-4 bg-green-50 rounded-lg">
                                         <div className="text-2xl font-bold text-green-600">{importResult.successful}</div>
-                                        <div className="text-sm text-gray-600">Imported</div>
+                                        <div className="text-sm text-slate-600">Imported</div>
                                     </div>
                                     <div className="text-center p-4 bg-yellow-50 rounded-lg">
                                         <div className="text-2xl font-bold text-yellow-700">{importResult.warned}</div>
-                                        <div className="text-sm text-gray-600">Invalid Contact</div>
+                                        <div className="text-sm text-slate-600">Invalid Contact</div>
                                     </div>
                                     <div className="text-center p-4 bg-amber-50 rounded-lg">
                                         <div className="text-2xl font-bold text-amber-600">{importResult.skipped}</div>
-                                        <div className="text-sm text-gray-600">Skipped Duplicates</div>
+                                        <div className="text-sm text-slate-600">Skipped Duplicates</div>
                                     </div>
                                     <div className="text-center p-4 bg-red-50 rounded-lg">
                                         <div className="text-2xl font-bold text-red-600">{importResult.failed}</div>
-                                        <div className="text-sm text-gray-600">Failed</div>
+                                        <div className="text-sm text-slate-600">Failed</div>
                                     </div>
                                 </div>
 

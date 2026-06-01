@@ -90,7 +90,7 @@ export function BirthdayNotifications({
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800'
       case 'pastor': return 'bg-purple-100 text-purple-800'
-      case 'elder': return 'bg-blue-100 text-blue-800'
+      case 'elder': return 'bg-slate-100 text-slate-700'
       case 'member': return 'bg-green-100 text-green-800'
       default: return 'bg-gray-100 text-gray-800'
     }
@@ -160,15 +160,15 @@ export function BirthdayNotifications({
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <h4 className="font-medium text-gray-900">{person.name}</h4>
+                          <h4 className="font-medium text-slate-900">{person.name}</h4>
                           <Badge className={getRoleColor(person.role)}>
                             {person.role || 'member'}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-slate-600">
                           Turning {getAge(person.dob)} today • {person.membership_id}
                         </p>
-                        <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                        <div className="flex items-center space-x-4 text-xs text-slate-500 mt-1">
                           {person.phone && (
                             <span className="flex items-center">
                               <Phone className="h-3 w-3 mr-1" />
@@ -212,7 +212,7 @@ export function BirthdayNotifications({
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
+                <Calendar className="h-5 w-5 text-primary" />
                 <CardTitle>
                   Upcoming Birthdays ({upcomingBirthdays.length})
                 </CardTitle>
@@ -222,9 +222,9 @@ export function BirthdayNotifications({
                   {upcomingBirthdays.length} upcoming
                 </Badge>
                 {isUpcomingExpanded ? (
-                  <ChevronUp className="h-4 w-4 text-gray-600" />
+                  <ChevronUp className="h-4 w-4 text-slate-600" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-gray-600" />
+                  <ChevronDown className="h-4 w-4 text-slate-600" />
                 )}
               </div>
             </div>
@@ -255,20 +255,20 @@ export function BirthdayNotifications({
                   return (
                     <div 
                       key={person.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Cake className="h-5 w-5 text-blue-600" />
+                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                          <Cake className="h-5 w-5 text-primary" />
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
-                            <h4 className="font-medium text-gray-900">{person.name}</h4>
+                            <h4 className="font-medium text-slate-900">{person.name}</h4>
                             <Badge className={getRoleColor(person.role)}>
                               {person.role || 'member'}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-slate-600">
                             {daysUntil === 0 ? 'Today' : `In ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`} • 
                             Turning {getAge(person.dob) + 1} • {person.membership_id}
                           </p>

@@ -289,10 +289,10 @@ function CampRegistrationPageContent() {
             <div className="min-h-screen flex items-center justify-center bg-white px-4">
                 <div className="max-w-md w-full text-center">
                     <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+                    <h1 className="text-2xl font-semibold text-slate-900 mb-2">
                         {campYear ? `Camp Meeting ${campYear.year}` : 'No Active Camp Meeting'}
                     </h1>
-                    <p className="text-gray-600">
+                    <p className="text-slate-600">
                         {campYear
                             ? 'Registration is not open for this camp year.'
                             : 'Registration is currently closed.'}
@@ -313,14 +313,14 @@ function CampRegistrationPageContent() {
         <div className="min-h-screen bg-white">
             {/* Flyer Image - Google Forms Style */}
             {campYear.flyer_image_url && (
-                <div className="w-full bg-white border-b border-gray-200">
+                <div className="w-full bg-white border-b border-slate-200">
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
                         <div className="flex justify-center">
                             <div className="relative w-full max-w-3xl">
                                 <img 
                                     src={campYear.flyer_image_url} 
                                     alt={`Campus GEM Camp Meeting ${campYear.year} Flyer`}
-                                    className="w-full h-auto rounded-lg shadow-sm border border-gray-200"
+                                    className="w-full h-auto rounded-lg shadow-sm border border-slate-200"
                                     style={{ maxHeight: '600px', objectFit: 'contain' }}
                                     onError={(e) => {
                                         // Hide image if it fails to load
@@ -334,16 +334,16 @@ function CampRegistrationPageContent() {
             )}
             
             {/* Header - Google Forms Style */}
-            <div className="border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <div className="border-b border-slate-200 bg-white sticky top-0 z-10 shadow-sm">
                 <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
                     <div className="text-center sm:text-left">
-                        <h1 className="text-xl sm:text-2xl font-normal text-gray-900">
+                        <h1 className="text-xl sm:text-2xl font-normal text-slate-900">
                             Campus GEM Camp Meeting {campYear.year}
                         </h1>
-                        <p className="text-sm sm:text-base text-blue-600 mt-1 font-medium">
+                        <p className="text-sm sm:text-base text-primary mt-1 font-medium">
                             {campYear.theme}
                         </p>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                        <p className="text-xs sm:text-sm text-slate-500 mt-1">
                             {new Date(campYear.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - {new Date(campYear.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                         </p>
                     </div>
@@ -351,27 +351,27 @@ function CampRegistrationPageContent() {
                     {/* Progress Bar - Mobile Optimized */}
                     <div className="mt-4">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs sm:text-sm font-medium text-gray-700">
+                            <span className="text-xs sm:text-sm font-medium text-slate-700">
                                 Section {currentSection} of {totalSections}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-slate-500">
                                 {Math.round((currentSection / totalSections) * 100)}% Complete
                             </span>
                         </div>
                         <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                                className="h-full bg-primary transition-all duration-300 ease-out"
                                 style={{ width: `${(currentSection / totalSections) * 100}%` }}
                             />
                         </div>
                     </div>
 
                     {/* Fee Notice - Mobile Friendly */}
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-xs sm:text-sm text-blue-900 font-medium">
+                    <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <p className="text-xs sm:text-sm text-slate-900 font-medium">
                             Registration Fee: ₵30 for accommodation
                         </p>
-                        <p className="text-xs text-blue-700 mt-1">
+                        <p className="text-xs text-slate-700 mt-1">
                             Mobile Money: 059 194 8904 | Please bring your NHIS card
                         </p>
                     </div>
@@ -381,11 +381,11 @@ function CampRegistrationPageContent() {
             {/* Form Content */}
             <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
                 {/* Section Title */}
-                <div className="mb-6 pb-4 border-b border-gray-200">
-                    <h2 className="text-lg sm:text-xl font-normal text-gray-900">
+                <div className="mb-6 pb-4 border-b border-slate-200">
+                    <h2 className="text-lg sm:text-xl font-normal text-slate-900">
                         {sectionTitles[currentSection - 1]}
                     </h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
                         Fields marked with <span className="text-red-500">*</span> are required
                     </p>
                 </div>
@@ -397,7 +397,7 @@ function CampRegistrationPageContent() {
                             {/* First Name & Last Name - Stack on mobile */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="first_name" className="text-sm font-normal text-gray-700">
+                                    <Label htmlFor="first_name" className="text-sm font-normal text-slate-700">
                                         First Name <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
@@ -406,12 +406,12 @@ function CampRegistrationPageContent() {
                                         value={formData.first_name}
                                         onChange={e => setFormData({ ...formData, first_name: e.target.value })}
                                         placeholder="Enter your first name"
-                                        className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                         autoFocus
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="last_name" className="text-sm font-normal text-gray-700">
+                                    <Label htmlFor="last_name" className="text-sm font-normal text-slate-700">
                                         Last Name <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
@@ -420,14 +420,14 @@ function CampRegistrationPageContent() {
                                         value={formData.last_name}
                                         onChange={e => setFormData({ ...formData, last_name: e.target.value })}
                                         placeholder="Enter your last name"
-                                        className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                     />
                                 </div>
                             </div>
 
                             {/* Phone - Most important on mobile */}
                             <div className="space-y-2">
-                                <Label htmlFor="phone" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="phone" className="text-sm font-normal text-slate-700">
                                     Contact Number <span className="text-red-500">*</span>
                                 </Label>
                                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -442,7 +442,7 @@ function CampRegistrationPageContent() {
                                             setFormData({ ...formData, phone: e.target.value })
                                         }}
                                         placeholder="0241234567"
-                                        className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                         inputMode="tel"
                                     />
                                     <Button
@@ -455,7 +455,7 @@ function CampRegistrationPageContent() {
                                         {lookupLoading ? 'Looking up...' : 'Find my details'}
                                     </Button>
                                 </div>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-slate-500">
                                     Returning campers can look up previous details with the same phone number.
                                 </p>
                                 {alreadyRegistered && campYear && (
@@ -472,7 +472,7 @@ function CampRegistrationPageContent() {
 
                             {/* Email */}
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="email" className="text-sm font-normal text-slate-700">
                                     Email Address
                                 </Label>
                                 <Input
@@ -481,21 +481,21 @@ function CampRegistrationPageContent() {
                                     value={formData.email}
                                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                                     placeholder="your.email@example.com"
-                                    className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                     inputMode="email"
                                 />
                             </div>
 
                             {/* Sex */}
                             <div className="space-y-2">
-                                <Label htmlFor="sex" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="sex" className="text-sm font-normal text-slate-700">
                                     Sex <span className="text-red-500">*</span>
                                 </Label>
                                 <Select
                                     value={formData.sex}
                                     onValueChange={(val: 'Male' | 'Female') => setFormData({ ...formData, sex: val })}
                                 >
-                                    <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                    <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -508,7 +508,7 @@ function CampRegistrationPageContent() {
                             {/* Date of Birth & Age Bracket */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="date_of_birth" className="text-sm font-normal text-gray-700">
+                                    <Label htmlFor="date_of_birth" className="text-sm font-normal text-slate-700">
                                         Date of Birth
                                     </Label>
                                     <Input
@@ -525,18 +525,18 @@ function CampRegistrationPageContent() {
                                                 birth_day: birthday.birth_day,
                                             })
                                         }}
-                                        className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="age_bracket" className="text-sm font-normal text-gray-700">
+                                    <Label htmlFor="age_bracket" className="text-sm font-normal text-slate-700">
                                         Age Bracket <span className="text-red-500">*</span>
                                     </Label>
                                     <Select
                                         value={formData.age_bracket}
                                         onValueChange={(val: any) => setFormData({ ...formData, age_bracket: val })}
                                     >
-                                        <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                        <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -553,7 +553,7 @@ function CampRegistrationPageContent() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="birth_month" className="text-sm font-normal text-gray-700">
+                                    <Label htmlFor="birth_month" className="text-sm font-normal text-slate-700">
                                         Birthday month
                                     </Label>
                                     <Select
@@ -565,7 +565,7 @@ function CampRegistrationPageContent() {
                                             })
                                         }
                                     >
-                                        <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                        <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                                             <SelectValue placeholder="Select month" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -578,7 +578,7 @@ function CampRegistrationPageContent() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="birth_day" className="text-sm font-normal text-gray-700">
+                                    <Label htmlFor="birth_day" className="text-sm font-normal text-slate-700">
                                         Birthday day
                                     </Label>
                                     <Input
@@ -595,18 +595,18 @@ function CampRegistrationPageContent() {
                                             })
                                         }}
                                         placeholder="Day"
-                                        className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                         inputMode="numeric"
                                     />
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-slate-500">
                                 We use month and day only for birthday reminders, not your full birth year.
                             </p>
 
                             {/* Facebook - Optional */}
                             <div className="space-y-2">
-                                <Label htmlFor="facebook_username" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="facebook_username" className="text-sm font-normal text-slate-700">
                                     Facebook Username
                                 </Label>
                                 <Input
@@ -614,7 +614,7 @@ function CampRegistrationPageContent() {
                                     value={formData.facebook_username}
                                     onChange={e => setFormData({ ...formData, facebook_username: e.target.value })}
                                     placeholder="@username or username"
-                                    className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                 />
                             </div>
                         </div>
@@ -624,7 +624,7 @@ function CampRegistrationPageContent() {
                     {currentSection === 2 && (
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="address_school_work" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="address_school_work" className="text-sm font-normal text-slate-700">
                                     Address/School/Place of Work <span className="text-red-500">*</span>
                                 </Label>
                                 <Textarea
@@ -634,19 +634,19 @@ function CampRegistrationPageContent() {
                                     onChange={e => setFormData({ ...formData, address_school_work: e.target.value })}
                                     placeholder="Enter your address, school, or place of work. Type 'N/A' if not applicable."
                                     rows={3}
-                                    className="text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                                    className="text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900 resize-none"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="education_level" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="education_level" className="text-sm font-normal text-slate-700">
                                     Level at School? <span className="text-red-500">*</span>
                                 </Label>
                                 <Select
                                     value={formData.education_level}
                                     onValueChange={(val: any) => setFormData({ ...formData, education_level: val })}
                                 >
-                                    <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                    <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -668,14 +668,14 @@ function CampRegistrationPageContent() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="highest_qualification" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="highest_qualification" className="text-sm font-normal text-slate-700">
                                     Course/Highest Qualification <span className="text-red-500">*</span>
                                 </Label>
                                 <Select
                                     value={formData.highest_qualification}
                                     onValueChange={(val: 'JHS' | 'SHS' | 'University') => setFormData({ ...formData, highest_qualification: val })}
                                 >
-                                    <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                    <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -687,7 +687,7 @@ function CampRegistrationPageContent() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="residence" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="residence" className="text-sm font-normal text-slate-700">
                                     Where do you reside? <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
@@ -696,20 +696,20 @@ function CampRegistrationPageContent() {
                                     value={formData.residence}
                                     onChange={e => setFormData({ ...formData, residence: e.target.value })}
                                     placeholder="Example: Adenta, Greater Accra"
-                                    className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                 />
-                                <p className="text-xs text-gray-500">Format: Town, Region (e.g., Adenta, Greater Accra)</p>
+                                <p className="text-xs text-slate-500">Format: Town, Region (e.g., Adenta, Greater Accra)</p>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="times_attended" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="times_attended" className="text-sm font-normal text-slate-700">
                                     How many times have you been to the camp? <span className="text-red-500">*</span>
                                 </Label>
                                 <Select
                                     value={formData.times_attended?.toString()}
                                     onValueChange={(val) => setFormData({ ...formData, times_attended: parseInt(val) })}
                                 >
-                                    <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                    <SelectTrigger className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -730,7 +730,7 @@ function CampRegistrationPageContent() {
                     {currentSection === 3 && (
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="parent_name" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="parent_name" className="text-sm font-normal text-slate-700">
                                     Parent/Guardian Name <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
@@ -739,12 +739,12 @@ function CampRegistrationPageContent() {
                                     value={formData.parent_name}
                                     onChange={e => setFormData({ ...formData, parent_name: e.target.value })}
                                     placeholder="Enter parent or guardian full name"
-                                    className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="parent_contact" className="text-sm font-normal text-gray-700">
+                                <Label htmlFor="parent_contact" className="text-sm font-normal text-slate-700">
                                     Parent/Guardian Contact Number <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
@@ -754,7 +754,7 @@ function CampRegistrationPageContent() {
                                     value={formData.parent_contact}
                                     onChange={e => setFormData({ ...formData, parent_contact: e.target.value })}
                                     placeholder="0241234567"
-                                    className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                     inputMode="tel"
                                 />
                             </div>
@@ -766,7 +766,7 @@ function CampRegistrationPageContent() {
                         <div className="space-y-6">
                             {/* NHIS Card Question */}
                             <div className="space-y-3">
-                                <Label className="text-sm font-normal text-gray-700">
+                                <Label className="text-sm font-normal text-slate-700">
                                     Do you have an NHIS card? <span className="text-red-500">*</span>
                                 </Label>
                                 <div className="flex gap-3">
@@ -777,8 +777,8 @@ function CampRegistrationPageContent() {
                                         className={cn(
                                             "flex-1 h-11 text-base font-normal",
                                             formData.has_nhis_card === true 
-                                                ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" 
-                                                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                                                ? " border-slate-900" 
+                                                : "bg-white border-gray-300 text-slate-700 hover:bg-slate-50"
                                         )}
                                     >
                                         Yes
@@ -796,8 +796,8 @@ function CampRegistrationPageContent() {
                                         className={cn(
                                             "flex-1 h-11 text-base font-normal",
                                             formData.has_nhis_card === false 
-                                                ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" 
-                                                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                                                ? " border-slate-900" 
+                                                : "bg-white border-gray-300 text-slate-700 hover:bg-slate-50"
                                         )}
                                     >
                                         No
@@ -805,7 +805,7 @@ function CampRegistrationPageContent() {
                                 </div>
                                 {formData.has_nhis_card === true && (
                                     <div className="mt-4">
-                                        <Label htmlFor="nhis_card_expiry_date" className="text-sm font-normal text-gray-700">
+                                        <Label htmlFor="nhis_card_expiry_date" className="text-sm font-normal text-slate-700">
                                             NHIS Card Expiry Date
                                         </Label>
                                         <Input
@@ -813,7 +813,7 @@ function CampRegistrationPageContent() {
                                             type="date"
                                             value={formData.nhis_card_expiry_date}
                                             onChange={e => setFormData({ ...formData, nhis_card_expiry_date: e.target.value })}
-                                            className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 mt-2"
+                                            className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900 mt-2"
                                         />
                                     </div>
                                 )}
@@ -821,7 +821,7 @@ function CampRegistrationPageContent() {
 
                             {/* Health Challenge Question */}
                             <div className="space-y-3">
-                                <Label className="text-sm font-normal text-gray-700">
+                                <Label className="text-sm font-normal text-slate-700">
                                     Do you have any peculiar health challenge? <span className="text-red-500">*</span>
                                 </Label>
                                 <div className="flex gap-3">
@@ -832,8 +832,8 @@ function CampRegistrationPageContent() {
                                         className={cn(
                                             "flex-1 h-11 text-base font-normal",
                                             formData.has_health_challenge === true 
-                                                ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" 
-                                                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                                                ? " border-slate-900" 
+                                                : "bg-white border-gray-300 text-slate-700 hover:bg-slate-50"
                                         )}
                                     >
                                         Yes
@@ -852,8 +852,8 @@ function CampRegistrationPageContent() {
                                         className={cn(
                                             "flex-1 h-11 text-base font-normal",
                                             formData.has_health_challenge === false 
-                                                ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" 
-                                                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                                                ? " border-slate-900" 
+                                                : "bg-white border-gray-300 text-slate-700 hover:bg-slate-50"
                                         )}
                                     >
                                         No
@@ -861,7 +861,7 @@ function CampRegistrationPageContent() {
                                 </div>
                                 {formData.has_health_challenge === true && (
                                     <div className="mt-4 space-y-3">
-                                        <Label className="text-sm font-normal text-gray-700">
+                                        <Label className="text-sm font-normal text-slate-700">
                                             Please indicate the health challenge(s):
                                         </Label>
                                         <div className="space-y-2">
@@ -884,7 +884,7 @@ function CampRegistrationPageContent() {
                                                         }}
                                                         className="mt-1 h-5 w-5 border-gray-300"
                                                     />
-                                                    <Label htmlFor={`health_${challenge}`} className="text-sm font-normal text-gray-700 cursor-pointer flex-1">
+                                                    <Label htmlFor={`health_${challenge}`} className="text-sm font-normal text-slate-700 cursor-pointer flex-1">
                                                         {challenge.charAt(0).toUpperCase() + challenge.slice(1)}
                                                     </Label>
                                                 </div>
@@ -896,7 +896,7 @@ function CampRegistrationPageContent() {
                                                         value={formData.other_health_challenge || ''}
                                                         onChange={e => setFormData({ ...formData, other_health_challenge: e.target.value })}
                                                         placeholder="Please specify your health challenge"
-                                                        className="h-11 text-base bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                                        className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"
                                                     />
                                                 </div>
                                             )}
@@ -906,27 +906,27 @@ function CampRegistrationPageContent() {
                             </div>
 
                             {/* Summary */}
-                            <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="mt-8 p-4 bg-slate-50 border border-slate-200 rounded-lg">
                                 <div className="flex items-center gap-2 mb-3">
                                     <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                    <h3 className="text-sm font-medium text-gray-900">Registration Summary</h3>
+                                    <h3 className="text-sm font-medium text-slate-900">Registration Summary</h3>
                                 </div>
-                                <div className="space-y-2 text-sm text-gray-700">
+                                <div className="space-y-2 text-sm text-slate-700">
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Name:</span>
+                                        <span className="text-slate-600">Name:</span>
                                         <span className="font-medium">{formData.first_name} {formData.last_name}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Contact:</span>
+                                        <span className="text-slate-600">Contact:</span>
                                         <span className="font-medium">{formData.phone}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Times Attended:</span>
+                                        <span className="text-slate-600">Times Attended:</span>
                                         <span className="font-medium">{formData.times_attended === 0 ? 'First Timer' : `${formData.times_attended} time(s)`}</span>
                                     </div>
-                                    <div className="flex justify-between pt-2 border-t border-gray-200">
-                                        <span className="text-gray-600">Registration Fee:</span>
-                                        <span className="font-bold text-blue-600">₵30.00</span>
+                                    <div className="flex justify-between pt-2 border-t border-slate-200">
+                                        <span className="text-slate-600">Registration Fee:</span>
+                                        <span className="font-bold text-primary">₵30.00</span>
                                     </div>
                                 </div>
                             </div>
@@ -934,13 +934,13 @@ function CampRegistrationPageContent() {
                     )}
 
                     {/* Navigation Buttons - Mobile Optimized */}
-                    <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-8 pt-6 border-t border-gray-200">
+                    <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-8 pt-6 border-t border-slate-200">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={handlePrevious}
                             disabled={currentSection === 1}
-                            className="h-12 text-base w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="h-12 text-base w-full sm:w-auto border-gray-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <ChevronLeft className="h-5 w-5 mr-1" />
                             Previous
@@ -948,7 +948,7 @@ function CampRegistrationPageContent() {
                         {currentSection < totalSections ? (
                             <Button 
                                 type="submit" 
-                                className="h-12 text-base w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                                className="h-12 text-base w-full sm:w-auto"
                             >
                                 Next
                                 <ChevronRight className="h-5 w-5 ml-1" />
@@ -977,9 +977,9 @@ function CampRegistrationPageContent() {
             </div>
 
             {/* Footer - Mobile Friendly */}
-            <div className="border-t border-gray-200 bg-gray-50 mt-12">
+            <div className="border-t border-slate-200 bg-slate-50 mt-12">
                 <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 text-center">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500">
                         Campus GEM Ministries | Camp Meeting Registration
                     </p>
                     <p className="text-xs text-gray-400 mt-1">

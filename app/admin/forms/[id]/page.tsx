@@ -541,7 +541,7 @@ export default function FormEditorPage() {
           </div>
 
           <TabsContent value="settings" className="mt-4 space-y-4 focus-visible:outline-none sm:mt-6">
-        <Card className="border-blue-200">
+        <Card className="border-slate-200">
           <CardHeader>
             <CardTitle>Form settings</CardTitle>
             <CardDescription>Title, share link, and optional phone lookup for returning campers.</CardDescription>

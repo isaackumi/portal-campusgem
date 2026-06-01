@@ -100,7 +100,7 @@ export function FamilyTree({
   const getRelationshipColor = (relationship: string) => {
     switch (relationship) {
       case 'child':
-        return 'bg-blue-100 text-blue-700'
+        return 'bg-slate-100 text-slate-700'
       case 'spouse':
         return 'bg-pink-100 text-pink-700'
       case 'sibling':
@@ -108,7 +108,7 @@ export function FamilyTree({
       case 'parent':
         return 'bg-purple-100 text-purple-700'
       default:
-        return 'bg-gray-100 text-gray-700'
+        return 'bg-gray-100 text-slate-700'
     }
   }
 
@@ -208,7 +208,7 @@ export function FamilyTree({
         {dependants.length === 0 ? (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No family members added yet</p>
+            <p className="text-slate-500 mb-4">No family members added yet</p>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add First Member
@@ -218,7 +218,7 @@ export function FamilyTree({
           <div className="space-y-6">
             {Object.entries(groupedDependants).map(([relationship, members]) => (
               <div key={relationship}>
-                <h4 className="text-sm font-medium text-gray-700 mb-3 capitalize">
+                <h4 className="text-sm font-medium text-slate-700 mb-3 capitalize">
                   {relationship}s ({members.length})
                 </h4>
                 <div className="grid gap-3">
@@ -230,7 +230,7 @@ export function FamilyTree({
                         </div>
                         <div>
                           <p className="font-medium">{dependant.first_name}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex items-center space-x-4 text-sm text-slate-500">
                             <span className="capitalize">{dependant.relationship}</span>
                             {dependant.dob && (
                               <span>Age {calculateAge(dependant.dob)}</span>
@@ -240,7 +240,7 @@ export function FamilyTree({
                             )}
                           </div>
                           {dependant.notes && (
-                            <p className="text-xs text-gray-500 mt-1">{dependant.notes}</p>
+                            <p className="text-xs text-slate-500 mt-1">{dependant.notes}</p>
                           )}
                         </div>
                       </div>

@@ -372,11 +372,11 @@ export default function ComprehensiveAttendancePage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-            <BarChart3 className="h-8 w-8 mr-3 text-blue-600" />
+          <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center">
+            <BarChart3 className="h-8 w-8 mr-3 text-primary" />
             Comprehensive Attendance Management
           </h1>
-          <p className="text-gray-600">Advanced attendance tracking with departments, duplicate prevention, and absentee management</p>
+          <p className="text-slate-600">Advanced attendance tracking with departments, duplicate prevention, and absentee management</p>
         </div>
 
         {error && (
@@ -394,10 +394,10 @@ export default function ComprehensiveAttendancePage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Attendance</p>
-                    <p className="text-2xl font-bold text-blue-600">{stats.total_attendance}</p>
+                    <p className="text-sm font-medium text-slate-600">Total Attendance</p>
+                    <p className="text-2xl font-bold text-primary">{stats.total_attendance}</p>
                   </div>
-                  <Users className="h-8 w-8 text-blue-600" />
+                  <Users className="h-8 w-8 text-primary" />
                 </div>
               </CardContent>
             </Card>
@@ -406,8 +406,8 @@ export default function ComprehensiveAttendancePage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Male/Female</p>
-                    <p className="text-lg font-bold text-gray-900">
+                    <p className="text-sm font-medium text-slate-600">Male/Female</p>
+                    <p className="text-lg font-bold text-slate-900">
                       {stats.male_attendance}/{stats.female_attendance}
                     </p>
                   </div>
@@ -420,8 +420,8 @@ export default function ComprehensiveAttendancePage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Adults/Children</p>
-                    <p className="text-lg font-bold text-gray-900">
+                    <p className="text-sm font-medium text-slate-600">Adults/Children</p>
+                    <p className="text-lg font-bold text-slate-900">
                       {stats.adult_attendance}/{stats.children_attendance}
                     </p>
                   </div>
@@ -434,7 +434,7 @@ export default function ComprehensiveAttendancePage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Absentees</p>
+                    <p className="text-sm font-medium text-slate-600">Absentees</p>
                     <p className="text-2xl font-bold text-red-600">{absentees.length}</p>
                   </div>
                   <UserX className="h-8 w-8 text-red-600" />
@@ -551,7 +551,7 @@ export default function ComprehensiveAttendancePage() {
                       checked={selectedMembers.length === filteredMembers.length && filteredMembers.length > 0}
                       onCheckedChange={handleSelectAllMembers}
                     />
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-slate-600">
                       {selectedMembers.length} of {filteredMembers.length} members selected
                     </span>
                   </div>
@@ -592,15 +592,15 @@ export default function ComprehensiveAttendancePage() {
                 ) : filteredMembers.length === 0 ? (
                   <div className="text-center py-8">
                     <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No members found</p>
+                    <p className="text-slate-500">No members found</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {filteredMembers.map((member) => (
                       <div 
                         key={member.id} 
-                        className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors ${
-                          selectedMembers.includes(member.id) ? 'bg-blue-50 border-blue-200' : ''
+                        className={`border rounded-lg p-4 hover:bg-slate-50 transition-colors ${
+                          selectedMembers.includes(member.id) ? 'bg-slate-50 border-slate-200' : ''
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -611,8 +611,8 @@ export default function ComprehensiveAttendancePage() {
                             />
                             
                             <div>
-                              <h4 className="font-medium text-gray-900">{member.full_name}</h4>
-                              <p className="text-sm text-gray-500">{member.membership_id}</p>
+                              <h4 className="font-medium text-slate-900">{member.full_name}</h4>
+                              <p className="text-sm text-slate-500">{member.membership_id}</p>
                               {member.departments && member.departments.length > 0 && (
                                 <div className="flex gap-1 mt-1">
                                   {member.departments.map(dept => (
@@ -636,7 +636,7 @@ export default function ComprehensiveAttendancePage() {
                                 </Badge>
                               </div>
                               {member.phone && (
-                                <p className="text-sm text-gray-500 flex items-center gap-1">
+                                <p className="text-sm text-slate-500 flex items-center gap-1">
                                   <Phone className="h-3 w-3" />
                                   {member.phone}
                                 </p>
@@ -692,12 +692,12 @@ export default function ComprehensiveAttendancePage() {
                 {absentees.length === 0 ? (
                   <div className="text-center py-8">
                     <UserX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No absentees for this service</p>
+                    <p className="text-slate-500">No absentees for this service</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {absentees.map((absentee) => (
-                      <div key={absentee.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div key={absentee.id} className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <Checkbox
@@ -706,10 +706,10 @@ export default function ComprehensiveAttendancePage() {
                             />
                             
                             <div>
-                              <h4 className="font-medium text-gray-900">{absentee.full_name}</h4>
-                              <p className="text-sm text-gray-500">{absentee.membership_id}</p>
+                              <h4 className="font-medium text-slate-900">{absentee.full_name}</h4>
+                              <p className="text-sm text-slate-500">{absentee.membership_id}</p>
                               {absentee.reason && (
-                                <p className="text-sm text-gray-600 mt-1">Reason: {absentee.reason}</p>
+                                <p className="text-sm text-slate-600 mt-1">Reason: {absentee.reason}</p>
                               )}
                             </div>
                           </div>
@@ -725,7 +725,7 @@ export default function ComprehensiveAttendancePage() {
                                 </Badge>
                               </div>
                               {absentee.phone && (
-                                <p className="text-sm text-gray-500 flex items-center gap-1">
+                                <p className="text-sm text-slate-500 flex items-center gap-1">
                                   <Phone className="h-3 w-3" />
                                   {absentee.phone}
                                 </p>
@@ -774,11 +774,11 @@ export default function ComprehensiveAttendancePage() {
                               <span className="text-sm font-bold">{deptStats.present}/{deptStats.total}</span>
                               <div className="w-20 bg-gray-200 rounded-full h-2">
                                 <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
+                                  className="bg-primary h-2 rounded-full" 
                                   style={{ width: `${percentage}%` }}
                                 />
                               </div>
-                              <span className="text-sm text-gray-500 w-12 text-right">
+                              <span className="text-sm text-slate-500 w-12 text-right">
                                 {percentage.toFixed(1)}%
                               </span>
                             </div>
@@ -804,7 +804,7 @@ export default function ComprehensiveAttendancePage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Sessions Monitored</span>
-                        <span className="text-sm font-bold text-blue-600">
+                        <span className="text-sm font-bold text-primary">
                           {stats.duplicate_prevention.sessions_checked}
                         </span>
                       </div>
@@ -826,22 +826,22 @@ export default function ComprehensiveAttendancePage() {
                 {recentActivity.length === 0 ? (
                   <div className="text-center py-8">
                     <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No recent activity</p>
+                    <p className="text-slate-500">No recent activity</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {recentActivity.map((activity) => (
                       <div key={activity.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          {activity.type === 'check_in' && <UserCheck className="h-5 w-5 text-blue-600" />}
+                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                          {activity.type === 'check_in' && <UserCheck className="h-5 w-5 text-primary" />}
                           {activity.type === 'bulk_attendance' && <Users className="h-5 w-5 text-green-600" />}
                           {activity.type === 'absentee_marked' && <UserX className="h-5 w-5 text-red-600" />}
                           {activity.type === 'follow_up' && <MessageSquare className="h-5 w-5 text-purple-600" />}
                         </div>
                         
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900">{activity.description}</p>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <p className="font-medium text-slate-900">{activity.description}</p>
+                          <div className="flex items-center gap-2 text-sm text-slate-500">
                             <Calendar className="h-4 w-4" />
                             <span>{activity.service_date}</span>
                             <span>•</span>
@@ -850,7 +850,7 @@ export default function ComprehensiveAttendancePage() {
                         </div>
                         
                         <div className="text-right">
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-slate-500">
                             {new Date(activity.created_at).toLocaleString()}
                           </p>
                         </div>

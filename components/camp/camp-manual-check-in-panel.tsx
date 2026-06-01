@@ -122,7 +122,7 @@ export function CampManualCheckInPanel({
 
   return (
     <Card className={cn('border-2', className)}>
-      <CardHeader className="border-b bg-gray-50">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2 text-lg">
           <UserCheck className="h-5 w-5" />
           Manual check-in
@@ -148,14 +148,14 @@ export function CampManualCheckInPanel({
         {query.trim().length >= 2 ? (
           <>
             {mode === 'code' && results.length === 1 ? (
-              <p className="rounded-lg border border-indigo-200 bg-indigo-50/80 px-3 py-2 text-sm text-indigo-900">
+              <p className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-900">
                 Matched camp code{' '}
                 <span className="font-mono font-semibold">{resolveCampCheckInCode(results[0]!)}</span>
               </p>
             ) : null}
 
             {mode === 'phone' && results.length > 1 ? (
-              <div className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50/80 p-3 text-sm text-blue-900 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-900 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-2">
                   <Users className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>
@@ -203,12 +203,12 @@ export function CampManualCheckInPanel({
                       key={reg.id}
                       className={cn(
                         'flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between',
-                        checkedIn ? 'border-green-200 bg-green-50/50' : 'border-gray-200 bg-white'
+                        checkedIn ? 'border-green-200 bg-green-50/50' : 'border-slate-200 bg-white'
                       )}
                     >
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-gray-900">{name}</p>
+                          <p className="font-semibold text-slate-900">{name}</p>
                           <Badge variant="outline" className="text-xs">
                             {reg.role}
                           </Badge>

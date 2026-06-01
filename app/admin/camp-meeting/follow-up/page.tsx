@@ -215,17 +215,17 @@ function FollowUpManagementContent() {
                 <div className="grid gap-4 md:grid-cols-5">
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Total
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+                            <div className="text-3xl font-bold text-slate-900">{stats.total}</div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <Clock className="h-4 w-4 text-yellow-600" />
                                 Pending
                             </CardTitle>
@@ -236,18 +236,18 @@ function FollowUpManagementContent() {
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-blue-600" />
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 text-primary" />
                                 In Progress
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-blue-600">{stats.inProgress}</div>
+                            <div className="text-3xl font-bold text-primary">{stats.inProgress}</div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                                 Completed
                             </CardTitle>
@@ -258,7 +258,7 @@ function FollowUpManagementContent() {
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <UserX className="h-4 w-4 text-red-600" />
                                 Unassigned
                             </CardTitle>
@@ -344,7 +344,7 @@ function FollowUpManagementContent() {
                         <CardContent className="pt-6">
                             <div className="space-y-3 max-h-[600px] overflow-y-auto">
                                 {byStatus.pending.length === 0 ? (
-                                    <p className="text-center text-gray-500 text-sm py-8">
+                                    <p className="text-center text-slate-500 text-sm py-8">
                                         No pending follow-ups
                                     </p>
                                 ) : (
@@ -365,10 +365,10 @@ function FollowUpManagementContent() {
 
                     {/* In Progress */}
                     <Card className="border-2">
-                        <CardHeader className="bg-blue-50 border-b">
+                        <CardHeader className="bg-slate-50 border-b">
                             <CardTitle className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <AlertCircle className="h-5 w-5 text-blue-600" />
+                                    <AlertCircle className="h-5 w-5 text-primary" />
                                     In Progress ({byStatus.in_progress.length})
                                 </div>
                             </CardTitle>
@@ -376,7 +376,7 @@ function FollowUpManagementContent() {
                         <CardContent className="pt-6">
                             <div className="space-y-3 max-h-[600px] overflow-y-auto">
                                 {byStatus.in_progress.length === 0 ? (
-                                    <p className="text-center text-gray-500 text-sm py-8">
+                                    <p className="text-center text-slate-500 text-sm py-8">
                                         No in-progress follow-ups
                                     </p>
                                 ) : (
@@ -408,7 +408,7 @@ function FollowUpManagementContent() {
                         <CardContent className="pt-6">
                             <div className="space-y-3 max-h-[600px] overflow-y-auto">
                                 {byStatus.completed.length === 0 ? (
-                                    <p className="text-center text-gray-500 text-sm py-8">
+                                    <p className="text-center text-slate-500 text-sm py-8">
                                         No completed follow-ups
                                     </p>
                                 ) : (
@@ -467,7 +467,7 @@ function RegistrationCard({
         <div className="p-4 bg-white border-2 rounded-lg hover:shadow-md transition-shadow cursor-pointer" onClick={onView}>
             <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
-                    <p className="font-semibold text-sm text-gray-900 truncate">{fullName}</p>
+                    <p className="font-semibold text-sm text-slate-900 truncate">{fullName}</p>
                     <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline" className="text-xs">{registration.role}</Badge>
                         {registration.is_new_registrant && (
@@ -488,8 +488,8 @@ function RegistrationCard({
                 {registration.assigned_user ? (
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <UserCheck className="h-3 w-3 text-blue-600" />
-                            <span className="text-xs text-gray-600">{registration.assigned_user.full_name}</span>
+                            <UserCheck className="h-3 w-3 text-primary" />
+                            <span className="text-xs text-slate-600">{registration.assigned_user.full_name}</span>
                         </div>
                         <Select
                             value={registration.assigned_to || '__unassign__'}
@@ -515,7 +515,7 @@ function RegistrationCard({
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <UserX className="h-3 w-3 text-red-600" />
-                            <span className="text-xs text-gray-600">Unassigned</span>
+                            <span className="text-xs text-slate-600">Unassigned</span>
                         </div>
                         <Select
                             value=""
@@ -550,7 +550,7 @@ function RegistrationCard({
                 </Select>
 
                 {registration.phone && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
+                    <div className="flex items-center gap-1 text-xs text-slate-500 mt-2">
                         <Phone className="h-3 w-3" />
                         <span>{registration.phone}</span>
                     </div>

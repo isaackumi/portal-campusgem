@@ -280,7 +280,7 @@ export default function CelebrationsPage() {
           <Card>
             <CardContent className="p-8 text-center">
               <Cake className="h-10 w-10 text-pink-600 mx-auto mb-3" />
-              <p className="text-gray-700">Please sign in to view Birthdays & Anniversaries.</p>
+              <p className="text-slate-700">Please sign in to view Birthdays & Anniversaries.</p>
             </CardContent>
           </Card>
         </div>
@@ -293,11 +293,11 @@ export default function CelebrationsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center">
             <Cake className="h-8 w-8 mr-3 text-pink-600" />
             Birthdays & Anniversaries
           </h1>
-          <p className="text-gray-600">Manage birthday and anniversary celebrations with SMS notifications</p>
+          <p className="text-slate-600">Manage birthday and anniversary celebrations with SMS notifications</p>
         </div>
 
         {error && (
@@ -315,7 +315,7 @@ export default function CelebrationsPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Today's Birthdays</p>
+                    <p className="text-sm font-medium text-slate-600">Today's Birthdays</p>
                     <p className="text-2xl font-bold text-pink-600">{stats.today_birthdays}</p>
                   </div>
                   <Cake className="h-8 w-8 text-pink-600" />
@@ -327,7 +327,7 @@ export default function CelebrationsPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Today's Anniversaries</p>
+                    <p className="text-sm font-medium text-slate-600">Today's Anniversaries</p>
                     <p className="text-2xl font-bold text-red-600">{stats.today_anniversaries}</p>
                   </div>
                   <Heart className="h-8 w-8 text-red-600" />
@@ -339,10 +339,10 @@ export default function CelebrationsPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">This Week</p>
-                    <p className="text-2xl font-bold text-blue-600">{stats.this_week_birthdays + stats.this_week_anniversaries}</p>
+                    <p className="text-sm font-medium text-slate-600">This Week</p>
+                    <p className="text-2xl font-bold text-primary">{stats.this_week_birthdays + stats.this_week_anniversaries}</p>
                   </div>
-                  <Calendar className="h-8 w-8 text-blue-600" />
+                  <Calendar className="h-8 w-8 text-primary" />
                 </div>
               </CardContent>
             </Card>
@@ -351,7 +351,7 @@ export default function CelebrationsPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">This Month</p>
+                    <p className="text-sm font-medium text-slate-600">This Month</p>
                     <p className="text-2xl font-bold text-purple-600">{stats.this_month_birthdays + stats.this_month_anniversaries}</p>
                   </div>
                   <Users className="h-8 w-8 text-purple-600" />
@@ -418,8 +418,8 @@ export default function CelebrationsPage() {
             </div>
 
             {selectedMembers.length > 0 && (
-              <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-700">
+              <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
+                <p className="text-sm text-slate-700">
                   {selectedMembers.length} member{selectedMembers.length !== 1 ? 's' : ''} selected
                 </p>
                 <Button 
@@ -455,15 +455,15 @@ export default function CelebrationsPage() {
             ) : filteredMembers.length === 0 ? (
               <div className="text-center py-8">
                 <Cake className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No celebrations found for the selected period</p>
+                <p className="text-slate-500">No celebrations found for the selected period</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {filteredMembers.map((member) => (
                   <div 
                     key={member.id} 
-                    className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors ${
-                      selectedMembers.includes(member.id) ? 'bg-blue-50 border-blue-200' : ''
+                    className={`border rounded-lg p-4 hover:bg-slate-50 transition-colors ${
+                      selectedMembers.includes(member.id) ? 'bg-slate-50 border-slate-200' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -472,7 +472,7 @@ export default function CelebrationsPage() {
                           type="checkbox"
                           checked={selectedMembers.includes(member.id)}
                           onChange={() => handleSelectMember(member.id)}
-                          className="h-4 w-4 text-blue-600 rounded"
+                          className="h-4 w-4 text-primary rounded"
                         />
                         
                         <div className="flex items-center gap-3">
@@ -483,10 +483,10 @@ export default function CelebrationsPage() {
                           )}
                           
                           <div>
-                            <h4 className="font-medium text-gray-900">{member.name}</h4>
-                            <p className="text-sm text-gray-500">{member.membership_id}</p>
+                            <h4 className="font-medium text-slate-900">{member.name}</h4>
+                            <p className="text-sm text-slate-500">{member.membership_id}</p>
                             {member.type === 'anniversary' && member.spouse_name && (
-                              <p className="text-sm text-gray-500">& {member.spouse_name}</p>
+                              <p className="text-sm text-slate-500">& {member.spouse_name}</p>
                             )}
                           </div>
                         </div>
@@ -494,13 +494,13 @@ export default function CelebrationsPage() {
 
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-slate-900">
                             {new Date(member.celebration_date).toLocaleDateString('en-US', { 
                               month: 'short', 
                               day: 'numeric' 
                             })}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-slate-500">
                             {member.type === 'birthday' 
                               ? `${member.age} years old`
                               : `${member.years_married} years married`
@@ -510,14 +510,14 @@ export default function CelebrationsPage() {
 
                         <div className="flex items-center gap-2">
                           {member.phone && (
-                            <div className="flex items-center gap-1 text-sm text-gray-500">
+                            <div className="flex items-center gap-1 text-sm text-slate-500">
                               <Phone className="h-4 w-4" />
                               <span>{member.phone}</span>
                             </div>
                           )}
                           
                           {member.email && (
-                            <div className="flex items-center gap-1 text-sm text-gray-500">
+                            <div className="flex items-center gap-1 text-sm text-slate-500">
                               <Mail className="h-4 w-4" />
                               <span>{member.email}</span>
                             </div>

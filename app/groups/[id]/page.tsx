@@ -220,7 +220,7 @@ export default function GroupDetailsPage() {
   const getRoleColor = (role: GroupMembership['role']) => {
     switch (role) {
       case 'leader': return 'bg-yellow-100 text-yellow-800'
-      case 'co_leader': return 'bg-blue-100 text-blue-800'
+      case 'co_leader': return 'bg-slate-100 text-slate-700'
       case 'executive': return 'bg-purple-100 text-purple-800'
       case 'volunteer': return 'bg-orange-100 text-orange-800'
       case 'member': return 'bg-green-100 text-green-800'
@@ -256,7 +256,7 @@ export default function GroupDetailsPage() {
   // Show loading state
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-slate-50 p-8">
         <div className="max-w-6xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -284,7 +284,7 @@ export default function GroupDetailsPage() {
     return (
       <DashboardLayout>
         <div className="py-12 text-center">
-          <h2 className="text-lg font-semibold text-gray-900">Group not found</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Group not found</h2>
           <p className="mt-2 text-sm text-muted-foreground">This group may have been removed or the link is invalid.</p>
           <Button className="mt-4" onClick={() => router.push('/groups')}>
             Back to Groups
@@ -296,7 +296,7 @@ export default function GroupDetailsPage() {
 
   return (
     <DashboardLayout>
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -306,20 +306,20 @@ export default function GroupDetailsPage() {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => router.push('/groups')}
-                className="mr-3 text-gray-600 hover:text-gray-900"
+                className="mr-3 text-slate-600 hover:text-slate-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back to Groups
               </Button>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
               {group.name}
             </h1>
             <div className="flex items-center space-x-4">
-              <Badge className="bg-blue-100 text-blue-800 capitalize">
+              <Badge className="bg-slate-100 text-slate-700 capitalize">
                 {group.group_type.replace('_', ' ')}
               </Badge>
-              <span className="text-gray-600">
+              <span className="text-slate-600">
                 {members.length} member{members.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -358,7 +358,7 @@ export default function GroupDetailsPage() {
                       </CardTitle>
                       <Button 
                         onClick={() => setShowAddMember(true)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className=""
                       >
                         <UserPlus className="h-4 w-4 mr-2" />
                         Add Member
@@ -404,19 +404,19 @@ export default function GroupDetailsPage() {
                       {filteredMembers.map((groupMember) => (
                         <div
                           key={groupMember.id}
-                          className="flex flex-col gap-3 rounded-lg bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                          className="flex flex-col gap-3 rounded-lg bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
-                              <Users className="h-5 w-5 text-blue-600" />
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                              <Users className="h-5 w-5 text-primary" />
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate font-medium text-gray-900">
+                              <p className="truncate font-medium text-slate-900">
                                 {memberDisplayName(groupMember)}
                               </p>
-                              <p className="text-sm text-gray-500">{memberMembershipId(groupMember)}</p>
+                              <p className="text-sm text-slate-500">{memberMembershipId(groupMember)}</p>
                               {groupMember.member?.user?.phone ? (
-                                <p className="text-xs text-gray-500">{groupMember.member.user.phone}</p>
+                                <p className="text-xs text-slate-500">{groupMember.member.user.phone}</p>
                               ) : null}
                             </div>
                           </div>
@@ -465,7 +465,7 @@ export default function GroupDetailsPage() {
                     {filteredMembers.length === 0 && !membersLoading && (
                       <div className="text-center py-8">
                         <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-500">No members found</p>
+                        <p className="text-slate-500">No members found</p>
                       </div>
                     )}
                   </CardContent>
@@ -489,18 +489,18 @@ export default function GroupDetailsPage() {
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         placeholder="Type your message here..."
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
                         rows={4}
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-slate-600">
                         Message will be sent to {members.length} member{members.length !== 1 ? 's' : ''}
                       </p>
                       <Button 
                         onClick={sendGroupMessage}
                         disabled={!messageText.trim()}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className=""
                       >
                         <Send className="h-4 w-4 mr-2" />
                         Send Message
@@ -523,19 +523,19 @@ export default function GroupDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Group Type</Label>
-                        <p className="text-sm text-gray-600 capitalize">{group.group_type.replace('_', ' ')}</p>
+                        <p className="text-sm text-slate-600 capitalize">{group.group_type.replace('_', ' ')}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium">Max Members</Label>
-                        <p className="text-sm text-gray-600">{group.max_members || 'Unlimited'}</p>
+                        <p className="text-sm text-slate-600">{group.max_members || 'Unlimited'}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium">Status</Label>
-                        <p className="text-sm text-gray-600">{group.is_active ? 'Active' : 'Inactive'}</p>
+                        <p className="text-sm text-slate-600">{group.is_active ? 'Active' : 'Inactive'}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium">Created</Label>
-                        <p className="text-sm text-gray-600">{new Date(group.created_at).toLocaleDateString()}</p>
+                        <p className="text-sm text-slate-600">{new Date(group.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -558,7 +558,7 @@ export default function GroupDetailsPage() {
                 {group.description && (
                   <div>
                     <Label className="text-sm font-medium">Description</Label>
-                    <p className="text-sm text-gray-600 mt-1">{group.description}</p>
+                    <p className="text-sm text-slate-600 mt-1">{group.description}</p>
                   </div>
                 )}
 
@@ -567,7 +567,7 @@ export default function GroupDetailsPage() {
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <div>
                       <p className="text-sm font-medium">Meeting Schedule</p>
-                      <p className="text-sm text-gray-600">{group.meeting_schedule}</p>
+                      <p className="text-sm text-slate-600">{group.meeting_schedule}</p>
                     </div>
                   </div>
                 )}
@@ -577,7 +577,7 @@ export default function GroupDetailsPage() {
                     <MapPin className="h-4 w-4 text-gray-400" />
                     <div>
                       <p className="text-sm font-medium">Location</p>
-                      <p className="text-sm text-gray-600">{group.meeting_location}</p>
+                      <p className="text-sm text-slate-600">{group.meeting_location}</p>
                     </div>
                   </div>
                 )}
@@ -601,19 +601,19 @@ export default function GroupDetailsPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium">{group.leader.full_name}</p>
-                      <p className="text-xs text-gray-500">Leader</p>
+                      <p className="text-xs text-slate-500">Leader</p>
                     </div>
                   </div>
                 )}
 
                 {group.co_leader && (
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Star className="h-4 w-4 text-blue-600" />
+                    <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                      <Star className="h-4 w-4 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">{group.co_leader.full_name}</p>
-                      <p className="text-xs text-gray-500">Co-Leader</p>
+                      <p className="text-xs text-slate-500">Co-Leader</p>
                     </div>
                   </div>
                 )}
@@ -673,7 +673,7 @@ export default function GroupDetailsPage() {
                         <SelectItem key={member.id} value={member.id}>
                           <div>
                             <p className="font-medium">{member.full_name}</p>
-                            <p className="text-xs text-gray-500">{member.membership_id} • {member.role}</p>
+                            <p className="text-xs text-slate-500">{member.membership_id} • {member.role}</p>
                           </div>
                         </SelectItem>
                         ))
@@ -710,7 +710,7 @@ export default function GroupDetailsPage() {
                   <Button
                     onClick={addMemberToGroup}
                     disabled={!selectedMemberId || selectedMemberId === 'no-members'}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className=""
                   >
                     Add Member
                   </Button>

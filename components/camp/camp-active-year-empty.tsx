@@ -18,9 +18,9 @@ export function CampActiveYearEmpty({
 }: CampActiveYearEmptyProps) {
   return (
     <div className="mx-auto max-w-4xl">
-      <Card className="overflow-hidden border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/60 shadow-sm">
+      <Card className="overflow-hidden border-slate-200 bg-gradient-to-br from-white via-slate-50/40 to-slate-100/60 shadow-sm">
         <CardHeader className="space-y-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-slate-900/20">
             <Sparkles className="h-6 w-6" />
           </div>
           <div>
@@ -33,22 +33,22 @@ export function CampActiveYearEmpty({
         <CardContent className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-white/80 bg-white/80 p-4">
-              <Calendar className="mb-2 h-5 w-5 text-blue-600" />
-              <p className="text-sm font-medium text-gray-900">Set an active year</p>
+              <Calendar className="mb-2 h-5 w-5 text-primary" />
+              <p className="text-sm font-medium text-slate-900">Set an active year</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 One active year powers admin dashboards and follow-up.
               </p>
             </div>
             <div className="rounded-xl border border-white/80 bg-white/80 p-4">
-              <Upload className="mb-2 h-5 w-5 text-blue-600" />
-              <p className="text-sm font-medium text-gray-900">Import history</p>
+              <Upload className="mb-2 h-5 w-5 text-primary" />
+              <p className="text-sm font-medium text-slate-900">Import history</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Bring in past Google Form or Excel registrations by year.
               </p>
             </div>
             <div className="rounded-xl border border-white/80 bg-white/80 p-4">
-              <ArrowRight className="mb-2 h-5 w-5 text-blue-600" />
-              <p className="text-sm font-medium text-gray-900">Review past seasons</p>
+              <ArrowRight className="mb-2 h-5 w-5 text-primary" />
+              <p className="text-sm font-medium text-slate-900">Review past seasons</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Open any year hub for analytics, SMS, and outreach assignments.
               </p>

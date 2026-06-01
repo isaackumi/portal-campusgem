@@ -276,59 +276,59 @@ export default function PaymentManagementPage() {
                 <div className="grid gap-4 md:grid-cols-5">
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Total Registrations
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+                            <div className="text-3xl font-bold text-slate-900">{stats.total}</div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                                 Paid
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-green-600">{stats.paid}</div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1">
                                 ₵{stats.paidAmount.toFixed(2)}
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <Clock className="h-4 w-4 text-yellow-600" />
                                 Pending
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1">
                                 ₵{stats.pendingAmount.toFixed(2)}
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <DollarSign className="h-4 w-4 text-blue-600" />
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-primary" />
                                 Total Revenue
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-blue-600">₵{stats.totalAmount.toFixed(2)}</div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <div className="text-3xl font-bold text-primary">₵{stats.totalAmount.toFixed(2)}</div>
+                            <p className="text-xs text-slate-500 mt-1">
                                 Expected total
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4 text-purple-600" />
                                 Collection Rate
                             </CardTitle>
@@ -337,7 +337,7 @@ export default function PaymentManagementPage() {
                             <div className="text-3xl font-bold text-purple-600">
                                 {stats.totalAmount > 0 ? Math.round((stats.paidAmount / stats.totalAmount) * 100) : 0}%
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1">
                                 {stats.paidAmount.toFixed(2)} / {stats.totalAmount.toFixed(2)}
                             </p>
                         </CardContent>
@@ -373,7 +373,7 @@ export default function PaymentManagementPage() {
 
                         {selectedIds.size > 0 && (
                             <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-slate-700">
                                     {selectedIds.size} selected
                                 </span>
                                 <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
@@ -459,7 +459,7 @@ export default function PaymentManagementPage() {
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-gray-50">
+                                        <TableRow className="bg-slate-50">
                                             <TableHead className="w-12">
                                                 <Checkbox
                                                     checked={selectedIds.size > 0 && selectedIds.size === filteredRegistrations.length}
@@ -488,8 +488,8 @@ export default function PaymentManagementPage() {
                                                 <TableRow
                                                     key={reg.id}
                                                     className={cn(
-                                                        "hover:bg-gray-50 transition-colors",
-                                                        selectedIds.has(reg.id) && "bg-blue-50"
+                                                        "hover:bg-slate-50 transition-colors",
+                                                        selectedIds.has(reg.id) && "bg-slate-50"
                                                     )}
                                                 >
                                                     <TableCell onClick={(e) => e.stopPropagation()}>
@@ -499,7 +499,7 @@ export default function PaymentManagementPage() {
                                                         />
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="font-medium text-gray-900">
+                                                        <div className="font-medium text-slate-900">
                                                             {reg.full_name || `${reg.first_name} ${reg.last_name}`}
                                                         </div>
                                                         {reg.is_new_registrant && (
@@ -511,10 +511,10 @@ export default function PaymentManagementPage() {
                                                     <TableCell>
                                                         <div className="space-y-1">
                                                             {reg.email && (
-                                                                <div className="text-sm text-gray-600">{reg.email}</div>
+                                                                <div className="text-sm text-slate-600">{reg.email}</div>
                                                             )}
                                                             {reg.phone && (
-                                                                <div className="text-sm text-gray-600">{reg.phone}</div>
+                                                                <div className="text-sm text-slate-600">{reg.phone}</div>
                                                             )}
                                                         </div>
                                                     </TableCell>
@@ -543,7 +543,7 @@ export default function PaymentManagementPage() {
                                                     <TableCell className="text-xs font-mono">
                                                         {reg.payment_reference || '-'}
                                                     </TableCell>
-                                                    <TableCell className="text-xs text-gray-600">
+                                                    <TableCell className="text-xs text-slate-600">
                                                         {reg.payment_date
                                                             ? new Date(reg.payment_date).toLocaleDateString()
                                                             : '-'}

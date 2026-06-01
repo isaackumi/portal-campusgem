@@ -234,7 +234,7 @@ export default function CreateGroupPage() {
   // Show loading state
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-slate-50 p-8">
         <div className="max-w-4xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -256,7 +256,7 @@ export default function CreateGroupPage() {
 
   return (
     <DashboardLayout>
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -266,16 +266,16 @@ export default function CreateGroupPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push('/groups')}
-                className="mr-3 text-gray-600 hover:text-gray-900"
+                className="mr-3 text-slate-600 hover:text-slate-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back to Groups
               </Button>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Create New Group
             </h1>
-            <p className="text-gray-600">Set up a new church group, ministry, or fellowship</p>
+            <p className="text-slate-600">Set up a new church group, ministry, or fellowship</p>
           </div>
           <div className="flex items-center space-x-3">
             <Button
@@ -294,7 +294,7 @@ export default function CreateGroupPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2 text-blue-600" />
+                <Users className="h-5 w-5 mr-2 text-primary" />
                 Basic Information
               </CardTitle>
             </CardHeader>
@@ -421,7 +421,7 @@ export default function CreateGroupPage() {
                           <div className="flex items-center">
                             <div className="flex-1">
                               <p className="font-medium">{member.full_name}</p>
-                              <p className="text-xs text-gray-500">{member.membership_id} • {member.role}</p>
+                              <p className="text-xs text-slate-500">{member.membership_id} • {member.role}</p>
                             </div>
                           </div>
                         </SelectItem>
@@ -442,7 +442,7 @@ export default function CreateGroupPage() {
                           <div className="flex items-center">
                             <div className="flex-1">
                               <p className="font-medium">{member.full_name}</p>
-                              <p className="text-xs text-gray-500">{member.membership_id} • {member.role}</p>
+                              <p className="text-xs text-slate-500">{member.membership_id} • {member.role}</p>
                             </div>
                           </div>
                         </SelectItem>
@@ -493,7 +493,7 @@ export default function CreateGroupPage() {
                 <Shield className="h-5 w-5 mr-2 text-red-600" />
                 Group Permissions
               </CardTitle>
-              <p className="text-sm text-gray-600">Set what group members can do</p>
+              <p className="text-sm text-slate-600">Set what group members can do</p>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -557,7 +557,7 @@ export default function CreateGroupPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Phone className="h-5 w-5 mr-2 text-blue-600" />
+                <Phone className="h-5 w-5 mr-2 text-primary" />
                 Contact Information
               </CardTitle>
             </CardHeader>
@@ -602,7 +602,7 @@ export default function CreateGroupPage() {
                 <Target className="h-5 w-5 mr-2 text-purple-600" />
                 Tags
               </CardTitle>
-              <p className="text-sm text-gray-600">Add tags to help categorize this group</p>
+              <p className="text-sm text-slate-600">Add tags to help categorize this group</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex space-x-2">
@@ -648,7 +648,7 @@ export default function CreateGroupPage() {
             <Button
               type="submit"
               disabled={saving || !formData.name.trim() || !formData.leader_id}
-              className="bg-blue-600 hover:bg-blue-700"
+              className=""
             >
               {saving ? (
                 <div className="flex items-center">

@@ -113,8 +113,8 @@ export default function AttendanceAnalyticsPage() {
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
-            <p className="text-gray-600 mb-4">Please log in to view attendance analytics.</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Authentication Required</h2>
+            <p className="text-slate-600 mb-4">Please log in to view attendance analytics.</p>
             <Button onClick={() => router.push('/auth')}>
               Go to Login
             </Button>
@@ -151,8 +151,8 @@ export default function AttendanceAnalyticsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-            <h1 className="text-3xl font-bold text-gray-900">Attendance Analytics</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-slate-900">Attendance Analytics</h1>
+            <p className="text-slate-600 mt-1">
               Comprehensive insights into church attendance patterns and trends
             </p>
             </div>
@@ -244,7 +244,7 @@ export default function AttendanceAnalyticsPage() {
               ) : processedAnalytics.attendance_trend === 'down' ? (
                 <TrendingDown className="h-4 w-4 text-red-600" />
               ) : (
-                <Activity className="h-4 w-4 text-blue-600" />
+                <Activity className="h-4 w-4 text-primary" />
               )}
             </CardHeader>
             <CardContent>
@@ -301,17 +301,17 @@ export default function AttendanceAnalyticsPage() {
                               <div className="flex items-center gap-2">
                                 <div className="w-20 bg-gray-200 rounded-full h-2">
                                   <div 
-                                    className="bg-blue-600 h-2 rounded-full" 
+                                    className="bg-primary h-2 rounded-full" 
                                 style={{ width: `${service.percentage}%` }}
                                   />
                                 </div>
-                            <span className="text-sm text-gray-600">{service.count}</span>
+                            <span className="text-sm text-slate-600">{service.count}</span>
                               </div>
                             </div>
                       ))}
                       </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-4">No data available</p>
+                    <p className="text-slate-500 text-center py-4">No data available</p>
                   )}
                     </CardContent>
                   </Card>
@@ -329,12 +329,12 @@ export default function AttendanceAnalyticsPage() {
                       {processedAnalytics.attendance_by_gender.map((gender: any, index: number) => (
                         <div key={index} className="flex items-center justify-between">
                           <span className="text-sm font-medium capitalize">{gender.gender}</span>
-                          <span className="text-sm text-gray-600">{gender.count}</span>
+                          <span className="text-sm text-slate-600">{gender.count}</span>
                                 </div>
                       ))}
                               </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-4">No data available</p>
+                    <p className="text-slate-500 text-center py-4">No data available</p>
                   )}
                     </CardContent>
                   </Card>
@@ -355,12 +355,12 @@ export default function AttendanceAnalyticsPage() {
                     {processedAnalytics.daily_attendance.slice(-7).map((day: any, index: number) => (
                       <div key={index} className="flex items-center justify-between">
                         <span className="text-sm font-medium">{day.date}</span>
-                        <span className="text-sm text-gray-600">{day.count} attendees</span>
+                        <span className="text-sm text-slate-600">{day.count} attendees</span>
                           </div>
                         ))}
                       </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No data available</p>
+                  <p className="text-slate-500 text-center py-4">No data available</p>
                 )}
                     </CardContent>
                   </Card>
@@ -381,12 +381,12 @@ export default function AttendanceAnalyticsPage() {
                       {processedAnalytics.weekly_attendance.slice(-4).map((week: any, index: number) => (
                         <div key={index} className="flex items-center justify-between">
                           <span className="text-sm font-medium">Week {week.week}</span>
-                          <span className="text-sm text-gray-600">{week.count} attendees</span>
+                          <span className="text-sm text-slate-600">{week.count} attendees</span>
                               </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-4">No data available</p>
+                    <p className="text-slate-500 text-center py-4">No data available</p>
                   )}
                   </CardContent>
                 </Card>
@@ -404,12 +404,12 @@ export default function AttendanceAnalyticsPage() {
                       {processedAnalytics.monthly_attendance.slice(-3).map((month: any, index: number) => (
                         <div key={index} className="flex items-center justify-between">
                           <span className="text-sm font-medium">{month.month}</span>
-                          <span className="text-sm text-gray-600">{month.count} attendees</span>
+                          <span className="text-sm text-slate-600">{month.count} attendees</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-4">No data available</p>
+                    <p className="text-slate-500 text-center py-4">No data available</p>
                   )}
                   </CardContent>
                 </Card>

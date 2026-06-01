@@ -150,7 +150,7 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full border-indigo-200 text-indigo-900 hover:bg-indigo-50"
+                className="w-full border-slate-200 text-slate-900 hover:bg-slate-50"
                 disabled={settingUpStudentForm}
                 onClick={() => void createStudentForm()}
               >
@@ -251,8 +251,8 @@ export default function CampusActivitiesAdminPage() {
       <div className="flex min-h-[50vh] items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold text-gray-900">Admin access required</h2>
-            <p className="mt-2 text-gray-600">Only administrators can manage campus and activity units.</p>
+            <h2 className="text-xl font-semibold text-slate-900">Admin access required</h2>
+            <p className="mt-2 text-slate-600">Only administrators can manage campus and activity units.</p>
             <Button className="mt-4" onClick={() => router.push('/dashboard')}>
               Go to dashboard
             </Button>
@@ -265,7 +265,7 @@ export default function CampusActivitiesAdminPage() {
   const totals = board?.totals ?? { campuses: 0, activities: 0, members: 0, forms: 0 }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/30">
       <div className="mx-auto max-w-7xl space-y-8 p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-3">
@@ -274,7 +274,7 @@ export default function CampusActivitiesAdminPage() {
               Back to Admin
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">Campus & Activities</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Campus & Activities</h1>
               <p className="mt-1 max-w-2xl text-muted-foreground">
                 University fellowships and church-wide events in one place — members, leaders, executives, and scoped
                 forms.
@@ -315,7 +315,7 @@ export default function CampusActivitiesAdminPage() {
           </Card>
           <Card className="bg-white/80">
             <CardContent className="flex items-center gap-3 p-5">
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-primary" />
               <div>
                 <p className="text-sm text-muted-foreground">Total members</p>
                 <p className="text-2xl font-bold">{totals.members}</p>

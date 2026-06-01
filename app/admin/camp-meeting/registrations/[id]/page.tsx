@@ -450,7 +450,7 @@ export default function RegistrationDetailPage() {
                             Back to Registrations
                         </Button>
                         <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+                            <h1 className="text-4xl font-bold tracking-tight text-slate-900">
                                 Registration Details
                             </h1>
                             <p className="text-muted-foreground mt-1">{fullName}</p>
@@ -509,7 +509,7 @@ export default function RegistrationDetailPage() {
                     <div className="lg:col-span-2 space-y-6">
                         {/* Profile Information */}
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <CardTitle className="text-2xl">{fullName}</CardTitle>
@@ -529,7 +529,7 @@ export default function RegistrationDetailPage() {
                                                         ? 'border border-emerald-200 bg-emerald-50 text-emerald-950 shadow-none'
                                                         : data.status === 'cancelled'
                                                           ? 'border border-red-200 bg-red-50 text-red-900 shadow-none'
-                                                          : 'border border-blue-200 bg-blue-50 text-blue-900 shadow-none'
+                                                          : 'border border-slate-200 bg-slate-50 text-slate-900 shadow-none'
                                                 }
                                             >
                                                 {data.status === 'checked_in'
@@ -552,7 +552,7 @@ export default function RegistrationDetailPage() {
                                                     Payment: {data.payment_status}
                                                 </Badge>
                                             )}
-                                            <Badge className="border border-indigo-200 bg-indigo-50 text-indigo-950 shadow-none">
+                                            <Badge className="border border-slate-200 bg-slate-50 text-slate-950 shadow-none">
                                                 {data.role}
                                             </Badge>
                                             <ImportContactWarningsBadge warnings={data.import_warnings} />
@@ -564,7 +564,7 @@ export default function RegistrationDetailPage() {
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <div>
-                                            <Label className="text-xs text-gray-500 uppercase">Contact Information</Label>
+                                            <Label className="text-xs text-slate-500 uppercase">Contact Information</Label>
                                             <ImportContactWarningsList warnings={data.import_warnings} />
                                             <div className="space-y-2 mt-2">
                                                 {data.email && (
@@ -589,7 +589,7 @@ export default function RegistrationDetailPage() {
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs text-gray-500 uppercase">Registration</Label>
+                                            <Label className="text-xs text-slate-500 uppercase">Registration</Label>
                                             <div className="space-y-2 mt-2">
                                                 <div className="flex items-center text-sm">
                                                     <Calendar className="h-4 w-4 mr-3 text-gray-400" />
@@ -612,7 +612,7 @@ export default function RegistrationDetailPage() {
                                     <div className="space-y-4">
                                         {data.address_school_work && (
                                             <div>
-                                                <Label className="text-xs text-gray-500 uppercase">Address/School/Work</Label>
+                                                <Label className="text-xs text-slate-500 uppercase">Address/School/Work</Label>
                                                 <div className="flex items-start text-sm mt-2">
                                                     <MapPin className="h-4 w-4 mr-3 text-gray-400 mt-0.5" />
                                                     <span>{data.address_school_work}</span>
@@ -622,7 +622,7 @@ export default function RegistrationDetailPage() {
 
                                         {(data.education_level || data.highest_qualification) && (
                                             <div>
-                                                <Label className="text-xs text-gray-500 uppercase">Education</Label>
+                                                <Label className="text-xs text-slate-500 uppercase">Education</Label>
                                                 <div className="space-y-2 mt-2">
                                                     {data.education_level && (
                                                         <div className="flex items-center text-sm">
@@ -642,7 +642,7 @@ export default function RegistrationDetailPage() {
 
                                         {data.residence && (
                                             <div>
-                                                <Label className="text-xs text-gray-500 uppercase">Residence</Label>
+                                                <Label className="text-xs text-slate-500 uppercase">Residence</Label>
                                                 <div className="flex items-center text-sm mt-2">
                                                     <MapPin className="h-4 w-4 mr-3 text-gray-400" />
                                                     <span>{data.residence}</span>
@@ -652,7 +652,7 @@ export default function RegistrationDetailPage() {
 
                                         {data.parent_name && (
                                             <div>
-                                                <Label className="text-xs text-gray-500 uppercase">Parent/Guardian</Label>
+                                                <Label className="text-xs text-slate-500 uppercase">Parent/Guardian</Label>
                                                 <div className="space-y-2 mt-2">
                                                     <div className="flex items-center text-sm">
                                                         <User className="h-4 w-4 mr-3 text-gray-400" />
@@ -672,7 +672,7 @@ export default function RegistrationDetailPage() {
 
                                 {data.has_health_challenge && data.health_challenges && data.health_challenges.length > 0 && (
                                     <div className="mt-6 pt-6 border-t">
-                                        <Label className="text-xs text-gray-500 uppercase flex items-center gap-2">
+                                        <Label className="text-xs text-slate-500 uppercase flex items-center gap-2">
                                             <Heart className="h-4 w-4" /> Health Information
                                         </Label>
                                         <div className="mt-2">
@@ -687,7 +687,7 @@ export default function RegistrationDetailPage() {
                                                 ))}
                                             </div>
                                             {data.has_nhis_card && (
-                                                <div className="mt-2 text-sm text-gray-600">
+                                                <div className="mt-2 text-sm text-slate-600">
                                                     <Shield className="h-4 w-4 inline mr-1" />
                                                     Has NHIS Card
                                                     {data.nhis_card_expiry_date && (
@@ -703,7 +703,7 @@ export default function RegistrationDetailPage() {
 
                         {/* Interactions & Notes */}
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <MessageSquare className="h-5 w-5" /> Engagement & Notes
                                 </CardTitle>
@@ -714,7 +714,7 @@ export default function RegistrationDetailPage() {
                                         data.interactions
                                             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                                             .map((interaction) => (
-                                                <div key={interaction.id} className="relative pl-6 border-l-2 border-gray-200">
+                                                <div key={interaction.id} className="relative pl-6 border-l-2 border-slate-200">
                                                     <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-gray-400" />
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
@@ -728,7 +728,7 @@ export default function RegistrationDetailPage() {
                                                                 {new Date(interaction.created_at).toLocaleString()}
                                                             </span>
                                                         </div>
-                                                        <p className="text-sm text-gray-800 bg-gray-50 p-3 rounded-md">
+                                                        <p className="text-sm text-gray-800 bg-slate-50 p-3 rounded-md">
                                                             {interaction.notes}
                                                         </p>
                                                         <p className="text-xs text-gray-400 mt-1">
@@ -790,7 +790,7 @@ export default function RegistrationDetailPage() {
                     <div className="space-y-6">
                         {/* QR Code */}
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <QrCode className="h-5 w-5" /> QR Code
                                 </CardTitle>
@@ -806,10 +806,10 @@ export default function RegistrationDetailPage() {
                                         />
                                     </div>
                                     <div className="w-full space-y-1 rounded bg-gray-100 p-3 text-center">
-                                        <p className="font-semibold text-gray-900">{fullName}</p>
-                                        <p className="text-sm text-gray-600">{data.role || 'Participant'}</p>
+                                        <p className="font-semibold text-slate-900">{fullName}</p>
+                                        <p className="text-sm text-slate-600">{data.role || 'Participant'}</p>
                                         {data.check_in_code ? (
-                                            <p className="font-mono text-lg font-bold tracking-wide text-indigo-900">
+                                            <p className="font-mono text-lg font-bold tracking-wide text-slate-900">
                                                 {data.check_in_code}
                                             </p>
                                         ) : null}
@@ -931,7 +931,7 @@ export default function RegistrationDetailPage() {
 
                         {/* Assignment */}
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <UserPlus className="h-5 w-5" /> Follow-Up Assignment
                                 </CardTitle>
@@ -939,13 +939,13 @@ export default function RegistrationDetailPage() {
                             <CardContent className="pt-6">
                                 {data.assigned_user ? (
                                     <div className="space-y-4">
-                                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                                            <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+                                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
                                                 {data.assigned_user.full_name.charAt(0).toUpperCase()}
                                             </div>
                                             <div className="flex-1">
-                                                <p className="font-medium text-gray-900">{data.assigned_user.full_name}</p>
-                                                <p className="text-xs text-gray-500">{data.assigned_user.role}</p>
+                                                <p className="font-medium text-slate-900">{data.assigned_user.full_name}</p>
+                                                <p className="text-xs text-slate-500">{data.assigned_user.role}</p>
                                             </div>
                                         </div>
                                         <Dialog open={assignmentDialogOpen} onOpenChange={setAssignmentDialogOpen}>
@@ -1027,7 +1027,7 @@ export default function RegistrationDetailPage() {
 
                         {/* Payment Information */}
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <CreditCard className="h-5 w-5" /> Payment Information
                                 </CardTitle>
@@ -1035,7 +1035,7 @@ export default function RegistrationDetailPage() {
                             <CardContent className="pt-6 space-y-4">
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Status:</span>
+                                        <span className="text-sm text-slate-600">Status:</span>
                                         <Badge
                                             className={
                                                 data.payment_status === 'paid' ||
@@ -1050,18 +1050,18 @@ export default function RegistrationDetailPage() {
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Amount:</span>
+                                        <span className="text-sm text-slate-600">Amount:</span>
                                         <span className="font-semibold">₵{data.payment_amount?.toFixed(2) || '30.00'}</span>
                                     </div>
                                     {data.payment_reference && (
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">Reference:</span>
+                                            <span className="text-sm text-slate-600">Reference:</span>
                                             <span className="text-sm font-mono">{data.payment_reference}</span>
                                         </div>
                                     )}
                                     {data.payment_date && (
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">Date:</span>
+                                            <span className="text-sm text-slate-600">Date:</span>
                                             <span className="text-sm">
                                                 {new Date(data.payment_date).toLocaleDateString()}
                                             </span>

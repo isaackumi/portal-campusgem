@@ -388,11 +388,11 @@ export default function BulkCommunicationsPage() {
 
                                 <div className="mt-4 flex items-center justify-between pt-4 border-t">
                                     <div>
-                                        <p className="text-sm font-medium text-gray-700">
+                                        <p className="text-sm font-medium text-slate-700">
                                             {filteredRegistrations.length} registration(s) match your filters
                                         </p>
                                         {selectedIds.size > 0 && (
-                                            <p className="text-sm text-gray-600 mt-1">
+                                            <p className="text-sm text-slate-600 mt-1">
                                                 {selectedIds.size} selected
                                             </p>
                                         )}
@@ -427,7 +427,7 @@ export default function BulkCommunicationsPage() {
                                                 key={reg.id}
                                                 className={cn(
                                                     "flex items-center gap-3 p-3 rounded-lg border-2 transition-colors",
-                                                    selectedIds.has(reg.id) ? "bg-blue-50 border-blue-300" : "bg-white border-gray-200"
+                                                    selectedIds.has(reg.id) ? "bg-slate-50 border-slate-300" : "bg-white border-slate-200"
                                                 )}
                                             >
                                                 <Checkbox
@@ -435,10 +435,10 @@ export default function BulkCommunicationsPage() {
                                                     onCheckedChange={(checked) => handleSelectOne(reg.id, checked === true)}
                                                 />
                                                 <div className="flex-1">
-                                                    <p className="font-medium text-gray-900">
+                                                    <p className="font-medium text-slate-900">
                                                         {reg.full_name || `${reg.first_name} ${reg.last_name}`}
                                                     </p>
-                                                    <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+                                                    <div className="flex items-center gap-3 text-sm text-slate-600 mt-1">
                                                         {reg.email && (
                                                             <div className="flex items-center gap-1">
                                                                 <Mail className="h-3 w-3" />
@@ -523,7 +523,7 @@ export default function BulkCommunicationsPage() {
                                             onChange={e => setSubject(e.target.value)}
                                             placeholder="Email subject line"
                                         />
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-slate-500">
                                             You can use template variables: {`{{name}}`}, {`{{role}}`}, {`{{campYear}}`}
                                         </p>
                                     </div>
@@ -545,11 +545,11 @@ export default function BulkCommunicationsPage() {
                                         maxLength={communicationType === 'sms' ? 1600 : undefined}
                                     />
                                     <div className="flex items-center justify-between">
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-slate-500">
                                             Template variables: {`{{name}}`}, {`{{firstName}}`}, {`{{lastName}}`}, {`{{role}}`}, {`{{campYear}}`}, {`{{phone}}`}, {`{{email}}`}, {`{{qrCode}}`}
                                         </p>
                                         {communicationType === 'sms' && (
-                                            <p className="text-xs text-gray-500">
+                                            <p className="text-xs text-slate-500">
                                                 {messageBody.length} / 160 characters
                                             </p>
                                         )}
@@ -557,11 +557,11 @@ export default function BulkCommunicationsPage() {
                                 </div>
 
                                 {selectedIds.size > 0 && (
-                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <p className="text-sm font-medium text-blue-900 mb-2">
+                                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                        <p className="text-sm font-medium text-slate-900 mb-2">
                                             Ready to send to {selectedIds.size} recipient(s)
                                         </p>
-                                        <div className="text-xs text-blue-700 space-y-1">
+                                        <div className="text-xs text-slate-700 space-y-1">
                                             {communicationType === 'email' && (
                                                 <p>• {canSendEmail} recipients have email addresses</p>
                                             )}
@@ -624,7 +624,7 @@ export default function BulkCommunicationsPage() {
                             </CardHeader>
                             <CardContent>
                                 {communications.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-500">
+                                    <div className="text-center py-12 text-slate-500">
                                         <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                                         <p>No communications sent yet</p>
                                     </div>
@@ -638,8 +638,8 @@ export default function BulkCommunicationsPage() {
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="flex items-center gap-3">
                                                         {comm.communication_type === 'email' ? (
-                                                            <div className="p-2 bg-blue-100 rounded-lg">
-                                                                <Mail className="h-5 w-5 text-blue-600" />
+                                                            <div className="p-2 bg-slate-100 rounded-lg">
+                                                                <Mail className="h-5 w-5 text-primary" />
                                                             </div>
                                                         ) : (
                                                             <div className="p-2 bg-green-100 rounded-lg">
@@ -647,13 +647,13 @@ export default function BulkCommunicationsPage() {
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <p className="font-semibold text-gray-900">
+                                                            <p className="font-semibold text-slate-900">
                                                                 {comm.communication_type === 'email'
                                                                     ? comm.recipient_email || 'Bulk Email'
                                                                     : comm.recipient_phone || 'Bulk SMS'}
                                                             </p>
                                                             {comm.subject && (
-                                                                <p className="text-sm text-gray-600 mt-1">{comm.subject}</p>
+                                                                <p className="text-sm text-slate-600 mt-1">{comm.subject}</p>
                                                             )}
                                                         </div>
                                                     </div>
@@ -670,11 +670,11 @@ export default function BulkCommunicationsPage() {
                                                     </Badge>
                                                 </div>
 
-                                                <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md mb-3">
+                                                <div className="text-sm text-slate-700 bg-slate-50 p-3 rounded-md mb-3">
                                                     {comm.message_body}
                                                 </div>
 
-                                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                                <div className="flex items-center justify-between text-xs text-slate-500">
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex items-center gap-1">
                                                             <Clock className="h-3 w-3" />

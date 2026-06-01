@@ -74,28 +74,28 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
           <Card className="w-full max-w-2xl">
             <CardHeader className="text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="h-8 w-8 text-red-600" />
               </div>
-              <CardTitle className="text-2xl text-gray-900">
+              <CardTitle className="text-2xl text-slate-900">
                 Oops! Something went wrong
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
-                <p className="text-gray-600 mb-4">
+                <p className="text-slate-600 mb-4">
                   We encountered an unexpected error. Don't worry, our team has been notified.
                 </p>
                 
                 {process.env.NODE_ENV === 'development' && this.state.error && (
                   <details className="text-left bg-gray-100 p-4 rounded-lg mb-4">
-                    <summary className="cursor-pointer font-medium text-gray-700 mb-2">
+                    <summary className="cursor-pointer font-medium text-slate-700 mb-2">
                       Error Details (Development)
                     </summary>
-                    <div className="text-sm text-gray-600 space-y-2">
+                    <div className="text-sm text-slate-600 space-y-2">
                       <div>
                         <strong>Error:</strong> {this.state.error.message}
                       </div>
@@ -132,7 +132,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 </Button>
               </div>
 
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-slate-500">
                 <p>If this problem persists, please contact support.</p>
               </div>
             </CardContent>

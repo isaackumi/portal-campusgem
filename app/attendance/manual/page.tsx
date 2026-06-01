@@ -193,7 +193,7 @@ export default function ManualCheckInPage() {
       case 'admin': return 'bg-red-100 text-red-800'
       case 'pastor': return 'bg-purple-100 text-purple-800'
       case 'elder': return 'bg-yellow-100 text-yellow-800'
-      case 'member': return 'bg-blue-100 text-blue-800'
+      case 'member': return 'bg-slate-100 text-slate-700'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -202,7 +202,7 @@ export default function ManualCheckInPage() {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800'
       case 'inactive': return 'bg-red-100 text-red-800'
-      case 'visitor': return 'bg-blue-100 text-blue-800'
+      case 'visitor': return 'bg-slate-100 text-slate-700'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -224,8 +224,8 @@ export default function ManualCheckInPage() {
           <Card className="w-full max-w-md">
             <CardContent className="p-6 text-center">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Required</h2>
-              <p className="text-gray-600 mb-4">Please log in to access the manual check-in page.</p>
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">Authentication Required</h2>
+              <p className="text-slate-600 mb-4">Please log in to access the manual check-in page.</p>
               <Button onClick={() => router.push('/auth')}>
                 Go to Login
               </Button>
@@ -242,8 +242,8 @@ export default function ManualCheckInPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
             <div>
-            <h1 className="text-3xl font-bold text-gray-900">Manual Check-in</h1>
-            <p className="text-gray-600 mt-2">Search and check in members manually</p>
+            <h1 className="text-3xl font-bold text-slate-900">Manual Check-in</h1>
+            <p className="text-slate-600 mt-2">Search and check in members manually</p>
             </div>
           <div className="flex items-center space-x-2">
             <Button
@@ -368,8 +368,8 @@ export default function ManualCheckInPage() {
               ) : filteredMembers.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No members found</h3>
-                  <p className="text-gray-600">Try adjusting your search or filters.</p>
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No members found</h3>
+                  <p className="text-slate-600">Try adjusting your search or filters.</p>
                 </div>
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -378,15 +378,15 @@ export default function ManualCheckInPage() {
                           key={member.id}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                             selectedMember?.id === member.id
-                              ? 'border-blue-500 bg-blue-50'
-                          : 'hover:bg-gray-50'
+                              ? 'border-slate-900 bg-slate-50'
+                          : 'hover:bg-slate-50'
                           }`}
                       onClick={() => setSelectedMember(member)}
                         >
                           <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
-                              <h3 className="font-medium text-gray-900">
+                              <h3 className="font-medium text-slate-900">
                               {member.user?.full_name || 'Unknown'}
                               </h3>
                             <Badge className={getRoleColor(member.user?.role || '')}>
@@ -396,7 +396,7 @@ export default function ManualCheckInPage() {
                               {member.status}
                             </Badge>
                           </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex items-center space-x-4 text-sm text-slate-500">
                             {member.user?.membership_id && (
                               <span className="flex items-center">
                                 <User className="h-3 w-3 mr-1" />
@@ -417,14 +417,14 @@ export default function ManualCheckInPage() {
                               )}
                             </div>
                             {member.dependants && member.dependants.length > 0 && (
-                            <div className="mt-2 text-sm text-gray-600">
+                            <div className="mt-2 text-sm text-slate-600">
                               <UserPlus className="h-3 w-3 inline mr-1" />
                                 {member.dependants.length} dependant(s)
                               </div>
                             )}
                         </div>
                         {selectedMember?.id === member.id && (
-                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                          <CheckCircle className="h-5 w-5 text-primary" />
                     )}
                       </div>
                     </div>
@@ -449,11 +449,11 @@ export default function ManualCheckInPage() {
                 {selectedMember ? (
                 <div className="space-y-4">
                   {/* Selected Member Info */}
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h3 className="font-medium text-gray-900 mb-2">
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <h3 className="font-medium text-slate-900 mb-2">
                       {selectedMember.user?.full_name}
                       </h3>
-                    <div className="space-y-1 text-sm text-gray-600">
+                    <div className="space-y-1 text-sm text-slate-600">
                       <div className="flex items-center">
                         <User className="h-3 w-3 mr-2" />
                         ID: {formatMembershipIdForDisplay(selectedMember.user?.membership_id || '')}
@@ -529,8 +529,8 @@ export default function ManualCheckInPage() {
               ) : (
                 <div className="text-center py-8">
                   <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Member Selected</h3>
-                  <p className="text-gray-600">Select a member from the list to proceed with check-in.</p>
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No Member Selected</h3>
+                  <p className="text-slate-600">Select a member from the list to proceed with check-in.</p>
                   </div>
                 )}
               </CardContent>

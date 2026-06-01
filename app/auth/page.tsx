@@ -98,7 +98,7 @@ function AuthPageContent() {
             }}
           />
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 left-8 h-56 w-56 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 left-8 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl" />
 
           <div className="relative z-10 flex items-center gap-4">
             <BrandMark size="lg" />
@@ -174,7 +174,7 @@ function AuthPageContent() {
 
               <Button
                 type="submit"
-                className="h-11 w-full gap-2 bg-slate-900 hover:bg-slate-800"
+                className="h-11 w-full gap-2"
                 disabled={loading || !phoneOrId.trim()}
               >
                 {loading ? (

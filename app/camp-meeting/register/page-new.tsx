@@ -134,7 +134,7 @@ export default function CampRegistrationPage() {
 
     if (!campYear) {
         return (
-            <div className="h-screen flex items-center justify-center bg-gray-50">
+            <div className="h-screen flex items-center justify-center bg-slate-50">
                 <Card className="max-w-md w-full">
                     <CardHeader>
                         <CardTitle>No Active Camp Meeting</CardTitle>
@@ -146,19 +146,19 @@ export default function CampRegistrationPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Campus GEM Camp Meeting {campYear.year}</h1>
-                    <p className="mt-2 text-xl text-blue-600 font-semibold">{campYear.theme}</p>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <h1 className="text-3xl font-bold text-slate-900">Campus GEM Camp Meeting {campYear.year}</h1>
+                    <p className="mt-2 text-xl text-primary font-semibold">{campYear.theme}</p>
+                    <p className="mt-1 text-sm text-slate-500">
                         {new Date(campYear.start_date).toLocaleDateString()} - {new Date(campYear.end_date).toLocaleDateString()}
                     </p>
-                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-800">
+                    <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <p className="text-sm text-slate-700">
                             <strong>Registration Fee:</strong> 30 Cedis for accommodation
                         </p>
-                        <p className="text-xs text-blue-600 mt-1">
+                        <p className="text-xs text-primary mt-1">
                             Account: 059 194 8904 | Please bring your NHIS card
                         </p>
                     </div>
@@ -169,11 +169,11 @@ export default function CampRegistrationPage() {
                     <div className="flex justify-between mb-2">
                         {[1, 2, 3, 4].map((num) => (
                             <div key={num} className={`flex-1 ${num < 4 ? 'mr-2' : ''}`}>
-                                <div className={`h-2 rounded-full ${currentSection >= num ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                                <div className={`h-2 rounded-full ${currentSection >= num ? 'bg-primary' : 'bg-gray-200'}`} />
                             </div>
                         ))}
                     </div>
-                    <div className="flex justify-between text-xs text-gray-500">
+                    <div className="flex justify-between text-xs text-slate-500">
                         <span>Personal Info</span>
                         <span>Education & Location</span>
                         <span>Parent/Guardian</span>
@@ -371,7 +371,7 @@ export default function CampRegistrationPage() {
                                             onChange={e => setFormData({ ...formData, residence: e.target.value })}
                                             placeholder="Example: Adenta, GA"
                                         />
-                                        <p className="text-xs text-gray-500">Format: TOWN, REGION</p>
+                                        <p className="text-xs text-slate-500">Format: TOWN, REGION</p>
                                     </div>
 
                                     <div className="space-y-2">
@@ -487,9 +487,9 @@ export default function CampRegistrationPage() {
                                         )}
                                     </div>
 
-                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <p className="text-sm font-medium text-blue-900 mb-2">Registration Summary</p>
-                                        <div className="text-xs text-blue-800 space-y-1">
+                                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <p className="text-sm font-medium text-slate-900 mb-2">Registration Summary</p>
+                                        <div className="text-xs text-slate-700 space-y-1">
                                             <p><strong>Name:</strong> {formData.first_name} {formData.last_name}</p>
                                             <p><strong>Contact:</strong> {formData.phone}</p>
                                             <p><strong>Times Attended:</strong> {formData.times_attended === 0 ? 'First Timer' : formData.times_attended}</p>

@@ -216,7 +216,7 @@ export default function MemberProfilePage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800'
-      case 'visitor': return 'bg-blue-100 text-blue-800'
+      case 'visitor': return 'bg-slate-100 text-slate-700'
       case 'inactive': return 'bg-gray-100 text-gray-800'
       case 'transferred': return 'bg-yellow-100 text-yellow-800'
       default: return 'bg-gray-100 text-gray-800'
@@ -227,7 +227,7 @@ export default function MemberProfilePage() {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800'
       case 'pastor': return 'bg-red-100 text-red-800'
-      case 'elder': return 'bg-blue-100 text-blue-800'
+      case 'elder': return 'bg-slate-100 text-slate-700'
       case 'finance_officer': return 'bg-green-100 text-green-800'
       case 'member': return 'bg-gray-100 text-gray-800'
       case 'visitor': return 'bg-yellow-100 text-yellow-800'
@@ -237,8 +237,8 @@ export default function MemberProfilePage() {
 
   if (authLoading || memberQuery.isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
-        <div className="animate-pulse text-blue-600 text-lg">Loading...</div>
+      <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
+        <div className="animate-pulse text-primary text-lg">Loading...</div>
       </div>
     )
   }
@@ -249,12 +249,12 @@ export default function MemberProfilePage() {
 
   if (!member) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-slate-50 p-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Member not found</h3>
-            <p className="text-gray-500 mb-4">The member you're looking for doesn't exist.</p>
+            <h3 className="text-lg font-medium text-slate-900 mb-2">Member not found</h3>
+            <p className="text-slate-500 mb-4">The member you're looking for doesn't exist.</p>
             <Button onClick={() => router.push('/members')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Members
@@ -266,7 +266,7 @@ export default function MemberProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -275,16 +275,16 @@ export default function MemberProfilePage() {
               variant="ghost" 
               size="sm" 
               onClick={() => router.push('/members')}
-              className="mr-3 text-gray-600 hover:text-gray-900"
+              className="mr-3 text-slate-600 hover:text-slate-900"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Members
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+              <h1 className="text-3xl font-bold text-slate-900">
                 Member Profile
               </h1>
-              <p className="text-gray-600">{member.user?.full_name}</p>
+              <p className="text-slate-600">{member.user?.full_name}</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
@@ -326,7 +326,7 @@ export default function MemberProfilePage() {
             <Card>
               <CardContent className="p-6">
                 <div className="text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-24 h-24 bg-gradient-to-br from-slate-800 to-slate-950 rounded-full flex items-center justify-center mx-auto mb-4">
                     {member.profile_photo_url ? (
                       <img 
                         src={member.profile_photo_url} 
@@ -337,7 +337,7 @@ export default function MemberProfilePage() {
                       <User className="h-12 w-12 text-white" />
                     )}
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <h2 className="text-xl font-bold text-slate-900 mb-2">
                     {member.user?.full_name}
                   </h2>
                   <div className="flex items-center justify-center space-x-2 mb-3">
@@ -349,8 +349,8 @@ export default function MemberProfilePage() {
                     </Badge>
                   </div>
                   <div className="flex items-center justify-center space-x-2 mb-4">
-                    <p className="text-sm text-gray-500">
-                      ID: <span className="font-mono text-blue-600 font-semibold">{member.user?.membership_id}</span>
+                    <p className="text-sm text-slate-500">
+                      ID: <span className="font-mono text-primary font-semibold">{member.user?.membership_id}</span>
                     </p>
                     <Button
                       variant="ghost"
@@ -394,21 +394,21 @@ export default function MemberProfilePage() {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: `${profileCompletion.percentage}%` }}
                     ></div>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-slate-500">
                     {getCompletionMessage(profileCompletion.percentage)}
                   </div>
                   
                   {/* Detailed Breakdown */}
-                  <div className="space-y-2 pt-2 border-t border-gray-100">
-                    <div className="text-xs font-medium text-gray-600">Progress by Section:</div>
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="text-xs font-medium text-slate-600">Progress by Section:</div>
                     {Object.entries(profileCompletion.details).map(([section, data]) => (
                       <div key={section} className="flex items-center justify-between text-xs">
-                        <span className="capitalize text-gray-600">{section.replace('_', ' ')}</span>
-                        <span className="text-gray-500">{data.completed}/{data.total}</span>
+                        <span className="capitalize text-slate-600">{section.replace('_', ' ')}</span>
+                        <span className="text-slate-500">{data.completed}/{data.total}</span>
                       </div>
                     ))}
                   </div>
@@ -456,28 +456,28 @@ export default function MemberProfilePage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">First Name</label>
-                    <p className="text-gray-900">{member.user?.first_name || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">First Name</label>
+                    <p className="text-slate-900">{member.user?.first_name || 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Middle Name</label>
-                    <p className="text-gray-900">{member.user?.middle_name || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Middle Name</label>
+                    <p className="text-slate-900">{member.user?.middle_name || 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Last Name</label>
-                    <p className="text-gray-900">{member.user?.last_name || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Last Name</label>
+                    <p className="text-slate-900">{member.user?.last_name || 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Gender</label>
-                    <p className="text-gray-900 capitalize">{member.gender || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Gender</label>
+                    <p className="text-slate-900 capitalize">{member.gender || 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Date of Birth</label>
-                    <p className="text-gray-900">{member.dob ? formatDate(member.dob) : 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Date of Birth</label>
+                    <p className="text-slate-900">{member.dob ? formatDate(member.dob) : 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Marital Status</label>
-                    <p className="text-gray-900 capitalize">{member.user?.marital_status || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Marital Status</label>
+                    <p className="text-slate-900 capitalize">{member.user?.marital_status || 'Not provided'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -593,7 +593,7 @@ export default function MemberProfilePage() {
                       </div>
                     </div>
                     <div className="border-t pt-4">
-                      <h4 className="font-medium text-gray-900 mb-3">Emergency Contact</h4>
+                      <h4 className="font-medium text-slate-900 mb-3">Emergency Contact</h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <Label htmlFor="emergency_contact_name">Contact Name</Label>
@@ -625,24 +625,24 @@ export default function MemberProfilePage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Primary Phone</label>
-                      <p className="text-gray-900">{member.user?.phone || 'Not provided'}</p>
+                      <label className="text-sm font-medium text-slate-500">Primary Phone</label>
+                      <p className="text-slate-900">{member.user?.phone || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Secondary Phone</label>
-                      <p className="text-gray-900">{member.user?.secondary_phone || 'Not provided'}</p>
+                      <label className="text-sm font-medium text-slate-500">Secondary Phone</label>
+                      <p className="text-slate-900">{member.user?.secondary_phone || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Email</label>
-                      <p className="text-gray-900">{member.user?.email || 'Not provided'}</p>
+                      <label className="text-sm font-medium text-slate-500">Email</label>
+                      <p className="text-slate-900">{member.user?.email || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Address</label>
-                      <p className="text-gray-900">{member.address || 'Not provided'}</p>
+                      <label className="text-sm font-medium text-slate-500">Address</label>
+                      <p className="text-slate-900">{member.address || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Emergency Contact</label>
-                      <p className="text-gray-900">
+                      <label className="text-sm font-medium text-slate-500">Emergency Contact</label>
+                      <p className="text-slate-900">
                         {member.user?.emergency_contact_name 
                           ? `${member.user.emergency_contact_name} (${member.user.emergency_contact_relation}) - ${member.user.emergency_contact_phone}`
                           : 'Not provided'
@@ -665,20 +665,20 @@ export default function MemberProfilePage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Occupation</label>
-                    <p className="text-gray-900">{member.user?.occupation || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Occupation</label>
+                    <p className="text-slate-900">{member.user?.occupation || 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Place of Work</label>
-                    <p className="text-gray-900">{member.user?.place_of_work || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Place of Work</label>
+                    <p className="text-slate-900">{member.user?.place_of_work || 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Spouse Name</label>
-                    <p className="text-gray-900">{member.user?.spouse_name || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Spouse Name</label>
+                    <p className="text-slate-900">{member.user?.spouse_name || 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Number of Children</label>
-                    <p className="text-gray-900">{member.user?.children_count || 0}</p>
+                    <label className="text-sm font-medium text-slate-500">Number of Children</label>
+                    <p className="text-slate-900">{member.user?.children_count || 0}</p>
                   </div>
                 </div>
               </CardContent>
@@ -695,35 +695,35 @@ export default function MemberProfilePage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Date of Baptism</label>
-                    <p className="text-gray-900">{member.date_of_baptism ? formatDate(member.date_of_baptism) : 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Date of Baptism</label>
+                    <p className="text-slate-900">{member.date_of_baptism ? formatDate(member.date_of_baptism) : 'Not provided'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Holy Ghost Baptism</label>
+                    <label className="text-sm font-medium text-slate-500">Holy Ghost Baptism</label>
                     <div className="flex items-center">
                       {member.holy_ghost_baptism ? (
                         <CheckCircle className="h-4 w-4 text-green-600 mr-1" />
                       ) : (
                         <Circle className="h-4 w-4 text-gray-400 mr-1" />
                       )}
-                      <span className="text-gray-900">
+                      <span className="text-slate-900">
                         {member.holy_ghost_baptism ? 'Yes' : 'No'}
                       </span>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Date of Holy Ghost Baptism</label>
-                    <p className="text-gray-900">
+                    <label className="text-sm font-medium text-slate-500">Date of Holy Ghost Baptism</label>
+                    <p className="text-slate-900">
                       {member.date_of_holy_ghost_baptism ? formatDate(member.date_of_holy_ghost_baptism) : 'Not provided'}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Previous Church</label>
-                    <p className="text-gray-900">{member.previous_church || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Previous Church</label>
+                    <p className="text-slate-900">{member.previous_church || 'Not provided'}</p>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-500">Reason for Leaving Previous Church</label>
-                    <p className="text-gray-900">{member.reason_for_leaving || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-slate-500">Reason for Leaving Previous Church</label>
+                    <p className="text-slate-900">{member.reason_for_leaving || 'Not provided'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -742,7 +742,7 @@ export default function MemberProfilePage() {
                   <div className="space-y-4">
                     {member.special_skills?.length && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Special Skills</label>
+                        <label className="text-sm font-medium text-slate-500">Special Skills</label>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {member.special_skills.map((skill, index) => (
                             <Badge key={index} variant="secondary">
@@ -754,7 +754,7 @@ export default function MemberProfilePage() {
                     )}
                     {member.interests?.length && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Interests</label>
+                        <label className="text-sm font-medium text-slate-500">Interests</label>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {member.interests.map((interest, index) => (
                             <Badge key={index} variant="outline">
@@ -781,10 +781,10 @@ export default function MemberProfilePage() {
                 <CardContent>
                   <div className="space-y-3">
                     {member.group_memberships.map((membership) => (
-                      <div key={membership.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={membership.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                         <div>
-                          <p className="font-medium text-gray-900">{membership.group?.name || 'Unknown Group'}</p>
-                          <p className="text-sm text-gray-500 capitalize">{membership.group?.group_type || 'Unknown Type'}</p>
+                          <p className="font-medium text-slate-900">{membership.group?.name || 'Unknown Group'}</p>
+                          <p className="text-sm text-slate-500 capitalize">{membership.group?.group_type || 'Unknown Type'}</p>
                         </div>
                         <Badge variant="outline">{membership.role}</Badge>
                       </div>
@@ -804,29 +804,29 @@ export default function MemberProfilePage() {
               </CardHeader>
               <CardContent>
                 {attendanceHistory.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-slate-500">
                     <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                     <p>No attendance records found</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {attendanceHistory.map((attendance) => (
-                      <div key={attendance.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={attendance.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                             <CheckCircle className="h-5 w-5 text-green-600" />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-slate-900">
                               {formatDate(attendance.service_date)}
                             </p>
-                            <p className="text-sm text-gray-500 capitalize">
+                            <p className="text-sm text-slate-500 capitalize">
                               {attendance.service_type?.replace('_', ' ')} • {attendance.method}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-slate-600">
                             {new Date(attendance.check_in_time).toLocaleTimeString('en-US', {
                               hour: '2-digit',
                               minute: '2-digit'
@@ -843,24 +843,24 @@ export default function MemberProfilePage() {
                 
                 {/* Attendance Stats */}
                 {attendanceHistory.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h4 className="font-medium text-gray-900 mb-4">Attendance Summary</h4>
+                  <div className="mt-6 pt-6 border-t border-slate-200">
+                    <h4 className="font-medium text-slate-900 mb-4">Attendance Summary</h4>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">{attendanceHistory.length}</p>
-                        <p className="text-sm text-gray-500">Total Services</p>
+                        <p className="text-2xl font-bold text-primary">{attendanceHistory.length}</p>
+                        <p className="text-sm text-slate-500">Total Services</p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-green-600">
                           {Math.round((attendanceHistory.length / Math.max(1, Math.floor((Date.now() - new Date(member?.created_at || '').getTime()) / (7 * 24 * 60 * 60 * 1000)))) * 100)}%
                         </p>
-                        <p className="text-sm text-gray-500">Weekly Average</p>
+                        <p className="text-sm text-slate-500">Weekly Average</p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-purple-600">
                           {attendanceHistory.filter(a => new Date(a.service_date) >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}
                         </p>
-                        <p className="text-sm text-gray-500">Last 30 Days</p>
+                        <p className="text-sm text-slate-500">Last 30 Days</p>
                       </div>
                     </div>
                   </div>
@@ -880,12 +880,12 @@ export default function MemberProfilePage() {
                 <CardContent>
                   <div className="space-y-3">
                     {member.dependants.map((dependant) => (
-                      <div key={dependant.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={dependant.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-slate-900">
                             {dependant.first_name} {dependant.last_name}
                           </p>
-                          <p className="text-sm text-gray-500 capitalize">
+                          <p className="text-sm text-slate-500 capitalize">
                             {dependant.relationship} • {dependant.dob ? formatDate(dependant.dob) : 'No DOB'}
                           </p>
                         </div>
@@ -909,7 +909,7 @@ export default function MemberProfilePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-900 whitespace-pre-wrap">{member.notes}</p>
+                  <p className="text-slate-900 whitespace-pre-wrap">{member.notes}</p>
                 </CardContent>
               </Card>
             )}

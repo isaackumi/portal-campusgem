@@ -136,7 +136,7 @@ export function ProfileCompletionCard({ user, member }: ProfileCompletionCardPro
           {/* Progress bar */}
           <div className="space-y-2">
             <Progress value={completionPercentage} className="h-2" />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-slate-500">
               <span>{completedWeight}/{totalWeight} points</span>
               <span>{completionItems.filter(item => item.completed).length}/{completionItems.length} completed</span>
             </div>
@@ -152,8 +152,8 @@ export function ProfileCompletionCard({ user, member }: ProfileCompletionCardPro
                   ) : (
                     <Circle className="h-4 w-4 text-gray-400" />
                   )}
-                  <item.icon className="h-4 w-4 text-gray-500" />
-                  <span className={`text-sm ${item.completed ? 'text-gray-700' : 'text-gray-500'}`}>
+                  <item.icon className="h-4 w-4 text-slate-500" />
+                  <span className={`text-sm ${item.completed ? 'text-slate-700' : 'text-slate-500'}`}>
                     {item.label}
                   </span>
                 </div>

@@ -37,7 +37,7 @@ export function AdminContextNav() {
   const pathname = usePathname()
 
   return (
-    <div className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm sm:mb-6">
+    <div className="mb-4 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm sm:mb-6">
       <HorizontalScrollStrip innerClassName="gap-1.5 px-2 py-2 sm:flex-wrap sm:overflow-visible">
         {adminLinks.map((link) => {
           const isActive = link.match(pathname)
@@ -47,10 +47,10 @@ export function AdminContextNav() {
               href={link.href}
               className={cn(
                 horizontalScrollItemClass,
-                'rounded-md px-3.5 py-2.5 text-sm font-medium transition-colors sm:py-2',
+                'rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors sm:py-2',
                 isActive
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               )}
             >
               {link.label}

@@ -43,6 +43,11 @@ const config: Config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        brand: {
+          accent: "hsl(var(--brand-accent))",
+          surface: "hsl(var(--brand-surface))",
+          muted: "hsl(var(--brand-muted))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",

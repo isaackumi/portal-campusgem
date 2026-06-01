@@ -254,7 +254,7 @@ export default function NotificationSettingsPage() {
                     {/* Email Configuration */}
                     <TabsContent value="email" className="space-y-6">
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <Mail className="h-5 w-5" />
                                     Email Notification Settings
@@ -264,7 +264,7 @@ export default function NotificationSettingsPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6 space-y-6">
-                                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
                                     <div className="flex items-center gap-3">
                                         <Checkbox
                                             id="email_enabled"
@@ -277,7 +277,7 @@ export default function NotificationSettingsPage() {
                                             <Label htmlFor="email_enabled" className="text-base font-semibold cursor-pointer">
                                                 Enable Email Notifications
                                             </Label>
-                                            <p className="text-sm text-gray-600 mt-1">
+                                            <p className="text-sm text-slate-600 mt-1">
                                                 Send email notifications when new registrations are received
                                             </p>
                                         </div>
@@ -292,7 +292,7 @@ export default function NotificationSettingsPage() {
                                         <Label className="text-base font-semibold mb-3 block">
                                             Recipient Email Addresses
                                         </Label>
-                                        <p className="text-sm text-gray-600 mb-3">
+                                        <p className="text-sm text-slate-600 mb-3">
                                             Add email addresses that should receive notification emails
                                         </p>
                                         <div className="flex gap-2 mb-3">
@@ -319,7 +319,7 @@ export default function NotificationSettingsPage() {
                                                 {emailConfig.recipient_emails!.map((email, idx) => (
                                                     <div
                                                         key={idx}
-                                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                                                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
                                                     >
                                                         <div className="flex items-center gap-2">
                                                             <Mail className="h-4 w-4 text-gray-400" />
@@ -337,7 +337,7 @@ export default function NotificationSettingsPage() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-gray-500 italic">
+                                            <p className="text-sm text-slate-500 italic">
                                                 No email addresses added yet. Add at least one to receive notifications.
                                             </p>
                                         )}
@@ -353,7 +353,7 @@ export default function NotificationSettingsPage() {
                                             }
                                             placeholder="New Camp Registration - {{name}}"
                                         />
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-slate-500">
                                             Template variables: {`{{name}}`}, {`{{role}}`}, {`{{campYear}}`}
                                         </p>
                                     </div>
@@ -369,7 +369,7 @@ export default function NotificationSettingsPage() {
                                             placeholder="Email message template..."
                                             rows={8}
                                         />
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-slate-500">
                                             Template variables: {`{{name}}`}, {`{{firstName}}`}, {`{{lastName}}`}, {`{{role}}`}, {`{{campYear}}`}, {`{{phone}}`}, {`{{email}}`}, {`{{qrCode}}`}
                                         </p>
                                     </div>
@@ -400,7 +400,7 @@ export default function NotificationSettingsPage() {
                     {/* SMS Configuration */}
                     <TabsContent value="sms" className="space-y-6">
                         <Card className="border-2">
-                            <CardHeader className="bg-gray-50 border-b">
+                            <CardHeader className="bg-slate-50 border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <MessageSquare className="h-5 w-5" />
                                     SMS Notification Settings
@@ -423,7 +423,7 @@ export default function NotificationSettingsPage() {
                                             <Label htmlFor="sms_enabled" className="text-base font-semibold cursor-pointer">
                                                 Enable SMS Notifications
                                             </Label>
-                                            <p className="text-sm text-gray-600 mt-1">
+                                            <p className="text-sm text-slate-600 mt-1">
                                                 Send SMS notifications when new registrations are received
                                             </p>
                                         </div>
@@ -438,7 +438,7 @@ export default function NotificationSettingsPage() {
                                         <Label className="text-base font-semibold mb-3 block">
                                             Recipient Phone Numbers
                                         </Label>
-                                        <p className="text-sm text-gray-600 mb-3">
+                                        <p className="text-sm text-slate-600 mb-3">
                                             Add phone numbers (Ghana format: 0241234567 or +233241234567) that should receive SMS notifications
                                         </p>
                                         <div className="flex gap-2 mb-3">
@@ -465,7 +465,7 @@ export default function NotificationSettingsPage() {
                                                 {smsConfig.recipient_phones!.map((phone, idx) => (
                                                     <div
                                                         key={idx}
-                                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                                                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
                                                     >
                                                         <div className="flex items-center gap-2">
                                                             <MessageSquare className="h-4 w-4 text-gray-400" />
@@ -483,7 +483,7 @@ export default function NotificationSettingsPage() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-gray-500 italic">
+                                            <p className="text-sm text-slate-500 italic">
                                                 No phone numbers added yet. Add at least one to receive SMS notifications.
                                             </p>
                                         )}
@@ -502,10 +502,10 @@ export default function NotificationSettingsPage() {
                                             maxLength={1600}
                                         />
                                         <div className="flex items-center justify-between">
-                                            <p className="text-xs text-gray-500">
+                                            <p className="text-xs text-slate-500">
                                                 Template variables: {`{{name}}`}, {`{{role}}`}, {`{{campYear}}`}, {`{{phone}}`}, {`{{qrCode}}`}
                                             </p>
-                                            <p className="text-xs text-gray-500">
+                                            <p className="text-xs text-slate-500">
                                                 {smsConfig.template_body.length} / 160 characters
                                             </p>
                                         </div>

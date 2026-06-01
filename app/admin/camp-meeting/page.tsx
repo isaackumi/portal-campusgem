@@ -187,7 +187,7 @@ export default function CampAdminDashboard() {
                     variant="default"
                     size="lg"
                     onClick={() => router.push('/admin')}
-                    className="rounded-full shadow-lg hover:shadow-xl transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white h-14 w-14 p-0"
+                    className="rounded-full shadow-lg hover:shadow-xl transition-all duration-200 h-14 w-14 p-0"
                     title="Back to Admin Dashboard"
                 >
                     <ArrowLeft className="h-6 w-6" />
@@ -195,7 +195,7 @@ export default function CampAdminDashboard() {
             </div>
 
             {/* Sticky Header with Back Button */}
-            <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+            <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
@@ -218,14 +218,14 @@ export default function CampAdminDashboard() {
                                 <ArrowLeft className="h-5 w-5" />
                         </Button>
                             <div className="flex items-center gap-2">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                    <Sparkles className="h-5 w-5 text-blue-600" />
+                                <div className="p-2 bg-slate-100 rounded-lg">
+                                    <Sparkles className="h-5 w-5 text-primary" />
                                 </div>
                                 <div>
-                                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900">
+                                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
                                     Camp Meeting {campYear.year}
                                 </h1>
-                                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5 font-medium">
+                                    <p className="text-xs sm:text-sm text-slate-600 mt-0.5 font-medium">
                                         {campYear.theme}
                                     </p>
                                 </div>
@@ -254,7 +254,7 @@ export default function CampAdminDashboard() {
                             <Button 
                                 size="sm"
                                 onClick={() => router.push('/admin/camp-meeting/scan')}
-                                className="shadow-sm bg-blue-600 hover:bg-blue-700"
+                                className="shadow-sm"
                             >
                                 <QrCode className="mr-2 h-4 w-4" /> 
                                 <span className="hidden sm:inline">Scanner</span>
@@ -262,7 +262,7 @@ export default function CampAdminDashboard() {
                         </div>
                                 </div>
                     {/* Camp Year Details */}
-                    <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100">
+                    <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-600 mt-3 pt-3 border-t border-slate-100">
                         <div className="flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5" />
                                     <span>
@@ -304,29 +304,29 @@ export default function CampAdminDashboard() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white hover:shadow-md transition-shadow">
+                    <Card className="border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-md transition-shadow">
                         <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-blue-900 text-lg">
+                            <CardTitle className="flex items-center gap-2 text-slate-900 text-lg">
                                 <LinkIcon className="h-5 w-5" />
                                 Registration Form Link
                             </CardTitle>
-                            <CardDescription className="text-blue-700 text-sm">
+                            <CardDescription className="text-slate-700 text-sm">
                                 Share this link for public registration
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex items-center gap-2 p-3 bg-white rounded-lg border-2 border-blue-200 shadow-sm">
+                            <div className="flex items-center gap-2 p-3 bg-white rounded-lg border-2 border-slate-200 shadow-sm">
                                 <input
                                     type="text"
                                     readOnly
                                     value={registrationUrl}
-                                    className="flex-1 text-xs sm:text-sm font-mono bg-transparent border-none outline-none text-gray-700 truncate"
+                                    className="flex-1 text-xs sm:text-sm font-mono bg-transparent border-none outline-none text-slate-700 truncate"
                                 />
                                 <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={copyRegistrationLink}
-                                    className="flex-shrink-0 border-blue-300 hover:bg-blue-50"
+                                    className="flex-shrink-0 border-slate-300 hover:bg-slate-50"
                                 >
                                     {registrationLinkCopied ? (
                                         <>
@@ -341,7 +341,7 @@ export default function CampAdminDashboard() {
                                     )}
                                 </Button>
                             </div>
-                            <p className="text-xs text-blue-600 leading-relaxed">
+                            <p className="text-xs text-primary leading-relaxed">
                                 Click copy to share this link via SMS, Email, or WhatsApp
                             </p>
                         </CardContent>
@@ -397,18 +397,18 @@ export default function CampAdminDashboard() {
 
                 {/* Stats Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="border-2 border-blue-200 hover:shadow-lg transition-all duration-200 hover:border-blue-300 cursor-pointer" onClick={() => router.push('/admin/camp-meeting/registrations')}>
+                    <Card className="border-2 border-slate-200 hover:shadow-lg transition-all duration-200 hover:border-slate-300 cursor-pointer" onClick={() => router.push('/admin/camp-meeting/registrations')}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Total Registrations
                             </CardTitle>
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <Users className="h-5 w-5 text-blue-600" />
+                            <div className="p-2 bg-slate-100 rounded-lg">
+                                <Users className="h-5 w-5 text-primary" />
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-gray-900 mb-1">{total}</div>
-                            <p className="text-xs text-gray-500">
+                            <div className="text-3xl font-bold text-slate-900 mb-1">{total}</div>
+                            <p className="text-xs text-slate-500">
                                 All registered participants
                             </p>
                         </CardContent>
@@ -416,7 +416,7 @@ export default function CampAdminDashboard() {
 
                     <Card className="border-2 border-green-200 hover:shadow-lg transition-all duration-200 hover:border-green-300 cursor-pointer" onClick={() => router.push('/admin/camp-meeting/scan')}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Checked In
                             </CardTitle>
                             <div className="p-2 bg-green-100 rounded-lg">
@@ -425,7 +425,7 @@ export default function CampAdminDashboard() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-green-600 mb-1">{checkedIn}</div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-slate-500">
                                 {total > 0 ? Math.round((checkedIn / total) * 100) : 0}% Attendance Rate
                             </p>
                         </CardContent>
@@ -433,7 +433,7 @@ export default function CampAdminDashboard() {
 
                     <Card className="border-2 border-purple-200 hover:shadow-lg transition-all duration-200 hover:border-purple-300">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 New First Timers
                             </CardTitle>
                             <div className="p-2 bg-purple-100 rounded-lg">
@@ -442,7 +442,7 @@ export default function CampAdminDashboard() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-purple-600 mb-1">{newRegistrants}</div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-slate-500">
                                 {total > 0 ? Math.round((newRegistrants / total) * 100) : 0}% of total registrations
                             </p>
                         </CardContent>
@@ -450,7 +450,7 @@ export default function CampAdminDashboard() {
 
                     <Card className="border-2 border-orange-200 hover:shadow-lg transition-all duration-200 hover:border-orange-300">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Top Role
                             </CardTitle>
                             <div className="p-2 bg-orange-100 rounded-lg">
@@ -461,7 +461,7 @@ export default function CampAdminDashboard() {
                             <div className="text-2xl sm:text-3xl font-bold text-orange-600 mb-1 truncate">
                                 {Object.entries(byRole).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'}
                             </div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-slate-500">
                                 {Object.entries(byRole).sort((a, b) => b[1] - a[1])[0]?.[1] || 0} participants
                             </p>
                         </CardContent>
@@ -472,9 +472,9 @@ export default function CampAdminDashboard() {
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Role Distribution */}
                     <Card className="lg:col-span-2 border-2 hover:shadow-md transition-shadow">
-                        <CardHeader className="border-b bg-gray-50/50">
+                        <CardHeader className="border-b bg-slate-50/50">
                             <CardTitle className="flex items-center gap-2 text-lg">
-                                <Users className="h-5 w-5 text-blue-600" />
+                                <Users className="h-5 w-5 text-primary" />
                                 Role Distribution
                             </CardTitle>
                             <CardDescription className="text-sm">
@@ -483,7 +483,7 @@ export default function CampAdminDashboard() {
                         </CardHeader>
                         <CardContent className="pt-6">
                             {Object.keys(byRole).length === 0 ? (
-                                <div className="text-center py-12 text-gray-500">
+                                <div className="text-center py-12 text-slate-500">
                                     <Users className="h-12 w-12 mx-auto mb-3 text-gray-400" />
                                     <p className="text-sm">No role data available</p>
                                 </div>
@@ -496,9 +496,9 @@ export default function CampAdminDashboard() {
                                         return (
                                             <div key={role} className="space-y-2">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-semibold text-gray-700">{role}</span>
+                                                    <span className="text-sm font-semibold text-slate-700">{role}</span>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-bold text-gray-900">{count}</span>
+                                                        <span className="text-sm font-bold text-slate-900">{count}</span>
                                                         <Badge variant="outline" className="text-xs">
                                                             {Math.round(percentage)}%
                                                         </Badge>
@@ -506,7 +506,7 @@ export default function CampAdminDashboard() {
                                                 </div>
                                                     <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                                                     <div
-                                                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 shadow-sm"
+                                                            className="h-full rounded-full bg-gradient-to-r from-slate-800 to-slate-950 transition-all duration-500 shadow-sm"
                                                         style={{ width: `${percentage}%` }}
                                                     />
                                                 </div>
@@ -520,11 +520,11 @@ export default function CampAdminDashboard() {
 
                     {/* Recent Registrations */}
                     <Card className="border-2 hover:shadow-md transition-shadow">
-                        <CardHeader className="border-b bg-gray-50/50">
+                        <CardHeader className="border-b bg-slate-50/50">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <CardTitle className="flex items-center gap-2 text-lg">
-                                        <Clock className="h-5 w-5 text-blue-600" />
+                                        <Clock className="h-5 w-5 text-primary" />
                                         Recent Registrations
                                     </CardTitle>
                                     <CardDescription className="text-sm">
@@ -544,7 +544,7 @@ export default function CampAdminDashboard() {
                         {showRecentRegistrations && (
                             <CardContent className="pt-4">
                                 {recentRegistrations.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">
+                                    <div className="text-center py-8 text-slate-500">
                                         <Users className="h-10 w-10 mx-auto mb-2 text-gray-400" />
                                         <p className="text-sm">No registrations yet</p>
                                     </div>
@@ -553,11 +553,11 @@ export default function CampAdminDashboard() {
                                         {recentRegistrations.map((reg) => (
                                             <div
                                                 key={reg.id}
-                                                className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-150 cursor-pointer border border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                                                className="p-3 bg-slate-50 rounded-lg hover:bg-gray-100 transition-all duration-150 cursor-pointer border border-slate-200 hover:border-gray-300 hover:shadow-sm"
                                                 onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
                                             >
                                                 <div className="flex items-start justify-between mb-1.5">
-                                                    <span className="font-semibold text-sm text-gray-900 truncate flex-1">
+                                                    <span className="font-semibold text-sm text-slate-900 truncate flex-1">
                                                         {reg.full_name}
                                                     </span>
                                                     {reg.is_new_registrant && (
@@ -566,7 +566,7 @@ export default function CampAdminDashboard() {
                                                         </Badge>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                                                <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
                                                     <span className="truncate">{reg.role}</span>
                                                     <span className="ml-2 flex-shrink-0">{new Date(reg.created_at).toLocaleDateString()}</span>
                                                 </div>
@@ -582,7 +582,7 @@ export default function CampAdminDashboard() {
                                         ))}
                                         <Button
                                             variant="outline"
-                                            className="w-full mt-4 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                                            className="w-full mt-4 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
                                             onClick={() => router.push('/admin/camp-meeting/registrations')}
                                         >
                                             View All Registrations
@@ -597,11 +597,11 @@ export default function CampAdminDashboard() {
                 {/* Registrations Table with Sorting */}
                 {registrations.length > 0 && (
                     <Card className="border-2 hover:shadow-md transition-shadow">
-                        <CardHeader className="border-b bg-gray-50/50">
+                        <CardHeader className="border-b bg-slate-50/50">
                             <div className="flex items-center justify-between flex-wrap gap-3">
                                 <div>
                                     <CardTitle className="flex items-center gap-2 text-lg">
-                                        <ClipboardList className="h-5 w-5 text-blue-600" />
+                                        <ClipboardList className="h-5 w-5 text-primary" />
                                         All Registrations
                                     </CardTitle>
                                     <CardDescription className="text-sm">
@@ -622,11 +622,11 @@ export default function CampAdminDashboard() {
                             <div className="overflow-x-auto -mx-6 px-6">
                                 <table className="w-full">
                                     <thead>
-                                        <tr className="border-b border-gray-200">
+                                        <tr className="border-b border-slate-200">
                                             <th className="text-left py-3 px-3 sm:px-4">
                                                 <button
                                                     onClick={() => handleSort('name')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
                                                 >
                                                     Name
                                                     {getSortIcon('name')}
@@ -635,7 +635,7 @@ export default function CampAdminDashboard() {
                                             <th className="text-left py-3 px-3 sm:px-4 hidden sm:table-cell">
                                                 <button
                                                     onClick={() => handleSort('role')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
                                                 >
                                                     Role
                                                     {getSortIcon('role')}
@@ -644,7 +644,7 @@ export default function CampAdminDashboard() {
                                             <th className="text-left py-3 px-3 sm:px-4 hidden md:table-cell">
                                                 <button
                                                     onClick={() => handleSort('type')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
                                                 >
                                                     Type
                                                     {getSortIcon('type')}
@@ -653,7 +653,7 @@ export default function CampAdminDashboard() {
                                             <th className="text-left py-3 px-3 sm:px-4">
                                                 <button
                                                     onClick={() => handleSort('status')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
                                                 >
                                                     Status
                                                     {getSortIcon('status')}
@@ -662,7 +662,7 @@ export default function CampAdminDashboard() {
                                             <th className="text-left py-3 px-3 sm:px-4 hidden lg:table-cell">
                                                 <button
                                                     onClick={() => handleSort('date')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
                                                 >
                                                     Date
                                                     {getSortIcon('date')}
@@ -674,13 +674,13 @@ export default function CampAdminDashboard() {
                                         {sortedRegistrations.slice(0, 15).map((reg) => (
                                             <tr
                                                 key={reg.id}
-                                                className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                                                className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
                                                 onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
                                             >
                                                 <td className="py-3 px-3 sm:px-4">
-                                                    <div className="font-medium text-sm text-gray-900">{reg.full_name}</div>
+                                                    <div className="font-medium text-sm text-slate-900">{reg.full_name}</div>
                                                     {reg.email && (
-                                                        <div className="text-xs text-gray-500 truncate max-w-[200px]">{reg.email}</div>
+                                                        <div className="text-xs text-slate-500 truncate max-w-[200px]">{reg.email}</div>
                                                     )}
                                                     <div className="sm:hidden mt-1">
                                                         <Badge variant="outline" className="text-xs mr-2">
@@ -704,7 +704,7 @@ export default function CampAdminDashboard() {
                                                             New
                                                         </Badge>
                                                     ) : (
-                                                        <span className="text-xs text-gray-600">Returning</span>
+                                                        <span className="text-xs text-slate-600">Returning</span>
                                                     )}
                                                 </td>
                                                 <td className="py-3 px-3 sm:px-4">
@@ -715,7 +715,7 @@ export default function CampAdminDashboard() {
                                                         {reg.status === 'checked_in' ? 'Checked In' : reg.status}
                                                     </Badge>
                                                 </td>
-                                                <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-gray-600 hidden lg:table-cell">
+                                                <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-600 hidden lg:table-cell">
                                                     {new Date(reg.created_at).toLocaleDateString('en-US', {
                                                         month: 'short',
                                                         day: 'numeric',

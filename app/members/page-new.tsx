@@ -86,7 +86,7 @@ function MembersContent() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-slate-50 p-8">
         <div className="max-w-7xl mx-auto">
           <ErrorDisplay
             error={error}
@@ -108,7 +108,7 @@ function MembersContent() {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800'
       case 'pastor': return 'bg-purple-100 text-purple-800'
-      case 'elder': return 'bg-blue-100 text-blue-800'
+      case 'elder': return 'bg-slate-100 text-slate-700'
       case 'finance_officer': return 'bg-green-100 text-green-800'
       case 'member': return 'bg-gray-100 text-gray-800'
       default: return 'bg-gray-100 text-gray-800'
@@ -117,7 +117,7 @@ function MembersContent() {
 
   const getGenderColor = (gender: string) => {
     switch (gender) {
-      case 'male': return 'bg-blue-100 text-blue-800'
+      case 'male': return 'bg-slate-100 text-slate-700'
       case 'female': return 'bg-pink-100 text-pink-800'
       default: return 'bg-gray-100 text-gray-800'
     }
@@ -145,7 +145,7 @@ function MembersContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -155,16 +155,16 @@ function MembersContent() {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => router.push('/dashboard')}
-                className="mr-3 text-gray-600 hover:text-gray-900"
+                className="mr-3 text-slate-600 hover:text-slate-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back to Dashboard
               </Button>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Members Management
             </h1>
-            <p className="text-gray-600">
+            <p className="text-slate-600">
               {total} total members • Manage your church community
             </p>
           </div>
@@ -174,7 +174,7 @@ function MembersContent() {
               Export
             </Button>
             <Button 
-              className="bg-blue-600 hover:bg-blue-700"
+              className=""
               onClick={() => router.push('/members/add')}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -185,28 +185,28 @@ function MembersContent() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Total Members</p>
-                  <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Total Members</p>
+                  <p className="text-2xl font-bold text-slate-900">
                     {total}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Users className="h-5 w-5 text-blue-600" />
+                <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Active Members</p>
-                  <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Active Members</p>
+                  <p className="text-2xl font-bold text-slate-900">
                     {members?.filter(m => m.user?.role === 'member').length || 0}
                   </p>
                 </div>
@@ -217,12 +217,12 @@ function MembersContent() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Leadership</p>
-                  <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Leadership</p>
+                  <p className="text-2xl font-bold text-slate-900">
                     {members?.filter(m => ['admin', 'pastor', 'elder'].includes(m.user?.role || '')).length || 0}
                   </p>
                 </div>
@@ -233,12 +233,12 @@ function MembersContent() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">New This Month</p>
-                  <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-xs font-medium text-slate-500 mb-1">New This Month</p>
+                  <p className="text-2xl font-bold text-slate-900">
                     {members?.filter(m => {
                       const created = new Date(m.created_at)
                       const now = new Date()
@@ -283,7 +283,7 @@ function MembersContent() {
                     <select
                       value={filterType}
                       onChange={(e) => handleFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                     >
                       <option value="all">All Roles</option>
                       <option value="admin">Admins</option>
@@ -323,14 +323,14 @@ function MembersContent() {
                 ) : members && members.length > 0 ? (
                   <div className="space-y-4">
                     {members.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div key={member.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="h-6 w-6 text-blue-600" />
+                          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
+                            <User className="h-6 w-6 text-primary" />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
-                              <h3 className="font-medium text-gray-900">{member.user?.full_name}</h3>
+                              <h3 className="font-medium text-slate-900">{member.user?.full_name}</h3>
                               <Badge className={getRoleColor(member.user?.role || '')}>
                                 {member.user?.role?.replace('_', ' ')}
                               </Badge>
@@ -340,7 +340,7 @@ function MembersContent() {
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center space-x-4 text-sm text-slate-500">
                               <span className="flex items-center">
                                 <Copy className="h-3 w-3 mr-1" />
                                 {member.user?.membership_id}
@@ -351,7 +351,7 @@ function MembersContent() {
                               <span>Joined: {formatDate(member.created_at)}</span>
                             </div>
                             {(member.user?.phone || member.user?.email) && (
-                              <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                              <div className="flex items-center space-x-4 text-sm text-slate-500 mt-1">
                                 {member.user?.phone && (
                                   <span className="flex items-center">
                                     <Phone className="h-3 w-3 mr-1" />
@@ -432,8 +432,8 @@ function MembersContent() {
             <Card>
               <CardContent className="text-center py-12">
                 <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Group Management</h3>
-                <p className="text-gray-500 mb-4">Manage church groups and ministries</p>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">Group Management</h3>
+                <p className="text-slate-500 mb-4">Manage church groups and ministries</p>
                 <Button onClick={() => router.push('/groups')}>
                   <Plus className="h-4 w-4 mr-2" />
                   Go to Groups
@@ -447,8 +447,8 @@ function MembersContent() {
             <Card>
               <CardContent className="text-center py-12">
                 <CheckCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Attendance Management</h3>
-                <p className="text-gray-500 mb-4">Track member attendance and services</p>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">Attendance Management</h3>
+                <p className="text-slate-500 mb-4">Track member attendance and services</p>
                 <Button onClick={() => router.push('/attendance/scanner')}>
                   <Plus className="h-4 w-4 mr-2" />
                   Take Attendance
@@ -462,8 +462,8 @@ function MembersContent() {
             <Card>
               <CardContent className="text-center py-12">
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">SMS Messaging</h3>
-                <p className="text-gray-500 mb-4">Send messages to members and groups</p>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">SMS Messaging</h3>
+                <p className="text-slate-500 mb-4">Send messages to members and groups</p>
                 <Button onClick={() => router.push('/groups')}>
                   <Plus className="h-4 w-4 mr-2" />
                   Send SMS

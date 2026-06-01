@@ -137,7 +137,7 @@ export default function AddVisitorPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-pulse text-blue-600 text-lg">Loading...</div>
+          <div className="animate-pulse text-primary text-lg">Loading...</div>
         </div>
       </DashboardLayout>
     )
@@ -155,12 +155,12 @@ export default function AddVisitorPage() {
             variant="ghost" 
             size="sm" 
             onClick={() => router.push('/visitors')}
-            className="mr-3 text-gray-600 hover:text-gray-900"
+            className="mr-3 text-slate-600 hover:text-slate-900"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Visitors
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+          <h1 className="text-3xl font-bold text-slate-900">
             Add New Visitor
           </h1>
         </div>
@@ -168,14 +168,14 @@ export default function AddVisitorPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl font-bold">Visitor Information</CardTitle>
-            <p className="text-gray-600">Record information about a new church visitor.</p>
+            <p className="text-slate-600">Record information about a new church visitor.</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Personal Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center">
-                  <UserPlus className="h-5 w-5 mr-2 text-blue-600" />
+                  <UserPlus className="h-5 w-5 mr-2 text-primary" />
                   Personal Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -343,7 +343,7 @@ export default function AddVisitorPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>

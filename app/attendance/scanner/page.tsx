@@ -189,11 +189,11 @@ export default function ScannerPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 flex items-center" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                <QrCode className="h-8 w-8 mr-3 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 flex items-center">
+                <QrCode className="h-8 w-8 mr-3 text-primary" />
                 Attendance Scanner
               </h1>
-              <p className="text-gray-600">Scan member QR codes to check them in for service</p>
+              <p className="text-slate-600">Scan member QR codes to check them in for service</p>
             </div>
             <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -255,11 +255,11 @@ export default function ScannerPage() {
                       </div>
                       <div>
                         <h3 className="font-medium text-lg">{checkInResult.member.full_name}</h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-slate-600">
                           {formatMembershipIdForDisplay(checkInResult.member.membership_id)}
                         </p>
                         {checkInResult.member.phone && (
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-slate-600">
                             {checkInResult.member.phone}
                           </p>
                         )}
@@ -270,12 +270,12 @@ export default function ScannerPage() {
                   {/* Service Details */}
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <Calendar className="h-4 w-4 text-slate-500" />
                       <span className="text-sm font-medium">Service:</span>
                       <span className="text-sm">{checkInResult.service_type}</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-gray-500" />
+                      <Clock className="h-4 w-4 text-slate-500" />
                       <span className="text-sm font-medium">Time:</span>
                       <span className="text-sm">{formatDateTime(checkInResult.timestamp)}</span>
                     </div>
@@ -285,12 +285,12 @@ export default function ScannerPage() {
                   {checkInResult.dependants && checkInResult.dependants.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4 text-gray-500" />
+                        <Users className="h-4 w-4 text-slate-500" />
                         <span className="text-sm font-medium">Family Members:</span>
                       </div>
                       <div className="space-y-1">
                         {checkInResult.dependants.map((dependant) => (
-                          <div key={dependant.id} className="text-sm text-gray-600 ml-6">
+                          <div key={dependant.id} className="text-sm text-slate-600 ml-6">
                             • {dependant.name} ({dependant.relationship})
                           </div>
                         ))}
@@ -328,11 +328,11 @@ export default function ScannerPage() {
                   <div className="text-center space-y-4">
                     <QrCode className="h-16 w-16 text-gray-400 mx-auto" />
                     <div className="space-y-2">
-                      <p className="text-gray-600">
+                      <p className="text-slate-600">
                         {loading ? 'Processing QR code...' : 'Waiting for QR code...'}
                       </p>
                       {loading && (
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900 mx-auto"></div>
                       )}
                     </div>
                   </div>

@@ -110,19 +110,19 @@ function SuccessContent() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <p className="text-center text-sm text-gray-700 sm:text-base">
+        <p className="text-center text-sm text-slate-700 sm:text-base">
           Your registration has been confirmed successfully.
         </p>
 
         {checkInCode ? (
-          <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50/80 p-4 text-center">
+          <div className="rounded-xl border-2 border-slate-200 bg-slate-50/80 p-4 text-center">
             <p className="text-xs font-medium uppercase tracking-wide text-indigo-800">
               Your camp check-in code
             </p>
-            <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-indigo-950">
+            <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-slate-950">
               {checkInCode}
             </p>
-            <p className="mt-2 text-xs text-indigo-900/80">
+            <p className="mt-2 text-xs text-slate-900/80">
               Show this code, your QR, name, or phone at the gate — each person has their own code.
             </p>
             <Button
@@ -140,7 +140,7 @@ function SuccessContent() {
 
         {qrCode ? (
           <div className="space-y-3 text-center">
-            <p className="text-sm text-gray-600">Or present this QR code at check-in.</p>
+            <p className="text-sm text-slate-600">Or present this QR code at check-in.</p>
             <div className="mx-auto w-fit rounded-xl border bg-white p-4 shadow-sm">
               <QRCode
                 value={qrCode}
@@ -150,14 +150,14 @@ function SuccessContent() {
             {(displayName || displayRole) && (
               <div className="space-y-0.5">
                 {displayName ? (
-                  <p className="text-base font-semibold text-gray-900">{displayName}</p>
+                  <p className="text-base font-semibold text-slate-900">{displayName}</p>
                 ) : null}
-                {displayRole ? <p className="text-sm text-gray-600">{displayRole}</p> : null}
+                {displayRole ? <p className="text-sm text-slate-600">{displayRole}</p> : null}
               </div>
             )}
           </div>
         ) : (
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-sm text-slate-600">
             You will receive your QR code and registration details upon arrival at the camp meeting.
           </p>
         )}
@@ -214,7 +214,7 @@ function SuccessContent() {
 export default function SuccessPage() {
   return (
     <div
-      className="flex min-h-[100dvh] items-center justify-center bg-gray-50 p-4 pt-[max(1rem,env(safe-area-inset-top))]"
+      className="flex min-h-[100dvh] items-center justify-center bg-slate-50 p-4 pt-[max(1rem,env(safe-area-inset-top))]"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>

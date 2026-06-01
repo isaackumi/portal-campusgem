@@ -64,7 +64,7 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LineChart className="h-5 w-5 text-blue-600" />
+            <LineChart className="h-5 w-5 text-primary" />
             Submission timeline
           </CardTitle>
           <CardDescription>Daily responses and cumulative total — hover or tap data points for details.</CardDescription>

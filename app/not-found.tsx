@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { BrandMark } from '@/components/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -11,144 +12,104 @@ import {
   RefreshCw,
   HelpCircle,
   Mail,
-  Phone
+  Phone,
 } from 'lucide-react'
 
 export default function NotFound() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="h-10 w-10 text-blue-600" />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="w-full max-w-2xl">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900">
+            <AlertTriangle className="h-8 w-8 text-amber-400" />
           </div>
-          <h1 className="text-6xl font-bold text-gray-900 mb-2" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-            404
-          </h1>
-          <h2 className="text-2xl font-semibold text-gray-700 mb-2">
-            Page Not Found
-          </h2>
-          <p className="text-gray-600">
-            The page you're looking for doesn't exist or has been moved.
-          </p>
+          <h1 className="mb-2 text-6xl font-semibold tracking-tight text-slate-900">404</h1>
+          <h2 className="mb-2 text-2xl font-semibold text-slate-700">Page not found</h2>
+          <p className="text-slate-600">The page you&apos;re looking for doesn&apos;t exist or was moved.</p>
         </div>
 
-        {/* Main Card */}
-        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <Card className="border-slate-200/80 shadow-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl text-gray-900">
-              Let's Get You Back on Track
-            </CardTitle>
-            <CardDescription>
-              Here are some helpful options to get you where you need to go
-            </CardDescription>
+            <CardTitle className="text-xl text-slate-900">Let&apos;s get you back on track</CardTitle>
+            <CardDescription>Quick links to common areas of the portal</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button
-                onClick={() => router.push('/dashboard')}
-                className="h-16 flex-col space-y-2 bg-blue-600 hover:bg-blue-700"
-              >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Button onClick={() => router.push('/dashboard')} className="h-16 flex-col gap-2">
                 <Home className="h-6 w-6" />
-                <span>Go to Dashboard</span>
+                <span>Go to dashboard</span>
               </Button>
 
-              <Button
-                variant="outline"
-                onClick={() => router.back()}
-                className="h-16 flex-col space-y-2"
-              >
+              <Button variant="outline" onClick={() => router.back()} className="h-16 flex-col gap-2">
                 <ArrowLeft className="h-6 w-6" />
-                <span>Go Back</span>
+                <span>Go back</span>
               </Button>
             </div>
 
-            {/* Popular Pages */}
-            <div className="border-t pt-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                <Search className="h-5 w-5 mr-2 text-blue-600" />
-                Popular Pages
+            <div className="border-t border-slate-200 pt-6">
+              <h3 className="mb-4 flex items-center font-semibold text-slate-900">
+                <Search className="mr-2 h-5 w-5 text-amber-500" />
+                Popular pages
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/members')}
-                  className="justify-start h-12 text-left"
-                >
-                  <span className="text-sm">Members Management</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/attendance')}
-                  className="justify-start h-12 text-left"
-                >
-                  <span className="text-sm">Attendance Records</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/groups')}
-                  className="justify-start h-12 text-left"
-                >
-                  <span className="text-sm">Groups & Ministries</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/visitors')}
-                  className="justify-start h-12 text-left"
-                >
-                  <span className="text-sm">Visitor Management</span>
-                </Button>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {[
+                  { label: 'Members', href: '/members' },
+                  { label: 'Attendance', href: '/attendance' },
+                  { label: 'Groups', href: '/groups' },
+                  { label: 'Visitors', href: '/visitors' },
+                ].map((item) => (
+                  <Button
+                    key={item.href}
+                    variant="ghost"
+                    onClick={() => router.push(item.href)}
+                    className="h-12 justify-start text-left"
+                  >
+                    <span className="text-sm">{item.label}</span>
+                  </Button>
+                ))}
               </div>
             </div>
 
-            {/* Help Section */}
-            <div className="border-t pt-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                <HelpCircle className="h-5 w-5 mr-2 text-blue-600" />
-                Need Help?
+            <div className="border-t border-slate-200 pt-6">
+              <h3 className="mb-4 flex items-center font-semibold text-slate-900">
+                <HelpCircle className="mr-2 h-5 w-5 text-amber-500" />
+                Need help?
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <Mail className="h-5 w-5 text-blue-600" />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+                  <Mail className="h-5 w-5 text-slate-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Email Support</p>
-                    <p className="text-xs text-gray-600">support@church.com</p>
+                    <p className="text-sm font-medium text-slate-900">Email support</p>
+                    <p className="text-xs text-slate-600">support@church.com</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <Phone className="h-5 w-5 text-blue-600" />
+                <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+                  <Phone className="h-5 w-5 text-slate-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Phone Support</p>
-                    <p className="text-xs text-gray-600">+233 XX XXX XXXX</p>
+                    <p className="text-sm font-medium text-slate-900">Phone support</p>
+                    <p className="text-xs text-slate-600">+233 XX XXX XXXX</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Refresh Option */}
-            <div className="border-t pt-6">
-              <Button
-                variant="outline"
-                onClick={() => window.location.reload()}
-                className="w-full"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh Page
+            <div className="border-t border-slate-200 pt-6">
+              <Button variant="outline" onClick={() => window.location.reload()} className="w-full">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh page
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-sm text-gray-500">
-            Campus Gem Ministries
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Kokomlemle, Accra</p>
+        <div className="mt-8 flex items-center justify-center gap-3 text-center">
+          <BrandMark size="sm" />
+          <div>
+            <p className="text-sm text-slate-600">Campus Gem Ministries</p>
+            <p className="text-xs text-slate-400">Kokomlemle, Accra</p>
+          </div>
         </div>
       </div>
     </div>

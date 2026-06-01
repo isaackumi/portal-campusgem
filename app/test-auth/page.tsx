@@ -34,7 +34,7 @@ export default function TestAuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>
@@ -64,7 +64,7 @@ export default function TestAuthPage() {
               </Button>
             </div>
 
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <div className="mt-4 p-4 bg-slate-50 rounded-lg">
               <h3 className="font-semibold mb-2">Instructions:</h3>
               <ol className="list-decimal list-inside space-y-1 text-sm">
                 <li>Click "Set Test User in localStorage"</li>

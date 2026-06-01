@@ -72,7 +72,7 @@ function GroupsContent() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-slate-50 p-8">
         <div className="max-w-7xl mx-auto">
           <ErrorDisplay
             error={error}
@@ -93,7 +93,7 @@ function GroupsContent() {
   const getGroupTypeColor = (type: string) => {
     switch (type) {
       case 'ministry': return 'bg-purple-100 text-purple-800'
-      case 'fellowship': return 'bg-blue-100 text-blue-800'
+      case 'fellowship': return 'bg-slate-100 text-slate-700'
       case 'age_group': return 'bg-green-100 text-green-800'
       case 'special_interest': return 'bg-yellow-100 text-yellow-800'
       case 'leadership': return 'bg-red-100 text-red-800'
@@ -129,7 +129,7 @@ function GroupsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -139,16 +139,16 @@ function GroupsContent() {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => router.push('/dashboard')}
-                className="mr-3 text-gray-600 hover:text-gray-900"
+                className="mr-3 text-slate-600 hover:text-slate-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back to Dashboard
               </Button>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Groups & Ministries
             </h1>
-            <p className="text-gray-600">
+            <p className="text-slate-600">
               {groupStats.total} total groups • Manage church groups, ministries, and fellowships
             </p>
           </div>
@@ -158,7 +158,7 @@ function GroupsContent() {
               Export
             </Button>
             <Button 
-              className="bg-blue-600 hover:bg-blue-700"
+              className=""
               onClick={() => router.push('/groups/add')}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -169,28 +169,28 @@ function GroupsContent() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Total Groups</p>
-                  <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Total Groups</p>
+                  <p className="text-2xl font-bold text-slate-900">
                     {groupStats.total}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Users className="h-5 w-5 text-blue-600" />
+                <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Ministries</p>
-                  <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Ministries</p>
+                  <p className="text-2xl font-bold text-slate-900">
                     {groupStats.ministries}
                   </p>
                 </div>
@@ -201,12 +201,12 @@ function GroupsContent() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Fellowships</p>
-                  <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Fellowships</p>
+                  <p className="text-2xl font-bold text-slate-900">
                     {groupStats.fellowships}
                   </p>
                 </div>
@@ -217,12 +217,12 @@ function GroupsContent() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border border-gray-100">
+          <Card className="bg-white shadow-sm border border-slate-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Age Groups</p>
-                  <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Age Groups</p>
+                  <p className="text-2xl font-bold text-slate-900">
                     {groupStats.ageGroups}
                   </p>
                 </div>
@@ -253,7 +253,7 @@ function GroupsContent() {
                 <select
                   value={filterType}
                   onChange={(e) => handleFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                 >
                   <option value="all">All Types</option>
                   <option value="ministry">Ministry</option>
@@ -273,7 +273,7 @@ function GroupsContent() {
         ) : groups && groups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {groups.map((group) => (
-              <Card key={group.id} className="bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <Card key={group.id} className="bg-white shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -306,14 +306,14 @@ function GroupsContent() {
                   </div>
                   <CardTitle className="text-lg">{group.name}</CardTitle>
                   {group.description && (
-                    <p className="text-sm text-gray-600 mt-1">{group.description}</p>
+                    <p className="text-sm text-slate-600 mt-1">{group.description}</p>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Leaders */}
                   {(group.leader || group.co_leader) && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-2">Leadership</h4>
+                      <h4 className="text-sm font-medium text-slate-500 mb-2">Leadership</h4>
                       <div className="space-y-1">
                         {group.leader && (
                           <div className="flex items-center space-x-2">
@@ -323,7 +323,7 @@ function GroupsContent() {
                         )}
                         {group.co_leader && (
                           <div className="flex items-center space-x-2">
-                            <Star className="h-3 w-3 text-blue-600" />
+                            <Star className="h-3 w-3 text-primary" />
                             <span className="text-sm">{group.co_leader.full_name}</span>
                           </div>
                         )}
@@ -333,14 +333,14 @@ function GroupsContent() {
 
                   {/* Meeting Information */}
                   {group.meeting_schedule && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <div className="flex items-center space-x-2 text-sm text-slate-600">
                       <Calendar className="h-4 w-4" />
                       <span>{group.meeting_schedule}</span>
                     </div>
                   )}
 
                   {group.meeting_location && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <div className="flex items-center space-x-2 text-sm text-slate-600">
                       <MapPin className="h-4 w-4" />
                       <span>{group.meeting_location}</span>
                     </div>
@@ -349,14 +349,14 @@ function GroupsContent() {
                   {/* Member Limit */}
                   {group.max_members && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Capacity</span>
+                      <span className="text-slate-500">Capacity</span>
                       <span className="font-medium">{group.max_members} members</span>
                     </div>
                   )}
 
                   {/* Created Date */}
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Created</span>
+                    <span className="text-slate-500">Created</span>
                     <span className="font-medium">{formatDate(group.created_at)}</span>
                   </div>
                 </CardContent>
@@ -386,7 +386,7 @@ function GroupsContent() {
             icon={<Users className="h-12 w-12" />}
             action={
               <Button 
-                className="bg-blue-600 hover:bg-blue-700"
+                className=""
                 onClick={() => router.push('/groups/add')}
               >
                 <Plus className="h-4 w-4 mr-2" />

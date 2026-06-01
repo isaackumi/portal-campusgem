@@ -399,11 +399,11 @@ export default function BulkAttendancePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 flex items-center" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                <Users className="h-8 w-8 mr-3 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 flex items-center">
+                <Users className="h-8 w-8 mr-3 text-primary" />
                 Bulk Attendance
               </h1>
-              <p className="text-gray-600">Check in multiple members at once for service attendance</p>
+              <p className="text-slate-600">Check in multiple members at once for service attendance</p>
             </div>
             <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -453,16 +453,16 @@ export default function BulkAttendancePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="bg-white p-4 rounded-lg border border-slate-200">
                 <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                    <span className="text-gray-600">Service:</span>
+                    <span className="text-slate-600">Service:</span>
                     <span className="ml-2 font-medium">{bulkResult.service_type}</span>
                   </div>
                   <div className="flex items-center">
                     <Clock className="h-4 w-4 mr-2 text-gray-400" />
-                    <span className="text-gray-600">Time:</span>
+                    <span className="text-slate-600">Time:</span>
                     <span className="ml-2 font-medium">
                       {formatDateTime(bulkResult.timestamp)}
                     </span>
@@ -482,7 +482,7 @@ export default function BulkAttendancePage() {
 
                 {bulkResult.errors.length > 0 && (
                   <div className="mt-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Errors:</h4>
+                    <h4 className="font-medium text-slate-900 mb-2">Errors:</h4>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {bulkResult.errors.map((error, index) => (
                         <div key={index} className="text-sm text-red-600 bg-red-50 p-2 rounded">
@@ -510,10 +510,10 @@ export default function BulkAttendancePage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Search className="h-5 w-5 mr-2 text-blue-600" />
+                    <Search className="h-5 w-5 mr-2 text-primary" />
                     Member Selection
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-slate-600">
                     {selectedMembers.size} members selected ({getTotalSelectedCount()} total attendees)
                   </div>
                 </CardTitle>
@@ -590,7 +590,7 @@ export default function BulkAttendancePage() {
 
                 {/* Advanced Filters */}
                 {showFilters && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
                     <div>
                       <Label htmlFor="role-filter">Role Filter</Label>
                       <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -625,11 +625,11 @@ export default function BulkAttendancePage() {
                 )}
 
                 {/* Results Summary */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm text-gray-600">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm text-slate-600">
                   <div>
                     Showing {startIndex + 1}-{Math.min(endIndex, filteredMembers.length)} of {filteredMembers.length} members
                     {searchTerm && (
-                      <span className="ml-2 text-blue-600">
+                      <span className="ml-2 text-primary">
                         (filtered by "{searchTerm}")
                       </span>
                     )}
@@ -666,7 +666,7 @@ export default function BulkAttendancePage() {
                     <LoadingSpinner />
                   </div>
                 ) : paginatedMembers.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-slate-500">
                     <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>No members found</p>
                     {searchTerm && (
@@ -684,8 +684,8 @@ export default function BulkAttendancePage() {
                           key={member.id}
                           className={`p-4 border rounded-lg transition-colors ${
                             isSelected
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              ? 'border-slate-900 bg-slate-50'
+                              : 'border-slate-200 hover:border-gray-300 hover:bg-slate-50'
                           }`}
                         >
                           <div className="flex items-start space-x-3">
@@ -698,7 +698,7 @@ export default function BulkAttendancePage() {
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-medium text-gray-900">
+                                    <h3 className="font-medium text-slate-900">
                                       {member.full_name}
                                     </h3>
                                     {member.role && (
@@ -715,7 +715,7 @@ export default function BulkAttendancePage() {
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <div className="flex items-center gap-4 text-sm text-slate-600">
                                     <span className="flex items-center">
                                       <Hash className="h-3 w-3 mr-1" />
                                       {formatMembershipIdForDisplay(member.membership_id)}
@@ -735,7 +735,7 @@ export default function BulkAttendancePage() {
                                   </div>
                                 </div>
                                 {isSelected && (
-                                  <div className="flex items-center text-blue-600">
+                                  <div className="flex items-center text-primary">
                                     <UserCheck className="h-4 w-4 mr-1" />
                                     <span className="text-xs font-medium">Selected</span>
                                   </div>
@@ -744,8 +744,8 @@ export default function BulkAttendancePage() {
 
                               {/* Dependants */}
                               {isSelected && member.dependants && member.dependants.length > 0 && (
-                                <div className="mt-3 pl-6 border-l-2 border-blue-200">
-                                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                <div className="mt-3 pl-6 border-l-2 border-slate-200">
+                                  <h4 className="text-sm font-medium text-slate-700 mb-2">
                                     Include Dependants:
                                   </h4>
                                   <div className="space-y-2">
@@ -778,7 +778,7 @@ export default function BulkAttendancePage() {
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-slate-600">
                       Page {currentPage} of {totalPages}
                     </div>
                     <div className="flex items-center gap-2">
@@ -839,7 +839,7 @@ export default function BulkAttendancePage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-slate-600">
                     {selectedMembers.size > 0 ? (
                       <>
                         <span className="font-medium">{selectedMembers.size}</span> members selected

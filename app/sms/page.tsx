@@ -105,7 +105,7 @@ export default function SMSPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      sent: { color: 'bg-blue-100 text-blue-800', icon: Send },
+      sent: { color: 'bg-slate-100 text-slate-700', icon: Send },
       delivered: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
       failed: { color: 'bg-red-100 text-red-800', icon: XCircle }
     }
@@ -126,7 +126,7 @@ export default function SMSPage() {
       birthday: { color: 'bg-pink-100 text-pink-800', icon: Calendar },
       anniversary: { color: 'bg-red-100 text-red-800', icon: Users },
       group: { color: 'bg-purple-100 text-purple-800', icon: Users },
-      event: { color: 'bg-blue-100 text-blue-800', icon: Calendar },
+      event: { color: 'bg-slate-100 text-slate-700', icon: Calendar },
       custom: { color: 'bg-gray-100 text-gray-800', icon: MessageSquare }
     }
 
@@ -169,8 +169,8 @@ export default function SMSPage() {
         <div className="max-w-7xl mx-auto py-12">
           <Card>
             <CardContent className="p-8 text-center">
-              <MessageSquare className="h-10 w-10 text-blue-600 mx-auto mb-3" />
-              <p className="text-gray-700">Please sign in to manage SMS communications.</p>
+              <MessageSquare className="h-10 w-10 text-primary mx-auto mb-3" />
+              <p className="text-slate-700">Please sign in to manage SMS communications.</p>
             </CardContent>
           </Card>
         </div>
@@ -183,11 +183,11 @@ export default function SMSPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-            <MessageSquare className="h-8 w-8 mr-3 text-blue-600" />
+          <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center">
+            <MessageSquare className="h-8 w-8 mr-3 text-primary" />
             SMS Management
           </h1>
-          <p className="text-gray-600">Manage SMS communications for birthdays, anniversaries, groups, and events</p>
+          <p className="text-slate-600">Manage SMS communications for birthdays, anniversaries, groups, and events</p>
         </div>
 
         {error && (
@@ -205,10 +205,10 @@ export default function SMSPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Sent</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.total_sent}</p>
+                    <p className="text-sm font-medium text-slate-600">Total Sent</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.total_sent}</p>
                   </div>
-                  <Send className="h-8 w-8 text-blue-600" />
+                  <Send className="h-8 w-8 text-primary" />
                 </div>
               </CardContent>
             </Card>
@@ -217,7 +217,7 @@ export default function SMSPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Delivered</p>
+                    <p className="text-sm font-medium text-slate-600">Delivered</p>
                     <p className="text-2xl font-bold text-green-600">{stats.delivered}</p>
                   </div>
                   <CheckCircle className="h-8 w-8 text-green-600" />
@@ -229,7 +229,7 @@ export default function SMSPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Pending</p>
+                    <p className="text-sm font-medium text-slate-600">Pending</p>
                     <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
                   </div>
                   <Clock className="h-8 w-8 text-yellow-600" />
@@ -241,7 +241,7 @@ export default function SMSPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">This Month</p>
+                    <p className="text-sm font-medium text-slate-600">This Month</p>
                     <p className="text-2xl font-bold text-purple-600">{stats.this_month}</p>
                   </div>
                   <BarChart3 className="h-8 w-8 text-purple-600" />
@@ -324,26 +324,26 @@ export default function SMSPage() {
                 ) : filteredMessages.length === 0 ? (
                   <div className="text-center py-8">
                     <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No messages found</p>
+                    <p className="text-slate-500">No messages found</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {filteredMessages.map((message) => (
-                      <div key={message.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div key={message.id} className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-gray-900">{message.recipient.name}</h4>
+                              <h4 className="font-medium text-slate-900">{message.recipient.name}</h4>
                               <Phone className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-gray-500">{message.recipient.phone}</span>
+                              <span className="text-sm text-slate-500">{message.recipient.phone}</span>
                               {message.recipient.membership_id && (
                                 <Badge variant="outline" className="text-xs">
                                   {message.recipient.membership_id}
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-gray-700 mb-3">{message.message}</p>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <p className="text-slate-700 mb-3">{message.message}</p>
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
                               {getStatusBadge(message.status)}
                               {getTypeBadge(message.type)}
                               <span>•</span>
@@ -378,20 +378,20 @@ export default function SMSPage() {
                 {templates.length === 0 ? (
                   <div className="text-center py-8">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No templates found</p>
+                    <p className="text-slate-500">No templates found</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {templates.map((template) => (
-                      <div key={template.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div key={template.id} className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-gray-900">{template.name}</h4>
+                              <h4 className="font-medium text-slate-900">{template.name}</h4>
                               {getTypeBadge(template.type)}
                             </div>
-                            <p className="text-gray-700 mb-3">{template.template}</p>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <p className="text-slate-700 mb-3">{template.template}</p>
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
                               <span>Variables: {template.variables.join(', ')}</span>
                               <span>•</span>
                               <span>Created: {new Date(template.created_at).toLocaleDateString()}</span>
@@ -433,11 +433,11 @@ export default function SMSPage() {
                             <span className="text-sm font-medium">{count}</span>
                             <div className="w-20 bg-gray-200 rounded-full h-2">
                               <div
-                                className="bg-blue-600 h-2 rounded-full"
+                                className="bg-primary h-2 rounded-full"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            <span className="text-sm text-gray-500 w-12 text-right">
+                            <span className="text-sm text-slate-500 w-12 text-right">
                               {percentage.toFixed(1)}%
                             </span>
                           </div>
@@ -457,7 +457,7 @@ export default function SMSPage() {
                   <div className="space-y-4">
                     {[
                       { status: 'delivered', label: 'Delivered', color: 'bg-green-600' },
-                      { status: 'sent', label: 'Sent', color: 'bg-blue-600' },
+                      { status: 'sent', label: 'Sent', color: 'bg-primary' },
                       { status: 'pending', label: 'Pending', color: 'bg-yellow-600' },
                       { status: 'failed', label: 'Failed', color: 'bg-red-600' }
                     ].map((item) => {
@@ -477,7 +477,7 @@ export default function SMSPage() {
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            <span className="text-sm text-gray-500 w-12 text-right">
+                            <span className="text-sm text-slate-500 w-12 text-right">
                               {percentage.toFixed(1)}%
                             </span>
                           </div>

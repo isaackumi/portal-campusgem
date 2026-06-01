@@ -293,8 +293,8 @@ export function OfflineSync() {
         {/* Status Info */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-gray-500" />
-            <span className="text-gray-600">Last Sync:</span>
+            <Clock className="h-4 w-4 text-slate-500" />
+            <span className="text-slate-600">Last Sync:</span>
             <span className="font-medium">
               {syncStatus.lastSync 
                 ? syncStatus.lastSync.toLocaleTimeString()
@@ -303,8 +303,8 @@ export function OfflineSync() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-gray-500" />
-            <span className="text-gray-600">Pending:</span>
+            <Users className="h-4 w-4 text-slate-500" />
+            <span className="text-slate-600">Pending:</span>
             <span className="font-medium">{syncStatus.pendingItems}</span>
           </div>
         </div>
@@ -312,23 +312,23 @@ export function OfflineSync() {
         {/* Pending Items */}
         {pendingItems.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-gray-700">Pending Changes:</h4>
+            <h4 className="font-medium text-sm text-slate-700">Pending Changes:</h4>
             <div className="space-y-1 max-h-32 overflow-y-auto">
               {pendingItems.slice(0, 5).map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                <div key={item.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-3 w-3 text-gray-500" />
+                    <Calendar className="h-3 w-3 text-slate-500" />
                     <span className="capitalize">{item.type}</span>
-                    <span className="text-gray-500">•</span>
+                    <span className="text-slate-500">•</span>
                     <span className="capitalize">{item.action}</span>
                   </div>
-                  <span className="text-gray-500">
+                  <span className="text-slate-500">
                     {item.timestamp.toLocaleTimeString()}
                   </span>
                 </div>
               ))}
               {pendingItems.length > 5 && (
-                <p className="text-xs text-gray-500 text-center">
+                <p className="text-xs text-slate-500 text-center">
                   +{pendingItems.length - 5} more items
                 </p>
               )}

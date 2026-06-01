@@ -356,49 +356,49 @@ function RegistrationsPageContent() {
                 <div className="grid gap-4 md:grid-cols-4">
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Total Registrations
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+                            <div className="text-3xl font-bold text-slate-900">{stats.total}</div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Checked In
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-green-600">{stats.checkedIn}</div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1">
                                 {stats.total > 0 ? Math.round((stats.checkedIn / stats.total) * 100) : 0}% of total
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 New Registrants
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-blue-600">{stats.newRegistrants}</div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <div className="text-3xl font-bold text-primary">{stats.newRegistrants}</div>
+                            <p className="text-xs text-slate-500 mt-1">
                                 {stats.total > 0 ? Math.round((stats.newRegistrants / stats.total) * 100) : 0}% of total
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Paid
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-purple-600">{stats.paid}</div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1">
                                 {stats.total > 0 ? Math.round((stats.paid / stats.total) * 100) : 0}% of total
                             </p>
                         </CardContent>
@@ -471,7 +471,7 @@ function RegistrationsPageContent() {
                         
                         {selectedIds.size > 0 && (
                             <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-slate-700">
                                     {selectedIds.size} selected
                                 </span>
                                 <div className="flex gap-2">
@@ -499,7 +499,7 @@ function RegistrationsPageContent() {
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-gray-50">
+                                        <TableRow className="bg-slate-50">
                                             <TableHead className="w-12">
                                                 <Checkbox
                                                     checked={selectedIds.size > 0 && selectedIds.size === paginated.length}
@@ -509,7 +509,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('full_name')}
-                                                    className="flex items-center font-semibold text-sm hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
                                                 >
                                                     Name
                                                     {getSortIcon('full_name')}
@@ -518,7 +518,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('email')}
-                                                    className="flex items-center font-semibold text-sm hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
                                                 >
                                                     Contact
                                                     {getSortIcon('email')}
@@ -527,7 +527,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('role')}
-                                                    className="flex items-center font-semibold text-sm hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
                                                 >
                                                     Role
                                                     {getSortIcon('role')}
@@ -536,7 +536,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('status')}
-                                                    className="flex items-center font-semibold text-sm hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
                                                 >
                                                     Status
                                                     {getSortIcon('status')}
@@ -545,7 +545,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('payment_status')}
-                                                    className="flex items-center font-semibold text-sm hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
                                                 >
                                                     Payment
                                                     {getSortIcon('payment_status')}
@@ -554,7 +554,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('is_new_registrant')}
-                                                    className="flex items-center font-semibold text-sm hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
                                                 >
                                                     Type
                                                     {getSortIcon('is_new_registrant')}
@@ -563,7 +563,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('created_at')}
-                                                    className="flex items-center font-semibold text-sm hover:text-gray-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
                                                 >
                                                     Date
                                                     {getSortIcon('created_at')}
@@ -584,8 +584,8 @@ function RegistrationsPageContent() {
                                                 <TableRow 
                                                     key={reg.id}
                                                     className={cn(
-                                                        "hover:bg-gray-50 cursor-pointer transition-colors",
-                                                        selectedIds.has(reg.id) && "bg-blue-50"
+                                                        "hover:bg-slate-50 cursor-pointer transition-colors",
+                                                        selectedIds.has(reg.id) && "bg-slate-50"
                                                     )}
                                                     onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
                                                 >
@@ -596,7 +596,7 @@ function RegistrationsPageContent() {
                                                         />
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="font-medium text-gray-900">
+                                                        <div className="font-medium text-slate-900">
                                                             {reg.full_name || `${reg.first_name} ${reg.last_name}`}
                                                         </div>
                                                         {reg.is_new_registrant && (
@@ -612,13 +612,13 @@ function RegistrationsPageContent() {
                                                     <TableCell>
                                                         <div className="space-y-1">
                                                             {reg.email && (
-                                                                <div className="flex items-center text-sm text-gray-600">
+                                                                <div className="flex items-center text-sm text-slate-600">
                                                                     <Mail className="h-3 w-3 mr-1" />
                                                                     {reg.email}
                                                                 </div>
                                                             )}
                                                             {reg.phone && (
-                                                                <div className="flex items-center text-sm text-gray-600">
+                                                                <div className="flex items-center text-sm text-slate-600">
                                                                     <Phone className="h-3 w-3 mr-1" />
                                                                     {reg.phone}
                                                                 </div>
@@ -654,10 +654,10 @@ function RegistrationsPageContent() {
                                                         {reg.is_new_registrant ? (
                                                             <Badge variant="secondary" className="text-xs">New</Badge>
                                                         ) : (
-                                                            <span className="text-xs text-gray-600">Returning</span>
+                                                            <span className="text-xs text-slate-600">Returning</span>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="text-sm text-gray-600">
+                                                    <TableCell className="text-sm text-slate-600">
                                                         {new Date(reg.created_at).toLocaleDateString('en-US', {
                                                             month: 'short',
                                                             day: 'numeric',
@@ -686,7 +686,7 @@ function RegistrationsPageContent() {
                         {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                                <div className="text-sm text-gray-600">
+                                <div className="text-sm text-slate-600">
                                     Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, sorted.length)} of {sorted.length} registrations
                                 </div>
                                 <div className="flex gap-2">

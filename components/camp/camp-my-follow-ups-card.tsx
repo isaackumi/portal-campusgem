@@ -94,8 +94,8 @@ export function CampMyFollowUpsCard({
               className="flex w-full items-center justify-between rounded-lg border border-amber-200 bg-white px-3 py-2 text-left transition hover:border-amber-300 hover:bg-amber-50"
             >
               <div>
-                <p className="text-sm font-semibold text-gray-900">{registration.full_name}</p>
-                <p className="text-xs text-gray-500">{registration.phone}</p>
+                <p className="text-sm font-semibold text-slate-900">{registration.full_name}</p>
+                <p className="text-xs text-slate-500">{registration.phone}</p>
               </div>
               <Badge variant="secondary" className="capitalize">
                 {(registration.follow_up_status ?? 'pending').replace('_', ' ')}

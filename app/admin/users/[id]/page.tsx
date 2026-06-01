@@ -72,7 +72,7 @@ export default function AdminUserDetailPage() {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
         <User className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-        <h2 className="text-lg font-semibold text-gray-900">User not found</h2>
+        <h2 className="text-lg font-semibold text-slate-900">User not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           {error ?? 'This account may have been removed.'}
         </p>

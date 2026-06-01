@@ -189,7 +189,7 @@ export default function MembersPage() {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800'
       case 'elder': return 'bg-purple-100 text-purple-800'
-      case 'deacon': return 'bg-blue-100 text-blue-800'
+      case 'deacon': return 'bg-slate-100 text-slate-700'
       case 'member': return 'bg-green-100 text-green-800'
       default: return 'bg-gray-100 text-gray-800'
     }
@@ -249,8 +249,8 @@ export default function MembersPage() {
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
-            <p className="text-gray-600 mb-4">Please log in to view members.</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Authentication Required</h2>
+            <p className="text-slate-600 mb-4">Please log in to view members.</p>
             <Button onClick={() => router.push('/auth')}>
               Go to Login
             </Button>
@@ -266,8 +266,8 @@ export default function MembersPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Members</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-slate-900">Members</h1>
+            <p className="text-slate-600 mt-1">
               Manage church members and their information
             </p>
           </div>
@@ -501,15 +501,15 @@ export default function MembersPage() {
                 {filteredMembers.map((member) => (
                   <div
                     key={member.id}
-                    className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
+                      <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-primary" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-medium text-gray-900">
+                          <h3 className="font-medium text-slate-900">
                             {member.user?.full_name || 'Unknown'}
                           </h3>
                           <Badge className={getRoleColor(member.user?.role || '')}>
@@ -524,7 +524,7 @@ export default function MembersPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
                           <span className="flex items-center">
                             <Copy className="h-3 w-3 mr-1" />
                             {formatMembershipIdForDisplay(member.user?.membership_id || '')}

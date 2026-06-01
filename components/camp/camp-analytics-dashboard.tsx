@@ -47,7 +47,7 @@ export function AnalyticsBreakdownCard({
 
   return (
     <Card className="border-2">
-      <CardHeader className="border-b bg-gray-50">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2 text-base">
           <Icon className={`h-5 w-5 ${iconClassName}`} />
           {title}
@@ -69,9 +69,9 @@ export function AnalyticsBreakdownCard({
             {slices.map((slice) => (
               <div key={slice.label} className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold text-gray-700">{slice.label}</span>
+                  <span className="text-sm font-semibold text-slate-700">{slice.label}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-gray-900">{slice.count}</span>
+                    <span className="text-sm font-bold text-slate-900">{slice.count}</span>
                     <Badge variant="outline" className="text-xs">
                       {slice.percent}%
                     </Badge>
@@ -137,14 +137,14 @@ export function StatTile({
   return (
     <Card className="border-2">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700">
           {Icon ? <Icon className="h-4 w-4" /> : null}
           {label}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className={`text-3xl font-bold ${valueClassName ?? 'text-gray-900'}`}>{value}</div>
-        {hint ? <p className="mt-1 text-xs text-gray-500">{hint}</p> : null}
+        <div className={`text-3xl font-bold ${valueClassName ?? 'text-slate-900'}`}>{value}</div>
+        {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
       </CardContent>
     </Card>
   )
@@ -167,7 +167,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
           label="Payments received"
           value={`₵${overview.paidAmount.toFixed(0)}`}
           hint={`${overview.paid} paid · ${overview.collectionRate}% collected`}
-          valueClassName="text-blue-600"
+          valueClassName="text-primary"
         />
         <StatTile
           label="Returning campers"
@@ -180,7 +180,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
       <InsightsPanel title="Key patterns this year" insights={report.insights} />
 
       <Card className="border-2">
-        <CardHeader className="border-b bg-gray-50">
+        <CardHeader className="border-b bg-slate-50">
           <CardTitle className="text-base">Registration funnel</CardTitle>
           <CardDescription>Registered → checked in → paid → follow-up completed</CardDescription>
         </CardHeader>
@@ -234,9 +234,9 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
       </div>
 
       <Card className="border-2 lg:col-span-2">
-        <CardHeader className="border-b bg-gray-50">
+        <CardHeader className="border-b bg-slate-50">
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+            <BarChart3 className="h-5 w-5 text-primary" />
             Registration velocity
           </CardTitle>
           <CardDescription>Daily sign-ups and cumulative curve for the full registration window</CardDescription>
@@ -247,7 +247,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
       </Card>
 
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Operations & planning</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Operations & planning</h2>
         <p className="text-sm text-muted-foreground">Medical, follow-up, and payment signals</p>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
@@ -276,7 +276,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
           iconClassName="text-indigo-600"
           slices={operations.followUp}
           total={report.total}
-          barClassName="bg-gradient-to-r from-indigo-500 to-indigo-600"
+          barClassName="bg-gradient-to-r from-slate-800 to-slate-900"
         />
         <AnalyticsBreakdownCard
           title="Payment status"
@@ -291,7 +291,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
 
       {dataQuality.length > 0 ? (
         <Card className="border-2">
-          <CardHeader className="border-b bg-gray-50">
+          <CardHeader className="border-b bg-slate-50">
             <CardTitle className="text-base">Data completeness</CardTitle>
             <CardDescription>How complete registration records are for this year</CardDescription>
           </CardHeader>
@@ -369,7 +369,7 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
       <CampTrendAnalysisPanel trends={combined.trends} revenue={combined.revenue} yearCount={years.length} />
 
       <Card className="border-2">
-        <CardHeader className="border-b bg-gray-50">
+        <CardHeader className="border-b bg-slate-50">
           <CardTitle className="text-base">All-years registration funnel</CardTitle>
           <CardDescription>Combined journey across every camp year in the system</CardDescription>
         </CardHeader>
@@ -379,7 +379,7 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
       </Card>
 
       <Card className="border-2">
-        <CardHeader className="border-b bg-gray-50">
+        <CardHeader className="border-b bg-slate-50">
           <CardTitle className="flex items-center gap-2 text-base">
             <BarChart3 className="h-5 w-5 text-indigo-600" />
             Registrations by camp year
@@ -392,7 +392,7 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
       </Card>
 
       <Card className="border-2">
-        <CardHeader className="border-b bg-gray-50">
+        <CardHeader className="border-b bg-slate-50">
           <CardTitle className="text-base">New vs returning by year</CardTitle>
           <CardDescription>First-timers compared with returning campers each season</CardDescription>
         </CardHeader>
@@ -402,7 +402,7 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
       </Card>
 
       <Card className="border-2">
-        <CardHeader className="border-b bg-gray-50">
+        <CardHeader className="border-b bg-slate-50">
           <CardTitle className="text-base">Year-over-year comparison</CardTitle>
           <CardDescription>Registration volume, growth, check-in, and payments by camp year</CardDescription>
         </CardHeader>
@@ -499,7 +499,7 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Per-year snapshot</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Per-year snapshot</h2>
         <p className="text-sm text-muted-foreground">Quick comparison across each camp year</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

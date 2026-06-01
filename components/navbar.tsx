@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from './providers'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { BrandMark, BrandTitle } from '@/components/brand-mark'
 import {
   Menu,
   X,
@@ -12,11 +13,11 @@ import {
   LogOut,
   Settings,
   Bell,
-  Church,
+  LayoutDashboard,
   Users,
   Calendar,
   DollarSign,
-  MessageSquare
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +29,7 @@ interface NavItem {
 }
 
 const navigation: NavItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: Church },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Members', href: '/members', icon: Users },
   { name: 'Attendance', href: '/attendance', icon: Calendar },
   { name: 'Donations', href: '/financial/donations', icon: DollarSign, roles: ['admin', 'pastor', 'elder', 'finance_officer'] },
@@ -47,29 +48,25 @@ export function Navbar() {
   if (!user) return null
 
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo and main navigation */}
+    <nav className="border-b border-slate-200/80 bg-white/95 backdrop-blur-sm">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 justify-between">
           <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/dashboard" className="flex items-center space-x-2">
-                <Church className="h-8 w-8 text-blue-600" />
-                <span className="font-bold text-xl text-gray-900">
-                  Campus Gem Ministries
-                </span>
+            <div className="flex shrink-0 items-center">
+              <Link href="/dashboard" className="flex items-center gap-3">
+                <BrandMark size="sm" />
+                <BrandTitle light compact={false} className="hidden sm:block" />
               </Link>
             </div>
 
-            {/* Desktop navigation */}
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div className="hidden sm:ml-8 sm:flex sm:space-x-1">
               {filteredNavigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap border-b-2 border-transparent"
+                  className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
                 >
-                  <item.icon className="h-4 w-4 mr-2" />
+                  <item.icon className="mr-2 h-4 w-4" />
                   {item.name}
                 </Link>
               ))}
@@ -88,16 +85,16 @@ export function Navbar() {
             <div className="relative">
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
-                  <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
                       {user.full_name.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div className="hidden md:block">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-slate-900">
                       {user.full_name}
                     </p>
-                    <p className="text-xs text-gray-500 capitalize">
+                    <p className="text-xs capitalize text-slate-500">
                       {user.role.replace('_', ' ')}
                     </p>
                   </div>
@@ -135,7 +132,7 @@ export function Navbar() {
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-500 hover:text-gray-600"
+              className="text-slate-500 hover:text-slate-700"
             >
               {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -150,14 +147,14 @@ export function Navbar() {
             <div className="space-y-4">
               {/* User info */}
               <div className="flex items-center space-x-3 pb-4 border-b">
-                <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
+                <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
                   <span className="text-white font-medium">
                     {user.full_name.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{user.full_name}</p>
-                  <p className="text-sm text-gray-500 capitalize">
+                  <p className="font-medium text-slate-900">{user.full_name}</p>
+                  <p className="text-sm capitalize text-slate-500">
                     {user.role.replace('_', ' ')}
                   </p>
                 </div>
@@ -169,7 +166,7 @@ export function Navbar() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+                    className="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     onClick={() => setIsOpen(false)}
                   >
                     <item.icon className="h-4 w-4 mr-3" />

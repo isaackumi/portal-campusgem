@@ -210,21 +210,21 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
               {/* Search Results */}
               {searchResults.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm text-gray-700">Search Results:</h4>
+                  <h4 className="font-medium text-sm text-slate-700">Search Results:</h4>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {searchResults.map((member) => (
                       <div
                         key={member.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer"
                         onClick={() => handleSelectMember(member)}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="h-5 w-5 text-blue-600" />
+                          <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-primary" />
                           </div>
                           <div>
                             <p className="font-medium">{member.full_name}</p>
-                            <div className="text-sm text-gray-500 space-x-2">
+                            <div className="text-sm text-slate-500 space-x-2">
                               {member.membership_id && (
                                 <span>{formatMembershipIdForDisplay(member.membership_id)}</span>
                               )}
@@ -247,15 +247,15 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
             // Check-in Phase
             <div className="space-y-4">
               {/* Selected Member */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-blue-600" />
+                    <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center">
+                      <User className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-medium text-lg">{selectedMember.full_name}</h3>
-                      <div className="text-sm text-gray-600 space-x-2">
+                      <div className="text-sm text-slate-600 space-x-2">
                         {selectedMember.membership_id && (
                           <span>{formatMembershipIdForDisplay(selectedMember.membership_id)}</span>
                         )}
@@ -300,7 +300,7 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
                         className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${
                           selectedDependants.includes(dependant.id)
                             ? 'bg-green-50 border-green-200'
-                            : 'hover:bg-gray-50'
+                            : 'hover:bg-slate-50'
                         }`}
                         onClick={() => handleDependantToggle(dependant.id)}
                       >
@@ -315,7 +315,7 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
                         </div>
                         <div className="flex-1">
                           <p className="font-medium">{dependant.first_name}</p>
-                          <p className="text-sm text-gray-500 capitalize">{dependant.relationship}</p>
+                          <p className="text-sm text-slate-500 capitalize">{dependant.relationship}</p>
                         </div>
                       </div>
                     ))}
@@ -347,9 +347,9 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
           )}
 
           {/* Instructions */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2">Instructions:</h4>
-            <ul className="text-sm text-gray-600 space-y-1">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+            <h4 className="font-medium text-slate-900 mb-2">Instructions:</h4>
+            <ul className="text-sm text-slate-600 space-y-1">
               <li>• Search for a member by ID, phone, or name</li>
               <li>• Select the member from search results</li>
               <li>• Choose service type and optional family members</li>

@@ -39,7 +39,7 @@ const ACTIVITY_TYPES = [
 ]
 
 const STATUS_COLORS = {
-    scheduled: 'bg-blue-100 text-blue-800 border-blue-300',
+    scheduled: 'bg-slate-100 text-slate-700 border-slate-300',
     in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-300',
     completed: 'bg-green-100 text-green-800 border-green-300',
     cancelled: 'bg-red-100 text-red-800 border-red-300',
@@ -475,7 +475,7 @@ export default function CampActivitiesPage() {
                     <div className="space-y-6">
                         {sortedDates.map(date => (
                             <Card key={date} className="border-2">
-                                <CardHeader className="bg-gray-50 border-b">
+                                <CardHeader className="bg-slate-50 border-b">
                                     <CardTitle className="flex items-center gap-2">
                                         <Calendar className="h-5 w-5" />
                                         {new Date(date).toLocaleDateString('en-US', {
@@ -503,25 +503,25 @@ export default function CampActivitiesPage() {
                                                                     <div className={cn(
                                                                         "p-2 rounded-lg",
                                                                         activity.activity_type === 'worship' && "bg-purple-100 text-purple-600",
-                                                                        activity.activity_type === 'session' && "bg-blue-100 text-blue-600",
+                                                                        activity.activity_type === 'session' && "bg-slate-100 text-primary",
                                                                         activity.activity_type === 'workshop' && "bg-green-100 text-green-600",
                                                                         activity.activity_type === 'meal' && "bg-orange-100 text-orange-600",
-                                                                        activity.activity_type === 'break' && "bg-gray-100 text-gray-600",
+                                                                        activity.activity_type === 'break' && "bg-gray-100 text-slate-600",
                                                                         activity.activity_type === 'prayer' && "bg-red-100 text-red-600",
-                                                                        !['worship', 'session', 'workshop', 'meal', 'break', 'prayer'].includes(activity.activity_type) && "bg-gray-100 text-gray-600"
+                                                                        !['worship', 'session', 'workshop', 'meal', 'break', 'prayer'].includes(activity.activity_type) && "bg-gray-100 text-slate-600"
                                                                     )}>
                                                                         <TypeIcon className="h-5 w-5" />
                                                                     </div>
                                                                     <div className="flex-1">
                                                                         <div className="flex items-center gap-2 mb-1">
-                                                                            <h3 className="font-semibold text-lg text-gray-900">
+                                                                            <h3 className="font-semibold text-lg text-slate-900">
                                                                                 {activity.title}
                                                                             </h3>
                                                                             <Badge variant="outline" className={cn(STATUS_COLORS[activity.status])}>
                                                                                 {activity.status.replace('_', ' ')}
                                                                             </Badge>
                                                                         </div>
-                                                                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mt-2">
+                                                                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 mt-2">
                                                                             <div className="flex items-center gap-1">
                                                                                 <Clock className="h-4 w-4" />
                                                                                 <span>
@@ -562,7 +562,7 @@ export default function CampActivitiesPage() {
                                                                             )}
                                                                         </div>
                                                                         {activity.description && (
-                                                                            <p className="text-sm text-gray-700 mt-2">{activity.description}</p>
+                                                                            <p className="text-sm text-slate-700 mt-2">{activity.description}</p>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -603,29 +603,29 @@ export default function CampActivitiesPage() {
                 <div className="grid gap-4 md:grid-cols-4">
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Total Activities
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-gray-900">{activities.length}</div>
+                            <div className="text-3xl font-bold text-slate-900">{activities.length}</div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Scheduled
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-blue-600">
+                            <div className="text-3xl font-bold text-primary">
                                 {activities.filter(a => a.status === 'scheduled').length}
                             </div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Completed
                             </CardTitle>
                         </CardHeader>
@@ -637,7 +637,7 @@ export default function CampActivitiesPage() {
                     </Card>
                     <Card className="border-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-700">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Unique Dates
                             </CardTitle>
                         </CardHeader>

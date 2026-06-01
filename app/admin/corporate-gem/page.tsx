@@ -185,7 +185,7 @@ export default function CorporateGemAdminPage() {
               Back to Admin
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">Corporate Gem</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Corporate Gem</h1>
               <p className="mt-1 max-w-2xl text-muted-foreground">
                 Graduates and working professionals — executives, leaders, members, activities, and forms. Promote
                 students here when they finish campus.
@@ -215,7 +215,7 @@ export default function CorporateGemAdminPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-3 p-5">
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-primary" />
               <div>
                 <p className="text-sm text-muted-foreground">Members</p>
                 <p className="text-2xl font-bold">{totals.members}</p>

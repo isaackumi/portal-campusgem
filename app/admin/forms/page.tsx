@@ -393,7 +393,7 @@ function FormsAdminContent() {
   const showGridSkeleton = isLoading && forms.length === 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/40">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/40">
       <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:space-y-8 sm:p-6">
         <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
@@ -547,7 +547,7 @@ function FormsAdminContent() {
           </Card>
           <Card className="bg-white/90 shadow-sm">
             <CardContent className="flex items-center gap-3 p-5">
-              <BarChart3 className="h-8 w-8 text-blue-600" />
+              <BarChart3 className="h-8 w-8 text-primary" />
               <div>
                 <p className="text-sm text-muted-foreground">Total responses</p>
                 <p className="text-2xl font-bold">{stats.responses}</p>
@@ -600,7 +600,7 @@ function FormsAdminContent() {
           </CardContent>
         </Card>
 
-        <Card className="border-indigo-200/80 bg-gradient-to-r from-indigo-50 to-violet-50/50 shadow-sm">
+        <Card className="border-slate-200/80 bg-gradient-to-r from-slate-50 to-slate-100/50 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <ClipboardList className="h-5 w-5 text-indigo-700" />
@@ -630,7 +630,7 @@ function FormsAdminContent() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 variant="secondary"
-                className="min-h-11 border-indigo-300 bg-white hover:bg-indigo-50"
+                className="min-h-11 border-indigo-300 bg-white hover:bg-slate-50"
                 disabled={creatingCampMeetingTemplate}
                 onClick={() => void handleCreateCampMeetingRegistrationTemplate()}
               >
@@ -729,7 +729,7 @@ function FormsAdminContent() {
                           Member registration
                         </Badge>
                       ) : isCampMeeting ? (
-                        <Badge className="bg-indigo-100 font-normal text-indigo-900 hover:bg-indigo-100">
+                        <Badge className="bg-indigo-100 font-normal text-slate-900 hover:bg-indigo-100">
                           Camp meeting
                         </Badge>
                       ) : form.category ? (

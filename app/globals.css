@@ -16,26 +16,30 @@
   }
 
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 98%;
+    --foreground: 222.2 47.4% 11.2%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222.2 47.4% 11.2%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    /* Slate shell — matches sidebar */
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215 16% 47%;
     --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222.2 47.4% 11.2%;
+    --radius: 0.625rem;
+    --brand-accent: 43 96% 56%;
+    --brand-surface: 222.2 47.4% 11.2%;
+    --brand-muted: 215 16% 47%;
   }
 
   .dark {
@@ -66,7 +70,55 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .app-page-title {
+    @apply text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl;
+  }
+
+  .app-page-description {
+    @apply text-sm text-slate-600;
+  }
+
+  .app-stat-value {
+    @apply text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl;
+  }
+
+  .app-card {
+    @apply rounded-xl border border-slate-200/80 bg-white shadow-sm;
+  }
+
+  .app-accent-bar {
+    @apply h-1 w-10 rounded-full bg-amber-400;
+  }
+
+  .app-info-panel {
+    @apply rounded-lg border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-700;
+  }
+
+  .app-active-pill {
+    @apply bg-slate-900 text-white shadow-sm;
+  }
+
+  .app-progress-fill {
+    @apply h-full rounded-full bg-slate-900 transition-all duration-300;
+  }
+}
+
+@layer utilities {
+  .text-brand-accent {
+    color: hsl(var(--brand-accent));
+  }
+
+  .bg-brand-accent {
+    background-color: hsl(var(--brand-accent));
+  }
+
+  .bg-brand-surface {
+    background-color: hsl(var(--brand-surface));
   }
 }
 

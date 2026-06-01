@@ -236,7 +236,7 @@ export default function AddMemberPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-pulse text-blue-600 text-lg">Loading...</div>
+          <div className="animate-pulse text-primary text-lg">Loading...</div>
         </div>
       </DashboardLayout>
     )
@@ -313,7 +313,7 @@ export default function AddMemberPage() {
                   id="membershipId" 
                   value={membershipId} 
                   readOnly 
-                  className="bg-gray-50 font-mono text-blue-600 font-semibold" 
+                  className="bg-slate-50 font-mono text-primary font-semibold" 
                 />
                 {membershipId && (
                   <Button
@@ -336,7 +336,7 @@ export default function AddMemberPage() {
                 )}
               </div>
               {membershipId && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   💡 This ID is auto-generated and can be copied for records
                 </p>
               )}
@@ -585,12 +585,12 @@ export default function AddMemberPage() {
               {formData.special_skills && formData.special_skills.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.special_skills.map((skill, index) => (
-                    <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm flex items-center gap-1">
+                    <span key={index} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-sm flex items-center gap-1">
                       {skill}
                       <button
                         type="button"
                         onClick={() => removeArrayItem('special_skills', skill)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-primary hover:text-slate-700"
                       >
                         ×
                       </button>
@@ -657,12 +657,12 @@ export default function AddMemberPage() {
               variant="ghost" 
               size="sm" 
               onClick={() => router.push('/members')}
-              className="mr-3 text-gray-600 hover:text-gray-900"
+              className="mr-3 text-slate-600 hover:text-slate-900"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Members
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+            <h1 className="text-3xl font-bold text-slate-900">
               Add New Member
             </h1>
           </div>
@@ -680,14 +680,14 @@ export default function AddMemberPage() {
 
         {/* Enhanced Progress Steps */}
         <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between">
               {steps.map((step, index) => (
                 <div key={step.key} className="flex items-center">
                   <div className="flex flex-col items-center">
                     <div className={`relative flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
                       currentStep === step.key 
-                        ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-110' 
+                        ? 'border-slate-900 bg-primary text-white shadow-lg scale-110' 
                         : isStepComplete(step.key)
                         ? 'border-green-600 bg-green-600 text-white shadow-md'
                         : 'border-gray-300 bg-white text-gray-400 hover:border-gray-400'
@@ -698,12 +698,12 @@ export default function AddMemberPage() {
                         <span className="text-sm font-bold">{index + 1}</span>
                       )}
                       {currentStep === step.key && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full border-2 border-white animate-pulse"></div>
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-white animate-pulse"></div>
                       )}
                     </div>
                     <div className="mt-2 text-center max-w-24">
                       <p className={`text-xs font-medium transition-colors ${
-                        currentStep === step.key ? 'text-blue-600' : isStepComplete(step.key) ? 'text-green-600' : 'text-gray-500'
+                        currentStep === step.key ? 'text-primary' : isStepComplete(step.key) ? 'text-green-600' : 'text-slate-500'
                       }`}>
                         {step.title}
                       </p>
@@ -712,11 +712,11 @@ export default function AddMemberPage() {
                   {index < steps.length - 1 && (
                     <div className={`flex-1 h-1 mx-6 rounded-full transition-colors duration-300 ${
                       isStepComplete(steps[index + 1].key) ? 'bg-green-600' : 
-                      currentStep === steps[index + 1].key ? 'bg-blue-200' : 'bg-gray-200'
+                      currentStep === steps[index + 1].key ? 'bg-slate-200' : 'bg-gray-200'
                     }`}>
                       <div className={`h-full rounded-full transition-all duration-500 ${
                         isStepComplete(steps[index + 1].key) ? 'w-full bg-green-600' : 
-                        currentStep === steps[index + 1].key ? 'w-1/2 bg-blue-400' : 'w-0'
+                        currentStep === steps[index + 1].key ? 'w-1/2 bg-amber-400' : 'w-0'
                       }`}></div>
                     </div>
                   )}
@@ -725,17 +725,17 @@ export default function AddMemberPage() {
             </div>
             
             {/* Progress Summary */}
-            <div className="mt-6 pt-4 border-t border-gray-100">
+            <div className="mt-6 pt-4 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Overall Progress</p>
-                  <p className="text-xs text-gray-500">Complete all steps to finish onboarding</p>
+                  <p className="text-sm font-medium text-slate-700">Overall Progress</p>
+                  <p className="text-xs text-slate-500">Complete all steps to finish onboarding</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-blue-600">
+                  <p className="text-lg font-bold text-primary">
                     {Math.round((steps.findIndex(s => s.key === currentStep) + 1) / steps.length * 100)}%
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-500">
                     Step {steps.findIndex(s => s.key === currentStep) + 1} of {steps.length}
                   </p>
                 </div>
@@ -755,7 +755,7 @@ export default function AddMemberPage() {
               {currentStep === 'additional' && <FileText className="h-6 w-6 mr-2" />}
               {steps.find(s => s.key === currentStep)?.title}
             </CardTitle>
-            <p className="text-gray-600">
+            <p className="text-slate-600">
               {steps.find(s => s.key === currentStep)?.description}
             </p>
           </CardHeader>
@@ -773,7 +773,7 @@ export default function AddMemberPage() {
               </Button>
               
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-slate-500">
                   Step {steps.findIndex(s => s.key === currentStep) + 1} of {steps.length}
                 </span>
               </div>
@@ -782,7 +782,7 @@ export default function AddMemberPage() {
                 <Button 
                   onClick={handleSubmit} 
                   disabled={!canProceed || loading}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className=""
                 >
                   {loading ? (
                     <div className="flex items-center">
@@ -800,7 +800,7 @@ export default function AddMemberPage() {
                 <Button 
                   onClick={nextStep}
                   disabled={!canProceed}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className=""
                 >
                   Next
                   <ArrowRight className="h-4 w-4 ml-2" />

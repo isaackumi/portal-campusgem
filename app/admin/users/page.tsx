@@ -130,8 +130,8 @@ export default function UsersManagementPage() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Access Denied</h2>
+            <p className="text-slate-600 mb-4">You don't have permission to access this page.</p>
             <Button onClick={() => router.push('/dashboard')}>
               Go to Dashboard
             </Button>
@@ -364,7 +364,7 @@ export default function UsersManagementPage() {
       case 'pastor': return 'bg-purple-100 text-purple-800'
       case 'elder': return 'bg-amber-100 text-amber-900 border border-amber-200'
       case 'finance_officer': return 'bg-cyan-100 text-cyan-900 border border-cyan-200'
-      case 'member': return 'bg-blue-100 text-blue-800 border border-blue-200'
+      case 'member': return 'bg-slate-100 text-slate-700 border border-slate-200'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -373,8 +373,8 @@ export default function UsersManagementPage() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading users...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading users...</p>
         </div>
       </div>
     )
@@ -386,8 +386,8 @@ export default function UsersManagementPage() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <UserX className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Users</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Error Loading Users</h2>
+            <p className="text-slate-600 mb-4">{error}</p>
             <Button onClick={() => refetch()}>
               Try Again
             </Button>
@@ -403,12 +403,12 @@ export default function UsersManagementPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-              <p className="text-gray-600 mt-2">Manage church members and their roles</p>
+              <h1 className="text-3xl font-bold text-slate-900">User Management</h1>
+              <p className="text-slate-600 mt-2">Manage church members and their roles</p>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
+                <Button className="">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add User
                 </Button>
@@ -541,10 +541,10 @@ export default function UsersManagementPage() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-primary" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Users</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-sm font-medium text-slate-600">Total Users</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
                 </div>
               </div>
             </CardContent>
@@ -555,8 +555,8 @@ export default function UsersManagementPage() {
               <div className="flex items-center">
                 <Crown className="h-8 w-8 text-red-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Admins</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.admins}</p>
+                  <p className="text-sm font-medium text-slate-600">Admins</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.admins}</p>
                 </div>
               </div>
             </CardContent>
@@ -567,8 +567,8 @@ export default function UsersManagementPage() {
               <div className="flex items-center">
                 <Shield className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pastors</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pastors}</p>
+                  <p className="text-sm font-medium text-slate-600">Pastors</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.pastors}</p>
                 </div>
               </div>
             </CardContent>
@@ -579,8 +579,8 @@ export default function UsersManagementPage() {
               <div className="flex items-center">
                 <UserCheck className="h-8 w-8 text-yellow-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Elders</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.elders}</p>
+                  <p className="text-sm font-medium text-slate-600">Elders</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.elders}</p>
                 </div>
               </div>
             </CardContent>
@@ -591,8 +591,8 @@ export default function UsersManagementPage() {
               <div className="flex items-center">
                 <User className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Members</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.members}</p>
+                  <p className="text-sm font-medium text-slate-600">Members</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.members}</p>
                 </div>
               </div>
             </CardContent>
@@ -657,28 +657,28 @@ export default function UsersManagementPage() {
             {filteredUsers.length === 0 ? (
               <div className="text-center py-12">
                 <UserX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-                <p className="text-gray-600">Try adjusting your search or filters.</p>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No users found</h3>
+                <p className="text-slate-600">Try adjusting your search or filters.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {filteredUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex min-w-0 items-center gap-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
                         {getRoleIcon(user.role)}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-medium text-gray-900">{user.full_name}</h3>
+                          <h3 className="font-medium text-slate-900">{user.full_name}</h3>
                           <Badge className={getRoleColor(user.role)}>
                             {user.role}
                           </Badge>
                         </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="flex items-center space-x-4 text-sm text-slate-500">
                           {user.phone && (
                             <span className="flex items-center">
                               <Phone className="h-3 w-3 mr-1" />

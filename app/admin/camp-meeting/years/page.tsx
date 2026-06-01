@@ -400,7 +400,7 @@ export default function CampYearsPage() {
                             Back
                         </Button>
                         <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+                            <h1 className="text-4xl font-bold tracking-tight text-slate-900">
                                 Camp Years Management
                             </h1>
                             <p className="text-muted-foreground mt-1">
@@ -543,11 +543,11 @@ export default function CampYearsPage() {
 
                 {/* Overall Statistics */}
                 {activeYear ? (
-                    <Card className="border-2 border-blue-200 bg-blue-50/60">
+                    <Card className="border-2 border-slate-200 bg-slate-50/60">
                         <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p className="text-sm font-medium text-blue-900">Active camp year</p>
-                                <p className="text-lg font-semibold text-blue-950">
+                                <p className="text-sm font-medium text-slate-900">Active camp year</p>
+                                <p className="text-lg font-semibold text-slate-900">
                                     {activeYear.year}
                                     {activeYear.theme ? ` · ${activeYear.theme}` : ''}
                                 </p>
@@ -624,12 +624,12 @@ export default function CampYearsPage() {
                             <Card 
                                 key={year.id} 
                                 className={`relative overflow-hidden transition-all hover:shadow-lg cursor-pointer ${
-                                    year.is_active ? 'border-blue-500 border-2 shadow-md' : ''
+                                    year.is_active ? 'border-slate-900 border-2 shadow-md' : ''
                                 }`}
                                 onClick={() => router.push(`/admin/camp-meeting/registrations?year=${year.id}`)}
                             >
                                 {year.is_active && (
-                                    <div className="absolute top-0 right-0 bg-blue-600 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
+                                    <div className="absolute top-0 right-0 bg-primary text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
                                         ACTIVE
                                     </div>
                                 )}
@@ -653,7 +653,7 @@ export default function CampYearsPage() {
                                     </div>
 
                                     {/* Registration Status */}
-                                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                                         <span className="text-sm font-medium">Registration:</span>
                                         <div className="flex items-center gap-2">
                                             {year.registration_open ? (
@@ -677,9 +677,9 @@ export default function CampYearsPage() {
                                         </div>
                                     ) : stats ? (
                                         <div className="grid grid-cols-2 gap-2 text-sm">
-                                            <div className="p-2 bg-blue-50 rounded">
-                                                <div className="font-semibold text-blue-900">{stats.totalRegistrations}</div>
-                                                <div className="text-xs text-blue-700">Total</div>
+                                            <div className="p-2 bg-slate-50 rounded">
+                                                <div className="font-semibold text-slate-900">{stats.totalRegistrations}</div>
+                                                <div className="text-xs text-slate-700">Total</div>
                                             </div>
                                             <div className="p-2 bg-green-50 rounded">
                                                 <div className="font-semibold text-green-900">{stats.checkedIn}</div>

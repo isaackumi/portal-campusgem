@@ -294,7 +294,7 @@ export default function CampYearHubPage() {
             Camp years
           </Button>
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-blue-600 p-3 text-white shadow-lg shadow-blue-600/20">
+            <div className="rounded-2xl bg-primary p-3 text-white shadow-lg shadow-slate-900/20">
               <Sparkles className="h-6 w-6" />
             </div>
             <div>
@@ -362,7 +362,7 @@ export default function CampYearHubPage() {
                     </div>
                     <div className="h-2 rounded-full bg-muted">
                       <div
-                        className="h-2 rounded-full bg-blue-600"
+                        className="h-2 rounded-full bg-primary"
                         style={{ width: `${insights.total ? (count / insights.total) * 100 : 0}%` }}
                       />
                     </div>
@@ -373,8 +373,8 @@ export default function CampYearHubPage() {
             <Card>
               <CardHeader><CardTitle>Reachability</CardTitle></CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl bg-blue-50 p-4"><Phone className="mb-2 h-5 w-5 text-blue-600" /><p className="text-2xl font-bold">{insights.withPhone}</p><p className="text-sm text-muted-foreground">With phone</p></div>
-                <div className="rounded-xl bg-indigo-50 p-4"><Mail className="mb-2 h-5 w-5 text-indigo-600" /><p className="text-2xl font-bold">{insights.withEmail}</p><p className="text-sm text-muted-foreground">With email</p></div>
+                <div className="rounded-xl bg-slate-50 p-4"><Phone className="mb-2 h-5 w-5 text-primary" /><p className="text-2xl font-bold">{insights.withPhone}</p><p className="text-sm text-muted-foreground">With phone</p></div>
+                <div className="rounded-xl bg-slate-50 p-4"><Mail className="mb-2 h-5 w-5 text-indigo-600" /><p className="text-2xl font-bold">{insights.withEmail}</p><p className="text-sm text-muted-foreground">With email</p></div>
                 <div className="rounded-xl bg-emerald-50 p-4"><Users className="mb-2 h-5 w-5 text-emerald-600" /><p className="text-2xl font-bold">{insights.newRegistrants}</p><p className="text-sm text-muted-foreground">First-time campers</p></div>
                 <div className="rounded-xl bg-amber-50 p-4"><Users className="mb-2 h-5 w-5 text-amber-600" /><p className="text-2xl font-bold">{insights.returning}</p><p className="text-sm text-muted-foreground">Returning campers</p></div>
               </CardContent>
