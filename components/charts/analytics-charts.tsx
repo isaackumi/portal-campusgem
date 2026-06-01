@@ -445,6 +445,129 @@ export function AnalyticsFunnelRateTrendChart({ rows, height = 280 }: { rows: Fu
 
 type CompletionRow = { name: string; rate: number; answered: number; total: number }
 
+type VelocityOverlayInput = {
+  year: number
+  theme?: string
+  points: Array<{ dayIndex: number; cumulative: number }>
+}
+
+function cumulativeAtDay(points: Array<{ dayIndex: number; cumulative: number }>, day: number): number {
+  let last = 0
+  for (const point of points) {
+    if (point.dayIndex > day) break
+    last = point.cumulative
+  }
+  return last
+}
+
+/** Compare cumulative registration curves across camp years (days since each year's first sign-up). */
+export function AnalyticsVelocityOverlayChart({
+  series,
+  height = 320,
+}: {
+  series: VelocityOverlayInput[]
+  height?: number
+}) {
+  const active = series.filter((s) => s.points.length > 0)
+  if (active.length === 0) {
+    return <ChartContainer empty emptyMessage="No registration timelines to compare" height={height} />
+  }
+
+  const maxDay = Math.min(
+    90,
+    Math.max(...active.flatMap((s) => s.points.map((p) => p.dayIndex)), 0)
+  )
+
+  const data = Array.from({ length: maxDay + 1 }, (_, dayIndex) => {
+    const point: Record<string, string | number> = {
+      name: dayIndex === 0 ? 'Day 1' : dayIndex % 14 === 0 ? `Day ${dayIndex + 1}` : `+${dayIndex}d`,
+    }
+    for (const row of active) {
+      point[`y${row.year}`] = cumulativeAtDay(row.points, dayIndex)
+    }
+    return point
+  })
+
+  return (
+    <ChartContainer height={height}>
+      <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 4 }}>
+        <CartesianGrid {...CHART_GRID} />
+        <XAxis
+          dataKey="name"
+          tick={CHART_AXIS.tick}
+          axisLine={CHART_AXIS.axisLine}
+          tickLine={CHART_AXIS.tickLine}
+          interval="preserveStartEnd"
+          minTickGap={28}
+        />
+        <YAxis tick={CHART_AXIS.tick} axisLine={false} tickLine={false} width={40} tickFormatter={formatCompactNumber} />
+        <Tooltip content={<AnalyticsChartTooltip valueFormatter={(v) => v.toLocaleString()} />} />
+        <Legend formatter={(v) => String(v).replace(/^y/, 'Camp ')} />
+        {active.map((row, i) => (
+          <Line
+            key={row.year}
+            type="monotone"
+            dataKey={`y${row.year}`}
+            name={`y${row.year}`}
+            stroke={chartColor(i)}
+            strokeWidth={2.5}
+            dot={false}
+          />
+        ))}
+      </ComposedChart>
+    </ChartContainer>
+  )
+}
+
+type CohortInput = {
+  cohortYear: number
+  cohortSize: number
+  returnsByYear: Array<{ year: number; yearsSinceFirst: number; count: number; rate: number }>
+}
+
+/** Retention curves for first-time camper cohorts (return % by years since first camp). */
+export function AnalyticsCohortRetentionChart({ cohorts, height = 300 }: { cohorts: CohortInput[]; height?: number }) {
+  const active = cohorts.filter((c) => c.cohortSize > 0)
+  if (active.length === 0) {
+    return <ChartContainer empty emptyMessage="No cohort data" height={height} />
+  }
+
+  const maxOffset = Math.max(...active.flatMap((c) => c.returnsByYear.map((r) => r.yearsSinceFirst)), 0)
+  const data = Array.from({ length: maxOffset + 1 }, (_, yearsSinceFirst) => {
+    const point: Record<string, string | number> = {
+      name: yearsSinceFirst === 0 ? 'Cohort year' : `+${yearsSinceFirst} yr`,
+    }
+    for (const cohort of active) {
+      const match = cohort.returnsByYear.find((r) => r.yearsSinceFirst === yearsSinceFirst)
+      point[`c${cohort.cohortYear}`] = match?.rate ?? 0
+    }
+    return point
+  })
+
+  return (
+    <ChartContainer height={height}>
+      <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 4 }}>
+        <CartesianGrid {...CHART_GRID} />
+        <XAxis dataKey="name" tick={CHART_AXIS.tick} axisLine={CHART_AXIS.axisLine} tickLine={CHART_AXIS.tickLine} />
+        <YAxis tick={CHART_AXIS.tick} axisLine={false} tickLine={false} width={36} domain={[0, 100]} unit="%" />
+        <Tooltip content={<AnalyticsChartTooltip valueFormatter={(v) => `${v}%`} />} />
+        <Legend formatter={(v) => `${String(v).replace(/^c/, '')} cohort`} />
+        {active.map((cohort, i) => (
+          <Line
+            key={cohort.cohortYear}
+            type="monotone"
+            dataKey={`c${cohort.cohortYear}`}
+            name={`c${cohort.cohortYear}`}
+            stroke={chartColor(i)}
+            strokeWidth={2.5}
+            dot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
+          />
+        ))}
+      </ComposedChart>
+    </ChartContainer>
+  )
+}
+
 export function AnalyticsCompletionChart({ rows, height }: { rows: CompletionRow[]; height?: number }) {
   const computedHeight = height ?? Math.max(200, rows.length * 36 + 56)
   const data = rows.map((r) => ({

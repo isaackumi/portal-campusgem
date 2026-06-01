@@ -1,6 +1,6 @@
 'use client'
 
-import type { CampAnalyticsReport, CampYearAnalyticsReport } from '@/lib/camp/analytics'
+import type { CampAnalyticsReport, CampTrendAnalysis, CampYearAnalyticsReport } from '@/lib/camp/analytics'
 
 function escapeCsv(value: string | number | null | undefined): string {
   const text = value == null ? '' : String(value)
@@ -80,6 +80,94 @@ function yearReportSections(report: CampYearAnalyticsReport): string[] {
   return lines
 }
 
+function trendReportSections(trends: CampTrendAnalysis): string[] {
+  const lines: string[] = []
+
+  if (trends.alerts.length > 0) {
+    lines.push(
+      ...section('Trend alerts', [
+        row(['Severity', 'Title', 'Detail']),
+        ...trends.alerts.map((alert) => row([alert.severity, alert.title, alert.detail])),
+      ])
+    )
+  }
+
+  if (trends.kpiByYear.length > 0) {
+    lines.push(
+      ...section('KPI trends by year', [
+        row([
+          'Year',
+          'Theme',
+          'Total',
+          'Growth %',
+          'Check-in %',
+          'Return %',
+          'Collection %',
+          'Data quality %',
+          'Follow-up done %',
+        ]),
+        ...trends.kpiByYear.map((item) =>
+          row([
+            item.year,
+            item.theme ?? '',
+            item.total,
+            item.growthPercent ?? '',
+            item.checkInRate,
+            item.returnRate,
+            item.collectionRate,
+            item.dataQualityScore,
+            item.followUpCompletedRate,
+          ])
+        ),
+      ])
+    )
+  }
+
+  if (trends.cohortRetention.some((c) => c.cohortSize > 0)) {
+    lines.push(
+      ...section('Cohort retention (first-time campers)', [
+        row(['Cohort year', 'Cohort size', 'Return year', 'Years since first', 'Returned count', 'Return rate %']),
+        ...trends.cohortRetention.flatMap((cohort) =>
+          cohort.returnsByYear.map((ret) =>
+            row([cohort.cohortYear, cohort.cohortSize, ret.year, ret.yearsSinceFirst, ret.count, ret.rate])
+          )
+        ),
+      ])
+    )
+  }
+
+  if (trends.velocityOverlay.some((s) => s.points.length > 0)) {
+    lines.push(
+      ...section('Registration velocity overlay (cumulative by day since first sign-up)', [
+        row(['Camp year', 'Day index', 'Day label', 'Cumulative registrations']),
+        ...trends.velocityOverlay.flatMap((series) =>
+          series.points.map((point) =>
+            row([series.year, point.dayIndex, point.label, point.cumulative])
+          )
+        ),
+      ])
+    )
+  }
+
+  return lines
+}
+
+export function buildCampTrendReportCsv(trends: CampTrendAnalysis): string {
+  const header = row(['Campus Gem — Camp Trend Analysis Export', new Date().toISOString()])
+  return [header, '', ...trendReportSections(trends)].join('\n')
+}
+
+export function downloadCampTrendReportCsv(trends: CampTrendAnalysis): void {
+  const content = buildCampTrendReportCsv(trends)
+  const blob = new Blob(['\uFEFF', content], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `camp-trend-analysis-${new Date().toISOString().slice(0, 10)}.csv`
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
+
 function multiYearSections(report: Extract<CampAnalyticsReport, { scope: 'all' }>): string[] {
   const { combined, years, insights } = report
   const lines: string[] = []
@@ -135,6 +223,8 @@ function multiYearSections(report: Extract<CampAnalyticsReport, { scope: 'all' }
   lines.push(...breakdownSection('Combined age (unique campers)', combined.demographics.ageBracket))
   lines.push(...breakdownSection('Combined education (unique campers)', combined.demographics.educationBand))
   lines.push(...breakdownSection('Combined residence (unique campers)', combined.demographics.residence))
+
+  lines.push(...trendReportSections(combined.trends))
 
   for (const yearReport of years) {
     lines.push(`--- Camp ${yearReport.year} ---`)

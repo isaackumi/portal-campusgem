@@ -96,6 +96,33 @@ export type CampTrendAnalysis = {
     educationBand: DemographicTrendRow[]
     residence: DemographicTrendRow[]
   }
+  /** Cumulative sign-ups by days since each year's first registration. */
+  velocityOverlay: VelocityOverlaySeries[]
+  /** First-time camper cohorts and how many return in later years. */
+  cohortRetention: CohortRetentionRow[]
+  /** Participant / worker / volunteer mix over years. */
+  roleTrends: DemographicTrendRow[]
+  /** Automated year-over-year change flags. */
+  alerts: TrendAlert[]
+}
+
+export type VelocityOverlaySeries = {
+  year: number
+  theme?: string
+  points: Array<{ dayIndex: number; label: string; cumulative: number }>
+}
+
+export type CohortRetentionRow = {
+  cohortYear: number
+  cohortSize: number
+  returnsByYear: Array<{ year: number; yearsSinceFirst: number; count: number; rate: number }>
+}
+
+export type TrendAlert = {
+  id: string
+  severity: 'warning' | 'info' | 'success'
+  title: string
+  detail: string
 }
 
 export type CombinedRevenueSummary = {
@@ -437,9 +464,174 @@ function buildOperationsMetricSeries(yearReports: CampYearAnalyticsReport[]): Me
   ]
 }
 
+function buildVelocityOverlay(
+  yearReports: CampYearAnalyticsReport[],
+  registrationsByYearId: Record<string, CampRegistration[]>
+): VelocityOverlaySeries[] {
+  const sorted = [...yearReports].sort((a, b) => a.year - b.year)
+
+  return sorted.map((report) => {
+    const regs = registrationsByYearId[report.yearId] ?? []
+    if (regs.length === 0) {
+      return { year: report.year, theme: report.theme, points: [] }
+    }
+
+    const timestamps = regs
+      .map((r) => new Date(r.created_at).getTime())
+      .filter((t) => Number.isFinite(t))
+    if (timestamps.length === 0) {
+      return { year: report.year, theme: report.theme, points: [] }
+    }
+
+    const minDate = Math.min(...timestamps)
+    const dayBuckets = new Map<number, number>()
+    for (const reg of regs) {
+      const t = new Date(reg.created_at).getTime()
+      if (!Number.isFinite(t)) continue
+      const dayIndex = Math.floor((t - minDate) / (24 * 60 * 60 * 1000))
+      dayBuckets.set(dayIndex, (dayBuckets.get(dayIndex) ?? 0) + 1)
+    }
+
+    const maxDay = Math.min(Math.max(...Array.from(dayBuckets.keys()), 0), 120)
+    let cumulative = 0
+    const points: VelocityOverlaySeries['points'] = []
+    for (let dayIndex = 0; dayIndex <= maxDay; dayIndex += 1) {
+      cumulative += dayBuckets.get(dayIndex) ?? 0
+      points.push({
+        dayIndex,
+        label: dayIndex === 0 ? 'Day 1' : `Day ${dayIndex + 1}`,
+        cumulative,
+      })
+    }
+
+    return { year: report.year, theme: report.theme, points }
+  })
+}
+
+function buildCohortRetention(
+  campYears: Array<Pick<CampYear, 'id' | 'year'>>,
+  registrationsByYearId: Record<string, CampRegistration[]>
+): CohortRetentionRow[] {
+  const sortedYears = [...campYears].sort((a, b) => a.year - b.year)
+  const phoneYears = new Map<string, Set<number>>()
+
+  for (const campYear of sortedYears) {
+    const regs = registrationsByYearId[campYear.id] ?? []
+    for (const reg of regs) {
+      const phone = normalizePhoneKey(reg.phone)
+      if (!phone) continue
+      const years = phoneYears.get(phone) ?? new Set<number>()
+      years.add(campYear.year)
+      phoneYears.set(phone, years)
+    }
+  }
+
+  const phoneFirstYear = new Map<string, number>()
+  for (const [phone, years] of Array.from(phoneYears.entries())) {
+    phoneFirstYear.set(phone, Math.min(...Array.from(years)))
+  }
+
+  return sortedYears.map((campYear) => {
+    const cohortYear = campYear.year
+    const cohortPhones = Array.from(phoneFirstYear.entries())
+      .filter(([, firstYear]) => firstYear === cohortYear)
+      .map(([phone]) => phone)
+    const cohortSize = cohortPhones.length
+
+    const returnsByYear = sortedYears
+      .filter((y) => y.year >= cohortYear)
+      .map((y) => {
+        const count = cohortPhones.filter((phone) => phoneYears.get(phone)?.has(y.year)).length
+        return {
+          year: y.year,
+          yearsSinceFirst: y.year - cohortYear,
+          count,
+          rate: cohortSize > 0 ? Math.round((count / cohortSize) * 100) : 0,
+        }
+      })
+
+    return { cohortYear, cohortSize, returnsByYear }
+  })
+}
+
+export function buildTrendAlerts(kpiByYear: CampTrendAnalysis['kpiByYear']): TrendAlert[] {
+  if (kpiByYear.length < 2) return []
+
+  const latest = kpiByYear[kpiByYear.length - 1]
+  const prior = kpiByYear[kpiByYear.length - 2]
+  const alerts: TrendAlert[] = []
+
+  const checkInDrop = prior.checkInRate - latest.checkInRate
+  if (checkInDrop >= 10) {
+    alerts.push({
+      id: 'check-in-drop',
+      severity: 'warning',
+      title: 'Check-in rate dropped sharply',
+      detail: `Camp ${latest.year} check-in is ${latest.checkInRate}% — down ${checkInDrop} pp from ${prior.checkInRate}% in ${prior.year}. Review reminders and desk staffing.`,
+    })
+  } else if (latest.checkInRate - prior.checkInRate >= 10) {
+    alerts.push({
+      id: 'check-in-up',
+      severity: 'success',
+      title: 'Check-in rate improved',
+      detail: `Camp ${latest.year} check-in rose to ${latest.checkInRate}% (+${latest.checkInRate - prior.checkInRate} pp vs ${prior.year}).`,
+    })
+  }
+
+  const collectionDrop = prior.collectionRate - latest.collectionRate
+  if (collectionDrop >= 10) {
+    alerts.push({
+      id: 'collection-drop',
+      severity: 'warning',
+      title: 'Fee collection declined',
+      detail: `Collection rate fell to ${latest.collectionRate}% (was ${prior.collectionRate}% in ${prior.year}). Follow up on pending payments.`,
+    })
+  }
+
+  const qualityDrop = prior.dataQualityScore - latest.dataQualityScore
+  if (qualityDrop >= 10) {
+    alerts.push({
+      id: 'quality-drop',
+      severity: 'warning',
+      title: 'Registration data quality slipped',
+      detail: `Data completeness is ${latest.dataQualityScore}% — down ${qualityDrop} pp from ${prior.year}. Tighten required fields on the public form.`,
+    })
+  }
+
+  if (latest.growthPercent != null && latest.growthPercent <= -15) {
+    alerts.push({
+      id: 'registration-decline',
+      severity: 'warning',
+      title: 'Registrations declined year-on-year',
+      detail: `Camp ${latest.year} had ${latest.growthPercent}% fewer registrations than ${prior.year} (${latest.total} vs ${prior.total}).`,
+    })
+  } else if (latest.growthPercent != null && latest.growthPercent >= 20) {
+    alerts.push({
+      id: 'registration-surge',
+      severity: 'success',
+      title: 'Strong registration growth',
+      detail: `Camp ${latest.year} grew ${latest.growthPercent}% vs ${prior.year} (${latest.total} registrations).`,
+    })
+  }
+
+  const returnDrop = prior.returnRate - latest.returnRate
+  if (returnDrop >= 10) {
+    alerts.push({
+      id: 'return-drop',
+      severity: 'info',
+      title: 'Return rate softened',
+      detail: `Returning campers dropped to ${latest.returnRate}% of registrations (was ${prior.returnRate}% in ${prior.year}).`,
+    })
+  }
+
+  return alerts.slice(0, 6)
+}
+
 export function buildCampTrendAnalysis(
   yearReports: CampYearAnalyticsReport[],
-  yearComparison: YearComparisonRow[]
+  yearComparison: YearComparisonRow[],
+  campYears: Array<Pick<CampYear, 'id' | 'year'>> = [],
+  registrationsByYearId: Record<string, CampRegistration[]> = {}
 ): CampTrendAnalysis {
   const emptyTrends: CampTrendAnalysis = {
     kpiByYear: [],
@@ -453,6 +645,10 @@ export function buildCampTrendAnalysis(
       educationBand: [],
       residence: [],
     },
+    velocityOverlay: [],
+    cohortRetention: [],
+    roleTrends: [],
+    alerts: [],
   }
 
   if (yearReports.length === 0 || yearComparison.length === 0) {
@@ -549,6 +745,10 @@ export function buildCampTrendAnalysis(
       educationBand: buildDemographicTrends(sortedReports, 'educationBand'),
       residence: buildDemographicTrends(sortedReports, 'residence', 6),
     },
+    velocityOverlay: buildVelocityOverlay(sortedReports, registrationsByYearId),
+    cohortRetention: buildCohortRetention(campYears, registrationsByYearId),
+    roleTrends: buildDemographicTrends(sortedReports, 'role', 6),
+    alerts: buildTrendAlerts(kpiByYear),
   }
 }
 
@@ -1066,7 +1266,7 @@ export function buildCampMultiYearAnalyticsReport(
       gender: buildDemographicTrends(yearReports, 'gender'),
       educationBand: buildDemographicTrends(yearReports, 'educationBand'),
     },
-    trends: buildCampTrendAnalysis(yearReports, yearComparison),
+    trends: buildCampTrendAnalysis(yearReports, yearComparison, sortedYears, registrationsByYearId),
     avgDataQualityScore:
       yearReports.length > 0
         ? Math.round(yearReports.reduce((sum, row) => sum + row.dataQualityScore, 0) / yearReports.length)

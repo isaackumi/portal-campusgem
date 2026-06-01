@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import {
   buildCampMultiYearAnalyticsReport,
   buildCampYearAnalyticsReport,
+  buildTrendAlerts,
   normalizeEducationBand,
   normalizePhoneKey,
   normalizeResidenceLabel,
@@ -123,6 +124,45 @@ describe('multi-year analytics report', () => {
     expect(report.combined.trends.kpiByYear).toHaveLength(2)
     expect(report.combined.trends.kpiRateSeries.length).toBeGreaterThan(0)
     expect(report.combined.trends.registrationGrowth[1]?.growthPercent).not.toBeNull()
+    expect(report.combined.trends.cohortRetention.length).toBe(2)
+    expect(report.combined.trends.velocityOverlay.length).toBe(2)
     expect(report.insights.some((line) => line.includes('unique campers'))).toBe(true)
+  })
+})
+
+describe('trend alerts', () => {
+  it('flags sharp check-in decline', () => {
+    const alerts = buildTrendAlerts([
+      {
+        year: 2025,
+        total: 100,
+        growthPercent: null,
+        checkInRate: 80,
+        returnRate: 30,
+        collectionRate: 70,
+        dataQualityScore: 85,
+        newCampers: 70,
+        returningCampers: 30,
+        checkedIn: 80,
+        paidCount: 70,
+        followUpCompletedRate: 50,
+      },
+      {
+        year: 2026,
+        total: 120,
+        growthPercent: 20,
+        checkInRate: 65,
+        returnRate: 35,
+        collectionRate: 55,
+        dataQualityScore: 80,
+        newCampers: 80,
+        returningCampers: 40,
+        checkedIn: 78,
+        paidCount: 66,
+        followUpCompletedRate: 45,
+      },
+    ])
+    expect(alerts.some((a) => a.id === 'check-in-drop')).toBe(true)
+    expect(alerts.some((a) => a.id === 'collection-drop')).toBe(true)
   })
 })
