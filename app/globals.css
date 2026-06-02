@@ -106,6 +106,36 @@
   .app-progress-fill {
     @apply h-full rounded-full bg-slate-900 transition-all duration-300;
   }
+
+  /** Dark nav shell — isolated from page `text-foreground` / ghost button styles */
+  .sidebar-panel {
+    @apply flex h-full min-h-full flex-col bg-slate-950 text-slate-100;
+  }
+
+  .sidebar-panel .sidebar-section-label {
+    @apply text-[10px] font-semibold uppercase tracking-widest text-slate-400;
+  }
+
+  .sidebar-panel .sidebar-nav-item {
+    @apply text-slate-200 hover:bg-white/10 hover:text-white;
+  }
+
+  .sidebar-panel .sidebar-nav-item[data-active='true'] {
+    @apply bg-white/10 text-white;
+  }
+
+  .sidebar-panel .sidebar-nav-icon {
+    @apply text-slate-400;
+  }
+
+  .sidebar-panel .sidebar-nav-item[data-active='true'] .sidebar-nav-icon,
+  .sidebar-panel .sidebar-nav-item:hover .sidebar-nav-icon {
+    @apply text-amber-400;
+  }
+
+  .sidebar-panel .sidebar-sign-out {
+    @apply text-slate-200 hover:bg-white/10 hover:text-white;
+  }
 }
 
 @layer utilities {
