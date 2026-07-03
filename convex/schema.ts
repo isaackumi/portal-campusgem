@@ -371,6 +371,19 @@ export default defineSchema({
     updated_at: v.number(),
   }).index('by_camp_year', ['camp_year_id']),
 
+  /** Per-session QR check-in (same camper can attend many sessions). */
+  camp_session_attendances: defineTable({
+    camp_year_id: v.string(),
+    activity_id: v.string(),
+    registration_id: v.string(),
+    checked_in_by: v.string(),
+    checked_in_at: v.number(),
+  })
+    .index('by_camp_year', ['camp_year_id'])
+    .index('by_activity', ['activity_id'])
+    .index('by_registration', ['registration_id'])
+    .index('by_activity_registration', ['activity_id', 'registration_id']),
+
   forms: defineTable({
     title: v.string(),
     slug: v.string(),

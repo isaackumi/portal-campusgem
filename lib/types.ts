@@ -963,6 +963,17 @@ export interface CampActivity {
   creator?: AppUser
 }
 
+export interface CampSessionAttendance {
+  id: string
+  camp_year_id: string
+  activity_id: string
+  registration_id: string
+  checked_in_by: string
+  checked_in_at: string
+  registration?: CampRegistration
+  activity?: CampActivity
+}
+
 export type ChurchFormStatus = 'draft' | 'published' | 'closed'
 
 export type ChurchFormFieldType =

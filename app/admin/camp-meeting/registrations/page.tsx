@@ -218,8 +218,7 @@ function RegistrationsPageContent() {
         })
     }
 
-    const printQRCodes = () => {
-        // Get registrations to print (selected ones or all filtered)
+    const printQRCodes = (layout: 'sheet' | 'slips' = 'sheet') => {
         const registrationsToPrint = selectedIds.size > 0
             ? filtered.filter(reg => selectedIds.has(reg.id))
             : filtered
@@ -233,21 +232,14 @@ function RegistrationsPageContent() {
             return
         }
 
-        // Parse QR code data - use the full QR code JSON string for scanning
-        const getQRValue = (qrCode: string | null | undefined): string => {
-            if (!qrCode) return ''
-            // Return the full QR code string (JSON) as it's stored in the database
-            return qrCode
-        }
-
-        // Navigate to print page with registration IDs
         const ids = registrationsToPrint.map(reg => reg.id).join(',')
-        const printUrl = `/admin/camp-meeting/registrations/print?ids=${ids}`
+        const layoutParam = layout === 'slips' ? '&layout=slips' : ''
+        const printUrl = `/admin/camp-meeting/registrations/print?ids=${ids}${layoutParam}`
         window.open(printUrl, '_blank')
 
         toast({
-            title: 'Opening Print Page',
-            description: `Preparing ${registrationsToPrint.length} QR code(s) for printing`,
+            title: 'Opening print page',
+            description: `Preparing ${registrationsToPrint.length} ${layout === 'slips' ? 'slip(s)' : 'QR code(s)'} for printing`,
         })
     }
 
@@ -328,9 +320,13 @@ function RegistrationsPageContent() {
                     campYear={campYear}
                     actions={
                         <>
-                            <Button onClick={printQRCodes} variant="outline" className="shadow-sm">
+                            <Button onClick={() => printQRCodes('slips')} variant="outline" className="shadow-sm">
                                 <Printer className="mr-2 h-4 w-4" />
-                                Print QR Codes
+                                Print QR slips
+                            </Button>
+                            <Button onClick={() => printQRCodes('sheet')} variant="outline" className="shadow-sm">
+                                <Printer className="mr-2 h-4 w-4" />
+                                Print QR sheet
                             </Button>
                             <Button onClick={exportToCSV} variant="outline" className="shadow-sm">
                                 <Download className="mr-2 h-4 w-4" />

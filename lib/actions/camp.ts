@@ -649,3 +649,47 @@ export async function syncCampRegistrationDobToMember(registrationId: string): P
     }
   }
 }
+
+export async function recordCampSessionCheckIn(args: {
+  activity_id: string
+  registration_id: string
+  performed_by: string
+}): Promise<{
+  data: {
+    already_checked_in: boolean
+    attendance: import('@/lib/types').CampSessionAttendance | null
+    registration: CampRegistration | null
+  } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { recordCampSessionCheckInInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await recordCampSessionCheckInInConvex(args)
+    revalidatePath('/admin/camp-meeting/scan')
+    revalidatePath('/admin/camp-meeting/registrations')
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Session check-in failed',
+    }
+  }
+}
+
+export async function getCampSessionAttendancesForActivity(activityId: string): Promise<{
+  data: import('@/lib/types').CampSessionAttendance[] | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { fetchCampSessionAttendancesForActivityFromConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await fetchCampSessionAttendancesForActivityFromConvex(activityId)
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load session attendance',
+    }
+  }
+}

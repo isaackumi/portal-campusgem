@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils'
 type CampManualCheckInPanelProps = {
   campYearId: string
   registrations: CampRegistration[]
+  activityId?: string
+  sessionCheckedInIds?: Set<string>
   performedByUserId?: string
   onCheckInComplete?: () => void
   className?: string
@@ -29,6 +31,8 @@ type CampManualCheckInPanelProps = {
 export function CampManualCheckInPanel({
   campYearId,
   registrations,
+  activityId,
+  sessionCheckedInIds,
   performedByUserId,
   onCheckInComplete,
   className,
@@ -43,32 +47,56 @@ export function CampManualCheckInPanel({
     [registrations, query]
   )
 
-  const pendingResults = results.filter((r) => r.status !== 'checked_in')
+  const pendingResults = results.filter((r) =>
+    activityId ? !sessionCheckedInIds?.has(r.id) : r.status !== 'checked_in'
+  )
+
+  function isCheckedInForContext(reg: CampRegistration): boolean {
+    if (activityId) return Boolean(sessionCheckedInIds?.has(reg.id))
+    return reg.status === 'checked_in'
+  }
 
   async function checkInOne(reg: CampRegistration) {
-    if (reg.status === 'checked_in') {
+    if (isCheckedInForContext(reg)) {
       toast({
-        title: 'Already checked in',
+        title: activityId ? 'Already in this session' : 'Already checked in',
         description: `${campRegistrationDisplayName(reg)} is already in.`,
+      })
+      return
+    }
+
+    if (activityId && !performedByUserId) {
+      toast({
+        variant: 'destructive',
+        title: 'Sign in required',
+        description: 'You must be signed in to record session check-ins.',
       })
       return
     }
 
     setCheckingId(reg.id)
     try {
-      const { error } = await campService.updateRegistration(reg.id, {
-        status: 'checked_in',
-        updated_at: new Date().toISOString(),
-      })
-      if (error) throw new Error(error)
-
-      if (performedByUserId) {
-        await campService.addInteraction({
+      if (activityId && performedByUserId) {
+        const { data, error } = await campService.recordSessionCheckIn({
+          activity_id: activityId,
           registration_id: reg.id,
           performed_by: performedByUserId,
-          interaction_type: 'status_change',
-          notes: 'Checked in via manual check-in',
         })
+        if (error || !data) throw new Error(error ?? 'Check-in failed')
+      } else {
+        const { error } = await campService.updateRegistration(reg.id, {
+          status: 'checked_in',
+        })
+        if (error) throw new Error(error)
+
+        if (performedByUserId) {
+          await campService.addInteraction({
+            registration_id: reg.id,
+            performed_by: performedByUserId,
+            interaction_type: 'status_change',
+            notes: 'Checked in via manual check-in',
+          })
+        }
       }
 
       toast({
@@ -93,18 +121,26 @@ export function CampManualCheckInPanel({
     let ok = 0
     for (const reg of pendingResults) {
       try {
-        const { error } = await campService.updateRegistration(reg.id, {
-          status: 'checked_in',
-          updated_at: new Date().toISOString(),
-        })
-        if (error) throw new Error(error)
-        if (performedByUserId) {
-          await campService.addInteraction({
+        if (activityId && performedByUserId) {
+          const { error } = await campService.recordSessionCheckIn({
+            activity_id: activityId,
             registration_id: reg.id,
             performed_by: performedByUserId,
-            interaction_type: 'status_change',
-            notes: 'Checked in via manual check-in (group)',
           })
+          if (error) throw new Error(error)
+        } else {
+          const { error } = await campService.updateRegistration(reg.id, {
+            status: 'checked_in',
+          })
+          if (error) throw new Error(error)
+          if (performedByUserId) {
+            await campService.addInteraction({
+              registration_id: reg.id,
+              performed_by: performedByUserId,
+              interaction_type: 'status_change',
+              notes: 'Checked in via manual check-in (group)',
+            })
+          }
         }
         ok++
       } catch {
@@ -129,7 +165,9 @@ export function CampManualCheckInPanel({
         </CardTitle>
         <CardDescription>
           Check in by camp code (e.g. GEM-26-K7M3), name, phone, guardian phone, or QR.
-          Each registrant has their own code — one guardian number may list several people.
+          {activityId
+            ? ' Manual check-ins apply to the selected session.'
+            : ' Each registrant has their own code — one guardian number may list several people.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
@@ -189,7 +227,7 @@ export function CampManualCheckInPanel({
               <ul className="max-h-[min(420px,50vh)] space-y-2 overflow-y-auto">
                 {results.map((reg) => {
                   const name = campRegistrationDisplayName(reg)
-                  const checkedIn = reg.status === 'checked_in'
+                  const checkedIn = isCheckedInForContext(reg)
                   const guardian =
                     reg.parent_contact?.trim() &&
                     reg.parent_contact.trim() !== 'N/A' &&
@@ -213,7 +251,9 @@ export function CampManualCheckInPanel({
                             {reg.role}
                           </Badge>
                           {checkedIn ? (
-                            <Badge className="text-xs">Checked in</Badge>
+                            <Badge className="text-xs">
+                              {activityId ? 'In session' : 'Checked in'}
+                            </Badge>
                           ) : (
                             <Badge variant="secondary" className="text-xs">
                               Not yet in

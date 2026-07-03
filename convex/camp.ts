@@ -441,6 +441,7 @@ export const deleteCampYearWithSecret = mutation({
       registrations: v.number(),
       interactions: v.number(),
       activities: v.number(),
+      session_attendances: v.number(),
       communications: v.number(),
       forms: v.number(),
       form_fields: v.number(),
@@ -471,10 +472,20 @@ export const deleteCampYearWithSecret = mutation({
       registrations: 0,
       interactions: 0,
       activities: 0,
+      session_attendances: 0,
       communications: 0,
       forms: 0,
       form_fields: 0,
       form_responses: 0,
+    }
+
+    const sessionAttendances = await ctx.db
+      .query('camp_session_attendances')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', yearIdStr))
+      .collect()
+    for (const row of sessionAttendances) {
+      await ctx.db.delete('camp_session_attendances', row._id)
+      counts.session_attendances++
     }
 
     const registrations = await ctx.db
@@ -834,8 +845,102 @@ export const deleteCampActivityWithSecret = mutation({
   returns: v.null(),
   handler: async (ctx, { secret, id }) => {
     assertServerSecret(secret)
-    await ctx.db.delete(id)
+    const activityId = String(id)
+    const attendances = await ctx.db
+      .query('camp_session_attendances')
+      .withIndex('by_activity', (q) => q.eq('activity_id', activityId))
+      .collect()
+    for (const row of attendances) {
+      await ctx.db.delete('camp_session_attendances', row._id)
+    }
+    await ctx.db.delete('camp_activities', id)
     return null
+  },
+})
+
+export const listCampSessionAttendancesForActivityWithSecret = query({
+  args: { secret: v.string(), activity_id: v.string() },
+  returns: v.array(v.any()),
+  handler: async (ctx, { secret, activity_id }) => {
+    assertServerSecret(secret)
+    return await ctx.db
+      .query('camp_session_attendances')
+      .withIndex('by_activity', (q) => q.eq('activity_id', activity_id))
+      .order('desc')
+      .collect()
+  },
+})
+
+export const recordCampSessionCheckInWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    activity_id: v.string(),
+    registration_id: v.id('camp_registrations'),
+    performed_by: v.string(),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+
+    const activity = await ctx.db.get('camp_activities', args.activity_id as import('./_generated/dataModel').Id<'camp_activities'>)
+    if (!activity) {
+      throw new Error('Session not found. Choose a valid camp session.')
+    }
+
+    const reg = await ctx.db.get(args.registration_id)
+    if (!reg) {
+      throw new Error('Registration not found.')
+    }
+    if (reg.camp_year_id !== activity.camp_year_id) {
+      throw new Error('This camper is not registered for this camp year.')
+    }
+
+    const existing = await ctx.db
+      .query('camp_session_attendances')
+      .withIndex('by_activity_registration', (q) =>
+        q.eq('activity_id', args.activity_id).eq('registration_id', String(args.registration_id))
+      )
+      .first()
+
+    if (existing) {
+      return {
+        already_checked_in: true,
+        attendance: existing,
+        registration: reg,
+        activity,
+      }
+    }
+
+    const now = Date.now()
+    const attendanceId = await ctx.db.insert('camp_session_attendances', {
+      camp_year_id: reg.camp_year_id,
+      activity_id: args.activity_id,
+      registration_id: String(args.registration_id),
+      checked_in_by: args.performed_by,
+      checked_in_at: now,
+    })
+
+    if (reg.status === 'registered') {
+      await ctx.db.patch(args.registration_id, { status: 'checked_in', updated_at: now })
+    }
+
+    const sessionLabel = activity.title?.trim() || 'Camp session'
+    await ctx.db.insert('camp_interactions', {
+      registration_id: String(args.registration_id),
+      performed_by: args.performed_by,
+      interaction_type: 'status_change',
+      notes: `Session check-in: ${sessionLabel}`,
+      updated_at: now,
+    })
+
+    const attendance = await ctx.db.get(attendanceId)
+    const registration = await ctx.db.get(args.registration_id)
+    return {
+      already_checked_in: false,
+      attendance,
+      registration,
+      activity,
+    }
   },
 })
 

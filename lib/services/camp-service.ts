@@ -2,7 +2,7 @@
  * Camp operations delegate to Convex-backed server actions in `lib/actions/camp`.
  */
 
-import type { CampRegistration, CampInteraction } from '@/lib/types'
+import type { CampRegistration, CampInteraction, CampSessionAttendance } from '@/lib/types'
 import type { ApiResponse } from './data-service'
 import {
   appendCampInteraction,
@@ -10,9 +10,11 @@ import {
   deleteCampActivityRecord,
   getCampRegistrationById,
   getCampRegistrations,
+  getCampSessionAttendancesForActivity,
   loadCampActivitiesForYear,
   patchCampRegistration,
   promoteCampRegistrant,
+  recordCampSessionCheckIn,
   syncCampRegistrationDobToMember,
   updateCampActivityRecord,
 } from '@/lib/actions/camp'
@@ -146,6 +148,39 @@ export class CampService {
       const { data, error } = await syncCampRegistrationDobToMember(registrationId)
       if (error) return { data: null, error, loading: false }
       return { data, error: null, loading: false }
+    } catch (error) {
+      return { data: null, error: this.handleError(error), loading: false }
+    }
+  }
+
+  async recordSessionCheckIn(args: {
+    activity_id: string
+    registration_id: string
+    performed_by: string
+  }): Promise<
+    ApiResponse<{
+      already_checked_in: boolean
+      attendance: CampSessionAttendance | null
+      registration: CampRegistration | null
+    }>
+  > {
+    try {
+      const { data, error } = await recordCampSessionCheckIn(args)
+      if (error) return { data: null, error, loading: false }
+      if (!data) return { data: null, error: 'Check-in failed', loading: false }
+      return { data, error: null, loading: false }
+    } catch (error) {
+      return { data: null, error: this.handleError(error), loading: false }
+    }
+  }
+
+  async getSessionAttendancesForActivity(
+    activityId: string
+  ): Promise<ApiResponse<CampSessionAttendance[]>> {
+    try {
+      const { data, error } = await getCampSessionAttendancesForActivity(activityId)
+      if (error) return { data: null, error, loading: false }
+      return { data: data ?? [], error: null, loading: false }
     } catch (error) {
       return { data: null, error: this.handleError(error), loading: false }
     }

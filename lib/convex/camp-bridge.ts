@@ -351,6 +351,7 @@ export type DeleteCampYearResult = {
     registrations: number
     interactions: number
     activities: number
+    session_attendances: number
     communications: number
     forms: number
     form_fields: number
@@ -626,4 +627,94 @@ export async function fetchCamperDirectoryFromConvex(): Promise<import('@/lib/ty
   return (await client.query(api.camp.listCamperDirectoryWithSecret, {
     secret: requireCampAdminSecret(),
   })) as import('@/lib/types').CampCamperDirectoryRow[]
+}
+
+export function convexActivityDocToCampActivity(
+  doc: Record<string, unknown> | null | undefined
+): import('@/lib/types').CampActivity | null {
+  if (!doc || typeof doc !== 'object') return null
+  const id = String(doc._id ?? '')
+  if (!id) return null
+  const ct = doc._creationTime as number | undefined
+  const ut = doc.updated_at as number | undefined
+  const iso = (t?: number) => (t != null ? new Date(t).toISOString() : '')
+  return {
+    id,
+    camp_year_id: String(doc.camp_year_id ?? ''),
+    title: String(doc.title ?? 'Session'),
+    description: doc.description != null ? String(doc.description) : undefined,
+    activity_type: (doc.activity_type as import('@/lib/types').CampActivity['activity_type']) ?? 'session',
+    date: String(doc.date ?? ''),
+    start_time: String(doc.start_time ?? ''),
+    end_time: String(doc.end_time ?? ''),
+    location: doc.location != null ? String(doc.location) : undefined,
+    venue: doc.venue != null ? String(doc.venue) : undefined,
+    capacity: doc.capacity != null ? Number(doc.capacity) : undefined,
+    assigned_staff: doc.assigned_staff != null ? String(doc.assigned_staff) : undefined,
+    status: (doc.status as import('@/lib/types').CampActivity['status']) ?? 'scheduled',
+    attendance_count: doc.attendance_count != null ? Number(doc.attendance_count) : 0,
+    notes: doc.notes != null ? String(doc.notes) : undefined,
+    metadata: doc.metadata as Record<string, unknown> | undefined,
+    created_at: iso(ct) || new Date().toISOString(),
+    updated_at: iso(ut) || iso(ct) || new Date().toISOString(),
+    created_by: doc.created_by != null ? String(doc.created_by) : undefined,
+  }
+}
+
+export function convexSessionAttendanceDocToCampSessionAttendance(
+  doc: Record<string, unknown> | null | undefined
+): import('@/lib/types').CampSessionAttendance | null {
+  if (!doc || typeof doc !== 'object') return null
+  const id = String(doc._id ?? '')
+  if (!id) return null
+  const checkedAt = doc.checked_in_at as number | undefined
+  return {
+    id,
+    camp_year_id: String(doc.camp_year_id ?? ''),
+    activity_id: String(doc.activity_id ?? ''),
+    registration_id: String(doc.registration_id ?? ''),
+    checked_in_by: String(doc.checked_in_by ?? ''),
+    checked_in_at:
+      checkedAt != null ? new Date(checkedAt).toISOString() : new Date().toISOString(),
+  }
+}
+
+export async function recordCampSessionCheckInInConvex(args: {
+  activity_id: string
+  registration_id: string
+  performed_by: string
+}): Promise<{
+  already_checked_in: boolean
+  attendance: import('@/lib/types').CampSessionAttendance | null
+  registration: CampRegistration | null
+}> {
+  const client = getConvexHttpClient()
+  const result = (await client.mutation(api.camp.recordCampSessionCheckInWithSecret, {
+    secret: requireCampAdminSecret(),
+    activity_id: args.activity_id,
+    registration_id: args.registration_id as Id<'camp_registrations'>,
+    performed_by: args.performed_by,
+  })) as {
+    already_checked_in: boolean
+    attendance: Record<string, unknown> | null
+    registration: Record<string, unknown> | null
+  }
+  return {
+    already_checked_in: Boolean(result.already_checked_in),
+    attendance: convexSessionAttendanceDocToCampSessionAttendance(result.attendance),
+    registration: convexRegistrationDocToCampRegistration(result.registration),
+  }
+}
+
+export async function fetchCampSessionAttendancesForActivityFromConvex(
+  activityId: string
+): Promise<import('@/lib/types').CampSessionAttendance[]> {
+  const client = getConvexHttpClient()
+  const docs = (await client.query(api.camp.listCampSessionAttendancesForActivityWithSecret, {
+    secret: requireCampAdminSecret(),
+    activity_id: activityId,
+  })) as Record<string, unknown>[]
+  return docs
+    .map((d) => convexSessionAttendanceDocToCampSessionAttendance(d))
+    .filter((a): a is import('@/lib/types').CampSessionAttendance => a != null)
 }
