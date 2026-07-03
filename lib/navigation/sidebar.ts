@@ -259,7 +259,7 @@ export function isSidebarItemActive(
   const expected = href.includes('?') ? new URLSearchParams(href.split('?')[1]) : null
 
   if (base === '/dashboard') {
-    return pathname === '/dashboard' || pathname === '/'
+    return pathname === '/dashboard'
   }
 
   if (base === '/admin/camp-meeting/follow-up') {
