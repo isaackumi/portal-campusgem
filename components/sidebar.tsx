@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { BrandMark, BrandTitle } from '@/components/brand-mark'
@@ -257,6 +258,11 @@ export function Sidebar({ className }: SidebarProps) {
 
 export function MobileSidebar() {
   const [open, setOpen] = useState(false)
+  const [portalReady, setPortalReady] = useState(false)
+
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -266,6 +272,41 @@ export function MobileSidebar() {
       document.body.style.overflow = prev
     }
   }, [open])
+
+  const drawer =
+    open && portalReady ? (
+      <div
+        className="mobile-nav-overlay fixed inset-0 z-[9999] lg:hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+      >
+        <button
+          type="button"
+          className="absolute inset-0 bg-slate-950/75 backdrop-blur-[2px]"
+          aria-label="Dismiss menu overlay"
+          onClick={() => setOpen(false)}
+        />
+        <aside className="mobile-nav-panel relative z-10 flex h-full max-h-[100dvh] w-[min(85vw,18rem)] flex-col bg-slate-950 shadow-2xl">
+          <SidebarShell
+            collapsed={false}
+            onNavigate={() => setOpen(false)}
+            showCollapseToggle={false}
+            headerAction={
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpen(false)}
+                className="sidebar-sign-out ml-auto h-8 w-8 shrink-0"
+                aria-label="Close menu"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            }
+          />
+        </aside>
+      </div>
+    ) : null
 
   return (
     <>
@@ -278,35 +319,7 @@ export function MobileSidebar() {
       >
         <Menu className="h-5 w-5" />
       </Button>
-
-      {open ? (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
-            aria-label="Close menu"
-            onClick={() => setOpen(false)}
-          />
-          <aside className="absolute inset-y-0 left-0 z-10 flex h-full max-h-[100dvh] w-[min(100%,18rem)] flex-col bg-slate-950 shadow-2xl">
-            <SidebarShell
-              collapsed={false}
-              onNavigate={() => setOpen(false)}
-              showCollapseToggle={false}
-              headerAction={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setOpen(false)}
-                  className="sidebar-sign-out ml-auto h-8 w-8 shrink-0"
-                  aria-label="Close menu"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              }
-            />
-          </aside>
-        </div>
-      ) : null}
+      {drawer ? createPortal(drawer, document.body) : null}
     </>
   )
 }

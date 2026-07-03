@@ -15,7 +15,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       <div className="lg:pl-64">
-        <div className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-x-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md lg:hidden">
+        <div className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-x-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md lg:hidden">
           <MobileSidebar />
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-semibold text-slate-900">Campus Gem Ministries</p>
