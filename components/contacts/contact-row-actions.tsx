@@ -153,60 +153,69 @@ export function ContactRowActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AddToGroupDialog
-        open={addToGroupOpen}
-        onOpenChange={setAddToGroupOpen}
-        userId={userId}
-        campContact={
-          phone
-            ? ({
-                full_name: contactName,
-                phone,
-                email,
-                registrationId: latestRegistrationId,
-              } satisfies CampContactForGroup)
-            : undefined
-        }
-        contactName={contactName}
-        onSuccess={afterPromote}
-      />
+      {/* Mount dialogs only when opened — avoids N portals + useGroups per table row */}
+      {addToGroupOpen ? (
+        <AddToGroupDialog
+          open={addToGroupOpen}
+          onOpenChange={setAddToGroupOpen}
+          userId={userId}
+          campContact={
+            phone
+              ? ({
+                  full_name: contactName,
+                  phone,
+                  email,
+                  registrationId: latestRegistrationId,
+                } satisfies CampContactForGroup)
+              : undefined
+          }
+          contactName={contactName}
+          onSuccess={afterPromote}
+        />
+      ) : null}
 
-      <AddToRlcDialog
-        open={addToRlcOpen}
-        onOpenChange={setAddToRlcOpen}
-        contactName={contactName}
-        userId={userId}
-        memberId={memberId}
-        existingRoles={rlcRoles}
-        campContact={
-          phone
-            ? ({
-                full_name: contactName,
-                phone,
-                email,
-                registrationId: latestRegistrationId,
-              } satisfies CampContactForRlc)
-            : undefined
-        }
-        onSuccess={afterPromote}
-      />
+      {addToRlcOpen ? (
+        <AddToRlcDialog
+          open={addToRlcOpen}
+          onOpenChange={setAddToRlcOpen}
+          contactName={contactName}
+          userId={userId}
+          memberId={memberId}
+          existingRoles={rlcRoles}
+          campContact={
+            phone
+              ? ({
+                  full_name: contactName,
+                  phone,
+                  email,
+                  registrationId: latestRegistrationId,
+                } satisfies CampContactForRlc)
+              : undefined
+          }
+          onSuccess={afterPromote}
+        />
+      ) : null}
 
-      <PromoteCorporateGemDialog
-        open={corporateGemOpen}
-        onOpenChange={setCorporateGemOpen}
-        contactName={contactName}
-        input={promotionInput}
-        onSuccess={afterPromote}
-      />
+      {corporateGemOpen ? (
+        <PromoteCorporateGemDialog
+          open={corporateGemOpen}
+          onOpenChange={setCorporateGemOpen}
+          contactName={contactName}
+          input={promotionInput}
+          onSuccess={afterPromote}
+        />
+      ) : null}
 
-      <PromoteStaffRoleDialog
-        open={staffRoleOpen}
-        onOpenChange={setStaffRoleOpen}
-        contactName={contactName}
-        input={promotionInput}
-        currentUserRole={userRole}
-        onSuccess={afterPromote}
-      />
+      {staffRoleOpen ? (
+        <PromoteStaffRoleDialog
+          open={staffRoleOpen}
+          onOpenChange={setStaffRoleOpen}
+          contactName={contactName}
+          input={promotionInput}
+          currentUserRole={userRole}
+          onSuccess={afterPromote}
+        />
+      ) : null}
     </>
   )
 }

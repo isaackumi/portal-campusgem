@@ -19,6 +19,13 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import { Church } from 'lucide-react'
 
+const EMPTY_ROLES: string[] = []
+
+function rolesEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  return a.every((role, index) => role === b[index])
+}
+
 export type CampContactForRlc = {
   full_name: string
   phone: string
@@ -44,7 +51,7 @@ export function AddToRlcDialog({
   userId: initialUserId,
   memberId: initialMemberId,
   campContact,
-  existingRoles = [],
+  existingRoles = EMPTY_ROLES,
   onSuccess,
 }: Props) {
   const { user } = useAuth()
@@ -53,9 +60,9 @@ export function AddToRlcDialog({
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (open) {
-      setSelectedRoles(existingRoles.length ? (existingRoles as RlcRole[]) : ['member'])
-    }
+    if (!open) return
+    const next = (existingRoles.length ? existingRoles : ['member']) as RlcRole[]
+    setSelectedRoles((prev) => (rolesEqual(prev, next) ? prev : next))
   }, [open, existingRoles])
 
   function toggleRole(role: RlcRole, checked: boolean) {
