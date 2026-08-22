@@ -54,7 +54,7 @@ export function OfflineSync() {
         title: "Back Online",
         description: "Connection restored. Syncing data...",
       })
-      syncPendingItems()
+      void syncPendingItems()
     }
 
     const handleOffline = () => {
@@ -76,7 +76,9 @@ export function OfflineSync() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [toast])
+    // Intentionally mount-once; toast is a stable module dispatcher
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Load pending items from localStorage
   const loadPendingItems = () => {
