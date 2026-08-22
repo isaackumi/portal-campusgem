@@ -79,7 +79,7 @@ export function MemberRowActions({ memberId, userId, displayName, membershipId, 
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {userId ? (
+      {userId && addToGroupOpen ? (
         <AddToGroupDialog
           open={addToGroupOpen}
           onOpenChange={setAddToGroupOpen}
@@ -87,7 +87,7 @@ export function MemberRowActions({ memberId, userId, displayName, membershipId, 
           contactName={displayName}
         />
       ) : null}
-      {userId || memberId ? (
+      {(userId || memberId) && addToRlcOpen ? (
         <AddToRlcDialog
           open={addToRlcOpen}
           onOpenChange={setAddToRlcOpen}
