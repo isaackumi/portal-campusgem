@@ -517,10 +517,7 @@ function RegistrationCard({
                             <UserX className="h-3 w-3 text-red-600" />
                             <span className="text-xs text-slate-600">Unassigned</span>
                         </div>
-                        <Select
-                            value=""
-                            onValueChange={(v) => onAssign(registration.id, v || null)}
-                        >
+                        <Select onValueChange={(v) => onAssign(registration.id, v || null)}>
                             <SelectTrigger className="h-7 text-xs" onClick={(e) => e.stopPropagation()}>
                                 <SelectValue placeholder="Assign" />
                             </SelectTrigger>

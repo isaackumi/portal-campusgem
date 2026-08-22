@@ -63,7 +63,6 @@ export default function CampScannerPage() {
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
   const [sessionAttendances, setSessionAttendances] = useState<CampSessionAttendance[]>([])
   const [loading, setLoading] = useState(true)
-  const [scanning, setScanning] = useState(false)
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const lastScannedRef = useRef<string | null>(null)
 
@@ -141,17 +140,43 @@ export default function CampScannerPage() {
 
   useEffect(() => {
     if (!selectedActivityId) {
-      setSessionAttendances([])
+      setSessionAttendances((prev) => (prev.length === 0 ? prev : []))
       return
     }
     void loadSessionAttendances(selectedActivityId)
   }, [selectedActivityId, loadSessionAttendances])
 
   useEffect(() => {
-    if (campYear && selectedActivityId && !scannerRef.current && !scanning) {
-      initializeScanner()
+    if (!campYear || !selectedActivityId) return
+
+    const element = document.getElementById('reader')
+    if (!element) return
+
+    let cancelled = false
+    const scanner = new Html5QrcodeScanner(
+      'reader',
+      {
+        fps: 10,
+        qrbox: { width: 280, height: 280 },
+        aspectRatio: 1.0,
+        disableFlip: false,
+      },
+      false
+    )
+    scanner.render(onScanSuccess, onScanFailure)
+    scannerRef.current = scanner
+
+    return () => {
+      cancelled = true
+      scanner.clear().catch(() => {})
+      if (scannerRef.current === scanner) {
+        scannerRef.current = null
+      }
+      void cancelled
     }
-  }, [campYear, selectedActivityId, scanning])
+    // onScanSuccess/onScanFailure intentionally omitted — scanner keeps first handlers; pause/resume handles flow
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campYear, selectedActivityId])
 
   function playBeep(type: 'success' | 'error' | 'warning' = 'success') {
     try {
@@ -169,26 +194,6 @@ export default function CampScannerPage() {
     } catch {
       // ignore
     }
-  }
-
-  function initializeScanner() {
-    const element = document.getElementById('reader')
-    if (!element || scannerRef.current) return
-
-    setScanning(true)
-    const scanner = new Html5QrcodeScanner(
-      'reader',
-      {
-        fps: 10,
-        qrbox: { width: 280, height: 280 },
-        aspectRatio: 1.0,
-        disableFlip: false,
-      },
-      false
-    )
-
-    scanner.render(onScanSuccess, onScanFailure)
-    scannerRef.current = scanner
   }
 
   async function onScanSuccess(decodedText: string) {
@@ -380,7 +385,11 @@ export default function CampScannerPage() {
                 </Button>
               </div>
             ) : (
-              <Select value={selectedActivityId} onValueChange={setSelectedActivityId}>
+              <Select
+                // Avoid value="" — Radix controlled Select loops and throws React #185
+                value={selectedActivityId || undefined}
+                onValueChange={setSelectedActivityId}
+              >
                 <SelectTrigger className="min-h-11 bg-white text-base">
                   <SelectValue placeholder="Select session…" />
                 </SelectTrigger>
