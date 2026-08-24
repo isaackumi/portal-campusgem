@@ -467,7 +467,7 @@ export async function recordRlcAttendanceAction(args: {
   method?: Attendance['method']
   createdBy?: string
   notes?: string
-}): Promise<ApiResponse<Attendance>> {
+}): Promise<ApiResponse<{ already_checked_in: boolean; attendance: Attendance }>> {
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -482,6 +482,25 @@ export async function recordRlcAttendanceAction(args: {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to record attendance',
+      loading: false,
+    }
+  }
+}
+
+export async function resolveRlcScanAction(scanned: string): Promise<
+  ApiResponse<{ type: 'visitor' | 'member'; visitor?: Visitor; member?: Member }>
+> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  try {
+    const { resolveRlcScanFromConvex } = await import('@/lib/convex/rlc-bridge')
+    const data = await resolveRlcScanFromConvex(scanned)
+    return { data, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Scan lookup failed',
       loading: false,
     }
   }
@@ -593,7 +612,7 @@ export async function resolveRlcSponsorToMemberAction(
 
 export async function registerPublicRlcVisitorAction(
   form: CreateVisitorForm
-): Promise<ApiResponse<{ id: string; first_name: string }>> {
+): Promise<ApiResponse<{ id: string; first_name: string; check_in_code?: string }>> {
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -617,7 +636,7 @@ export async function registerPublicRlcVisitorAction(
       PUBLIC_RLC_PERFORMED_BY
     )
     return {
-      data: { id: visitor.id, first_name: visitor.first_name },
+      data: { id: visitor.id, first_name: visitor.first_name, check_in_code: visitor.check_in_code },
       error: null,
       loading: false,
     }

@@ -91,6 +91,11 @@ export interface Member {
   rlc_membership_type?: RlcMembershipType
   rlc_roles?: RlcRole[]
   source_visitor_id?: string
+  hometown?: string
+  area_of_residence?: string
+  school_or_workplace?: string
+  check_in_code?: string
+  qr_code?: string
   created_at: string
   updated_at: string
   // Joined data
@@ -181,10 +186,16 @@ export interface GroupMembership {
 export interface Visitor {
   id: string
   first_name: string
+  middle_name?: string
   last_name?: string
   phone?: string
+  secondary_phone?: string
   email?: string
   address?: string
+  hometown?: string
+  area_of_residence?: string
+  school_or_workplace?: string
+  place_of_work?: string
   visit_date: string
   service_attended?: string
   how_heard_about_church?: string
@@ -203,6 +214,18 @@ export interface Visitor {
   date_of_birth?: string
   occupation?: string
   marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
+  spouse_name?: string
+  children_count?: number
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+  emergency_contact_relation?: string
+  prayer_request?: string
+  notes?: string
+  is_first_timer?: boolean
+  interested_in_baptism?: boolean
+  interested_in_membership?: boolean
+  check_in_code?: string
+  qr_code?: string
   congregation?: Congregation
   converted_to_member: boolean
   converted_member_id?: string
@@ -549,6 +572,12 @@ export interface CreateUserForm {
   join_year?: number
   membership_id?: string
   is_visitor?: boolean
+  congregation?: Congregation
+  hometown?: string
+  area_of_residence?: string
+  school_or_workplace?: string
+  rlc_roles?: RlcRole[]
+  rlc_membership_type?: RlcMembershipType
 }
 
 export interface UpdateProfileForm {
@@ -593,10 +622,16 @@ export interface UpdateProfileForm {
 
 export interface CreateVisitorForm {
   first_name: string
+  middle_name?: string
   last_name?: string
   phone?: string
+  secondary_phone?: string
   email?: string
   address?: string
+  hometown?: string
+  area_of_residence?: string
+  school_or_workplace?: string
+  place_of_work?: string
   visit_date: string
   service_attended?: string
   how_heard_about_church?: string
@@ -612,6 +647,16 @@ export interface CreateVisitorForm {
   date_of_birth?: string
   occupation?: string
   marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
+  spouse_name?: string
+  children_count?: number
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+  emergency_contact_relation?: string
+  prayer_request?: string
+  notes?: string
+  is_first_timer?: boolean
+  interested_in_baptism?: boolean
+  interested_in_membership?: boolean
   congregation?: Congregation
 }
 

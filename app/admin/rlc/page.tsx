@@ -1,21 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { loadRlcStatsAction } from '@/lib/actions/rlc'
-import { rlcFollowUpHref } from '@/lib/rlc/follow-up-sla'
-import { RLC_NAME } from '@/lib/constants/rlc'
-import type { RlcStats } from '@/lib/types'
+import { useAuth } from '@/components/providers'
+import { getCamperDirectory } from '@/lib/actions/camp'
+import { loadRlcMembersAction, loadRlcStatsAction, loadRlcVisitorsAction } from '@/lib/actions/rlc'
+import { rlcFollowUpHref, summarizeRlcFollowUpSla } from '@/lib/rlc/follow-up-sla'
+import { RLC_NAME, RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
+import type { CampCamperDirectoryRow, Member, RlcStats, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import {
   BarChart3,
   Calendar,
   Church,
+  Printer,
+  QrCode,
   TrendingUp,
   Upload,
   UserCheck,
@@ -37,12 +42,14 @@ function StatCard({
   const inner = (
     <Card className="border-rose-100/80 shadow-sm transition hover:border-rose-200">
       <CardHeader className="pb-2">
-        <CardDescription>{title}</CardDescription>
-        <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
+        <CardDescription className="app-stat-label normal-case tracking-normal text-slate-500">
+          {title}
+        </CardDescription>
+        <p className="app-stat-value">{value}</p>
       </CardHeader>
       {hint ? (
         <CardContent className="pt-0">
-          <p className="text-xs text-muted-foreground">{hint}</p>
+          <p className="app-meta">{hint}</p>
         </CardContent>
       ) : null}
     </Card>
@@ -52,15 +59,80 @@ function StatCard({
 
 export default function RlcDashboardPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [stats, setStats] = useState<RlcStats | null>(null)
+  const [visitors, setVisitors] = useState<Visitor[]>([])
+  const [members, setMembers] = useState<Member[]>([])
+  const [campRows, setCampRows] = useState<CampCamperDirectoryRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadRlcStatsAction().then(({ data }) => {
-      setStats(data ?? null)
+    Promise.all([
+      loadRlcStatsAction(),
+      loadRlcVisitorsAction(),
+      loadRlcMembersAction(),
+      getCamperDirectory(),
+    ]).then(([s, v, m, c]) => {
+      setStats(s.data ?? null)
+      setVisitors(v.data ?? [])
+      setMembers(m.data ?? [])
+      setCampRows(c.data ?? [])
       setLoading(false)
     })
   }, [])
+
+  const activeVisitors = useMemo(
+    () => visitors.filter((row) => row.is_active !== false && !row.converted_to_member),
+    [visitors]
+  )
+  const sla = useMemo(() => summarizeRlcFollowUpSla(activeVisitors), [activeVisitors])
+  const myFollowUps = useMemo(
+    () => activeVisitors.filter((row) => row.assigned_follow_up_member_id === user?.id),
+    [activeVisitors, user?.id]
+  )
+  const convertQueue = useMemo(
+    () =>
+      activeVisitors.filter(
+        (row) =>
+          row.follow_up_status === 'completed' ||
+          row.interested_in_membership ||
+          row.pipeline_status === 'new_member'
+      ),
+    [activeVisitors]
+  )
+  const rlcPhones = useMemo(() => {
+    const set = new Set<string>()
+    for (const visitor of visitors) {
+      if (visitor.phone) set.add(visitor.phone.replace(/\D/g, '').slice(-9))
+    }
+    for (const member of members) {
+      const phone = member.user?.phone
+      if (phone) set.add(phone.replace(/\D/g, '').slice(-9))
+    }
+    return set
+  }, [visitors, members])
+  const campBridge = useMemo(
+    () =>
+      campRows
+        .filter((row) => {
+          const last9 = row.phone?.replace(/\D/g, '').slice(-9)
+          return last9 ? !rlcPhones.has(last9) : true
+        })
+        .slice(0, 6),
+    [campRows, rlcPhones]
+  )
+  const rosterCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const member of members) {
+      for (const role of member.rlc_roles ?? []) {
+        counts[role] = (counts[role] ?? 0) + 1
+      }
+    }
+    return RLC_ROLES.filter((role) => (counts[role] ?? 0) > 0).slice(0, 8).map((role) => ({
+      role,
+      count: counts[role],
+    }))
+  }, [members])
 
   if (loading) {
     return (
@@ -74,16 +146,19 @@ export default function RlcDashboardPage() {
     <PageContainer className="space-y-8">
       <RlcPageHeader
         title="Mother Church Hub"
-        subtitle={`Visitor pipeline, membership, attendance, and analytics for ${RLC_NAME}.`}
+        subtitle={`Visitor pipeline, membership, attendance, and ministry records for ${RLC_NAME}.`}
         actions={
           <>
             <Button variant="outline" className="w-full sm:w-auto" asChild>
-              <Link href="/admin/rlc/visitors/qr">Visitor QR</Link>
+              <Link href="/admin/rlc/attendance">
+                <Calendar className="mr-2 h-4 w-4" />
+                Attendance
+              </Link>
             </Button>
             <Button variant="outline" className="w-full sm:w-auto" asChild>
               <Link href="/admin/rlc/visitors/add">
                 <UserPlus className="mr-2 h-4 w-4" />
-                Register Visitor
+                Register visitor
               </Link>
             </Button>
             <Button className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto" asChild>
@@ -112,10 +187,58 @@ export default function RlcDashboardPage() {
         />
       </div>
 
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="border-rose-200">
+          <CardHeader className="pb-2">
+            <CardDescription>Follow-up SLA</CardDescription>
+            <CardTitle>Queue health</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between text-sm">
+            <Link href={rlcFollowUpHref({ sla: 'overdue' })} className="text-rose-700">
+              Overdue <Badge variant="destructive">{sla.overdue}</Badge>
+            </Link>
+            <Link href={rlcFollowUpHref({ sla: 'due_soon' })} className="text-amber-700">
+              Due soon <Badge variant="secondary">{sla.dueSoon}</Badge>
+            </Link>
+            <Link href={rlcFollowUpHref({ mine: true })} className="text-slate-700">
+              Mine <Badge variant="outline">{myFollowUps.length}</Badge>
+            </Link>
+          </CardContent>
+        </Card>
+        <Card className="border-emerald-200">
+          <CardHeader className="pb-2">
+            <CardDescription>Ready to convert</CardDescription>
+            <p className="app-stat-value">{convertQueue.length}</p>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/admin/rlc/visitors?pipeline=new_member">Open conversion queue</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200">
+          <CardHeader className="pb-2">
+            <CardDescription>Today / this week</CardDescription>
+            <p className="app-stat-value">
+              {stats?.today_attendance ?? 0}
+              <span className="text-base font-normal text-muted-foreground">
+                {' '}
+                / {stats?.week_attendance ?? 0}
+              </span>
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/admin/rlc/attendance">Attendance + print</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-rose-100/80">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
+            <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-rose-700" />
               Visitor pipeline
             </CardTitle>
@@ -129,8 +252,8 @@ export default function RlcDashboardPage() {
               ['Full member', stats?.pipeline_counts.full_member ?? 0],
             ].map(([label, count]) => (
               <div key={label} className="rounded-lg bg-rose-50/60 px-3 py-2 text-center">
-                <p className="text-2xl font-semibold tabular-nums">{count}</p>
-                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="app-stat-value text-2xl">{count}</p>
+                <p className="app-meta">{label}</p>
               </div>
             ))}
           </CardContent>
@@ -138,33 +261,42 @@ export default function RlcDashboardPage() {
 
         <Card className="border-rose-100/80">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Calendar className="h-5 w-5 text-rose-700" />
-              RLC attendance
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-rose-700" />
+              Camp contacts not yet in RLC
             </CardTitle>
-            <CardDescription>Sunday and midweek services</CardDescription>
+            <CardDescription>Bring camp registrations into the mother church</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-slate-50 px-3 py-2">
-              <p className="text-2xl font-semibold">{stats?.today_attendance ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Today</p>
-            </div>
-            <div className="rounded-lg bg-slate-50 px-3 py-2">
-              <p className="text-2xl font-semibold">{stats?.week_attendance ?? 0}</p>
-              <p className="text-xs text-muted-foreground">This week</p>
-            </div>
+          <CardContent className="space-y-3">
+            {campBridge.length === 0 ? (
+              <p className="text-sm text-muted-foreground">All recent camp contacts are already in RLC.</p>
+            ) : (
+              campBridge.map((row) => (
+                <div key={row.phone} className="flex items-center justify-between gap-3 text-sm">
+                  <div>
+                    <p className="font-medium">{row.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{row.phone}</p>
+                  </div>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href="/admin/rlc/import">Add</Link>
+                  </Button>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { href: '/admin/rlc/visitors', icon: UserPlus, title: 'Visitors', desc: 'Pipeline & registration' },
-          { href: '/admin/rlc/follow-up', icon: UserCheck, title: 'Follow-up board', desc: 'Assign & track contacts' },
-          { href: '/admin/rlc/members', icon: Users, title: 'Members', desc: 'Full & associate members' },
-          { href: '/admin/rlc/import', icon: Upload, title: 'Import', desc: 'Campus Gem & camp directory' },
+          { href: '/admin/rlc/visitors', icon: UserPlus, title: 'Visitors', desc: 'Full visitor records' },
+          { href: '/admin/rlc/follow-up', icon: UserCheck, title: 'Follow-up', desc: 'Assign & track contacts' },
+          { href: '/admin/rlc/members', icon: Users, title: 'Members', desc: 'Church member records' },
+          { href: '/admin/rlc/roster', icon: Church, title: 'Ministry roster', desc: 'Ushers, choir, protocol' },
+          { href: '/admin/rlc/attendance', icon: Calendar, title: 'Attendance', desc: 'Name / phone check-in + print' },
+          { href: '/admin/rlc/scan', icon: QrCode, title: 'Optional QR scan', desc: 'Camera only when needed' },
+          { href: '/admin/rlc/visitors/print', icon: Printer, title: 'Welcome slips', desc: 'Print visitor QR cards' },
           { href: '/admin/rlc/analytics', icon: BarChart3, title: 'Analytics', desc: 'Conversion & sources' },
-          { href: '/admin/rlc/attendance', icon: Calendar, title: 'Attendance', desc: 'Check-in & records' },
         ].map((item) => (
           <Card
             key={item.href}
@@ -176,7 +308,7 @@ export default function RlcDashboardPage() {
                 <item.icon className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-base">{item.title}</CardTitle>
+                <CardTitle>{item.title}</CardTitle>
                 <CardDescription>{item.desc}</CardDescription>
               </div>
             </CardHeader>
@@ -184,17 +316,21 @@ export default function RlcDashboardPage() {
         ))}
       </div>
 
-      <Card className="border-dashed border-rose-200 bg-rose-50/30">
-        <CardContent className="flex items-center gap-4 py-6">
-          <Church className="h-8 w-8 text-rose-700" />
-          <div>
-            <p className="font-medium text-slate-900">Production-ready visitor lifecycle</p>
-            <p className="text-sm text-muted-foreground">
-              Track sponsors, follow-up assignees, complete member profiles on conversion, and tie attendance to RLC.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {rosterCounts.length > 0 ? (
+        <Card className="border-rose-100/80">
+          <CardHeader>
+            <CardTitle>Ministry snapshot</CardTitle>
+            <CardDescription>People currently tagged with RLC ministry roles</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {rosterCounts.map((row) => (
+              <Badge key={row.role} variant="secondary">
+                {RLC_ROLE_LABELS[row.role]} · {row.count}
+              </Badge>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
     </PageContainer>
   )
 }

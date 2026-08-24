@@ -36,10 +36,16 @@ export function convexRlcVisitorDocToVisitor(doc: Record<string, unknown> | null
   return {
     id,
     first_name: String(doc.first_name ?? ''),
+    middle_name: doc.middle_name != null ? String(doc.middle_name) : undefined,
     last_name: doc.last_name != null ? String(doc.last_name) : undefined,
     phone: doc.phone != null ? String(doc.phone) : undefined,
+    secondary_phone: doc.secondary_phone != null ? String(doc.secondary_phone) : undefined,
     email: doc.email != null ? String(doc.email) : undefined,
     address: doc.address != null ? String(doc.address) : undefined,
+    hometown: doc.hometown != null ? String(doc.hometown) : undefined,
+    area_of_residence: doc.area_of_residence != null ? String(doc.area_of_residence) : undefined,
+    school_or_workplace: doc.school_or_workplace != null ? String(doc.school_or_workplace) : undefined,
+    place_of_work: doc.place_of_work != null ? String(doc.place_of_work) : undefined,
     visit_date: String(doc.visit_date ?? ''),
     service_attended: doc.service_attended != null ? String(doc.service_attended) : undefined,
     how_heard_about_church:
@@ -61,6 +67,23 @@ export function convexRlcVisitorDocToVisitor(doc: Record<string, unknown> | null
     date_of_birth: doc.date_of_birth != null ? String(doc.date_of_birth) : undefined,
     occupation: doc.occupation != null ? String(doc.occupation) : undefined,
     marital_status: doc.marital_status as Visitor['marital_status'],
+    spouse_name: doc.spouse_name != null ? String(doc.spouse_name) : undefined,
+    children_count: doc.children_count != null ? Number(doc.children_count) : undefined,
+    emergency_contact_name:
+      doc.emergency_contact_name != null ? String(doc.emergency_contact_name) : undefined,
+    emergency_contact_phone:
+      doc.emergency_contact_phone != null ? String(doc.emergency_contact_phone) : undefined,
+    emergency_contact_relation:
+      doc.emergency_contact_relation != null ? String(doc.emergency_contact_relation) : undefined,
+    prayer_request: doc.prayer_request != null ? String(doc.prayer_request) : undefined,
+    notes: doc.notes != null ? String(doc.notes) : undefined,
+    is_first_timer: doc.is_first_timer != null ? Boolean(doc.is_first_timer) : undefined,
+    interested_in_baptism:
+      doc.interested_in_baptism != null ? Boolean(doc.interested_in_baptism) : undefined,
+    interested_in_membership:
+      doc.interested_in_membership != null ? Boolean(doc.interested_in_membership) : undefined,
+    check_in_code: doc.check_in_code != null ? String(doc.check_in_code) : undefined,
+    qr_code: doc.qr_code != null ? String(doc.qr_code) : undefined,
     congregation: doc.congregation as Visitor['congregation'],
     converted_to_member: Boolean(doc.converted_to_member),
     converted_member_id: doc.converted_member_id != null ? String(doc.converted_member_id) : undefined,
@@ -140,10 +163,16 @@ export async function createRlcVisitorInConvex(
     secret: requireCoreServerSecret(),
     performed_by: performedBy,
     first_name: form.first_name,
+    middle_name: form.middle_name,
     last_name: form.last_name,
     phone: form.phone,
+    secondary_phone: form.secondary_phone,
     email: form.email,
     address: form.address,
+    hometown: form.hometown,
+    area_of_residence: form.area_of_residence,
+    school_or_workplace: form.school_or_workplace,
+    place_of_work: form.place_of_work,
     visit_date: form.visit_date,
     service_attended: form.service_attended,
     how_heard_about_church: form.how_heard_about_church,
@@ -158,6 +187,16 @@ export async function createRlcVisitorInConvex(
     date_of_birth: form.date_of_birth,
     occupation: form.occupation,
     marital_status: form.marital_status,
+    spouse_name: form.spouse_name,
+    children_count: form.children_count,
+    emergency_contact_name: form.emergency_contact_name,
+    emergency_contact_phone: form.emergency_contact_phone,
+    emergency_contact_relation: form.emergency_contact_relation,
+    prayer_request: form.prayer_request,
+    notes: form.notes,
+    is_first_timer: form.is_first_timer,
+    interested_in_baptism: form.interested_in_baptism,
+    interested_in_membership: form.interested_in_membership,
   })) as Record<string, unknown>
 
   const v = convexRlcVisitorDocToVisitor(doc)
@@ -180,10 +219,16 @@ export async function updateRlcVisitorInConvex(
     id,
     performed_by: performedBy,
     first_name: form.first_name,
+    middle_name: form.middle_name,
     last_name: form.last_name,
     phone: form.phone,
+    secondary_phone: form.secondary_phone,
     email: form.email,
     address: form.address,
+    hometown: form.hometown,
+    area_of_residence: form.area_of_residence,
+    school_or_workplace: form.school_or_workplace,
+    place_of_work: form.place_of_work,
     visit_date: form.visit_date,
     service_attended: form.service_attended,
     how_heard_about_church: form.how_heard_about_church,
@@ -198,6 +243,16 @@ export async function updateRlcVisitorInConvex(
     date_of_birth: form.date_of_birth,
     occupation: form.occupation,
     marital_status: form.marital_status,
+    spouse_name: form.spouse_name,
+    children_count: form.children_count,
+    emergency_contact_name: form.emergency_contact_name,
+    emergency_contact_phone: form.emergency_contact_phone,
+    emergency_contact_relation: form.emergency_contact_relation,
+    prayer_request: form.prayer_request,
+    notes: form.notes,
+    is_first_timer: form.is_first_timer,
+    interested_in_baptism: form.interested_in_baptism,
+    interested_in_membership: form.interested_in_membership,
   })) as Record<string, unknown>
 
   const v = convexRlcVisitorDocToVisitor(doc)
@@ -409,9 +464,9 @@ export async function recordRlcAttendanceInConvex(args: {
   method: Attendance['method']
   createdBy?: string
   notes?: string
-}): Promise<Attendance> {
+}): Promise<{ already_checked_in: boolean; attendance: Attendance }> {
   const client = getConvexHttpClient()
-  const doc = (await client.mutation(api.rlc.recordRlcAttendanceWithSecret, {
+  const result = (await client.mutation(api.rlc.recordRlcAttendanceWithSecret, {
     secret: requireCoreServerSecret(),
     member_id: args.memberId,
     visitor_id: args.visitorId,
@@ -421,11 +476,41 @@ export async function recordRlcAttendanceInConvex(args: {
     method: args.method,
     created_by: args.createdBy,
     notes: args.notes,
-  })) as Record<string, unknown>
+  })) as { already_checked_in?: boolean; attendance?: Record<string, unknown> } & Record<string, unknown>
+
   const { convexAttendanceDocToAttendance } = await import('@/lib/convex/core-bridge')
-  const row = convexAttendanceDocToAttendance(doc)
+  const attendanceDoc = (result.attendance ?? result) as Record<string, unknown>
+  const row = convexAttendanceDocToAttendance(attendanceDoc)
   if (!row) throw new Error('Failed to record attendance')
-  return row
+  return {
+    already_checked_in: Boolean(result.already_checked_in),
+    attendance: row,
+  }
+}
+
+export async function resolveRlcScanFromConvex(scanned: string): Promise<{
+  type: 'visitor' | 'member'
+  visitor?: Visitor
+  member?: Member
+} | null> {
+  const client = getConvexHttpClient()
+  const result = (await client.query(api.rlc.resolveRlcScanWithSecret, {
+    secret: requireCoreServerSecret(),
+    scanned,
+  })) as {
+    type?: 'visitor' | 'member'
+    visitor?: Record<string, unknown>
+    member?: Record<string, unknown>
+  } | null
+
+  if (!result?.type) return null
+  if (result.type === 'visitor') {
+    const visitor = convexRlcVisitorDocToVisitor(result.visitor)
+    return visitor ? { type: 'visitor', visitor } : null
+  }
+  const { convexMemberDocToMember } = await import('@/lib/convex/core-bridge')
+  const member = convexMemberDocToMember(result.member ?? null)
+  return member ? { type: 'member', member } : null
 }
 
 export async function listRlcAttendanceFromConvex(args?: {

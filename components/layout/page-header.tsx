@@ -19,12 +19,12 @@ export function PageHeader({ title, description, eyebrow, actions, className }: 
     >
       <div className="min-w-0 space-y-2">
         {eyebrow ? (
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600">{eyebrow}</p>
+          <p className="app-stat-label text-amber-700">{eyebrow}</p>
         ) : (
           <div className="app-accent-bar" />
         )}
         <h1 className="app-page-title">{title}</h1>
-        {description ? <p className="app-page-description max-w-2xl">{description}</p> : null}
+        {description ? <p className="app-page-description mt-1 max-w-2xl">{description}</p> : null}
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
     </div>

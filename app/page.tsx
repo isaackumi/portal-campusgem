@@ -98,10 +98,10 @@ export default function HomePage() {
         {sections.map((section) => (
           <section key={section.id} aria-labelledby={`landing-${section.id}`}>
             <div className="mb-6 max-w-2xl">
-              <h2 id={`landing-${section.id}`} className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+              <h2 id={`landing-${section.id}`} className="app-section-title sm:text-xl">
                 {section.title}
               </h2>
-              <p className="mt-1 text-sm text-slate-600 sm:text-base">{section.description}</p>
+              <p className="app-page-description mt-1">{section.description}</p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

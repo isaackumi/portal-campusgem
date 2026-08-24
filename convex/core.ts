@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { query, mutation } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
+import { sealMemberCheckIn, sealVisitorCheckIn } from './lib/rlcCheckInCode'
 
 const attendanceMethod = v.union(
   v.literal('qr'),
@@ -519,13 +520,14 @@ export const bootstrapUserWithSecret = mutation({
       .withIndex('by_user_id', (q) => q.eq('user_id', String(userId)))
       .first()
     if (!existingMember) {
-      await ctx.db.insert('members', {
+      const memberId = await ctx.db.insert('members', {
         user_id: String(userId),
         emergency_contacts: [],
         documents: [],
         status: 'active',
         updated_at: now,
       })
+      await sealMemberCheckIn(ctx, memberId, args.full_name)
     }
 
     return user
@@ -692,6 +694,11 @@ export const createVisitorWithSecret = mutation({
       is_active: args.is_active,
       updated_at: now,
     })
+    await sealVisitorCheckIn(
+      ctx,
+      id,
+      [args.first_name, args.last_name].filter(Boolean).join(' ').trim() || 'Visitor'
+    )
     return await ctx.db.get('visitors', id)
   },
 })
@@ -873,6 +880,10 @@ export const insertMemberWithSecret = mutation({
     status: v.optional(memberStatusValue),
     emergency_contacts: v.optional(v.any()),
     documents: v.optional(v.any()),
+    hometown: v.optional(v.string()),
+    area_of_residence: v.optional(v.string()),
+    school_or_workplace: v.optional(v.string()),
+    congregation: v.optional(v.union(v.literal('rlc'), v.literal('campus_gem'), v.literal('both'))),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -887,8 +898,14 @@ export const insertMemberWithSecret = mutation({
       status: args.status ?? 'active',
       emergency_contacts: Array.isArray(args.emergency_contacts) ? args.emergency_contacts : [],
       documents: Array.isArray(args.documents) ? args.documents : [],
+      hometown: args.hometown,
+      area_of_residence: args.area_of_residence,
+      school_or_workplace: args.school_or_workplace,
+      congregation: args.congregation,
       updated_at: now,
     })
+    const user = await ctx.db.get('users', args.user_id as Id<'users'>)
+    await sealMemberCheckIn(ctx, id, user?.full_name ?? 'Member')
     return await ctx.db.get('members', id)
   },
 })
@@ -905,6 +922,18 @@ export const patchMemberWithSecret = mutation({
     emergency_contacts: v.optional(v.any()),
     documents: v.optional(v.any()),
     profile_photo: v.optional(v.string()),
+    hometown: v.optional(v.string()),
+    area_of_residence: v.optional(v.string()),
+    school_or_workplace: v.optional(v.string()),
+    congregation: v.optional(v.union(v.literal('rlc'), v.literal('campus_gem'), v.literal('both'))),
+    date_of_baptism: v.optional(v.string()),
+    holy_ghost_baptism: v.optional(v.boolean()),
+    date_of_holy_ghost_baptism: v.optional(v.string()),
+    previous_church: v.optional(v.string()),
+    reason_for_leaving: v.optional(v.string()),
+    special_skills: v.optional(v.array(v.string())),
+    interests: v.optional(v.array(v.string())),
+    is_visitor: v.optional(v.boolean()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -918,8 +947,27 @@ export const patchMemberWithSecret = mutation({
     if (args.emergency_contacts !== undefined) patch.emergency_contacts = args.emergency_contacts
     if (args.documents !== undefined) patch.documents = args.documents
     if (args.profile_photo !== undefined) patch.profile_photo = args.profile_photo
+    if (args.hometown !== undefined) patch.hometown = args.hometown
+    if (args.area_of_residence !== undefined) patch.area_of_residence = args.area_of_residence
+    if (args.school_or_workplace !== undefined) patch.school_or_workplace = args.school_or_workplace
+    if (args.congregation !== undefined) patch.congregation = args.congregation
+    if (args.date_of_baptism !== undefined) patch.date_of_baptism = args.date_of_baptism
+    if (args.holy_ghost_baptism !== undefined) patch.holy_ghost_baptism = args.holy_ghost_baptism
+    if (args.date_of_holy_ghost_baptism !== undefined) {
+      patch.date_of_holy_ghost_baptism = args.date_of_holy_ghost_baptism
+    }
+    if (args.previous_church !== undefined) patch.previous_church = args.previous_church
+    if (args.reason_for_leaving !== undefined) patch.reason_for_leaving = args.reason_for_leaving
+    if (args.special_skills !== undefined) patch.special_skills = args.special_skills
+    if (args.interests !== undefined) patch.interests = args.interests
+    if (args.is_visitor !== undefined) patch.is_visitor = args.is_visitor
 
     await ctx.db.patch(args.id, patch)
+    const member = await ctx.db.get('members', args.id)
+    if (member && !member.check_in_code) {
+      const user = member.user_id ? await ctx.db.get('users', member.user_id as Id<'users'>) : null
+      await sealMemberCheckIn(ctx, args.id, user?.full_name ?? 'Member')
+    }
     return await ctx.db.get('members', args.id)
   },
 })

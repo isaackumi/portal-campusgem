@@ -225,6 +225,9 @@ export default function RlcVisitorDetailPage() {
             <Badge variant="outline">{RLC_FOLLOW_UP_LABELS[visitor.follow_up_status]}</Badge>
           ) : null}
           {visitor.source ? <Badge variant="secondary">{RLC_SOURCE_LABELS[visitor.source]}</Badge> : null}
+          {visitor.is_first_timer ? <Badge variant="outline">First timer</Badge> : null}
+          {visitor.interested_in_baptism ? <Badge variant="outline">Baptism</Badge> : null}
+          {visitor.interested_in_membership ? <Badge variant="outline">Membership</Badge> : null}
         </div>
       </RlcPageHeader>
 
@@ -239,14 +242,27 @@ export default function RlcVisitorDetailPage() {
                 <ContactActions phone={visitor.phone} email={visitor.email} />
               </div>
               {[
+                ['Check-in code', visitor.check_in_code],
                 ['Phone', visitor.phone],
+                ['Secondary phone', visitor.secondary_phone],
                 ['Email', visitor.email],
                 ['Address', visitor.address],
+                ['Area of residence', visitor.area_of_residence],
+                ['Hometown', visitor.hometown],
+                ['School / workplace', visitor.school_or_workplace],
+                ['Place of work', visitor.place_of_work],
                 ['Gender', visitor.gender],
                 ['Date of birth', visitor.date_of_birth],
                 ['Occupation', visitor.occupation],
                 ['Marital status', visitor.marital_status],
+                ['Spouse', visitor.spouse_name],
+                ['Children', visitor.children_count != null ? String(visitor.children_count) : undefined],
+                ['Emergency contact', visitor.emergency_contact_name],
+                ['Emergency phone', visitor.emergency_contact_phone],
+                ['Emergency relation', visitor.emergency_contact_relation],
                 ['How heard', visitor.how_heard_about_church],
+                ['Prayer request', visitor.prayer_request],
+                ['Notes', visitor.notes],
               ].map(([label, value]) =>
                 value ? (
                   <div key={label}>

@@ -305,9 +305,10 @@ function DashboardContent() {
     <DashboardLayout>
       <div className="mx-auto max-w-7xl space-y-6 rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Member Tracking & Follow-up</h1>
-            <p className="mt-1 text-sm text-slate-600">
+          <div className="min-w-0 space-y-1">
+            <div className="app-accent-bar" />
+            <h1 className="app-page-title">Member Tracking & Follow-up</h1>
+            <p className="app-page-description">
               A workflow-first dashboard for contacts, registration history, and follow-up.
             </p>
           </div>
@@ -327,7 +328,7 @@ function DashboardContent() {
           <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-white">
             <CardHeader className="pb-2">
               <CardDescription>Total admins</CardDescription>
-              <CardTitle className="text-3xl">{usersLoading ? '...' : totalAdmins}</CardTitle>
+              <p className="app-stat-value">{usersLoading ? '…' : totalAdmins}</p>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               <Users className="mr-1 inline h-4 w-4" />
@@ -337,7 +338,7 @@ function DashboardContent() {
           <Card className="border-violet-200 bg-gradient-to-br from-violet-50 to-white">
             <CardHeader className="pb-2">
               <CardDescription>Camp contacts</CardDescription>
-              <CardTitle className="text-3xl">{campRows.length}</CardTitle>
+              <p className="app-stat-value">{campRows.length}</p>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               <Phone className="mr-1 inline h-4 w-4" />
@@ -347,7 +348,7 @@ function DashboardContent() {
           <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
             <CardHeader className="pb-2">
               <CardDescription>Linked contacts</CardDescription>
-              <CardTitle className="text-3xl">{linkedContacts}</CardTitle>
+              <p className="app-stat-value">{linkedContacts}</p>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               Matched to member accounts
@@ -356,7 +357,7 @@ function DashboardContent() {
           <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
             <CardHeader className="pb-2">
               <CardDescription>My pending follow-ups</CardDescription>
-              <CardTitle className="text-3xl">{myFollowUpsLoading ? '...' : myPendingFollowUps}</CardTitle>
+              <p className="app-stat-value">{myFollowUpsLoading ? '…' : myPendingFollowUps}</p>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               Assigned to you in active camp year
@@ -368,7 +369,7 @@ function DashboardContent() {
           <Card className="border-rose-200 bg-gradient-to-br from-rose-50 to-white">
             <CardHeader className="pb-2">
               <CardDescription>Follow-up SLA</CardDescription>
-              <CardTitle className="text-base">Queue health</CardTitle>
+              <CardTitle>Queue health</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
@@ -425,7 +426,7 @@ function DashboardContent() {
           <Card className="border-cyan-200 bg-gradient-to-br from-cyan-50 to-white">
             <CardHeader className="pb-2">
               <CardDescription>Assignment balance</CardDescription>
-              <CardTitle className="text-base">Pending load by staff</CardTitle>
+              <CardTitle>Pending load by staff</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {assignmentBalance.length === 0 ? (
@@ -444,7 +445,7 @@ function DashboardContent() {
           <Card className="border-lime-200 bg-gradient-to-br from-lime-50 to-white">
             <CardHeader className="pb-2">
               <CardDescription>New vs returning trend</CardDescription>
-              <CardTitle className="text-base">Registration mix</CardTitle>
+              <CardTitle>Registration mix</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex items-center justify-between">

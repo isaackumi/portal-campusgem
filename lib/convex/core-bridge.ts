@@ -55,6 +55,11 @@ export function convexMemberDocToMember(doc: Record<string, unknown> | null | un
     rlc_membership_type: doc.rlc_membership_type as Member['rlc_membership_type'],
     rlc_roles: Array.isArray(doc.rlc_roles) ? (doc.rlc_roles as Member['rlc_roles']) : undefined,
     source_visitor_id: doc.source_visitor_id != null ? String(doc.source_visitor_id) : undefined,
+    hometown: doc.hometown != null ? String(doc.hometown) : undefined,
+    area_of_residence: doc.area_of_residence != null ? String(doc.area_of_residence) : undefined,
+    school_or_workplace: doc.school_or_workplace != null ? String(doc.school_or_workplace) : undefined,
+    check_in_code: doc.check_in_code != null ? String(doc.check_in_code) : undefined,
+    qr_code: doc.qr_code != null ? String(doc.qr_code) : undefined,
     created_at: isoFromMs(ct) || new Date().toISOString(),
     updated_at: isoFromMs(ut) || isoFromMs(ct) || new Date().toISOString(),
   }
@@ -601,7 +606,10 @@ export async function insertMemberInConvex(memberData: Partial<Member>): Promise
     notes: memberData.notes,
     status: memberData.status,
     emergency_contacts: memberData.emergency_contacts,
-    documents: memberData.documents,
+    hometown: memberData.hometown,
+    area_of_residence: memberData.area_of_residence,
+    school_or_workplace: memberData.school_or_workplace,
+    congregation: memberData.congregation,
   })) as Record<string, unknown>
   const m = convexMemberDocToMember(doc)
   if (!m) throw new Error('Failed to create member')
@@ -621,6 +629,18 @@ export async function patchMemberInConvex(memberId: string, updates: Partial<Mem
     emergency_contacts: updates.emergency_contacts,
     documents: updates.documents,
     profile_photo: updates.profile_photo,
+    hometown: updates.hometown,
+    area_of_residence: updates.area_of_residence,
+    school_or_workplace: updates.school_or_workplace,
+    congregation: updates.congregation,
+    date_of_baptism: updates.date_of_baptism,
+    holy_ghost_baptism: updates.holy_ghost_baptism,
+    date_of_holy_ghost_baptism: updates.date_of_holy_ghost_baptism,
+    previous_church: updates.previous_church,
+    reason_for_leaving: updates.reason_for_leaving,
+    special_skills: updates.special_skills,
+    interests: updates.interests,
+    is_visitor: updates.is_visitor,
   })) as Record<string, unknown>
   const m = convexMemberDocToMember(doc)
   if (!m) throw new Error('Failed to update member')

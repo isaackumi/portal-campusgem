@@ -21,7 +21,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { AlertCircle, Eye } from 'lucide-react'
+import { AlertCircle, Eye, MessageCircle } from 'lucide-react'
 
 const SLA_FILTERS = ['all', 'overdue', 'due_soon', 'healthy'] as const
 
@@ -147,12 +147,26 @@ function FollowUpContent() {
                     {RLC_FOLLOW_UP_LABELS[v.follow_up_status ?? 'pending']}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/admin/rlc/visitors/${v.id}`}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    Open
-                  </Link>
-                </Button>
+                <div className="flex shrink-0 gap-2">
+                  {v.phone ? (
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={`https://wa.me/${v.phone.replace(/\D/g, '').replace(/^0/, '233')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        WhatsApp
+                      </a>
+                    </Button>
+                  ) : null}
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/admin/rlc/visitors/${v.id}`}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Open
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )

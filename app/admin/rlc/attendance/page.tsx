@@ -1,36 +1,52 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/providers'
-import { loadRlcAttendanceAction, loadRlcMembersAction, loadRlcVisitorsAction, recordRlcAttendanceAction } from '@/lib/actions/rlc'
-import { RLC_SERVICES } from '@/lib/constants/rlc'
-import type { Attendance, Member, Visitor } from '@/lib/types'
+import {
+  loadRlcAttendanceAction,
+  loadRlcMembersAction,
+  loadRlcVisitorsAction,
+  recordRlcAttendanceAction,
+} from '@/lib/actions/rlc'
+import { RLC_NAME, RLC_SERVICES } from '@/lib/constants/rlc'
+import {
+  attendanceRosterToCsv,
+  buildAttendanceRoster,
+  downloadAttendanceCsv,
+  filterAttendancePeople,
+  memberToAttendancePerson,
+  rlcServiceLabel,
+  sessionCheckedKeys,
+  visitorToAttendancePerson,
+  type RlcAttendancePerson,
+} from '@/lib/rlc/attendance-roster'
+import type { Attendance, Member, ServiceType, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
-import { Calendar, QrCode } from 'lucide-react'
+import { CheckCircle, Download, Printer, QrCode, Search, UserCheck } from 'lucide-react'
 
 export default function RlcAttendancePage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0])
-  const [serviceType, setServiceType] = useState('sunday_service')
+  const [serviceType, setServiceType] = useState<ServiceType>('sunday_service')
+  const [query, setQuery] = useState('')
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [visitors, setVisitors] = useState<Visitor[]>([])
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('')
-  const [selectedVisitorId, setSelectedVisitorId] = useState<string>('')
   const [loading, setLoading] = useState(true)
-  const [recording, setRecording] = useState(false)
+  const [recordingKey, setRecordingKey] = useState<string | null>(null)
 
-  async function reload() {
+  const reload = useCallback(async () => {
     const [a, m, v] = await Promise.all([
       loadRlcAttendanceAction({ serviceDate }),
       loadRlcMembersAction(),
@@ -38,37 +54,75 @@ export default function RlcAttendancePage() {
     ])
     setAttendance(a.data ?? [])
     setMembers(m.data ?? [])
-    setVisitors((v.data ?? []).filter((x) => x.is_active && !x.converted_to_member))
+    setVisitors((v.data ?? []).filter((x) => x.is_active !== false && !x.converted_to_member))
     setLoading(false)
-  }
-
-  useEffect(() => {
-    reload()
   }, [serviceDate])
 
-  async function checkIn() {
-    if (!user?.id) return
-    if (!selectedMemberId && !selectedVisitorId) {
-      toast({ variant: 'destructive', title: 'Select a member or visitor' })
+  useEffect(() => {
+    void reload()
+  }, [reload])
+
+  const checkedKeys = useMemo(
+    () => sessionCheckedKeys(attendance, serviceType),
+    [attendance, serviceType]
+  )
+
+  const people = useMemo(() => {
+    const list: RlcAttendancePerson[] = [
+      ...members.map(memberToAttendancePerson),
+      ...visitors.map(visitorToAttendancePerson),
+    ]
+    return list.sort((a, b) => a.name.localeCompare(b.name))
+  }, [members, visitors])
+
+  const searchHits = useMemo(
+    () => filterAttendancePeople(people, query, checkedKeys),
+    [people, query, checkedKeys]
+  )
+
+  const roster = useMemo(
+    () => buildAttendanceRoster(attendance, members, visitors, serviceType),
+    [attendance, members, visitors, serviceType]
+  )
+
+  const printHref = `/admin/rlc/attendance/print?date=${encodeURIComponent(serviceDate)}&service=${encodeURIComponent(serviceType)}`
+
+  async function checkIn(person: RlcAttendancePerson) {
+    if (!user?.id) {
+      toast({ variant: 'destructive', title: 'Sign in required' })
       return
     }
-    setRecording(true)
-    const { error } = await recordRlcAttendanceAction({
-      memberId: selectedMemberId || undefined,
-      visitorId: selectedVisitorId || undefined,
+    setRecordingKey(person.key)
+    const { data, error } = await recordRlcAttendanceAction({
+      memberId: person.memberId,
+      visitorId: person.visitorId,
       serviceDate,
-      serviceType: serviceType as Attendance['service_type'],
+      serviceType,
+      method: 'admin',
       createdBy: user.id,
     })
-    setRecording(false)
-    if (error) {
-      toast({ variant: 'destructive', title: 'Check-in failed', description: error })
+    setRecordingKey(null)
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Check-in failed', description: error ?? 'Try again' })
       return
     }
-    toast({ title: 'Checked in' })
-    setSelectedMemberId('')
-    setSelectedVisitorId('')
+    toast({
+      title: data.already_checked_in ? 'Already checked in' : 'Checked in',
+      description: `${person.name} · ${rlcServiceLabel(serviceType)}`,
+    })
+    setQuery('')
     await reload()
+  }
+
+  function handleDownloadCsv() {
+    const csv = attendanceRosterToCsv(roster, {
+      serviceDate,
+      serviceType,
+      churchName: RLC_NAME,
+    })
+    const stamp = `${serviceDate}-${serviceType}`
+    downloadAttendanceCsv(`rlc-attendance-${stamp}.csv`, csv)
+    toast({ title: 'CSV downloaded', description: `${roster.length} people for ${rlcServiceLabel(serviceType)}` })
   }
 
   if (loading) {
@@ -80,114 +134,159 @@ export default function RlcAttendancePage() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer className="space-y-6">
       <RlcPageHeader
         title="RLC Attendance"
-        subtitle="Record Sunday and midweek attendance for RLC members and visitors."
+        subtitle="Search by name, phone, membership ID, or check-in code. QR scan is optional."
         actions={
           <>
             <Button variant="outline" asChild>
-              <Link href="/attendance/scanner">
-                <QrCode className="mr-2 h-4 w-4" />
-                QR Scanner
+              <Link href={printHref} target="_blank">
+                <Printer className="mr-2 h-4 w-4" />
+                Print
               </Link>
             </Button>
+            <Button variant="outline" onClick={handleDownloadCsv} disabled={roster.length === 0}>
+              <Download className="mr-2 h-4 w-4" />
+              Download CSV
+            </Button>
             <Button variant="outline" asChild>
-              <Link href="/attendance/analytics">
-                <Calendar className="mr-2 h-4 w-4" />
-                All attendance analytics
+              <Link href="/admin/rlc/scan">
+                <QrCode className="mr-2 h-4 w-4" />
+                Optional QR scan
               </Link>
             </Button>
           </>
         }
       />
 
+      <Card className="border-rose-100/80">
+        <CardHeader>
+          <CardTitle>Service</CardTitle>
+          <CardDescription>Attendance is tracked separately for each service on a date.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="service-date">Service date</Label>
+            <Input
+              id="service-date"
+              type="date"
+              value={serviceDate}
+              onChange={(e) => setServiceDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Service</Label>
+            <Select value={serviceType} onValueChange={(v) => setServiceType(v as ServiceType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RLC_SERVICES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Manual check-in</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5 text-rose-700" />
+              Manual check-in
+            </CardTitle>
+            <CardDescription>
+              Type a name, phone number, RLC code, or membership ID. {checkedKeys.size} already in this service.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Service date</Label>
-                <Input type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Service</Label>
-                <Select value={serviceType} onValueChange={setServiceType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RLC_SERVICES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>RLC member</Label>
-              <Select value={selectedMemberId || 'none'} onValueChange={(v) => {
-                setSelectedMemberId(v === 'none' ? '' : v)
-                if (v !== 'none') setSelectedVisitorId('')
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select member" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
-                  {members.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.user?.full_name ?? m.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Active visitor</Label>
-              <Select value={selectedVisitorId || 'none'} onValueChange={(v) => {
-                setSelectedVisitorId(v === 'none' ? '' : v)
-                if (v !== 'none') setSelectedMemberId('')
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select visitor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
-                  {visitors.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.first_name} {v.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button className="w-full bg-rose-700 hover:bg-rose-800" onClick={checkIn} disabled={recording}>
-              {recording ? 'Recording…' : 'Check in'}
-            </Button>
+          <CardContent className="space-y-3">
+            <Input
+              autoFocus
+              placeholder="Search name, phone, RLC-26-XXXX, membership ID…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchHits[0]) {
+                  e.preventDefault()
+                  void checkIn(searchHits[0])
+                }
+              }}
+            />
+            {searchHits.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {query.trim()
+                  ? 'No matching members or visitors left to check in.'
+                  : 'Start typing to find someone, or browse suggestions below.'}
+              </p>
+            ) : (
+              searchHits.map((person) => (
+                <div
+                  key={person.key}
+                  className="flex items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{person.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {person.kind === 'member' ? 'Member' : 'Visitor'}
+                      {person.phone ? ` · ${person.phone}` : ''}
+                      {person.code ? ` · ${person.code}` : ''}
+                      {person.membershipId ? ` · ${person.membershipId}` : ''}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="shrink-0 bg-rose-700 hover:bg-rose-800"
+                    disabled={recordingKey === person.key}
+                    onClick={() => void checkIn(person)}
+                  >
+                    {recordingKey === person.key ? '…' : 'Check in'}
+                  </Button>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>
-              Today&apos;s RLC attendance ({attendance.length})
-            </CardTitle>
+          <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-rose-700" />
+                {rlcServiceLabel(serviceType)}
+              </CardTitle>
+              <CardDescription>
+                {serviceDate} · {roster.length} checked in
+              </CardDescription>
+            </div>
+            <Badge variant="secondary">{roster.length}</Badge>
           </CardHeader>
-          <CardContent className="max-h-96 space-y-2 overflow-y-auto">
-            {attendance.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No check-ins for this date yet.</p>
+          <CardContent className="max-h-[28rem] space-y-2 overflow-y-auto">
+            {roster.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No check-ins for this service yet.</p>
             ) : (
-              attendance.map((a) => (
-                <div key={a.id} className="rounded-lg border px-3 py-2 text-sm">
-                  <p className="font-medium">{a.member_id ? `Member ${a.member_id.slice(-6)}` : `Visitor ${a.visitor_id?.slice(-6)}`}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {a.service_type?.replace('_', ' ')} · {new Date(a.check_in_time).toLocaleTimeString()}
+              roster.map((row) => (
+                <div key={row.attendance.id} className="rounded-lg border px-3 py-2 text-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium">{row.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {row.kind === 'member' ? 'Member' : row.kind === 'visitor' ? 'Visitor' : 'Unknown'}
+                        {row.phone ? ` · ${row.phone}` : ''}
+                        {row.code ? ` · ${row.code}` : ''}
+                      </p>
+                    </div>
+                    <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {row.attendance.check_in_time
+                      ? new Date(row.attendance.check_in_time).toLocaleTimeString()
+                      : '—'}
+                    {row.attendance.method ? ` · ${row.attendance.method}` : ''}
                   </p>
                 </div>
               ))

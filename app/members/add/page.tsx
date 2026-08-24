@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
-import { createUserRecord } from '@/lib/actions/core-data'
+import { createUserRecord, loadMemberByUserId, updateMemberAction } from '@/lib/actions/core-data'
 import { generateMembershipId } from '@/lib/membershipId'
 import { CreateUserForm } from '@/lib/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -79,7 +79,11 @@ export default function AddMemberPage() {
     notes: '',
     join_year: new Date().getFullYear(),
     membership_id: '',
-    is_visitor: false
+    is_visitor: false,
+    hometown: '',
+    area_of_residence: '',
+    school_or_workplace: '',
+    congregation: 'campus_gem',
   })
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -168,10 +172,38 @@ export default function AddMemberPage() {
 
       if (userError || !userData) throw new Error(userError ?? 'Failed to create user')
 
-      // Member profile is created by createUser; update member with extra fields if needed later
-      const memberError = null
-
-      if (memberError) throw memberError
+      const { data: member } = await loadMemberByUserId(userData.id)
+      if (member) {
+        const { error: memberError } = await updateMemberAction(member.id, {
+          dob: formData.dob || undefined,
+          gender: formData.gender,
+          address: formData.address || undefined,
+          notes: formData.notes || undefined,
+          hometown: formData.hometown || undefined,
+          area_of_residence: formData.area_of_residence || undefined,
+          school_or_workplace: formData.school_or_workplace || undefined,
+          congregation: formData.congregation,
+          emergency_contacts:
+            formData.emergency_contact_name && formData.emergency_contact_phone
+              ? [
+                  {
+                    name: formData.emergency_contact_name,
+                    relation: formData.emergency_contact_relation || 'Emergency',
+                    phone: formData.emergency_contact_phone,
+                  },
+                ]
+              : [],
+          date_of_baptism: formData.date_of_baptism || undefined,
+          holy_ghost_baptism: formData.holy_ghost_baptism,
+          date_of_holy_ghost_baptism: formData.date_of_holy_ghost_baptism || undefined,
+          previous_church: formData.previous_church || undefined,
+          reason_for_leaving: formData.reason_for_leaving || undefined,
+          special_skills: formData.special_skills,
+          interests: formData.interests,
+          is_visitor: formData.is_visitor,
+        })
+        if (memberError) throw new Error(memberError)
+      }
 
       // Profile completion is now calculated in the frontend - no database updates needed
 
@@ -215,7 +247,7 @@ export default function AddMemberPage() {
       case 'personal':
         return !!(formData.first_name && formData.last_name && formData.dob && formData.gender)
       case 'contact':
-        return !!(formData.phone && formData.address)
+        return !!formData.phone
       case 'professional':
         return true // Optional fields
       case 'family':
@@ -380,14 +412,59 @@ export default function AddMemberPage() {
             </div>
 
             <div>
-              <Label htmlFor="address">Residential Address *</Label>
+              <Label htmlFor="address">Residential Address</Label>
               <Textarea 
                 id="address" 
                 value={formData.address} 
                 onChange={(e) => handleChange('address', e.target.value)} 
                 rows={3} 
-                required
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="area_of_residence">Area of residence</Label>
+                <Input
+                  id="area_of_residence"
+                  value={formData.area_of_residence ?? ''}
+                  onChange={(e) => handleChange('area_of_residence', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="hometown">Hometown</Label>
+                <Input
+                  id="hometown"
+                  value={formData.hometown ?? ''}
+                  onChange={(e) => handleChange('hometown', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="school_or_workplace">School / workplace</Label>
+                <Input
+                  id="school_or_workplace"
+                  value={formData.school_or_workplace ?? ''}
+                  onChange={(e) => handleChange('school_or_workplace', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Congregation</Label>
+                <Select
+                  value={formData.congregation ?? 'campus_gem'}
+                  onValueChange={(v) => handleChange('congregation', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="campus_gem">Campus Gem</SelectItem>
+                    <SelectItem value="rlc">Redemption Light</SelectItem>
+                    <SelectItem value="both">Both</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

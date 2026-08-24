@@ -3,6 +3,12 @@ import { query, mutation } from './_generated/server'
 import type { MutationCtx } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
+import {
+  isRlcCheckInCodeFormat,
+  normalizeRlcCheckInCode,
+  sealMemberCheckIn,
+  sealVisitorCheckIn,
+} from './lib/rlcCheckInCode'
 
 const followUpStatus = v.union(
   v.literal('pending'),
@@ -139,10 +145,16 @@ async function logInteraction(
 
 const visitorInputFields = {
   first_name: v.string(),
+  middle_name: v.optional(v.string()),
   last_name: v.optional(v.string()),
   phone: v.optional(v.string()),
+  secondary_phone: v.optional(v.string()),
   email: v.optional(v.string()),
   address: v.optional(v.string()),
+  hometown: v.optional(v.string()),
+  area_of_residence: v.optional(v.string()),
+  school_or_workplace: v.optional(v.string()),
+  place_of_work: v.optional(v.string()),
   visit_date: v.string(),
   service_attended: v.optional(v.string()),
   how_heard_about_church: v.optional(v.string()),
@@ -159,6 +171,16 @@ const visitorInputFields = {
   date_of_birth: v.optional(v.string()),
   occupation: v.optional(v.string()),
   marital_status: v.optional(maritalStatus),
+  spouse_name: v.optional(v.string()),
+  children_count: v.optional(v.number()),
+  emergency_contact_name: v.optional(v.string()),
+  emergency_contact_phone: v.optional(v.string()),
+  emergency_contact_relation: v.optional(v.string()),
+  prayer_request: v.optional(v.string()),
+  notes: v.optional(v.string()),
+  is_first_timer: v.optional(v.boolean()),
+  interested_in_baptism: v.optional(v.boolean()),
+  interested_in_membership: v.optional(v.boolean()),
 }
 
 export const listRlcVisitorsWithSecret = query({
@@ -236,10 +258,16 @@ export const createRlcVisitorWithSecret = mutation({
     const sponsorIds = args.invited_by_member_ids ?? []
     const id = await ctx.db.insert('visitors', {
       first_name: args.first_name.trim(),
+      middle_name: args.middle_name?.trim() || undefined,
       last_name: args.last_name?.trim(),
       phone: args.phone ? normalizeGhanaPhone(args.phone) : undefined,
+      secondary_phone: args.secondary_phone ? normalizeGhanaPhone(args.secondary_phone) : undefined,
       email: args.email?.trim() || undefined,
       address: args.address?.trim(),
+      hometown: args.hometown?.trim() || undefined,
+      area_of_residence: args.area_of_residence?.trim() || undefined,
+      school_or_workplace: args.school_or_workplace?.trim() || undefined,
+      place_of_work: args.place_of_work?.trim() || undefined,
       visit_date: args.visit_date,
       service_attended: args.service_attended,
       how_heard_about_church: args.how_heard_about_church,
@@ -258,11 +286,26 @@ export const createRlcVisitorWithSecret = mutation({
       date_of_birth: args.date_of_birth,
       occupation: args.occupation,
       marital_status: args.marital_status,
+      spouse_name: args.spouse_name?.trim() || undefined,
+      children_count: args.children_count,
+      emergency_contact_name: args.emergency_contact_name?.trim() || undefined,
+      emergency_contact_phone: args.emergency_contact_phone
+        ? normalizeGhanaPhone(args.emergency_contact_phone)
+        : undefined,
+      emergency_contact_relation: args.emergency_contact_relation?.trim() || undefined,
+      prayer_request: args.prayer_request?.trim() || undefined,
+      notes: args.notes?.trim() || undefined,
+      is_first_timer: args.is_first_timer ?? true,
+      interested_in_baptism: args.interested_in_baptism,
+      interested_in_membership: args.interested_in_membership,
       congregation: 'rlc',
       converted_to_member: false,
       is_active: true,
       updated_at: now,
     })
+
+    const fullName = [args.first_name, args.last_name].filter(Boolean).join(' ').trim()
+    await sealVisitorCheckIn(ctx, id, fullName)
 
     await logInteraction(ctx, {
       visitor_id: String(id),
@@ -295,10 +338,16 @@ export const updateRlcVisitorWithSecret = mutation({
     const now = Date.now()
     const patch: Record<string, unknown> = {
       first_name: args.first_name.trim(),
+      middle_name: args.middle_name?.trim() || undefined,
       last_name: args.last_name?.trim(),
       phone: args.phone ? normalizeGhanaPhone(args.phone) : undefined,
+      secondary_phone: args.secondary_phone ? normalizeGhanaPhone(args.secondary_phone) : undefined,
       email: args.email?.trim() || undefined,
       address: args.address?.trim(),
+      hometown: args.hometown?.trim() || undefined,
+      area_of_residence: args.area_of_residence?.trim() || undefined,
+      school_or_workplace: args.school_or_workplace?.trim() || undefined,
+      place_of_work: args.place_of_work?.trim() || undefined,
       visit_date: args.visit_date,
       service_attended: args.service_attended,
       how_heard_about_church: args.how_heard_about_church,
@@ -309,6 +358,18 @@ export const updateRlcVisitorWithSecret = mutation({
       date_of_birth: args.date_of_birth,
       occupation: args.occupation,
       marital_status: args.marital_status,
+      spouse_name: args.spouse_name?.trim() || undefined,
+      children_count: args.children_count,
+      emergency_contact_name: args.emergency_contact_name?.trim() || undefined,
+      emergency_contact_phone: args.emergency_contact_phone
+        ? normalizeGhanaPhone(args.emergency_contact_phone)
+        : undefined,
+      emergency_contact_relation: args.emergency_contact_relation?.trim() || undefined,
+      prayer_request: args.prayer_request?.trim() || undefined,
+      notes: args.notes?.trim() || undefined,
+      is_first_timer: args.is_first_timer,
+      interested_in_baptism: args.interested_in_baptism,
+      interested_in_membership: args.interested_in_membership,
       updated_at: now,
     }
 
@@ -325,6 +386,11 @@ export const updateRlcVisitorWithSecret = mutation({
     if (args.is_active != null) patch.is_active = args.is_active
 
     await ctx.db.patch('visitors', args.id as Id<'visitors'>, patch)
+    await sealVisitorCheckIn(
+      ctx,
+      args.id as Id<'visitors'>,
+      [args.first_name, args.last_name].filter(Boolean).join(' ').trim() || 'Visitor'
+    )
 
     await logInteraction(ctx, {
       visitor_id: args.id,
@@ -561,6 +627,9 @@ export const convertRlcVisitorToMemberWithSecret = mutation({
       congregation: 'rlc' as const,
       rlc_membership_type: args.rlc_membership_type ?? 'visitor_converted',
       source_visitor_id: args.visitor_id,
+      hometown: visitor.hometown,
+      area_of_residence: visitor.area_of_residence,
+      school_or_workplace: visitor.school_or_workplace ?? visitor.place_of_work,
       updated_at: now,
     }
 
@@ -578,6 +647,8 @@ export const convertRlcVisitorToMemberWithSecret = mutation({
     }
 
     if (!member) throw new Error('Failed to create member profile.')
+
+    await sealMemberCheckIn(ctx, member._id, fullName)
 
     await ctx.db.patch('visitors', args.visitor_id as Id<'visitors'>, {
       converted_to_member: true,
@@ -727,6 +798,12 @@ export const addPersonToRlcWithSecret = mutation({
 
     if (!member) throw new Error('Could not resolve a member profile for RLC.')
 
+    await sealMemberCheckIn(
+      ctx,
+      member._id,
+      user?.full_name ?? 'RLC Member'
+    )
+
     const mergedRoles = mergeRlcRoles(member.rlc_roles, args.rlc_roles)
     const congregation = resolveRlcCongregation(member.congregation)
 
@@ -760,6 +837,9 @@ export const addPersonToRlcWithSecret = mutation({
           phone: user.phone,
           email: user.email,
           address: member.address,
+          hometown: member.hometown,
+          area_of_residence: member.area_of_residence,
+          school_or_workplace: member.school_or_workplace,
           visit_date: new Date().toISOString().split('T')[0],
           service_attended: 'RLC Service',
           source: args.camp_registration_id ? 'camp' : 'campus_gem',
@@ -777,6 +857,11 @@ export const addPersonToRlcWithSecret = mutation({
           is_active: true,
           updated_at: now,
         })
+        await sealVisitorCheckIn(
+          ctx,
+          visitorId,
+          [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.full_name
+        )
         await logInteraction(ctx, {
           visitor_id: String(visitorId),
           performed_by: args.performed_by,
@@ -822,6 +907,8 @@ export const createRlcVisitorFromCampRegistrationWithSecret = mutation({
       phone: reg.phone ? normalizeGhanaPhone(reg.phone) : undefined,
       email: reg.email,
       address: reg.address_school_work ?? reg.residence,
+      school_or_workplace: reg.address_school_work ?? undefined,
+      area_of_residence: reg.residence,
       visit_date: args.visit_date ?? new Date().toISOString().split('T')[0],
       service_attended: 'Camp Meeting',
       how_heard_about_church: 'Camp Meeting',
@@ -841,6 +928,7 @@ export const createRlcVisitorFromCampRegistrationWithSecret = mutation({
       is_active: true,
       updated_at: now,
     })
+    await sealVisitorCheckIn(ctx, id, reg.full_name)
 
     await logInteraction(ctx, {
       visitor_id: String(id),
@@ -884,6 +972,9 @@ export const createRlcVisitorFromCampusMemberWithSecret = mutation({
       phone: user.phone,
       email: user.email,
       address: member.address,
+      hometown: member.hometown,
+      area_of_residence: member.area_of_residence,
+      school_or_workplace: member.school_or_workplace,
       visit_date: args.visit_date ?? new Date().toISOString().split('T')[0],
       service_attended: 'RLC Service',
       source: 'campus_gem',
@@ -903,6 +994,11 @@ export const createRlcVisitorFromCampusMemberWithSecret = mutation({
       is_active: true,
       updated_at: now,
     })
+    await sealVisitorCheckIn(
+      ctx,
+      id,
+      [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.full_name
+    )
 
     await logInteraction(ctx, {
       visitor_id: String(id),
@@ -1051,13 +1147,32 @@ export const recordRlcAttendanceWithSecret = mutation({
       throw new Error('Either member_id or visitor_id is required.')
     }
 
+    const serviceTypeValue = args.service_type ?? 'sunday_service'
+    const existingRows = await ctx.db
+      .query('attendance')
+      .withIndex('by_congregation_and_date', (q) =>
+        q.eq('congregation', 'rlc').eq('service_date', args.service_date)
+      )
+      .collect()
+
+    const already = existingRows.find((row) => {
+      if (row.service_type !== serviceTypeValue) return false
+      if (args.member_id && row.member_id === args.member_id) return true
+      if (args.visitor_id && row.visitor_id === args.visitor_id) return true
+      return false
+    })
+
+    if (already) {
+      return { already_checked_in: true, attendance: already }
+    }
+
     const now = Date.now()
     const id = await ctx.db.insert('attendance', {
       member_id: args.member_id,
       visitor_id: args.visitor_id,
       congregation: 'rlc',
       service_date: args.service_date,
-      service_type: args.service_type ?? 'sunday_service',
+      service_type: serviceTypeValue,
       check_in_time: args.check_in_time,
       method: args.method,
       metadata: {},
@@ -1068,7 +1183,88 @@ export const recordRlcAttendanceWithSecret = mutation({
       updated_at: now,
     })
 
-    return await ctx.db.get('attendance', id)
+    return { already_checked_in: false, attendance: await ctx.db.get('attendance', id) }
+  },
+})
+
+export const resolveRlcScanWithSecret = query({
+  args: { secret: v.string(), scanned: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { secret, scanned }) => {
+    assertServerSecret(secret)
+    const text = scanned.trim()
+    if (!text) return null
+
+    if (isRlcCheckInCodeFormat(text)) {
+      const code = normalizeRlcCheckInCode(text)
+      const byCode = await ctx.db
+        .query('visitors')
+        .withIndex('by_check_in_code', (q) => q.eq('check_in_code', code))
+        .first()
+      if (byCode) return { type: 'visitor', visitor: byCode }
+    }
+
+    try {
+      const parsed = JSON.parse(text) as {
+        id?: string
+        type?: string
+        code?: string
+        check_in_code?: string
+      }
+      const code = parsed.check_in_code ?? parsed.code
+      if (code && isRlcCheckInCodeFormat(code)) {
+        const byCode = await ctx.db
+          .query('visitors')
+          .withIndex('by_check_in_code', (q) => q.eq('check_in_code', normalizeRlcCheckInCode(code)))
+          .first()
+        if (byCode) return { type: 'visitor', visitor: byCode }
+      }
+      if (parsed.id) {
+        const visitor = await ctx.db.get('visitors', parsed.id as Id<'visitors'>)
+        if (visitor) return { type: 'visitor', visitor }
+        const member = await ctx.db.get('members', parsed.id as Id<'members'>)
+        if (member) return { type: 'member', member }
+      }
+    } catch {
+      // not JSON
+    }
+
+    for (const variant of phoneLookupVariants(text)) {
+      const visitor = await ctx.db
+        .query('visitors')
+        .withIndex('by_phone', (q) => q.eq('phone', variant))
+        .first()
+      if (visitor) return { type: 'visitor', visitor }
+
+      const user = await ctx.db
+        .query('users')
+        .withIndex('by_phone', (q) => q.eq('phone', variant))
+        .first()
+      if (user) {
+        const member = await ctx.db
+          .query('members')
+          .withIndex('by_user_id', (q) => q.eq('user_id', String(user._id)))
+          .first()
+        if (member) return { type: 'member', member, user }
+      }
+    }
+
+    const membershipNeedle = normalizeMembershipForLookup(text)
+    if (membershipNeedle.length >= 4) {
+      const users = await ctx.db.query('users').collect()
+      const user = users.find(
+        (u) => normalizeMembershipForLookup(String(u.membership_id ?? '')) === membershipNeedle
+      )
+      if (user) {
+        const member = await ctx.db
+          .query('members')
+          .withIndex('by_user_id', (q) => q.eq('user_id', String(user._id)))
+          .first()
+        if (member) return { type: 'member', member, user }
+      }
+    }
+
+    return null
   },
 })
 
@@ -1137,5 +1333,28 @@ export const searchPeopleForRlcImportWithSecret = query({
     }
 
     return results
+  },
+})
+
+export const backfillRlcCheckInCodesWithSecret = mutation({
+  args: { secret: v.string() },
+  returns: v.object({ visitors: v.number(), members: v.number() }),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    let visitors = 0
+    let members = 0
+    for (const row of await ctx.db.query('visitors').collect()) {
+      if (row.check_in_code?.trim()) continue
+      const name = [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || 'Visitor'
+      await sealVisitorCheckIn(ctx, row._id, name)
+      visitors += 1
+    }
+    for (const row of await ctx.db.query('members').collect()) {
+      if (row.check_in_code?.trim()) continue
+      const user = await ctx.db.get('users', row.user_id as Id<'users'>)
+      await sealMemberCheckIn(ctx, row._id, user?.full_name ?? 'Member')
+      members += 1
+    }
+    return { visitors, members }
   },
 })

@@ -44,6 +44,14 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
             />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="middle_name">Middle name <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input
+              id="middle_name"
+              value={form.middle_name ?? ''}
+              onChange={(e) => onChange({ ...form, middle_name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="last_name">Last name</Label>
             <Input
               id="last_name"
@@ -60,6 +68,14 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
             />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="secondary_phone">Secondary phone <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input
+              id="secondary_phone"
+              value={form.secondary_phone ?? ''}
+              onChange={(e) => onChange({ ...form, secondary_phone: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -69,11 +85,43 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">Address <span className="font-normal text-muted-foreground">(optional)</span></Label>
             <Input
               id="address"
               value={form.address ?? ''}
               onChange={(e) => onChange({ ...form, address: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="area_of_residence">Area of residence <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input
+              id="area_of_residence"
+              value={form.area_of_residence ?? ''}
+              onChange={(e) => onChange({ ...form, area_of_residence: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="hometown">Hometown <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input
+              id="hometown"
+              value={form.hometown ?? ''}
+              onChange={(e) => onChange({ ...form, hometown: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="school_or_workplace">School / workplace <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input
+              id="school_or_workplace"
+              value={form.school_or_workplace ?? ''}
+              onChange={(e) => onChange({ ...form, school_or_workplace: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="place_of_work">Place of work <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input
+              id="place_of_work"
+              value={form.place_of_work ?? ''}
+              onChange={(e) => onChange({ ...form, place_of_work: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -141,6 +189,61 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
 
       <Card>
         <CardHeader>
+          <CardTitle>Family & emergency <span className="text-sm font-normal text-muted-foreground">optional</span></CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="spouse_name">Spouse name</Label>
+            <Input
+              id="spouse_name"
+              value={form.spouse_name ?? ''}
+              onChange={(e) => onChange({ ...form, spouse_name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="children_count">Number of children</Label>
+            <Input
+              id="children_count"
+              type="number"
+              min={0}
+              value={form.children_count ?? ''}
+              onChange={(e) =>
+                onChange({
+                  ...form,
+                  children_count: e.target.value === '' ? undefined : Number(e.target.value),
+                })
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="emergency_contact_name">Emergency contact name</Label>
+            <Input
+              id="emergency_contact_name"
+              value={form.emergency_contact_name ?? ''}
+              onChange={(e) => onChange({ ...form, emergency_contact_name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="emergency_contact_phone">Emergency contact phone</Label>
+            <Input
+              id="emergency_contact_phone"
+              value={form.emergency_contact_phone ?? ''}
+              onChange={(e) => onChange({ ...form, emergency_contact_phone: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="emergency_contact_relation">Relationship</Label>
+            <Input
+              id="emergency_contact_relation"
+              value={form.emergency_contact_relation ?? ''}
+              onChange={(e) => onChange({ ...form, emergency_contact_relation: e.target.value })}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Visit & source</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -196,6 +299,51 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300"
+              checked={form.is_first_timer ?? true}
+              onChange={(e) => onChange({ ...form, is_first_timer: e.target.checked })}
+            />
+            First-time visitor
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300"
+              checked={form.interested_in_baptism ?? false}
+              onChange={(e) => onChange({ ...form, interested_in_baptism: e.target.checked })}
+            />
+            Interested in baptism
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300"
+              checked={form.interested_in_membership ?? false}
+              onChange={(e) => onChange({ ...form, interested_in_membership: e.target.checked })}
+            />
+            Interested in membership
+          </label>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="prayer_request">Prayer request <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Textarea
+              id="prayer_request"
+              rows={2}
+              value={form.prayer_request ?? ''}
+              onChange={(e) => onChange({ ...form, prayer_request: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="notes">Notes <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Textarea
+              id="notes"
+              rows={2}
+              value={form.notes ?? ''}
+              onChange={(e) => onChange({ ...form, notes: e.target.value })}
+            />
           </div>
         </CardContent>
       </Card>

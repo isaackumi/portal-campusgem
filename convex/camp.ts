@@ -4,6 +4,7 @@ import { requireAuth } from './lib/access'
 import { assertServerSecret } from './lib/serverSecret'
 import { extractBirthdayParts, memberDobIsoFromCampRegistration } from './lib/birthday'
 import { allocateCampCheckInCode } from './lib/campCheckInCode'
+import { sealMemberCheckIn } from './lib/rlcCheckInCode'
 import { insertCampRegistrationPublic } from './lib/campRegistrationInsert'
 import {
   isValidGhanaPhone,
@@ -690,7 +691,7 @@ export const promoteCampRegistrantWithSecret = mutation({
       })
       user = await ctx.db.get(userId)
       if (!user) throw new Error('Failed to create user')
-      await ctx.db.insert('members', {
+      const memberId = await ctx.db.insert('members', {
         user_id: String(userId),
         dob,
         gender,
@@ -699,6 +700,7 @@ export const promoteCampRegistrantWithSecret = mutation({
         status: 'active',
         updated_at: now,
       })
+      await sealMemberCheckIn(ctx, memberId, fullName)
     } else {
       const uid = String(user._id)
       const patchUser: Record<string, unknown> = {
@@ -720,7 +722,7 @@ export const promoteCampRegistrantWithSecret = mutation({
         .withIndex('by_user_id', (q) => q.eq('user_id', uid))
         .first()
       if (!member) {
-        await ctx.db.insert('members', {
+        const memberId = await ctx.db.insert('members', {
           user_id: uid,
           dob,
           gender,
@@ -729,6 +731,7 @@ export const promoteCampRegistrantWithSecret = mutation({
           status: 'active',
           updated_at: now,
         })
+        await sealMemberCheckIn(ctx, memberId, fullName)
       } else {
         const memberPatch: Record<string, unknown> = { updated_at: now, dob }
         if (gender && !member.gender) memberPatch.gender = gender

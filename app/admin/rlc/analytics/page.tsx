@@ -78,7 +78,7 @@ export default function RlcAnalyticsPage() {
           <Card key={label}>
             <CardHeader className="pb-2">
               <CardDescription>{label}</CardDescription>
-              <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
+              <p className="app-stat-value">{value}</p>
             </CardHeader>
           </Card>
         ))}

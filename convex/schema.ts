@@ -115,10 +115,16 @@ export default defineSchema({
     ),
     source_visitor_id: v.optional(v.string()),
     rlc_roles: v.optional(v.array(v.string())),
+    hometown: v.optional(v.string()),
+    area_of_residence: v.optional(v.string()),
+    school_or_workplace: v.optional(v.string()),
+    check_in_code: v.optional(v.string()),
+    qr_code: v.optional(v.string()),
     updated_at: v.number(),
   })
     .index('by_user_id', ['user_id'])
-    .index('by_congregation', ['congregation']),
+    .index('by_congregation', ['congregation'])
+    .index('by_check_in_code', ['check_in_code']),
 
   attendance: defineTable({
     member_id: v.optional(v.string()),
@@ -191,10 +197,16 @@ export default defineSchema({
 
   visitors: defineTable({
     first_name: v.string(),
+    middle_name: v.optional(v.string()),
     last_name: v.optional(v.string()),
     phone: v.optional(v.string()),
+    secondary_phone: v.optional(v.string()),
     email: v.optional(v.string()),
     address: v.optional(v.string()),
+    hometown: v.optional(v.string()),
+    area_of_residence: v.optional(v.string()),
+    school_or_workplace: v.optional(v.string()),
+    place_of_work: v.optional(v.string()),
     visit_date: v.string(),
     service_attended: v.optional(v.string()),
     how_heard_about_church: v.optional(v.string()),
@@ -240,6 +252,19 @@ export default defineSchema({
         v.literal('separated')
       )
     ),
+    spouse_name: v.optional(v.string()),
+    children_count: v.optional(v.number()),
+    emergency_contact_name: v.optional(v.string()),
+    emergency_contact_phone: v.optional(v.string()),
+    emergency_contact_relation: v.optional(v.string()),
+    prayer_request: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    is_first_timer: v.optional(v.boolean()),
+    interested_in_baptism: v.optional(v.boolean()),
+    interested_in_membership: v.optional(v.boolean()),
+    /** Desk / QR check-in code, e.g. RLC-26-K7M3 */
+    check_in_code: v.optional(v.string()),
+    qr_code: v.optional(v.string()),
     congregation: v.optional(v.union(v.literal('rlc'), v.literal('campus_gem'))),
     converted_to_member: v.boolean(),
     converted_member_id: v.optional(v.string()),
@@ -251,7 +276,9 @@ export default defineSchema({
     .index('by_active', ['is_active'])
     .index('by_congregation', ['congregation'])
     .index('by_pipeline_status', ['pipeline_status'])
-    .index('by_assigned_follow_up', ['assigned_follow_up_member_id']),
+    .index('by_assigned_follow_up', ['assigned_follow_up_member_id'])
+    .index('by_check_in_code', ['check_in_code'])
+    .index('by_phone', ['phone']),
 
   rlc_interactions: defineTable({
     visitor_id: v.string(),

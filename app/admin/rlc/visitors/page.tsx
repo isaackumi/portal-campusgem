@@ -63,7 +63,10 @@ function RlcVisitorsContent() {
       if (statusFilter === 'archived' && v.is_active !== false) return false
       if (pipelineFilter !== 'all' && (v.pipeline_status ?? 'first_visit') !== pipelineFilter) return false
       if (!needle) return true
-      const hay = [v.first_name, v.last_name, v.phone, v.email].filter(Boolean).join(' ').toLowerCase()
+      const hay = [v.first_name, v.last_name, v.phone, v.email, v.check_in_code]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
       return hay.includes(needle)
     })
   }, [visitors, query, pipelineFilter, statusFilter])
@@ -84,6 +87,9 @@ function RlcVisitorsContent() {
         actions={
           <>
             <Button variant="outline" className="w-full sm:w-auto" asChild>
+              <Link href="/admin/rlc/visitors/print">Print slips</Link>
+            </Button>
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
               <Link href="/admin/rlc/visitors/qr">QR code</Link>
             </Button>
             <Button asChild className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto">
@@ -97,7 +103,7 @@ function RlcVisitorsContent() {
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <Input placeholder="Search name, phone, email…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <Input placeholder="Search name, phone, email, or check-in code…" value={query} onChange={(e) => setQuery(e.target.value)} />
         <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
           <SelectTrigger className="sm:w-44">
             <SelectValue placeholder="Pipeline" />
@@ -151,6 +157,7 @@ function RlcVisitorsContent() {
                     <p className="text-sm text-muted-foreground">
                       Visit {v.visit_date}
                       {v.service_attended ? ` · ${v.service_attended}` : ''}
+                      {v.check_in_code ? ` · ${v.check_in_code}` : ''}
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <ContactActions phone={v.phone} email={v.email} compact size="sm" />

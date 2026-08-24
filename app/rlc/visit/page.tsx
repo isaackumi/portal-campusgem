@@ -60,7 +60,9 @@ export default function PublicRlcVisitPage() {
       return
     }
     router.push(
-      `/rlc/visit/success?name=${encodeURIComponent(data.first_name)}&id=${encodeURIComponent(data.id)}`
+      `/rlc/visit/success?name=${encodeURIComponent(data.first_name)}&id=${encodeURIComponent(data.id)}${
+        data.check_in_code ? `&code=${encodeURIComponent(data.check_in_code)}` : ''
+      }`
     )
   }
 

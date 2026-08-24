@@ -222,10 +222,10 @@ export default function CampAdminDashboard() {
                                     <Sparkles className="h-5 w-5 text-primary" />
                                 </div>
                                 <div>
-                                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
+                                    <h1 className="app-page-title">
                                     Camp Meeting {campYear.year}
                                 </h1>
-                                    <p className="text-xs sm:text-sm text-slate-600 mt-0.5 font-medium">
+                                    <p className="app-page-description mt-0.5">
                                         {campYear.theme}
                                     </p>
                                 </div>
@@ -289,7 +289,7 @@ export default function CampAdminDashboard() {
                 <div className="grid gap-4 md:grid-cols-3">
                     <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push('/admin/camp-meeting/import')}>
                         <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-purple-900 text-lg">
+                            <CardTitle className="flex items-center gap-2 text-purple-900">
                                 <Upload className="h-5 w-5" />
                                 Import Historical Data
                             </CardTitle>
@@ -306,7 +306,7 @@ export default function CampAdminDashboard() {
 
                     <Card className="border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-md transition-shadow">
                         <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-slate-900 text-lg">
+                            <CardTitle className="flex items-center gap-2 text-slate-900">
                                 <LinkIcon className="h-5 w-5" />
                                 Registration Form Link
                             </CardTitle>
@@ -349,7 +349,7 @@ export default function CampAdminDashboard() {
 
                     <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-white hover:shadow-md transition-shadow">
                         <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-green-900 text-lg">
+                            <CardTitle className="flex items-center gap-2 text-green-900">
                                 <MessageSquare className="h-5 w-5" />
                                 Communications
                             </CardTitle>
@@ -399,16 +399,16 @@ export default function CampAdminDashboard() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Card className="border-2 border-slate-200 hover:shadow-lg transition-all duration-200 hover:border-slate-300 cursor-pointer" onClick={() => router.push('/admin/camp-meeting/registrations')}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
+                            <CardDescription className="text-sm font-medium text-slate-700">
                                 Total Registrations
-                            </CardTitle>
+                            </CardDescription>
                             <div className="p-2 bg-slate-100 rounded-lg">
                                 <Users className="h-5 w-5 text-primary" />
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-slate-900 mb-1">{total}</div>
-                            <p className="text-xs text-slate-500">
+                            <div className="app-stat-value mb-1">{total}</div>
+                            <p className="app-meta">
                                 All registered participants
                             </p>
                         </CardContent>
@@ -416,16 +416,16 @@ export default function CampAdminDashboard() {
 
                     <Card className="border-2 border-green-200 hover:shadow-lg transition-all duration-200 hover:border-green-300 cursor-pointer" onClick={() => router.push('/admin/camp-meeting/scan')}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
+                            <CardDescription className="text-sm font-medium text-slate-700">
                                 Checked In
-                            </CardTitle>
+                            </CardDescription>
                             <div className="p-2 bg-green-100 rounded-lg">
                                 <TrendingUp className="h-5 w-5 text-green-600" />
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-green-600 mb-1">{checkedIn}</div>
-                            <p className="text-xs text-slate-500">
+                            <div className="app-stat-value mb-1 text-green-600">{checkedIn}</div>
+                            <p className="app-meta">
                                 {total > 0 ? Math.round((checkedIn / total) * 100) : 0}% Attendance Rate
                             </p>
                         </CardContent>
@@ -433,16 +433,16 @@ export default function CampAdminDashboard() {
 
                     <Card className="border-2 border-purple-200 hover:shadow-lg transition-all duration-200 hover:border-purple-300">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
+                            <CardDescription className="text-sm font-medium text-slate-700">
                                 New First Timers
-                            </CardTitle>
+                            </CardDescription>
                             <div className="p-2 bg-purple-100 rounded-lg">
                                 <Users className="h-5 w-5 text-purple-600" />
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-purple-600 mb-1">{newRegistrants}</div>
-                            <p className="text-xs text-slate-500">
+                            <div className="app-stat-value mb-1 text-purple-600">{newRegistrants}</div>
+                            <p className="app-meta">
                                 {total > 0 ? Math.round((newRegistrants / total) * 100) : 0}% of total registrations
                             </p>
                         </CardContent>
@@ -450,18 +450,18 @@ export default function CampAdminDashboard() {
 
                     <Card className="border-2 border-orange-200 hover:shadow-lg transition-all duration-200 hover:border-orange-300">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
+                            <CardDescription className="text-sm font-medium text-slate-700">
                                 Top Role
-                            </CardTitle>
+                            </CardDescription>
                             <div className="p-2 bg-orange-100 rounded-lg">
                                 <Users className="h-5 w-5 text-orange-600" />
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl sm:text-3xl font-bold text-orange-600 mb-1 truncate">
+                            <div className="app-stat-value mb-1 truncate text-orange-600">
                                 {Object.entries(byRole).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'}
                             </div>
-                            <p className="text-xs text-slate-500">
+                            <p className="app-meta">
                                 {Object.entries(byRole).sort((a, b) => b[1] - a[1])[0]?.[1] || 0} participants
                             </p>
                         </CardContent>
@@ -473,7 +473,7 @@ export default function CampAdminDashboard() {
                     {/* Role Distribution */}
                     <Card className="lg:col-span-2 border-2 hover:shadow-md transition-shadow">
                         <CardHeader className="border-b bg-slate-50/50">
-                            <CardTitle className="flex items-center gap-2 text-lg">
+                            <CardTitle className="flex items-center gap-2">
                                 <Users className="h-5 w-5 text-primary" />
                                 Role Distribution
                             </CardTitle>
@@ -523,7 +523,7 @@ export default function CampAdminDashboard() {
                         <CardHeader className="border-b bg-slate-50/50">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <CardTitle className="flex items-center gap-2 text-lg">
+                                    <CardTitle className="flex items-center gap-2">
                                         <Clock className="h-5 w-5 text-primary" />
                                         Recent Registrations
                                     </CardTitle>
@@ -600,7 +600,7 @@ export default function CampAdminDashboard() {
                         <CardHeader className="border-b bg-slate-50/50">
                             <div className="flex items-center justify-between flex-wrap gap-3">
                                 <div>
-                                    <CardTitle className="flex items-center gap-2 text-lg">
+                                    <CardTitle className="flex items-center gap-2">
                                         <ClipboardList className="h-5 w-5 text-primary" />
                                         All Registrations
                                     </CardTitle>

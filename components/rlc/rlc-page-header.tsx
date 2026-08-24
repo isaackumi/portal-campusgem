@@ -38,9 +38,9 @@ export function RlcPageHeader({
             <Church className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-rose-700/80">{RLC_NAME}</p>
-            <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
-            {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
+            <p className="app-stat-label text-rose-700/80">{RLC_NAME}</p>
+            <h1 className="app-page-title">{title}</h1>
+            {subtitle ? <p className="app-page-description mt-1">{subtitle}</p> : null}
           </div>
         </div>
         {children}

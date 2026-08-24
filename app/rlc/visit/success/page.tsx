@@ -12,6 +12,7 @@ function SuccessContent() {
   const searchParams = useSearchParams()
   const name = searchParams.get('name') ?? 'Friend'
   const id = searchParams.get('id')
+  const code = searchParams.get('code')
 
   return (
     <Card className="w-full max-w-md border-rose-100/80 text-center shadow-md">
@@ -25,6 +26,11 @@ function SuccessContent() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {code ? (
+          <p className="rounded-lg bg-rose-50 px-3 py-2 font-mono text-sm font-semibold text-rose-900">
+            Check-in code: {code}
+          </p>
+        ) : null}
         {id ? (
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-muted-foreground">
             Reference: <span className="font-mono">{id.slice(-8)}</span>

@@ -147,6 +147,30 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         permission: 'rlc.manage',
       },
       {
+        name: 'Attendance',
+        href: '/admin/rlc/attendance',
+        icon: Calendar,
+        permission: 'rlc.view',
+      },
+      {
+        name: 'QR scan (optional)',
+        href: '/admin/rlc/scan',
+        icon: QrCode,
+        permission: 'rlc.manage',
+      },
+      {
+        name: 'Ministry roster',
+        href: '/admin/rlc/roster',
+        icon: ClipboardList,
+        permission: 'rlc.view',
+      },
+      {
+        name: 'Visitor slips',
+        href: '/admin/rlc/visitors/print',
+        icon: FileText,
+        permission: 'rlc.manage',
+      },
+      {
         name: 'Analytics',
         href: '/admin/rlc/analytics',
         icon: BarChart3,

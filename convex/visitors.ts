@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { query, mutation } from './_generated/server'
 import { requireAuth } from './lib/access'
+import { sealVisitorCheckIn } from './lib/rlcCheckInCode'
 
 export const recent = query({
   args: { limit: v.optional(v.number()) },
@@ -33,9 +34,15 @@ export const create = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx)
     const now = Date.now()
-    return await ctx.db.insert('visitors', {
+    const id = await ctx.db.insert('visitors', {
       ...args,
       updated_at: now,
     })
+    await sealVisitorCheckIn(
+      ctx,
+      id,
+      [args.first_name, args.last_name].filter(Boolean).join(' ').trim() || 'Visitor'
+    )
+    return id
   },
 })
