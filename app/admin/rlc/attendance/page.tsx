@@ -5,31 +5,39 @@ import Link from 'next/link'
 import { useAuth } from '@/components/providers'
 import {
   loadRlcAttendanceAction,
+  loadRlcCustomServicesAction,
+  createRlcCustomServiceAction,
   loadRlcMembersAction,
   loadRlcVisitorsAction,
   recordRlcAttendanceAction,
 } from '@/lib/actions/rlc'
-import { RLC_NAME, RLC_SERVICES } from '@/lib/constants/rlc'
+import { RLC_NAME } from '@/lib/constants/rlc'
 import {
   attendanceRosterToCsv,
   buildAttendanceRoster,
   downloadAttendanceCsv,
   filterAttendancePeople,
   memberToAttendancePerson,
-  rlcServiceLabel,
   sessionCheckedKeys,
   visitorToAttendancePerson,
   type RlcAttendancePerson,
 } from '@/lib/rlc/attendance-roster'
-import type { Attendance, Member, ServiceType, Visitor } from '@/lib/types'
+import {
+  defaultRlcServiceSelection,
+  printQueryFromSelection,
+  recordArgsFromSelection,
+  rlcServiceSelectionLabel,
+  type RlcServiceSelection,
+} from '@/lib/rlc/service-selection'
+import type { Attendance, Member, RlcCustomService, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
+import { RlcServiceSelect } from '@/components/rlc/rlc-service-select'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { CheckCircle, Download, Printer, QrCode, Search, UserCheck } from 'lucide-react'
@@ -38,7 +46,9 @@ export default function RlcAttendancePage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0])
-  const [serviceType, setServiceType] = useState<ServiceType>('sunday_service')
+  const [serviceSelection, setServiceSelection] = useState<RlcServiceSelection>(defaultRlcServiceSelection())
+  const [customServices, setCustomServices] = useState<RlcCustomService[]>([])
+  const [creatingCustom, setCreatingCustom] = useState(false)
   const [query, setQuery] = useState('')
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [members, setMembers] = useState<Member[]>([])
@@ -47,14 +57,16 @@ export default function RlcAttendancePage() {
   const [recordingKey, setRecordingKey] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
-    const [a, m, v] = await Promise.all([
+    const [a, m, v, custom] = await Promise.all([
       loadRlcAttendanceAction({ serviceDate }),
       loadRlcMembersAction(),
       loadRlcVisitorsAction(),
+      loadRlcCustomServicesAction(),
     ])
     setAttendance(a.data ?? [])
     setMembers(m.data ?? [])
     setVisitors((v.data ?? []).filter((x) => x.is_active !== false && !x.converted_to_member))
+    setCustomServices(custom.data ?? [])
     setLoading(false)
   }, [serviceDate])
 
@@ -63,8 +75,8 @@ export default function RlcAttendancePage() {
   }, [reload])
 
   const checkedKeys = useMemo(
-    () => sessionCheckedKeys(attendance, serviceType),
-    [attendance, serviceType]
+    () => sessionCheckedKeys(attendance, serviceSelection),
+    [attendance, serviceSelection]
   )
 
   const people = useMemo(() => {
@@ -81,11 +93,37 @@ export default function RlcAttendancePage() {
   )
 
   const roster = useMemo(
-    () => buildAttendanceRoster(attendance, members, visitors, serviceType),
-    [attendance, members, visitors, serviceType]
+    () => buildAttendanceRoster(attendance, members, visitors, serviceSelection),
+    [attendance, members, visitors, serviceSelection]
   )
 
-  const printHref = `/admin/rlc/attendance/print?date=${encodeURIComponent(serviceDate)}&service=${encodeURIComponent(serviceType)}`
+  const serviceLabel = useMemo(() => rlcServiceSelectionLabel(serviceSelection), [serviceSelection])
+
+  const printHref = useMemo(() => {
+    const params = printQueryFromSelection(serviceSelection)
+    params.set('date', serviceDate)
+    return `/admin/rlc/attendance/print?${params.toString()}`
+  }, [serviceDate, serviceSelection])
+
+  async function handleCreateCustom(name: string) {
+    if (!user?.id) {
+      toast({ variant: 'destructive', title: 'Sign in required' })
+      return null
+    }
+    setCreatingCustom(true)
+    const { data, error } = await createRlcCustomServiceAction({ name, createdBy: user.id })
+    setCreatingCustom(false)
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Could not save service', description: error ?? 'Try again' })
+      return null
+    }
+    setCustomServices((prev) => {
+      const next = prev.filter((row) => row.id !== data.id)
+      return [data, ...next]
+    })
+    toast({ title: 'Other service saved', description: data.name })
+    return data
+  }
 
   async function checkIn(person: RlcAttendancePerson) {
     if (!user?.id) {
@@ -93,11 +131,12 @@ export default function RlcAttendancePage() {
       return
     }
     setRecordingKey(person.key)
+    const recordArgs = recordArgsFromSelection(serviceSelection)
     const { data, error } = await recordRlcAttendanceAction({
       memberId: person.memberId,
       visitorId: person.visitorId,
       serviceDate,
-      serviceType,
+      ...recordArgs,
       method: 'admin',
       createdBy: user.id,
     })
@@ -108,7 +147,7 @@ export default function RlcAttendancePage() {
     }
     toast({
       title: data.already_checked_in ? 'Already checked in' : 'Checked in',
-      description: `${person.name} · ${rlcServiceLabel(serviceType)}`,
+      description: `${person.name} · ${serviceLabel}`,
     })
     setQuery('')
     await reload()
@@ -117,12 +156,12 @@ export default function RlcAttendancePage() {
   function handleDownloadCsv() {
     const csv = attendanceRosterToCsv(roster, {
       serviceDate,
-      serviceType,
+      serviceLabel,
       churchName: RLC_NAME,
     })
-    const stamp = `${serviceDate}-${serviceType}`
+    const stamp = `${serviceDate}-${serviceSelection.kind === 'custom' ? serviceSelection.customServiceId : serviceSelection.serviceType}`
     downloadAttendanceCsv(`rlc-attendance-${stamp}.csv`, csv)
-    toast({ title: 'CSV downloaded', description: `${roster.length} people for ${rlcServiceLabel(serviceType)}` })
+    toast({ title: 'CSV downloaded', description: `${roster.length} people for ${serviceLabel}` })
   }
 
   if (loading) {
@@ -165,8 +204,8 @@ export default function RlcAttendancePage() {
           <CardTitle>Service</CardTitle>
           <CardDescription>Attendance is tracked separately for each service on a date.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
+        <CardContent className="grid gap-4">
+          <div className="space-y-2 sm:max-w-xs">
             <Label htmlFor="service-date">Service date</Label>
             <Input
               id="service-date"
@@ -175,21 +214,13 @@ export default function RlcAttendancePage() {
               onChange={(e) => setServiceDate(e.target.value)}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Service</Label>
-            <Select value={serviceType} onValueChange={(v) => setServiceType(v as ServiceType)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {RLC_SERVICES.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <RlcServiceSelect
+            selection={serviceSelection}
+            onChange={setServiceSelection}
+            customServices={customServices}
+            onCreateCustom={handleCreateCustom}
+            creatingCustom={creatingCustom}
+          />
         </CardContent>
       </Card>
 
@@ -257,7 +288,7 @@ export default function RlcAttendancePage() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5 text-rose-700" />
-                {rlcServiceLabel(serviceType)}
+                {serviceLabel}
               </CardTitle>
               <CardDescription>
                 {serviceDate} · {roster.length} checked in

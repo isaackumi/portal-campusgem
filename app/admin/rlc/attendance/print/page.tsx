@@ -5,16 +5,21 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
   loadRlcAttendanceAction,
+  loadRlcCustomServicesAction,
   loadRlcMembersAction,
   loadRlcVisitorsAction,
 } from '@/lib/actions/rlc'
 import { RLC_NAME } from '@/lib/constants/rlc'
 import {
   buildAttendanceRoster,
-  rlcServiceLabel,
   type RlcAttendanceRosterRow,
 } from '@/lib/rlc/attendance-roster'
-import type { Attendance, Member, ServiceType, Visitor } from '@/lib/types'
+import {
+  parseRlcServiceSelection,
+  rlcServiceSelectionLabel,
+  type RlcServiceSelection,
+} from '@/lib/rlc/service-selection'
+import type { Attendance, Member, RlcCustomService, Visitor } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Printer } from 'lucide-react'
@@ -22,11 +27,13 @@ import { Printer } from 'lucide-react'
 function PrintContent() {
   const searchParams = useSearchParams()
   const serviceDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
-  const serviceType = (searchParams.get('service') ?? 'sunday_service') as ServiceType
+  const serviceParam = searchParams.get('service')
+  const customParam = searchParams.get('custom')
 
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [visitors, setVisitors] = useState<Visitor[]>([])
+  const [customServices, setCustomServices] = useState<RlcCustomService[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -34,17 +41,29 @@ function PrintContent() {
       loadRlcAttendanceAction({ serviceDate }),
       loadRlcMembersAction(),
       loadRlcVisitorsAction(),
-    ]).then(([a, m, v]) => {
+      loadRlcCustomServicesAction(),
+    ]).then(([a, m, v, custom]) => {
       setAttendance(a.data ?? [])
       setMembers(m.data ?? [])
       setVisitors(v.data ?? [])
+      setCustomServices(custom.data ?? [])
       setLoading(false)
     })
   }, [serviceDate])
 
+  const serviceSelection: RlcServiceSelection = useMemo(
+    () => parseRlcServiceSelection(serviceParam, customParam, customServices),
+    [serviceParam, customParam, customServices]
+  )
+
+  const serviceLabel = useMemo(
+    () => rlcServiceSelectionLabel(serviceSelection),
+    [serviceSelection]
+  )
+
   const roster = useMemo(
-    () => buildAttendanceRoster(attendance, members, visitors, serviceType),
-    [attendance, members, visitors, serviceType]
+    () => buildAttendanceRoster(attendance, members, visitors, serviceSelection),
+    [attendance, members, visitors, serviceSelection]
   )
 
   useEffect(() => {
@@ -87,7 +106,7 @@ function PrintContent() {
           <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">{RLC_NAME}</p>
           <h1 className="mt-1 text-2xl font-semibold">Service attendance record</h1>
           <p className="mt-2 text-sm text-slate-600">
-            {rlcServiceLabel(serviceType)} · {serviceDate} · {roster.length} present
+            {serviceLabel} · {serviceDate} · {roster.length} present
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Printed {new Date().toLocaleString()} · Official check-in evidence

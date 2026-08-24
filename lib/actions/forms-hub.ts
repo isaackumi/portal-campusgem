@@ -22,7 +22,7 @@ export async function getFormsHubData(groupId?: string): Promise<{
       import('@/lib/convex/core-bridge'),
     ])
     const [forms, groups, users] = await Promise.all([
-      listFormsFromConvex(groupId || undefined),
+      listFormsFromConvex({ groupId: groupId || undefined }),
       fetchGroupsFromConvex(true),
       import('@/lib/convex/core-bridge').then(({ fetchUsersFromConvex }) => fetchUsersFromConvex()),
     ])

@@ -61,8 +61,17 @@ const serviceType = v.union(
   v.literal('prayer_meeting'),
   v.literal('youth_service'),
   v.literal('children_service'),
-  v.literal('special_event')
+  v.literal('special_event'),
+  v.literal('other')
 )
+
+function normalizeRlcCustomServiceName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ')
+}
+
+function normalizeRlcCustomServiceKey(name: string): string {
+  return normalizeRlcCustomServiceName(name).toLowerCase()
+}
 
 function normalizeGhanaPhone(phone: string): string {
   const trimmed = phone.replace(/\s/g, '')
@@ -1028,6 +1037,55 @@ export const listRlcMembersWithSecret = query({
   },
 })
 
+export const getRlcMemberWithSecret = query({
+  args: { secret: v.string(), member_id: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { secret, member_id }) => {
+    assertServerSecret(secret)
+    const member = await ctx.db.get('members', member_id as Id<'members'>)
+    if (!member || member.status !== 'active') return null
+    const isRlc =
+      member.congregation === 'rlc' ||
+      member.congregation === 'both' ||
+      member.source_visitor_id != null ||
+      (member.rlc_roles != null && member.rlc_roles.length > 0)
+    return isRlc ? member : null
+  },
+})
+
+export const updateRlcMemberWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    member_id: v.string(),
+    performed_by: v.string(),
+    rlc_roles: v.array(v.string()),
+    rlc_membership_type: v.optional(
+      v.union(v.literal('full_member'), v.literal('associate'), v.literal('visitor_converted'))
+    ),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    if (args.rlc_roles.length === 0) throw new Error('Select at least one RLC role.')
+
+    const member = await ctx.db.get('members', args.member_id as Id<'members'>)
+    if (!member) throw new Error('Member not found.')
+
+    const congregation = resolveRlcCongregation(member.congregation)
+    const membershipType =
+      args.rlc_membership_type ?? inferRlcMembershipType(args.rlc_roles, member.rlc_membership_type)
+
+    await ctx.db.patch('members', args.member_id as Id<'members'>, {
+      congregation,
+      rlc_roles: args.rlc_roles,
+      rlc_membership_type: membershipType,
+      updated_at: Date.now(),
+    })
+
+    return await ctx.db.get('members', args.member_id as Id<'members'>)
+  },
+})
+
 export const getRlcStatsWithSecret = query({
   args: { secret: v.string() },
   returns: v.any(),
@@ -1129,6 +1187,7 @@ export const recordRlcAttendanceWithSecret = mutation({
     visitor_id: v.optional(v.string()),
     service_date: v.string(),
     service_type: v.optional(serviceType),
+    custom_service_id: v.optional(v.string()),
     check_in_time: v.string(),
     method: v.union(
       v.literal('qr'),
@@ -1147,7 +1206,25 @@ export const recordRlcAttendanceWithSecret = mutation({
       throw new Error('Either member_id or visitor_id is required.')
     }
 
-    const serviceTypeValue = args.service_type ?? 'sunday_service'
+    let serviceTypeValue = args.service_type ?? 'sunday_service'
+    let metadata: Record<string, string> = {}
+
+    if (args.custom_service_id) {
+      const customService = await ctx.db.get('rlc_custom_services', args.custom_service_id as never)
+      if (!customService || !customService.is_active || customService.congregation !== 'rlc') {
+        throw new Error('Custom service not found.')
+      }
+      serviceTypeValue = 'other'
+      metadata = {
+        custom_service_id: args.custom_service_id,
+        custom_service_name: customService.name,
+      }
+      await ctx.db.patch('rlc_custom_services', customService._id, {
+        last_used_at: Date.now(),
+        updated_at: Date.now(),
+      })
+    }
+
     const existingRows = await ctx.db
       .query('attendance')
       .withIndex('by_congregation_and_date', (q) =>
@@ -1156,7 +1233,13 @@ export const recordRlcAttendanceWithSecret = mutation({
       .collect()
 
     const already = existingRows.find((row) => {
-      if (row.service_type !== serviceTypeValue) return false
+      if (args.custom_service_id) {
+        if (row.service_type !== 'other') return false
+        const rowMeta = (row.metadata ?? {}) as { custom_service_id?: string }
+        if (rowMeta.custom_service_id !== args.custom_service_id) return false
+      } else if (row.service_type !== serviceTypeValue) {
+        return false
+      }
       if (args.member_id && row.member_id === args.member_id) return true
       if (args.visitor_id && row.visitor_id === args.visitor_id) return true
       return false
@@ -1175,7 +1258,7 @@ export const recordRlcAttendanceWithSecret = mutation({
       service_type: serviceTypeValue,
       check_in_time: args.check_in_time,
       method: args.method,
-      metadata: {},
+      metadata,
       created_by: args.created_by,
       checked_in_by: args.created_by,
       status: 'present',
@@ -1184,6 +1267,72 @@ export const recordRlcAttendanceWithSecret = mutation({
     })
 
     return { already_checked_in: false, attendance: await ctx.db.get('attendance', id) }
+  },
+})
+
+export const listRlcCustomServicesWithSecret = query({
+  args: { secret: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    const rows = await ctx.db
+      .query('rlc_custom_services')
+      .withIndex('by_congregation', (q) => q.eq('congregation', 'rlc'))
+      .collect()
+    return rows
+      .filter((row) => row.is_active)
+      .sort((a, b) => {
+        const aUsed = a.last_used_at ?? 0
+        const bUsed = b.last_used_at ?? 0
+        if (aUsed !== bUsed) return bUsed - aUsed
+        return a.name.localeCompare(b.name)
+      })
+  },
+})
+
+export const createRlcCustomServiceWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    name: v.string(),
+    created_by: v.optional(v.string()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const name = normalizeRlcCustomServiceName(args.name)
+    if (name.length < 2) {
+      throw new Error('Service name must be at least 2 characters.')
+    }
+    const nameNormalized = normalizeRlcCustomServiceKey(name)
+    const existing = await ctx.db
+      .query('rlc_custom_services')
+      .withIndex('by_congregation_and_name', (q) =>
+        q.eq('congregation', 'rlc').eq('name_normalized', nameNormalized)
+      )
+      .first()
+
+    if (existing) {
+      if (!existing.is_active) {
+        await ctx.db.patch('rlc_custom_services', existing._id, {
+          is_active: true,
+          name,
+          updated_at: Date.now(),
+        })
+        return await ctx.db.get('rlc_custom_services', existing._id)
+      }
+      return existing
+    }
+
+    const now = Date.now()
+    const id = await ctx.db.insert('rlc_custom_services', {
+      name,
+      name_normalized: nameNormalized,
+      congregation: 'rlc',
+      created_by: args.created_by,
+      is_active: true,
+      updated_at: now,
+    })
+    return await ctx.db.get('rlc_custom_services', id)
   },
 })
 

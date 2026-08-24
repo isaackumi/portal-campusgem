@@ -5,6 +5,7 @@ import {
   sessionCheckedKeys,
   type RlcAttendancePerson,
 } from '@/lib/rlc/attendance-roster'
+import { defaultRlcServiceSelection, type RlcServiceSelection } from '@/lib/rlc/service-selection'
 import type { Attendance } from '@/lib/types'
 
 describe('rlc attendance roster helpers', () => {
@@ -57,10 +58,25 @@ describe('rlc attendance roster helpers', () => {
         metadata: {},
         created_at: new Date().toISOString(),
       },
+      {
+        id: 'a3',
+        service_date: '2026-08-24',
+        service_type: 'other',
+        member_id: '3',
+        check_in_time: new Date().toISOString(),
+        method: 'admin',
+        metadata: { custom_service_id: 'custom1', custom_service_name: 'Leadership retreat' },
+        created_at: new Date().toISOString(),
+      },
     ] as Attendance[]
 
-    expect(Array.from(sessionCheckedKeys(rows, 'sunday_service'))).toEqual(['m:1'])
-    expect(Array.from(sessionCheckedKeys(rows, 'midweek_service'))).toEqual(['v:2'])
+    expect(Array.from(sessionCheckedKeys(rows, { kind: 'standard', serviceType: 'sunday_service' }))).toEqual(['m:1'])
+    expect(Array.from(sessionCheckedKeys(rows, { kind: 'standard', serviceType: 'midweek_service' }))).toEqual(['v:2'])
+    expect(
+      Array.from(
+        sessionCheckedKeys(rows, { kind: 'custom', customServiceId: 'custom1', label: 'Leadership retreat' })
+      )
+    ).toEqual(['m:3'])
   })
 
   test('csv includes evidence header and rows', () => {
@@ -83,7 +99,7 @@ describe('rlc attendance roster helpers', () => {
           membershipId: 'CG-24-001',
         },
       ],
-      { serviceDate: '2026-08-24', serviceType: 'sunday_service', churchName: 'RLC' }
+      { serviceDate: '2026-08-24', serviceLabel: 'Sunday Service', churchName: 'RLC' }
     )
     expect(csv).toContain('# RLC attendance evidence')
     expect(csv).toContain('Ama Mensah')

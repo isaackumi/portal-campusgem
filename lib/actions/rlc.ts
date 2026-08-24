@@ -371,8 +371,12 @@ export async function addPersonToRlcAction(args: {
 
 export async function importToRlcAction(args: {
   type: 'campus_member' | 'camp_registration'
+  userId?: string
   memberId?: string
   campRegistrationId?: string
+  fullName?: string
+  phone?: string
+  email?: string
   performedBy: string
   linkAsMember?: boolean
   rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
@@ -383,20 +387,61 @@ export async function importToRlcAction(args: {
   }
   try {
     const bridge = await import('@/lib/convex/rlc-bridge')
+    const roles = args.rlcRoles?.length ? args.rlcRoles : ['member']
 
-    if (args.type === 'campus_member' && args.memberId) {
-      if (args.linkAsMember) {
-        const member = await bridge.linkCampusMemberToRlcInConvex({
-          memberId: args.memberId,
-          performedBy: args.performedBy,
-          rlcMembershipType: args.rlcMembershipType ?? 'full_member',
-          rlcRoles: args.rlcRoles,
+    if (args.linkAsMember) {
+      let userId = args.userId
+      let memberId = args.memberId
+
+      if (args.type === 'campus_member' && !memberId && !userId) {
+        return { data: null, error: 'Invalid import target', loading: false }
+      }
+
+      if (args.type === 'campus_member' && !memberId && userId) {
+        const prepared = await preparePersonForRlcAction({
+          userId,
+          fullName: args.fullName ?? 'Member',
+          phone: args.phone,
+          email: args.email,
         })
-        const [enriched] = await enrichRlcMembers([member])
-        return { data: enriched, error: null, loading: false }
+        if (prepared.error || !prepared.data) {
+          return { data: null, error: prepared.error ?? 'Could not prepare member profile', loading: false }
+        }
+        userId = prepared.data.userId
+        memberId = prepared.data.memberId
+      }
+
+      const member = await bridge.addPersonToRlcInConvex({
+        performedBy: args.performedBy,
+        userId,
+        memberId,
+        campRegistrationId: args.type === 'camp_registration' ? args.campRegistrationId : undefined,
+        rlcRoles: roles,
+        rlcMembershipType: args.rlcMembershipType ?? 'full_member',
+      })
+      const [enriched] = await enrichRlcMembers([member])
+      return { data: enriched, error: null, loading: false }
+    }
+
+    if (args.type === 'campus_member') {
+      let memberId = args.memberId
+      if (!memberId && args.userId) {
+        const prepared = await preparePersonForRlcAction({
+          userId: args.userId,
+          fullName: args.fullName ?? 'Member',
+          phone: args.phone,
+          email: args.email,
+        })
+        if (prepared.error || !prepared.data) {
+          return { data: null, error: prepared.error ?? 'Could not prepare member profile', loading: false }
+        }
+        memberId = prepared.data.memberId
+      }
+      if (!memberId) {
+        return { data: null, error: 'Invalid import target', loading: false }
       }
       const visitor = await bridge.importCampusMemberToRlcInConvex({
-        memberId: args.memberId,
+        memberId,
         performedBy: args.performedBy,
       })
       const [enriched] = await enrichVisitors([visitor])
@@ -440,6 +485,56 @@ export async function loadRlcMembersAction(): Promise<ApiResponse<Member[]>> {
   }
 }
 
+export async function loadRlcMemberAction(id: string): Promise<ApiResponse<Member>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  try {
+    const { getRlcMemberFromConvex } = await import('@/lib/convex/rlc-bridge')
+    const member = await getRlcMemberFromConvex(id)
+    if (!member) {
+      return { data: null, error: 'Member not found', loading: false }
+    }
+    const [enriched] = await enrichRlcMembers([member])
+    if (!enriched) {
+      return { data: null, error: 'Member not found', loading: false }
+    }
+    return { data: enriched, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load member',
+      loading: false,
+    }
+  }
+}
+
+export async function updateRlcMemberAction(args: {
+  memberId: string
+  performedBy: string
+  rlcRoles: string[]
+  rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
+}): Promise<ApiResponse<Member>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  if (args.rlcRoles.length === 0) {
+    return { data: null, error: 'Select at least one RLC role', loading: false }
+  }
+  try {
+    const { updateRlcMemberInConvex } = await import('@/lib/convex/rlc-bridge')
+    const member = await updateRlcMemberInConvex(args)
+    const [enriched] = await enrichRlcMembers([member])
+    return { data: enriched, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to update member',
+      loading: false,
+    }
+  }
+}
+
 export async function loadRlcAttendanceAction(args?: {
   serviceDate?: string
 }): Promise<ApiResponse<Attendance[]>> {
@@ -464,6 +559,7 @@ export async function recordRlcAttendanceAction(args: {
   visitorId?: string
   serviceDate: string
   serviceType?: Attendance['service_type']
+  customServiceId?: string
   method?: Attendance['method']
   createdBy?: string
   notes?: string
@@ -501,6 +597,45 @@ export async function resolveRlcScanAction(scanned: string): Promise<
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Scan lookup failed',
+      loading: false,
+    }
+  }
+}
+
+export async function loadRlcCustomServicesAction(): Promise<
+  ApiResponse<import('@/lib/types').RlcCustomService[]>
+> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  try {
+    const { listRlcCustomServicesFromConvex } = await import('@/lib/convex/rlc-bridge')
+    const data = await listRlcCustomServicesFromConvex()
+    return { data, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load custom services',
+      loading: false,
+    }
+  }
+}
+
+export async function createRlcCustomServiceAction(args: {
+  name: string
+  createdBy?: string
+}): Promise<ApiResponse<import('@/lib/types').RlcCustomService>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  try {
+    const { createRlcCustomServiceInConvex } = await import('@/lib/convex/rlc-bridge')
+    const data = await createRlcCustomServiceInConvex(args)
+    return { data, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to save custom service',
       loading: false,
     }
   }

@@ -1,5 +1,9 @@
 import { RLC_SERVICES } from '@/lib/constants/rlc'
-import type { Attendance, Member, ServiceType, Visitor } from '@/lib/types'
+import type { Attendance, Member, Visitor } from '@/lib/types'
+import {
+  attendanceMatchesService,
+  type RlcServiceSelection,
+} from '@/lib/rlc/service-selection'
 
 export type RlcAttendancePerson = {
   key: string
@@ -21,7 +25,8 @@ export type RlcAttendanceRosterRow = {
   membershipId?: string
 }
 
-export function rlcServiceLabel(serviceType?: string): string {
+export function rlcServiceLabel(serviceType?: string, customName?: string): string {
+  if (serviceType === 'other') return customName?.trim() || 'Other service'
   if (!serviceType) return 'Service'
   return RLC_SERVICES.find((s) => s.value === serviceType)?.label ?? serviceType.replace(/_/g, ' ')
 }
@@ -68,10 +73,10 @@ export function filterAttendancePeople(
   return available.filter((p) => personSearchHaystack(p).includes(needle)).slice(0, 20)
 }
 
-export function sessionCheckedKeys(attendance: Attendance[], serviceType: ServiceType | string): Set<string> {
+export function sessionCheckedKeys(attendance: Attendance[], selection: RlcServiceSelection): Set<string> {
   const ids = new Set<string>()
   for (const row of attendance) {
-    if (row.service_type && row.service_type !== serviceType) continue
+    if (!attendanceMatchesService(row, selection)) continue
     if (row.member_id) ids.add(`m:${row.member_id}`)
     if (row.visitor_id) ids.add(`v:${row.visitor_id}`)
   }
@@ -82,13 +87,13 @@ export function buildAttendanceRoster(
   attendance: Attendance[],
   members: Member[],
   visitors: Visitor[],
-  serviceType: ServiceType | string
+  selection: RlcServiceSelection
 ): RlcAttendanceRosterRow[] {
   const memberById = new Map(members.map((m) => [m.id, m]))
   const visitorById = new Map(visitors.map((v) => [v.id, v]))
 
   return attendance
-    .filter((row) => !row.service_type || row.service_type === serviceType)
+    .filter((row) => attendanceMatchesService(row, selection))
     .map((row) => {
       if (row.member_id) {
         const member = memberById.get(row.member_id)
@@ -124,7 +129,7 @@ export function buildAttendanceRoster(
 
 export function attendanceRosterToCsv(
   rows: RlcAttendanceRosterRow[],
-  meta: { serviceDate: string; serviceType: string; churchName?: string }
+  meta: { serviceDate: string; serviceLabel: string; churchName?: string }
 ): string {
   const escape = (value: string) => `"${value.replace(/"/g, '""')}"`
   const header = [
@@ -141,7 +146,7 @@ export function attendanceRosterToCsv(
   const lines = [
     `# ${meta.churchName ?? 'RLC'} attendance evidence`,
     `# Date: ${meta.serviceDate}`,
-    `# Service: ${rlcServiceLabel(meta.serviceType)}`,
+    `# Service: ${meta.serviceLabel}`,
     `# Generated: ${new Date().toISOString()}`,
     `# Count: ${rows.length}`,
     header.join(','),
@@ -153,7 +158,7 @@ export function attendanceRosterToCsv(
         escape(row.code ?? ''),
         escape(row.membershipId ?? ''),
         meta.serviceDate,
-        escape(rlcServiceLabel(meta.serviceType)),
+        escape(meta.serviceLabel),
         escape(row.attendance.check_in_time ? new Date(row.attendance.check_in_time).toLocaleString() : ''),
         row.attendance.method ?? '',
       ].join(',')

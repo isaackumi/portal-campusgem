@@ -7,6 +7,7 @@ import { useAuth } from '@/components/providers'
 import { getCamperDirectory } from '@/lib/actions/camp'
 import { loadRlcMembersAction, loadRlcStatsAction, loadRlcVisitorsAction } from '@/lib/actions/rlc'
 import { rlcFollowUpHref, summarizeRlcFollowUpSla } from '@/lib/rlc/follow-up-sla'
+import { RlcCampBridgePanel } from '@/components/rlc/rlc-camp-bridge-panel'
 import { RLC_NAME, RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
 import type { CampCamperDirectoryRow, Member, RlcStats, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
@@ -99,27 +100,6 @@ export default function RlcDashboardPage() {
           row.pipeline_status === 'new_member'
       ),
     [activeVisitors]
-  )
-  const rlcPhones = useMemo(() => {
-    const set = new Set<string>()
-    for (const visitor of visitors) {
-      if (visitor.phone) set.add(visitor.phone.replace(/\D/g, '').slice(-9))
-    }
-    for (const member of members) {
-      const phone = member.user?.phone
-      if (phone) set.add(phone.replace(/\D/g, '').slice(-9))
-    }
-    return set
-  }, [visitors, members])
-  const campBridge = useMemo(
-    () =>
-      campRows
-        .filter((row) => {
-          const last9 = row.phone?.replace(/\D/g, '').slice(-9)
-          return last9 ? !rlcPhones.has(last9) : true
-        })
-        .slice(0, 6),
-    [campRows, rlcPhones]
   )
   const rosterCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -259,32 +239,7 @@ export default function RlcDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-rose-100/80">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-rose-700" />
-              Camp contacts not yet in RLC
-            </CardTitle>
-            <CardDescription>Bring camp registrations into the mother church</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {campBridge.length === 0 ? (
-              <p className="text-sm text-muted-foreground">All recent camp contacts are already in RLC.</p>
-            ) : (
-              campBridge.map((row) => (
-                <div key={row.phone} className="flex items-center justify-between gap-3 text-sm">
-                  <div>
-                    <p className="font-medium">{row.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{row.phone}</p>
-                  </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href="/admin/rlc/import">Add</Link>
-                  </Button>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        <RlcCampBridgePanel campRows={campRows} visitors={visitors} members={members} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -115,6 +115,7 @@ export async function ensureCampMeetingRegistrationForm(campYearId: string): Pro
       title,
       description,
       publish: false,
+      module: 'camp_meeting',
     })
 
     if (error || !data) {
@@ -193,6 +194,7 @@ export async function ensureCampMeetingFeedbackForm(campYearId: string): Promise
       title,
       description,
       publish: false,
+      module: 'camp_meeting',
     })
 
     if (error || !data) {

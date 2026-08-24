@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
-import { Upload } from 'lucide-react'
+import { Upload, Pencil } from 'lucide-react'
 
 export default function RlcMembersPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -98,11 +98,19 @@ export default function RlcMembersPage() {
                     {m.user?.phone ? ` · ${m.user.phone}` : ''}
                   </p>
                 </div>
-                {m.source_visitor_id ? (
-                  <Button variant="ghost" size="sm" className="w-full sm:w-auto" asChild>
-                    <Link href={`/admin/rlc/visitors/${m.source_visitor_id}`}>Visitor record</Link>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+                    <Link href={`/admin/rlc/members/${m.id}/edit`}>
+                      <Pencil className="mr-2 h-3.5 w-3.5" />
+                      Edit
+                    </Link>
                   </Button>
-                ) : null}
+                  {m.source_visitor_id ? (
+                    <Button variant="ghost" size="sm" className="w-full sm:w-auto" asChild>
+                      <Link href={`/admin/rlc/visitors/${m.source_visitor_id}`}>Visitor record</Link>
+                    </Button>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
           ))

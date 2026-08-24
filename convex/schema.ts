@@ -33,7 +33,8 @@ const serviceType = v.union(
   v.literal('prayer_meeting'),
   v.literal('youth_service'),
   v.literal('children_service'),
-  v.literal('special_event')
+  v.literal('special_event'),
+  v.literal('other')
 )
 
 const emergencyContact = v.object({
@@ -161,6 +162,7 @@ export default defineSchema({
       v.literal('campus'),
       v.literal('corporate_gem'),
       v.literal('activity'),
+      v.literal('rlc'),
       v.literal('ministry'),
       v.literal('fellowship'),
       v.literal('age_group'),
@@ -297,6 +299,18 @@ export default defineSchema({
     updated_at: v.number(),
   }).index('by_visitor_id', ['visitor_id']),
 
+  rlc_custom_services: defineTable({
+    name: v.string(),
+    name_normalized: v.string(),
+    congregation: v.literal('rlc'),
+    created_by: v.optional(v.string()),
+    is_active: v.boolean(),
+    last_used_at: v.optional(v.number()),
+    updated_at: v.number(),
+  })
+    .index('by_congregation', ['congregation'])
+    .index('by_congregation_and_name', ['congregation', 'name_normalized']),
+
   camp_years: defineTable({
     year: v.number(),
     theme: v.string(),
@@ -426,6 +440,10 @@ export default defineSchema({
     accent_color: v.optional(v.string()),
     /** Camp meeting year this form belongs to (required for camp meeting registration forms) */
     camp_year_id: v.optional(v.string()),
+    /** Owning module — RLC, camp meeting, or general outreach */
+    module: v.optional(
+      v.union(v.literal('rlc'), v.literal('camp_meeting'), v.literal('outreach'))
+    ),
     /** Public layout: classic | stepped (Typeform-style one question per screen) */
     display_mode: v.optional(v.union(v.literal('classic'), v.literal('stepped'))),
     /** Denormalized count — updated on each public submission */
@@ -436,7 +454,8 @@ export default defineSchema({
     .index('by_slug', ['slug'])
     .index('by_status', ['status'])
     .index('by_group', ['group_id'])
-    .index('by_camp_year', ['camp_year_id']),
+    .index('by_camp_year', ['camp_year_id'])
+    .index('by_module', ['module']),
 
   form_fields: defineTable({
     form_id: v.string(),

@@ -9,6 +9,11 @@ export const GROUP_TYPES = [
     description: 'Graduates and workers — executives, leaders, members, and activities',
   },
   { value: 'activity', label: 'General activity / event', description: 'Church-wide events (Love feat, fun fair, outreach, etc.)' },
+  {
+    value: 'rlc',
+    label: 'Redemption Light Chapel',
+    description: 'Mother church forms and activities at RLC',
+  },
   { value: 'ministry', label: 'Ministry', description: 'Ongoing ministry team' },
   { value: 'fellowship', label: 'Fellowship', description: 'Smaller fellowship group' },
   { value: 'age_group', label: 'Age group', description: 'Age-based fellowship' },
@@ -68,6 +73,8 @@ export function getGroupTypeBadgeClass(type: string | undefined): string {
       return 'bg-violet-100 text-violet-900'
     case 'activity':
       return 'bg-amber-100 text-amber-900'
+    case 'rlc':
+      return 'bg-rose-100 text-rose-900'
     case 'ministry':
       return 'bg-slate-100 text-slate-800'
     case 'fellowship':

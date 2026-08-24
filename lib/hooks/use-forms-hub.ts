@@ -3,7 +3,8 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getFormsHubData, type FormsHubData } from '@/lib/actions/forms-hub'
 
-export const formsHubQueryKey = (groupId: string) => ['forms-hub', groupId || 'all'] as const
+export const formsHubQueryKey = (groupId: string, module?: string) =>
+  ['forms-hub', groupId || 'all', module || 'all'] as const
 
 async function fetchFormsHub(groupId: string): Promise<FormsHubData> {
   const { data, error } = await getFormsHubData(groupId || undefined)
@@ -13,9 +14,9 @@ async function fetchFormsHub(groupId: string): Promise<FormsHubData> {
   return data
 }
 
-export function useFormsHub(groupId: string, enabled = true) {
+export function useFormsHub(groupId: string, enabled = true, module?: string) {
   const query = useQuery({
-    queryKey: formsHubQueryKey(groupId),
+    queryKey: formsHubQueryKey(groupId, module),
     queryFn: () => fetchFormsHub(groupId),
     enabled,
     staleTime: 30_000,

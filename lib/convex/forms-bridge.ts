@@ -34,6 +34,10 @@ function mapForm(doc: Record<string, unknown> | null | undefined): ChurchForm | 
     cover_image_url: doc.cover_image_url != null ? String(doc.cover_image_url) : undefined,
     accent_color: doc.accent_color != null ? String(doc.accent_color) : undefined,
     camp_year_id: doc.camp_year_id != null ? String(doc.camp_year_id) : undefined,
+    module:
+      doc.module === 'rlc' || doc.module === 'camp_meeting' || doc.module === 'outreach'
+        ? doc.module
+        : undefined,
     display_mode:
       doc.display_mode === 'classic' ? 'classic' : 'stepped',
     created_by: doc.created_by != null ? String(doc.created_by) : undefined,
@@ -78,11 +82,21 @@ function mapResponse(doc: Record<string, unknown>): ChurchFormResponse {
   }
 }
 
-export async function listFormsFromConvex(groupId?: string): Promise<ChurchForm[]> {
+export async function listFormsFromConvex(args?: {
+  groupId?: string
+  module?: ChurchForm['module']
+}): Promise<ChurchForm[]> {
   const client = getConvexHttpClient()
-  const args: { secret: string; group_id?: string } = { secret: requireCampAdminSecret() }
-  if (groupId) args.group_id = groupId
-  const rows = (await client.query(api.forms.listFormsWithSecret, args)) as Array<Record<string, unknown>>
+  const queryArgs: {
+    secret: string
+    group_id?: string
+    module?: ChurchForm['module']
+  } = { secret: requireCampAdminSecret() }
+  if (args?.groupId) queryArgs.group_id = args.groupId
+  if (args?.module) queryArgs.module = args.module
+  const rows = (await client.query(api.forms.listFormsWithSecret, queryArgs)) as Array<
+    Record<string, unknown>
+  >
   return rows.map((row) => mapForm(row)).filter((row): row is ChurchForm => row != null)
 }
 
@@ -141,6 +155,7 @@ export async function createFormInConvex(input: {
   accent_color?: string
   camp_year_id?: string
   display_mode?: 'classic' | 'stepped'
+  module?: ChurchForm['module']
 }): Promise<ChurchForm> {
   const client = getConvexHttpClient()
   const doc = (await client.mutation(api.forms.createFormWithSecret, {
@@ -165,6 +180,7 @@ type FormUpdatePatch = {
   accent_color?: string | null
   camp_year_id?: string | null
   display_mode?: 'classic' | 'stepped'
+  module?: ChurchForm['module']
 }
 
 function stripOptionalFormFields(patch: FormUpdatePatch): FormUpdatePatch {

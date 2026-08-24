@@ -12,7 +12,7 @@ export async function listForms(groupId?: string): Promise<{ data: ChurchForm[];
   requireConvexEnv()
   try {
     const { listFormsFromConvex } = await import('@/lib/convex/forms-bridge')
-    const data = await listFormsFromConvex(groupId)
+    const data = await listFormsFromConvex({ groupId })
     return { data, error: null }
   } catch (error: unknown) {
     return {
@@ -121,6 +121,7 @@ export async function createForm(input: {
   enable_profile_lookup?: boolean
   capture_respondent_location?: boolean
   camp_year_id?: string
+  module?: ChurchForm['module']
 }): Promise<{ data: ChurchForm | null; error: string | null }> {
   requireConvexEnv()
   try {
@@ -150,6 +151,7 @@ export async function updateForm(
     accent_color?: string | null
     camp_year_id?: string | null
     display_mode?: 'classic' | 'stepped'
+    module?: ChurchForm['module']
   }
 ): Promise<{ data: ChurchForm | null; error: string | null }> {
   requireConvexEnv()

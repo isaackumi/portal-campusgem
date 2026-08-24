@@ -37,7 +37,7 @@ export type RlcRole =
   | 'finance'
   | 'administration'
 export type AttendanceMethod = 'qr' | 'kiosk' | 'admin' | 'pin' | 'mobile'
-export type ServiceType = 'sunday_service' | 'midweek_service' | 'prayer_meeting' | 'youth_service' | 'children_service' | 'special_event'
+export type ServiceType = 'sunday_service' | 'midweek_service' | 'prayer_meeting' | 'youth_service' | 'children_service' | 'special_event' | 'other'
 
 export interface AppUser {
   id: string
@@ -146,6 +146,7 @@ export interface Group {
     | 'campus'
     | 'corporate_gem'
     | 'activity'
+    | 'rlc'
     | 'ministry'
     | 'fellowship'
     | 'age_group'
@@ -250,6 +251,17 @@ export interface RlcInteraction {
   created_at: string
   updated_at: string
   performer?: AppUser
+}
+
+export interface RlcCustomService {
+  id: string
+  name: string
+  congregation: 'rlc'
+  created_by?: string
+  is_active: boolean
+  last_used_at?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface RlcStats {
@@ -1050,6 +1062,8 @@ export interface ChurchForm {
   accent_color?: string
   /** Required for camp meeting registration forms — one form per camp year */
   camp_year_id?: string
+  /** Owning module: RLC, camp meeting, or outreach */
+  module?: 'rlc' | 'camp_meeting' | 'outreach'
   /** Public layout: classic (all on one page) or stepped (Typeform-style) */
   display_mode?: 'classic' | 'stepped'
   created_by?: string

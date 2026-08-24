@@ -89,17 +89,31 @@ async function getFieldsForForm(ctx: FormsCtx, formId: string): Promise<Doc<'for
 }
 
 export const listFormsWithSecret = query({
-  args: { secret: v.string(), group_id: v.optional(v.string()) },
+  args: {
+    secret: v.string(),
+    group_id: v.optional(v.string()),
+    module: v.optional(v.union(v.literal('rlc'), v.literal('camp_meeting'), v.literal('outreach'))),
+  },
   returns: v.array(v.any()),
-  handler: async (ctx, { secret, group_id }) => {
+  handler: async (ctx, { secret, group_id, module }) => {
     assertServerSecret(secret)
-    const forms = group_id
+    let forms = group_id
       ? await ctx.db
           .query('forms')
           .withIndex('by_group', (q) => q.eq('group_id', group_id))
           .order('desc')
           .collect()
-      : await ctx.db.query('forms').order('desc').collect()
+      : module
+        ? await ctx.db
+            .query('forms')
+            .withIndex('by_module', (q) => q.eq('module', module))
+            .order('desc')
+            .collect()
+        : await ctx.db.query('forms').order('desc').collect()
+
+    if (module && group_id) {
+      forms = forms.filter((form) => form.module === module)
+    }
 
     return forms.map((form) => ({
       ...form,
@@ -236,6 +250,7 @@ export const createFormWithSecret = mutation({
     accent_color: v.optional(v.string()),
     camp_year_id: v.optional(v.string()),
     display_mode: v.optional(v.union(v.literal('classic'), v.literal('stepped'))),
+    module: v.optional(v.union(v.literal('rlc'), v.literal('camp_meeting'), v.literal('outreach'))),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -274,6 +289,7 @@ export const createFormWithSecret = mutation({
       category,
       group_id: args.group_id,
       camp_year_id: campYearId,
+      module: args.module,
       status: 'draft',
       enable_profile_lookup: profileLookupDefault,
       capture_respondent_location: args.capture_respondent_location ?? false,
@@ -304,6 +320,7 @@ export const updateFormWithSecret = mutation({
     accent_color: v.optional(v.union(v.string(), v.null())),
     camp_year_id: v.optional(v.union(v.string(), v.null())),
     display_mode: v.optional(v.union(v.literal('classic'), v.literal('stepped'))),
+    module: v.optional(v.union(v.literal('rlc'), v.literal('camp_meeting'), v.literal('outreach'))),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -371,6 +388,7 @@ export const updateFormWithSecret = mutation({
       }
       patch.slug = slug
     }
+    if (args.module != null) patch.module = args.module
 
     await ctx.db.patch('forms', args.form_id, patch)
     return await ctx.db.get('forms', args.form_id)

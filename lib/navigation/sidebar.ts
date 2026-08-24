@@ -117,6 +117,12 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         icon: Upload,
         roles: ['admin', 'pastor', 'elder'],
       },
+      {
+        name: 'Forms',
+        href: '/admin/forms?module=camp_meeting',
+        icon: FileText,
+        roles: ['admin', 'pastor', 'elder'],
+      },
     ],
   },
   {
@@ -174,6 +180,12 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         name: 'Analytics',
         href: '/admin/rlc/analytics',
         icon: BarChart3,
+        permission: 'rlc.view',
+      },
+      {
+        name: 'Forms',
+        href: '/admin/forms?module=rlc',
+        icon: FileText,
         permission: 'rlc.view',
       },
     ],
@@ -298,6 +310,13 @@ export function isSidebarItemActive(
     const wantsMine = expected?.get('mine') === '1'
     const isMine = searchParams?.get('mine') === '1'
     return wantsMine ? isMine : !isMine
+  }
+
+  if (base === '/admin/forms') {
+    if (pathname !== base) return false
+    const wantsModule = expected?.get('module')
+    if (!wantsModule) return !searchParams?.get('module')
+    return searchParams?.get('module') === wantsModule
   }
 
   if (expected && expected.size > 0) {

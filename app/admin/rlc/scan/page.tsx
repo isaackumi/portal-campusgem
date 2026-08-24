@@ -5,28 +5,34 @@ import Link from 'next/link'
 import { Html5QrcodeScanner } from 'html5-qrcode'
 import { useAuth } from '@/components/providers'
 import {
+  createRlcCustomServiceAction,
   loadRlcAttendanceAction,
+  loadRlcCustomServicesAction,
   loadRlcMembersAction,
   loadRlcVisitorsAction,
   recordRlcAttendanceAction,
   resolveRlcScanAction,
 } from '@/lib/actions/rlc'
-import { RLC_SERVICES } from '@/lib/constants/rlc'
 import {
   filterAttendancePeople,
   memberToAttendancePerson,
-  rlcServiceLabel,
   sessionCheckedKeys,
   visitorToAttendancePerson,
   type RlcAttendancePerson,
 } from '@/lib/rlc/attendance-roster'
-import type { Attendance, Member, ServiceType, Visitor } from '@/lib/types'
+import {
+  defaultRlcServiceSelection,
+  recordArgsFromSelection,
+  rlcServiceSelectionLabel,
+  type RlcServiceSelection,
+} from '@/lib/rlc/service-selection'
+import type { Attendance, Member, RlcCustomService, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
+import { RlcServiceSelect } from '@/components/rlc/rlc-service-select'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { Camera, CheckCircle, Search } from 'lucide-react'
@@ -35,7 +41,9 @@ export default function RlcScanPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0])
-  const [serviceType, setServiceType] = useState<ServiceType>('sunday_service')
+  const [serviceSelection, setServiceSelection] = useState<RlcServiceSelection>(defaultRlcServiceSelection())
+  const [customServices, setCustomServices] = useState<RlcCustomService[]>([])
+  const [creatingCustom, setCreatingCustom] = useState(false)
   const [query, setQuery] = useState('')
   const [cameraOpen, setCameraOpen] = useState(false)
   const [visitors, setVisitors] = useState<Visitor[]>([])
@@ -46,15 +54,19 @@ export default function RlcScanPage() {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const lastScannedRef = useRef<string | null>(null)
 
+  const serviceLabel = useMemo(() => rlcServiceSelectionLabel(serviceSelection), [serviceSelection])
+
   const loadAll = useCallback(async () => {
-    const [a, m, v] = await Promise.all([
+    const [a, m, v, custom] = await Promise.all([
       loadRlcAttendanceAction({ serviceDate }),
       loadRlcMembersAction(),
       loadRlcVisitorsAction(),
+      loadRlcCustomServicesAction(),
     ])
     setAttendance(a.data ?? [])
     setMembers(m.data ?? [])
     setVisitors((v.data ?? []).filter((row) => row.is_active !== false))
+    setCustomServices(custom.data ?? [])
     setLoading(false)
   }, [serviceDate])
 
@@ -89,11 +101,11 @@ export default function RlcScanPage() {
       if (scannerRef.current === scanner) scannerRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraOpen, serviceDate, serviceType])
+  }, [cameraOpen, serviceDate, serviceSelection])
 
   const checkedKeys = useMemo(
-    () => sessionCheckedKeys(attendance, serviceType),
-    [attendance, serviceType]
+    () => sessionCheckedKeys(attendance, serviceSelection),
+    [attendance, serviceSelection]
   )
 
   const people = useMemo(() => {
@@ -108,17 +120,38 @@ export default function RlcScanPage() {
     [people, query, checkedKeys]
   )
 
+  async function handleCreateCustom(name: string) {
+    if (!user?.id) {
+      toast({ variant: 'destructive', title: 'Sign in required' })
+      return null
+    }
+    setCreatingCustom(true)
+    const { data, error } = await createRlcCustomServiceAction({ name, createdBy: user.id })
+    setCreatingCustom(false)
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Could not save service', description: error ?? 'Try again' })
+      return null
+    }
+    setCustomServices((prev) => {
+      const next = prev.filter((row) => row.id !== data.id)
+      return [data, ...next]
+    })
+    toast({ title: 'Other service saved', description: data.name })
+    return data
+  }
+
   async function checkIn(person: RlcAttendancePerson, method: Attendance['method'] = 'admin') {
     if (!user?.id) {
       toast({ variant: 'destructive', title: 'Sign in required' })
       return
     }
     setRecordingKey(person.key)
+    const recordArgs = recordArgsFromSelection(serviceSelection)
     const { data, error } = await recordRlcAttendanceAction({
       memberId: person.memberId,
       visitorId: person.visitorId,
       serviceDate,
-      serviceType,
+      ...recordArgs,
       method,
       createdBy: user.id,
     })
@@ -184,23 +217,18 @@ export default function RlcScanPage() {
         <CardHeader>
           <CardTitle>Active service</CardTitle>
           <CardDescription>
-            {checkedKeys.size} already checked into {rlcServiceLabel(serviceType)}
+            {checkedKeys.size} already checked into {serviceLabel}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <Input type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
-          <Select value={serviceType} onValueChange={(v) => setServiceType(v as ServiceType)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {RLC_SERVICES.map((service) => (
-                <SelectItem key={service.value} value={service.value}>
-                  {service.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <RlcServiceSelect
+            selection={serviceSelection}
+            onChange={setServiceSelection}
+            customServices={customServices}
+            onCreateCustom={handleCreateCustom}
+            creatingCustom={creatingCustom}
+          />
         </CardContent>
       </Card>
 

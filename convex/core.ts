@@ -18,13 +18,15 @@ const serviceType = v.union(
   v.literal('prayer_meeting'),
   v.literal('youth_service'),
   v.literal('children_service'),
-  v.literal('special_event')
+  v.literal('special_event'),
+  v.literal('other')
 )
 
 const groupType = v.union(
   v.literal('campus'),
   v.literal('corporate_gem'),
   v.literal('activity'),
+  v.literal('rlc'),
   v.literal('ministry'),
   v.literal('fellowship'),
   v.literal('age_group'),

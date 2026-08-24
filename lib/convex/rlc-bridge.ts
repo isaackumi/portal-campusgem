@@ -10,6 +10,7 @@ import type {
   Member,
   RlcImportSearchResult,
   RlcInteraction,
+  RlcCustomService,
   RlcStats,
   Visitor,
   VisitorFollowUpStatus,
@@ -456,11 +457,42 @@ export async function listRlcMembersFromConvex(): Promise<Member[]> {
   return docs.map((d) => convexMemberDocToMember(d)).filter((m): m is Member => m != null)
 }
 
+export async function getRlcMemberFromConvex(memberId: string): Promise<Member | null> {
+  const client = getConvexHttpClient()
+  const doc = (await client.query(api.rlc.getRlcMemberWithSecret, {
+    secret: requireCoreServerSecret(),
+    member_id: memberId,
+  })) as Record<string, unknown> | null
+  const { convexMemberDocToMember } = await import('@/lib/convex/core-bridge')
+  return convexMemberDocToMember(doc)
+}
+
+export async function updateRlcMemberInConvex(args: {
+  memberId: string
+  performedBy: string
+  rlcRoles: string[]
+  rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
+}): Promise<Member> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.rlc.updateRlcMemberWithSecret, {
+    secret: requireCoreServerSecret(),
+    member_id: args.memberId,
+    performed_by: args.performedBy,
+    rlc_roles: args.rlcRoles,
+    rlc_membership_type: args.rlcMembershipType,
+  })) as Record<string, unknown>
+  const { convexMemberDocToMember } = await import('@/lib/convex/core-bridge')
+  const member = convexMemberDocToMember(doc)
+  if (!member) throw new Error('Failed to update RLC member')
+  return member
+}
+
 export async function recordRlcAttendanceInConvex(args: {
   memberId?: string
   visitorId?: string
   serviceDate: string
   serviceType?: Attendance['service_type']
+  customServiceId?: string
   method: Attendance['method']
   createdBy?: string
   notes?: string
@@ -472,6 +504,7 @@ export async function recordRlcAttendanceInConvex(args: {
     visitor_id: args.visitorId,
     service_date: args.serviceDate,
     service_type: args.serviceType,
+    custom_service_id: args.customServiceId,
     check_in_time: new Date().toISOString(),
     method: args.method,
     created_by: args.createdBy,
@@ -525,4 +558,50 @@ export async function listRlcAttendanceFromConvex(args?: {
   })) as Record<string, unknown>[]
   const { convexAttendanceDocToAttendance } = await import('@/lib/convex/core-bridge')
   return docs.map((d) => convexAttendanceDocToAttendance(d)).filter((a): a is Attendance => a != null)
+}
+
+export function convexRlcCustomServiceDocToRlcCustomService(
+  doc: Record<string, unknown> | null | undefined
+): RlcCustomService | null {
+  if (!doc || typeof doc !== 'object') return null
+  const id = String(doc._id ?? '')
+  if (!id) return null
+  const ct = doc._creationTime as number | undefined
+  const ut = doc.updated_at as number | undefined
+  const lastUsed = doc.last_used_at as number | undefined
+  return {
+    id,
+    name: String(doc.name ?? ''),
+    congregation: 'rlc',
+    created_by: doc.created_by != null ? String(doc.created_by) : undefined,
+    is_active: Boolean(doc.is_active ?? true),
+    last_used_at: lastUsed != null ? isoFromMs(lastUsed) : undefined,
+    created_at: isoFromMs(ct) || new Date().toISOString(),
+    updated_at: isoFromMs(ut) || isoFromMs(ct) || new Date().toISOString(),
+  }
+}
+
+export async function listRlcCustomServicesFromConvex(): Promise<RlcCustomService[]> {
+  const client = getConvexHttpClient()
+  const docs = (await client.query(api.rlc.listRlcCustomServicesWithSecret, {
+    secret: requireCoreServerSecret(),
+  })) as Record<string, unknown>[]
+  return docs
+    .map((d) => convexRlcCustomServiceDocToRlcCustomService(d))
+    .filter((s): s is RlcCustomService => s != null)
+}
+
+export async function createRlcCustomServiceInConvex(args: {
+  name: string
+  createdBy?: string
+}): Promise<RlcCustomService> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.rlc.createRlcCustomServiceWithSecret, {
+    secret: requireCoreServerSecret(),
+    name: args.name,
+    created_by: args.createdBy,
+  })) as Record<string, unknown>
+  const row = convexRlcCustomServiceDocToRlcCustomService(doc)
+  if (!row) throw new Error('Failed to save custom service')
+  return row
 }

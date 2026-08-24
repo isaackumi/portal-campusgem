@@ -11,6 +11,7 @@ import {
   ensureCampMeetingRegistrationForm,
   ensureEaglesCampMeetingGroup,
 } from '@/lib/actions/camp-meeting-form'
+import { ensureRlcFormsGroup } from '@/lib/actions/rlc-forms'
 import { getAllCampYears } from '@/lib/actions/camp'
 import {
   ensureCampusMemberRegistrationForm,
@@ -21,6 +22,14 @@ import {
   DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME,
 } from '@/lib/constants/camp-meeting'
 import { CAMPUS_MEMBER_REGISTRATION_CATEGORY } from '@/lib/forms/campus-member-registration'
+import {
+  FORM_MODULE_LABELS,
+  RLC_FORMS_CATEGORY,
+  formMatchesModule,
+  inferFormModule,
+  isFormModule,
+  type FormModule,
+} from '@/lib/constants/forms'
 import type { ChurchForm, CampYear } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -52,6 +61,7 @@ import {
   Building2,
   CalendarClock,
   ClipboardList,
+  Church,
   Copy,
   ExternalLink,
   FileText,
@@ -90,6 +100,8 @@ function FormsAdminContent() {
   const { toast } = useToast()
   const invalidateFormsHub = useInvalidateFormsHub()
   const [filterGroupId, setFilterGroupIdState] = useState(() => searchParams.get('group') ?? '')
+  const moduleParam = searchParams.get('module')
+  const activeModule: FormModule | null = isFormModule(moduleParam) ? moduleParam : null
   const [creating, setCreating] = useState(false)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [creatingCampMeetingTemplate, setCreatingCampMeetingTemplate] = useState(false)
@@ -107,7 +119,8 @@ function FormsAdminContent() {
 
   const { forms, groups, creatorsById, isLoading, isFetching, error, refetch } = useFormsHub(
     filterGroupId,
-    Boolean(user)
+    Boolean(user),
+    activeModule ?? undefined
   )
 
   const groupMap = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
@@ -123,10 +136,11 @@ function FormsAdminContent() {
       const params = new URLSearchParams(searchParams.toString())
       if (next) params.set('group', next)
       else params.delete('group')
+      if (activeModule) params.set('module', activeModule)
       const query = params.toString()
       router.replace(query ? `/admin/forms?${query}` : '/admin/forms', { scroll: false })
     },
-    [router, searchParams]
+    [router, searchParams, activeModule]
   )
 
   useEffect(() => {
@@ -134,9 +148,14 @@ function FormsAdminContent() {
     setFilterGroupIdState((prev) => (prev === fromUrl ? prev : fromUrl))
   }, [searchParams])
 
+  const scopedForms = useMemo(() => {
+    if (!activeModule) return forms
+    return forms.filter((form) => formMatchesModule(form, activeModule))
+  }, [forms, activeModule])
+
   const filteredForms = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return forms.filter((form) => {
+    return scopedForms.filter((form) => {
       if (!query) return true
       const groupName = form.group_id ? groupMap.get(form.group_id)?.name ?? '' : ''
       return (
@@ -146,17 +165,17 @@ function FormsAdminContent() {
         groupName.toLowerCase().includes(query)
       )
     })
-  }, [forms, search, groupMap])
+  }, [scopedForms, search, groupMap])
 
   const stats = useMemo(() => {
-    const published = forms.filter((f) => f.status === 'published').length
-    const responses = forms.reduce((sum, f) => sum + (f.response_count ?? 0), 0)
-    const campusForms = forms.filter((f) => {
+    const published = scopedForms.filter((f) => f.status === 'published').length
+    const responses = scopedForms.reduce((sum, f) => sum + (f.response_count ?? 0), 0)
+    const campusForms = scopedForms.filter((f) => {
       const g = f.group_id ? groupMap.get(f.group_id) : undefined
       return g?.group_type === 'campus'
     }).length
-    return { total: forms.length, published, responses, campusForms }
-  }, [forms, groupMap])
+    return { total: scopedForms.length, published, responses, campusForms }
+  }, [scopedForms, groupMap])
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -167,6 +186,13 @@ function FormsAdminContent() {
   useEffect(() => {
     if (filterGroupId) setSelectedGroupId(filterGroupId)
   }, [filterGroupId])
+
+  useEffect(() => {
+    if (activeModule === 'rlc' && createOpen && !selectedGroupId) {
+      void applyRlcGroupSelection()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when opening RLC create dialog
+  }, [activeModule, createOpen, selectedGroupId])
 
   useEffect(() => {
     if (!user) return
@@ -184,6 +210,21 @@ function FormsAdminContent() {
     lastErrorRef.current = error
     toast({ variant: 'destructive', title: 'Error', description: error })
   }, [error, toast])
+
+  async function applyRlcGroupSelection(): Promise<{ id: string; name: string } | null> {
+    const { data, error, created } = await ensureRlcFormsGroup()
+    if (error || !data) {
+      toast({
+        variant: 'destructive',
+        title: 'Group setup failed',
+        description: error ?? 'Could not set up Redemption Light Chapel group.',
+      })
+      return null
+    }
+    if (created) await invalidateFormsHub()
+    setSelectedGroupId(data.id)
+    return { id: data.id, name: data.name }
+  }
 
   async function applyCampMeetingGroupSelection(): Promise<{ id: string; name: string } | null> {
     const { data, error, created } = await ensureEaglesCampMeetingGroup()
@@ -208,11 +249,20 @@ function FormsAdminContent() {
 
     let groupId = selectedGroupId
     let groupName = groupId ? groupMap.get(groupId)?.name : undefined
+    let formModule: FormModule | undefined = activeModule ?? undefined
+    let formCategory = category.trim() || undefined
 
     const isCampYearForm =
       templateId === 'camp_meeting_registration' || templateId === 'camp_meeting_feedback'
 
-    if (isCampYearForm) {
+    if (activeModule === 'rlc') {
+      const group = await applyRlcGroupSelection()
+      if (!group) return
+      groupId = group.id
+      groupName = group.name
+      formModule = 'rlc'
+      formCategory = RLC_FORMS_CATEGORY
+    } else if (isCampYearForm) {
       if (!selectedCampYearId) {
         toast({
           variant: 'destructive',
@@ -225,6 +275,7 @@ function FormsAdminContent() {
       if (!group) return
       groupId = group.id
       groupName = group.name
+      formModule = 'camp_meeting'
     } else if (!groupId) {
       toast({
         variant: 'destructive',
@@ -241,9 +292,10 @@ function FormsAdminContent() {
       group_name: groupName,
       title: title.trim(),
       description: description.trim() || undefined,
-      category: category.trim() || undefined,
+      category: formCategory,
       camp_year_id: isCampYearForm ? selectedCampYearId : undefined,
       created_by: user?.id,
+      module: formModule,
     })
     setCreating(false)
 
@@ -390,33 +442,50 @@ function FormsAdminContent() {
     )
   }
 
-  const showGridSkeleton = isLoading && forms.length === 0
+  const moduleLabel = activeModule ? FORM_MODULE_LABELS[activeModule] : null
+  const backHref =
+    activeModule === 'rlc'
+      ? '/admin/rlc'
+      : activeModule === 'camp_meeting'
+        ? '/admin/camp-meeting'
+        : '/admin'
+
+  const showGridSkeleton = isLoading && scopedForms.length === 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/40">
       <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:space-y-8 sm:p-6">
         <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
-            <Button variant="ghost" className="-ml-2 min-h-10 w-fit" onClick={() => router.push('/admin')}>
+            <Button variant="ghost" className="-ml-2 min-h-10 w-fit" onClick={() => router.push(backHref)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Admin
+              {activeModule ? `Back to ${moduleLabel}` : 'Back to Admin'}
             </Button>
             <div>
-              <p className="text-sm font-medium uppercase tracking-wide text-indigo-600">Forms & Outreach</p>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Forms Hub</h1>
+              <p className="text-sm font-medium uppercase tracking-wide text-indigo-600">
+                {activeModule ? `${moduleLabel} forms` : 'Forms & Outreach'}
+              </p>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                {activeModule ? `${moduleLabel} Forms` : 'Forms Hub'}
+              </h1>
               <p className="mt-2 max-w-2xl text-muted-foreground">
-                Professional forms for campus ministries and church-wide activities — publish shareable links and
-                review responses in one place.
+                {activeModule === 'rlc'
+                  ? 'Dedicated forms for Redemption Light Chapel — visitor intake, ministry sign-ups, and more.'
+                  : activeModule === 'camp_meeting'
+                    ? 'Camp meeting registration, feedback, and event forms for each camp year.'
+                    : 'Professional forms for campus ministries and church-wide activities — publish shareable links and review responses in one place.'}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/admin/campus-activities">
-                <Building2 className="mr-2 h-4 w-4" />
-                Campus board
-              </Link>
-            </Button>
+            {!activeModule ? (
+              <Button variant="outline" asChild>
+                <Link href="/admin/campus-activities">
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Campus board
+                </Link>
+              </Button>
+            ) : null}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-indigo-600 hover:bg-indigo-700">
@@ -427,7 +496,13 @@ function FormsAdminContent() {
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Create a new form</DialogTitle>
-                  <DialogDescription>Assign it to a campus or activity, then add questions on the next screen.</DialogDescription>
+                  <DialogDescription>
+                    {activeModule === 'rlc'
+                      ? 'This form will be saved under Redemption Light Chapel.'
+                      : activeModule === 'camp_meeting'
+                        ? 'Assign a camp year for registration forms, or create a general camp form.'
+                        : 'Assign it to a campus or activity, then add questions on the next screen.'}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -437,7 +512,17 @@ function FormsAdminContent() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {FORM_TEMPLATES.map((template) => (
+                        {FORM_TEMPLATES.filter((template) => {
+                          if (activeModule === 'rlc') {
+                            return !template.id.startsWith('camp_meeting')
+                          }
+                          if (activeModule === 'camp_meeting') {
+                            return (
+                              template.id.startsWith('camp_meeting') || template.id === 'blank'
+                            )
+                          }
+                          return !template.id.startsWith('camp_meeting')
+                        }).map((template) => (
                           <SelectItem key={template.id} value={template.id}>
                             {template.label}
                           </SelectItem>
@@ -458,16 +543,29 @@ function FormsAdminContent() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Campus / Activity</Label>
+                    <Label>{activeModule === 'rlc' ? 'RLC group' : 'Campus / Activity'}</Label>
                     <FormGroupSelect
-                      groups={groups}
+                      groups={
+                        activeModule === 'rlc'
+                          ? groups.filter((g) => g.group_type === 'rlc')
+                          : activeModule === 'camp_meeting'
+                            ? groups.filter((g) => g.group_type === 'activity')
+                            : groups
+                      }
                       value={selectedGroupId}
                       disabled={
+                        activeModule === 'rlc' ||
                         templateId === 'camp_meeting_registration' ||
                         templateId === 'camp_meeting_feedback'
                       }
                       onValueChange={(v) => setSelectedGroupId(v === '__none__' ? '' : v)}
                     />
+                    {activeModule === 'rlc' ? (
+                      <p className="text-sm text-muted-foreground">
+                        Forms are assigned to{' '}
+                        <span className="font-medium text-slate-800">Redemption Light Chapel</span>.
+                      </p>
+                    ) : null}
                     {templateId === 'camp_meeting_registration' ||
                     templateId === 'camp_meeting_feedback' ? (
                       <>
@@ -565,6 +663,7 @@ function FormsAdminContent() {
           </Card>
         </div>
 
+        {!activeModule ? (
         <Card className="border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50/50 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -599,7 +698,9 @@ function FormsAdminContent() {
             </Button>
           </CardContent>
         </Card>
+        ) : null}
 
+        {!activeModule || activeModule === 'camp_meeting' ? (
         <Card className="border-slate-200/80 bg-gradient-to-r from-slate-50 to-slate-100/50 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -647,6 +748,27 @@ function FormsAdminContent() {
             </div>
           </CardContent>
         </Card>
+        ) : null}
+
+        {activeModule === 'rlc' ? (
+          <Card className="border-rose-200/80 bg-gradient-to-r from-rose-50 to-rose-100/40 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Church className="h-5 w-5 text-rose-700" />
+                Redemption Light forms
+              </CardTitle>
+              <CardDescription>
+                Create visitor intake, ministry sign-up, or custom RLC forms. They appear only under this RLC forms list.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="bg-rose-700 hover:bg-rose-800" onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                New RLC form
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="flex flex-col gap-4 rounded-xl border bg-white/90 p-4 shadow-sm sm:flex-row sm:items-center">
           <div className="flex-1 space-y-2">
@@ -676,14 +798,18 @@ function FormsAdminContent() {
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <ClipboardList className="mb-4 h-12 w-12 text-slate-300" />
               <h3 className="text-lg font-semibold text-slate-900">
-                {forms.length === 0 ? 'No forms yet' : 'No matching forms'}
+                {scopedForms.length === 0 ? 'No forms yet' : 'No matching forms'}
               </h3>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                {forms.length === 0
-                  ? 'Create a custom form or generate a campus member registration template to get started.'
+                {scopedForms.length === 0
+                  ? activeModule === 'rlc'
+                    ? 'Create your first Redemption Light form — visitor intake, sign-ups, and more.'
+                    : activeModule === 'camp_meeting'
+                      ? 'Create a camp meeting registration or review form for a camp year.'
+                      : 'Create a custom form or generate a campus member registration template to get started.'
                   : 'Try a different search or clear the group filter.'}
               </p>
-              {forms.length === 0 ? (
+              {scopedForms.length === 0 ? (
                 <Button className="mt-6" onClick={() => setCreateOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create your first form
@@ -703,6 +829,7 @@ function FormsAdminContent() {
               const group = form.group_id ? groupMap.get(form.group_id) : undefined
               const isRegistration = form.category === CAMPUS_MEMBER_REGISTRATION_CATEGORY
               const isCampMeeting = form.category === CAMP_MEETING_REGISTRATION_CATEGORY
+              const formModule = inferFormModule(form)
               const creatorName = form.created_by
                 ? creatorsById[form.created_by] ?? 'Unknown user'
                 : 'Unknown'
@@ -735,6 +862,11 @@ function FormsAdminContent() {
                       ) : form.category ? (
                         <Badge variant="outline" className="font-normal">
                           {form.category}
+                        </Badge>
+                      ) : null}
+                      {!activeModule && formModule !== 'outreach' ? (
+                        <Badge variant="outline" className="border-rose-200 font-normal text-rose-800">
+                          {FORM_MODULE_LABELS[formModule]}
                         </Badge>
                       ) : null}
                     </div>

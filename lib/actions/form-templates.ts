@@ -14,6 +14,7 @@ export async function createFormFromTemplate(input: {
   category?: string
   created_by?: string
   publish?: boolean
+  module?: ChurchForm['module']
 }): Promise<{ data: ChurchForm | null; error: string | null }> {
   const template = getFormTemplate(input.templateId)
   const groupName = input.group_name?.trim()
@@ -27,6 +28,7 @@ export async function createFormFromTemplate(input: {
     created_by: input.created_by,
     enable_profile_lookup: template.enable_profile_lookup,
     capture_respondent_location: template.capture_respondent_location,
+    module: input.module,
   })
 
   if (createError || !form) {

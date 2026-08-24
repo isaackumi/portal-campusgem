@@ -8,7 +8,8 @@ const serviceType = v.union(
   v.literal('prayer_meeting'),
   v.literal('youth_service'),
   v.literal('children_service'),
-  v.literal('special_event')
+  v.literal('special_event'),
+  v.literal('other')
 )
 
 const method = v.union(
