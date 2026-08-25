@@ -63,9 +63,19 @@ export function FormGroupSelect({
     otherGroups.length > 0 ||
     inactiveGroups.length > 0
 
+  const knownIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const group of groups) ids.add(group.id)
+    return ids
+  }, [groups])
+
+  // Radix Select freezes / loops when `value` has no matching SelectItem.
+  const safeValue =
+    value && knownIds.has(value) ? value : allowUnassigned ? '__none__' : undefined
+
   return (
     <Select
-      value={value || (allowUnassigned ? '__none__' : undefined)}
+      value={safeValue}
       disabled={disabled}
       onValueChange={(next) => {
         const normalized = next === '__none__' ? '' : next

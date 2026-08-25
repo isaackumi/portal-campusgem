@@ -39,7 +39,24 @@ export async function ensureRlcFormsGroup(): Promise<{
   const { data: existing, error: listError } = await findRlcFormsGroups()
   if (listError) return { data: null, created: false, error: listError }
 
-  if (existing[0]) return { data: existing[0], created: false, error: null }
+  if (existing[0]) {
+    const group = existing[0]
+    if (group.group_type !== RLC_FORMS_GROUP_TYPE) {
+      const { updateGroupAction } = await import('@/lib/actions/core-data')
+      const { data: updated, error: updateError } = await updateGroupAction(group.id, {
+        group_type: RLC_FORMS_GROUP_TYPE,
+      })
+      if (updateError || !updated) {
+        return {
+          data: null,
+          created: false,
+          error: updateError ?? 'Failed to update Redemption Light Chapel group type',
+        }
+      }
+      return { data: updated, created: false, error: null }
+    }
+    return { data: group, created: false, error: null }
+  }
 
   const { data, error } = await createGroupAction({
     name: DEFAULT_RLC_FORMS_GROUP_NAME,

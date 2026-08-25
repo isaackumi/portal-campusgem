@@ -188,11 +188,19 @@ function FormsAdminContent() {
   }, [filterGroupId])
 
   useEffect(() => {
-    if (activeModule === 'rlc' && createOpen && !selectedGroupId) {
-      void applyRlcGroupSelection()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when opening RLC create dialog
-  }, [activeModule, createOpen, selectedGroupId])
+    if (!createOpen || activeModule !== 'rlc') return
+    void (async () => {
+      const group = await applyRlcGroupSelection()
+      if (!group) return
+      if (!title.trim()) {
+        const template = getFormTemplate(templateId)
+        setTitle(template.defaultTitle(group.name))
+        setDescription(template.defaultDescription(group.name))
+        setCategory(RLC_FORMS_CATEGORY)
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed RLC dialog once when opened
+  }, [activeModule, createOpen])
 
   useEffect(() => {
     if (!user) return
@@ -286,37 +294,47 @@ function FormsAdminContent() {
     }
 
     setCreating(true)
-    const { data, error } = await createFormFromTemplate({
-      templateId,
-      group_id: groupId,
-      group_name: groupName,
-      title: title.trim(),
-      description: description.trim() || undefined,
-      category: formCategory,
-      camp_year_id: isCampYearForm ? selectedCampYearId : undefined,
-      created_by: user?.id,
-      module: formModule,
-    })
-    setCreating(false)
+    try {
+      const { data, error } = await createFormFromTemplate({
+        templateId,
+        group_id: groupId,
+        group_name: groupName,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        category: formCategory,
+        camp_year_id: isCampYearForm ? selectedCampYearId : undefined,
+        created_by: user?.id,
+        module: formModule,
+      })
 
-    if (error || !data) {
-      toast({ variant: 'destructive', title: 'Create failed', description: error ?? 'Unknown error' })
-      return
+      if (error || !data) {
+        toast({ variant: 'destructive', title: 'Create failed', description: error ?? 'Unknown error' })
+        return
+      }
+
+      await invalidateFormsHub()
+      setCreateOpen(false)
+      setTitle('')
+      setDescription('')
+      setCategory(activeModule === 'rlc' ? RLC_FORMS_CATEGORY : 'outreach')
+      setTemplateId('blank')
+      toast({
+        title: 'Form created',
+        description:
+          templateId === 'blank'
+            ? 'Add questions and publish when ready.'
+            : 'Template questions were added — review and publish when ready.',
+      })
+      router.push(`/admin/forms/${data.id}`)
+    } catch (error: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Create failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    } finally {
+      setCreating(false)
     }
-
-    await invalidateFormsHub()
-    setCreateOpen(false)
-    setTitle('')
-    setDescription('')
-    setTemplateId('blank')
-    toast({
-      title: 'Form created',
-      description:
-        templateId === 'blank'
-          ? 'Add questions and publish when ready.'
-          : 'Template questions were added — review and publish when ready.',
-    })
-    router.push(`/admin/forms/${data.id}`)
   }
 
   async function handleTemplateChange(next: FormTemplateId) {
@@ -544,22 +562,25 @@ function FormsAdminContent() {
                   </div>
                   <div className="space-y-2">
                     <Label>{activeModule === 'rlc' ? 'RLC group' : 'Campus / Activity'}</Label>
-                    <FormGroupSelect
-                      groups={
-                        activeModule === 'rlc'
-                          ? groups.filter((g) => g.group_type === 'rlc')
-                          : activeModule === 'camp_meeting'
+                    {activeModule === 'rlc' ? (
+                      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                        Redemption Light Chapel
+                      </div>
+                    ) : (
+                      <FormGroupSelect
+                        groups={
+                          activeModule === 'camp_meeting'
                             ? groups.filter((g) => g.group_type === 'activity')
                             : groups
-                      }
-                      value={selectedGroupId}
-                      disabled={
-                        activeModule === 'rlc' ||
-                        templateId === 'camp_meeting_registration' ||
-                        templateId === 'camp_meeting_feedback'
-                      }
-                      onValueChange={(v) => setSelectedGroupId(v === '__none__' ? '' : v)}
-                    />
+                        }
+                        value={selectedGroupId}
+                        disabled={
+                          templateId === 'camp_meeting_registration' ||
+                          templateId === 'camp_meeting_feedback'
+                        }
+                        onValueChange={(v) => setSelectedGroupId(v === '__none__' ? '' : v)}
+                      />
+                    )}
                     {activeModule === 'rlc' ? (
                       <p className="text-sm text-muted-foreground">
                         Forms are assigned to{' '}
@@ -595,9 +616,10 @@ function FormsAdminContent() {
                     <Label htmlFor="form-category">Category tag</Label>
                     <Input
                       id="form-category"
-                      value={category}
+                      value={activeModule === 'rlc' ? RLC_FORMS_CATEGORY : category}
                       onChange={(e) => setCategory(e.target.value)}
                       placeholder="outreach"
+                      disabled={activeModule === 'rlc'}
                     />
                   </div>
                   <div className="space-y-2">
@@ -615,7 +637,7 @@ function FormsAdminContent() {
                   <Button variant="outline" onClick={() => setCreateOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={() => void handleCreate()} disabled={creating}>
+                  <Button type="button" onClick={() => void handleCreate()} disabled={creating}>
                     {creating ? 'Creating...' : 'Create & edit questions'}
                   </Button>
                 </DialogFooter>

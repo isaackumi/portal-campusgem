@@ -158,13 +158,30 @@ export async function createFormInConvex(input: {
   module?: ChurchForm['module']
 }): Promise<ChurchForm> {
   const client = getConvexHttpClient()
-  const doc = (await client.mutation(api.forms.createFormWithSecret, {
-    secret: requireCampAdminSecret(),
-    ...input,
-  })) as Record<string, unknown>
-  const form = mapForm(doc)
-  if (!form) throw new Error('Failed to create form')
-  return form
+  const secret = requireCampAdminSecret()
+  try {
+    const doc = (await client.mutation(api.forms.createFormWithSecret, {
+      secret,
+      ...input,
+    })) as Record<string, unknown>
+    const form = mapForm(doc)
+    if (!form) throw new Error('Failed to create form')
+    return form
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    // Older Convex deployments may not accept `module` yet — retry without it.
+    if (input.module && message.toLowerCase().includes('module')) {
+      const { module: _module, ...withoutModule } = input
+      const doc = (await client.mutation(api.forms.createFormWithSecret, {
+        secret,
+        ...withoutModule,
+      })) as Record<string, unknown>
+      const form = mapForm(doc)
+      if (!form) throw new Error('Failed to create form')
+      return form
+    }
+    throw error
+  }
 }
 
 type FormUpdatePatch = {
