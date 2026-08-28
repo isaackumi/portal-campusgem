@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { campService } from '@/lib/services/camp-service'
 import { dataService } from '@/lib/services/data-service'
-import { CampRegistration, CampInteraction, AppUser } from '@/lib/types'
+import { CampRegistration, CampInteraction, AppUser, CampRegistrationRoomContext } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { ImportContactWarningsBadge, ImportContactWarningsList } from '@/components/camp/import-contact-warnings'
+import { CampRegistrationRoomCard } from '@/components/camp/camp-registration-room-card'
 import {
     memberDobIsoFromCampRegistration,
     MEMBER_DOB_PLACEHOLDER_YEAR,
@@ -38,6 +39,8 @@ export default function RegistrationDetailPage() {
     const { user } = useAuth()
 
     const [data, setData] = useState<CampRegistration | null>(null)
+    const [roomContext, setRoomContext] = useState<CampRegistrationRoomContext | null>(null)
+    const [roomLoading, setRoomLoading] = useState(true)
     const [staffMembers, setStaffMembers] = useState<AppUser[]>([])
     const [loading, setLoading] = useState(true)
     const [updating, setUpdating] = useState(false)
@@ -108,6 +111,10 @@ export default function RegistrationDetailPage() {
                 }))
             }
         }
+        setRoomLoading(true)
+        const roomRes = await campService.getRegistrationRoomContext(id)
+        setRoomContext(roomRes.data ?? null)
+        setRoomLoading(false)
         setLoading(false)
     }
 
@@ -807,6 +814,9 @@ export default function RegistrationDetailPage() {
                                     </div>
                                     <div className="w-full space-y-1 rounded bg-gray-100 p-3 text-center">
                                         <p className="font-semibold text-slate-900">{fullName}</p>
+                                        {data.phone?.trim() && data.phone !== 'N/A' ? (
+                                            <p className="text-base font-medium text-slate-800">{data.phone}</p>
+                                        ) : null}
                                         <p className="text-sm text-slate-600">{data.role || 'Participant'}</p>
                                         {data.check_in_code ? (
                                             <p className="font-mono text-lg font-bold tracking-wide text-slate-900">
@@ -828,6 +838,13 @@ export default function RegistrationDetailPage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <CampRegistrationRoomCard
+                            registration={data}
+                            roomContext={roomContext}
+                            loading={roomLoading}
+                            onUpdated={() => void loadData()}
+                        />
 
                         {/* Directory & birthdays (member record for login + upcoming birthdays) */}
                         <Card className="border-2 border-violet-100 bg-gradient-to-br from-violet-50/80 to-white shadow-sm">

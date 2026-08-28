@@ -24,6 +24,7 @@ type CampManualCheckInPanelProps = {
   activityId?: string
   sessionCheckedInIds?: Set<string>
   performedByUserId?: string
+  checkInMethod?: 'manual' | 'arrival'
   onCheckInComplete?: () => void
   className?: string
 }
@@ -34,6 +35,7 @@ export function CampManualCheckInPanel({
   activityId,
   sessionCheckedInIds,
   performedByUserId,
+  checkInMethod = 'manual',
   onCheckInComplete,
   className,
 }: CampManualCheckInPanelProps) {
@@ -81,6 +83,7 @@ export function CampManualCheckInPanel({
           activity_id: activityId,
           registration_id: reg.id,
           performed_by: performedByUserId,
+          check_in_method: checkInMethod === 'arrival' ? 'arrival' : 'manual',
         })
         if (error || !data) throw new Error(error ?? 'Check-in failed')
       } else {
@@ -94,7 +97,10 @@ export function CampManualCheckInPanel({
             registration_id: reg.id,
             performed_by: performedByUserId,
             interaction_type: 'status_change',
-            notes: 'Checked in via manual check-in',
+            notes:
+              checkInMethod === 'arrival'
+                ? 'Camp arrival check-in (manual desk)'
+                : 'Checked in via manual check-in',
           })
         }
       }
@@ -126,6 +132,7 @@ export function CampManualCheckInPanel({
             activity_id: activityId,
             registration_id: reg.id,
             performed_by: performedByUserId,
+            check_in_method: checkInMethod === 'arrival' ? 'arrival' : 'manual',
           })
           if (error) throw new Error(error)
         } else {
@@ -161,13 +168,17 @@ export function CampManualCheckInPanel({
       <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2 text-lg">
           <UserCheck className="h-5 w-5" />
-          Manual check-in
+          {checkInMethod === 'arrival' ? 'Arrival desk' : 'Manual search'}
         </CardTitle>
         <CardDescription>
-          Check in by camp code (e.g. GEM-26-K7M3), name, phone, guardian phone, or QR.
+          {checkInMethod === 'arrival'
+            ? 'Mark campers as arrived at camp — search by name, phone, guardian, or GEM code.'
+            : 'Check in by camp code (e.g. GEM-26-K7M3), name, phone, guardian phone, or QR text.'}
           {activityId
-            ? ' Manual check-ins apply to the selected session.'
-            : ' Each registrant has their own code — one guardian number may list several people.'}
+            ? ' Applies to the selected session.'
+            : checkInMethod === 'arrival'
+              ? ' Updates overall camp arrival status.'
+              : ' Each registrant has their own code — one guardian number may list several people.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">

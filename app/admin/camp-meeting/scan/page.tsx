@@ -26,13 +26,17 @@ import {
   RefreshCw,
   QrCode as QrCodeIcon,
   Calendar,
+  Hash,
+  UserCheck,
 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CampActivity, CampRegistration, CampSessionAttendance, CampYear } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import { cn } from '@/lib/utils'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { CampManualCheckInPanel } from '@/components/camp/camp-manual-check-in-panel'
+import { CampQuickCodeCheckIn } from '@/components/camp/camp-quick-code-check-in'
 import { findCampRegistrationFromScan } from '@/lib/camp/resolve-registration-from-scan'
 import {
   formatCampActivityLabel,
@@ -63,6 +67,7 @@ export default function CampScannerPage() {
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
   const [sessionAttendances, setSessionAttendances] = useState<CampSessionAttendance[]>([])
   const [loading, setLoading] = useState(true)
+  const [checkInTab, setCheckInTab] = useState<'qr' | 'manual' | 'code' | 'arrival'>('manual')
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const lastScannedRef = useRef<string | null>(null)
 
@@ -147,7 +152,7 @@ export default function CampScannerPage() {
   }, [selectedActivityId, loadSessionAttendances])
 
   useEffect(() => {
-    if (!campYear || !selectedActivityId) return
+    if (!campYear || !selectedActivityId || checkInTab !== 'qr') return
 
     const element = document.getElementById('reader')
     if (!element) return
@@ -176,7 +181,7 @@ export default function CampScannerPage() {
     }
     // onScanSuccess/onScanFailure intentionally omitted — scanner keeps first handlers; pause/resume handles flow
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campYear, selectedActivityId])
+  }, [campYear, selectedActivityId, checkInTab])
 
   function playBeep(type: 'success' | 'error' | 'warning' = 'success') {
     try {
@@ -249,6 +254,7 @@ export default function CampScannerPage() {
             activity_id: selectedActivityId,
             registration_id: registration.id,
             performed_by: user.id,
+            check_in_method: 'qr',
           })
           if (error || !data) throw new Error(error ?? 'Check-in failed')
 
@@ -348,10 +354,13 @@ export default function CampScannerPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <CampAdminPageHeader
-          title="Camp session scanner"
+          title="Camp check-in hub"
           campYear={campYear}
           actions={
             <>
+              <Button variant="outline" asChild>
+                <Link href="/admin/camp-meeting/rooms">Rooms</Link>
+              </Button>
               <Button variant="outline" asChild>
                 <Link href="/admin/camp-meeting/activities">Manage sessions</Link>
               </Button>
@@ -370,8 +379,8 @@ export default function CampScannerPage() {
               Active session
             </CardTitle>
             <CardDescription>
-              Protocol scans the same printed QR at every session. Pick the session you are
-              checking people into before scanning.
+              Pick the session you are checking people into. Use QR scan, manual search, or quick
+              code entry — switch tabs if the camera is slow or unavailable.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -460,77 +469,123 @@ export default function CampScannerPage() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
-            <Card className="border-2">
-              <CardHeader className="border-b bg-slate-50">
-                <CardTitle className="flex items-center gap-2">
-                  <QrCodeIcon className="h-5 w-5" />
-                  QR scanner
-                </CardTitle>
-                <CardDescription>
-                  {selectedActivityId
-                    ? `Scanning for ${selectedActivity?.title ?? 'selected session'}`
-                    : 'Select a session above to enable scanning'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {!selectedActivityId ? (
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-16 text-center text-sm text-slate-600">
-                    Choose a camp session to start scanning printed QR codes.
-                  </div>
-                ) : (
-                  <div id="reader" className="w-full" />
-                )}
+            <Tabs value={checkInTab} onValueChange={(v) => setCheckInTab(v as typeof checkInTab)}>
+              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
+                <TabsTrigger value="manual" className="min-h-10">
+                  <UserCheck className="mr-1.5 h-4 w-4" />
+                  Manual
+                </TabsTrigger>
+                <TabsTrigger value="code" className="min-h-10">
+                  <Hash className="mr-1.5 h-4 w-4" />
+                  Code
+                </TabsTrigger>
+                <TabsTrigger value="qr" className="min-h-10">
+                  <QrCodeIcon className="mr-1.5 h-4 w-4" />
+                  QR scan
+                </TabsTrigger>
+                <TabsTrigger value="arrival" className="min-h-10">
+                  <Users className="mr-1.5 h-4 w-4" />
+                  Arrival
+                </TabsTrigger>
+              </TabsList>
 
-                {scanResult ? (
-                  <div
-                    className={cn(
-                      'mt-6 rounded-lg border-2 p-4 transition-all',
-                      scanResult.success
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-red-500 bg-red-50'
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      {scanResult.success ? (
-                        <CheckCircle className="mt-0.5 h-6 w-6 text-green-600" />
-                      ) : (
-                        <XCircle className="mt-0.5 h-6 w-6 text-red-600" />
-                      )}
-                      <div className="flex-1">
-                        <p
-                          className={cn(
-                            'mb-2 text-lg font-bold',
-                            scanResult.success ? 'text-green-800' : 'text-red-800'
-                          )}
-                        >
-                          {scanResult.message}
-                        </p>
-                        {scanResult.data ? (
-                          <div className="space-y-1 text-sm">
-                            <p className="font-semibold text-slate-900">
-                              {scanResult.data.full_name ||
-                                `${scanResult.data.first_name} ${scanResult.data.last_name}`}
-                            </p>
-                            <Badge variant="outline" className="text-xs">
-                              {scanResult.data.role}
-                            </Badge>
-                          </div>
-                        ) : null}
+              <TabsContent value="manual" className="mt-4 space-y-4">
+                <CampManualCheckInPanel
+                  campYearId={campYear.id}
+                  registrations={registrations}
+                  activityId={selectedActivityId || undefined}
+                  sessionCheckedInIds={sessionCheckedInIds}
+                  performedByUserId={user?.id}
+                  checkInMethod="manual"
+                  onCheckInComplete={() => void refreshCheckInData()}
+                />
+              </TabsContent>
+
+              <TabsContent value="code" className="mt-4 space-y-4">
+                <CampQuickCodeCheckIn
+                  registrations={registrations}
+                  activityId={selectedActivityId || undefined}
+                  sessionCheckedInIds={sessionCheckedInIds}
+                  performedByUserId={user?.id}
+                  onCheckInComplete={() => void refreshCheckInData()}
+                />
+              </TabsContent>
+
+              <TabsContent value="qr" className="mt-4 space-y-4">
+                <Card className="border-2">
+                  <CardHeader className="border-b bg-slate-50">
+                    <CardTitle className="flex items-center gap-2">
+                      <QrCodeIcon className="h-5 w-5" />
+                      QR scanner
+                    </CardTitle>
+                    <CardDescription>
+                      {selectedActivityId
+                        ? `Scanning for ${selectedActivity?.title ?? 'selected session'}`
+                        : 'Select a session above to enable scanning'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    {!selectedActivityId ? (
+                      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-16 text-center text-sm text-slate-600">
+                        Choose a camp session to start scanning printed QR codes.
                       </div>
-                    </div>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
+                    ) : (
+                      <div id="reader" className="w-full" />
+                    )}
 
-            <CampManualCheckInPanel
-              campYearId={campYear.id}
-              registrations={registrations}
-              activityId={selectedActivityId || undefined}
-              sessionCheckedInIds={sessionCheckedInIds}
-              performedByUserId={user?.id}
-              onCheckInComplete={() => void refreshCheckInData()}
-            />
+                    {scanResult ? (
+                      <div
+                        className={cn(
+                          'mt-6 rounded-lg border-2 p-4 transition-all',
+                          scanResult.success
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-red-500 bg-red-50'
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          {scanResult.success ? (
+                            <CheckCircle className="mt-0.5 h-6 w-6 text-green-600" />
+                          ) : (
+                            <XCircle className="mt-0.5 h-6 w-6 text-red-600" />
+                          )}
+                          <div className="flex-1">
+                            <p
+                              className={cn(
+                                'mb-2 text-lg font-bold',
+                                scanResult.success ? 'text-green-800' : 'text-red-800'
+                              )}
+                            >
+                              {scanResult.message}
+                            </p>
+                            {scanResult.data ? (
+                              <div className="space-y-1 text-sm">
+                                <p className="font-semibold text-slate-900">
+                                  {scanResult.data.full_name ||
+                                    `${scanResult.data.first_name} ${scanResult.data.last_name}`}
+                                </p>
+                                <Badge variant="outline" className="text-xs">
+                                  {scanResult.data.role}
+                                </Badge>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="arrival" className="mt-4 space-y-4">
+                <CampManualCheckInPanel
+                  campYearId={campYear.id}
+                  registrations={registrations}
+                  performedByUserId={user?.id}
+                  checkInMethod="arrival"
+                  onCheckInComplete={() => void refreshCheckInData()}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
 
           <div className="space-y-6">

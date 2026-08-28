@@ -376,6 +376,8 @@ export default defineSchema({
     import_warnings: v.optional(v.array(v.string())),
     /** Easy-to-say desk check-in code, e.g. GEM-26-K7M3 (unique per camp year). */
     check_in_code: v.optional(v.string()),
+    /** Assigned lodging room for this camp year. */
+    room_id: v.optional(v.string()),
     qr_code: v.string(),
     updated_at: v.number(),
   })
@@ -412,13 +414,29 @@ export default defineSchema({
     updated_at: v.number(),
   }).index('by_camp_year', ['camp_year_id']),
 
-  /** Per-session QR check-in (same camper can attend many sessions). */
+  /** Lodging rooms for a camp year — admin-created or auto-filled. */
+  camp_rooms: defineTable({
+    camp_year_id: v.string(),
+    name: v.string(),
+    building: v.optional(v.string()),
+    capacity: v.number(),
+    gender: v.optional(v.union(v.literal('Male'), v.literal('Female'), v.literal('Mixed'))),
+    notes: v.optional(v.string()),
+    /** Registration id of the room leader / head camper */
+    room_leader_id: v.optional(v.string()),
+    updated_at: v.number(),
+  }).index('by_camp_year', ['camp_year_id']),
+
+  /** Per-session check-in (same camper can attend many sessions). */
   camp_session_attendances: defineTable({
     camp_year_id: v.string(),
     activity_id: v.string(),
     registration_id: v.string(),
     checked_in_by: v.string(),
     checked_in_at: v.number(),
+    check_in_method: v.optional(
+      v.union(v.literal('qr'), v.literal('manual'), v.literal('code'), v.literal('arrival'))
+    ),
   })
     .index('by_camp_year', ['camp_year_id'])
     .index('by_activity', ['activity_id'])

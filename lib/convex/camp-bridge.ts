@@ -197,6 +197,7 @@ export function convexRegistrationDocToCampRegistration(
       ? (doc.import_warnings as string[])
       : undefined,
     check_in_code: doc.check_in_code != null ? String(doc.check_in_code) : undefined,
+    room_id: doc.room_id != null ? String(doc.room_id) : undefined,
     qr_code: String(doc.qr_code ?? ''),
     created_at: iso(ct) || new Date().toISOString(),
     updated_at: iso(ut) || iso(ct) || new Date().toISOString(),
@@ -676,6 +677,13 @@ export function convexSessionAttendanceDocToCampSessionAttendance(
     checked_in_by: String(doc.checked_in_by ?? ''),
     checked_in_at:
       checkedAt != null ? new Date(checkedAt).toISOString() : new Date().toISOString(),
+    check_in_method:
+      doc.check_in_method === 'qr' ||
+      doc.check_in_method === 'manual' ||
+      doc.check_in_method === 'code' ||
+      doc.check_in_method === 'arrival'
+        ? doc.check_in_method
+        : undefined,
   }
 }
 
@@ -683,6 +691,7 @@ export async function recordCampSessionCheckInInConvex(args: {
   activity_id: string
   registration_id: string
   performed_by: string
+  check_in_method?: import('@/lib/types').CampSessionAttendance['check_in_method']
 }): Promise<{
   already_checked_in: boolean
   attendance: import('@/lib/types').CampSessionAttendance | null
@@ -694,6 +703,7 @@ export async function recordCampSessionCheckInInConvex(args: {
     activity_id: args.activity_id,
     registration_id: args.registration_id as Id<'camp_registrations'>,
     performed_by: args.performed_by,
+    check_in_method: args.check_in_method,
   })) as {
     already_checked_in: boolean
     attendance: Record<string, unknown> | null
@@ -717,4 +727,158 @@ export async function fetchCampSessionAttendancesForActivityFromConvex(
   return docs
     .map((d) => convexSessionAttendanceDocToCampSessionAttendance(d))
     .filter((a): a is import('@/lib/types').CampSessionAttendance => a != null)
+}
+
+export function convexCampRoomDocToCampRoom(
+  doc: Record<string, unknown> | null | undefined
+): import('@/lib/types').CampRoom | null {
+  if (!doc || typeof doc !== 'object') return null
+  const id = String(doc._id ?? '')
+  if (!id) return null
+  const ct = doc._creationTime as number | undefined
+  const ut = doc.updated_at as number | undefined
+  const iso = (t?: number) => (t != null ? new Date(t).toISOString() : '')
+  return {
+    id,
+    camp_year_id: String(doc.camp_year_id ?? ''),
+    name: String(doc.name ?? ''),
+    building: doc.building != null ? String(doc.building) : undefined,
+    capacity: Number(doc.capacity ?? 1),
+    gender:
+      doc.gender === 'Male' || doc.gender === 'Female' || doc.gender === 'Mixed'
+        ? doc.gender
+        : undefined,
+    notes: doc.notes != null ? String(doc.notes) : undefined,
+    room_leader_id: doc.room_leader_id != null ? String(doc.room_leader_id) : undefined,
+    created_at: iso(ct) || new Date().toISOString(),
+    updated_at: iso(ut) || iso(ct) || new Date().toISOString(),
+  }
+}
+
+export async function fetchCampRoomsFromConvex(campYearId: string): Promise<import('@/lib/types').CampRoom[]> {
+  const client = getConvexHttpClient()
+  const docs = (await client.query(api.camp.listCampRoomsWithSecret, {
+    secret: requireCampAdminSecret(),
+    camp_year_id: campYearId,
+  })) as Record<string, unknown>[]
+  return docs
+    .map((d) => convexCampRoomDocToCampRoom(d))
+    .filter((r): r is import('@/lib/types').CampRoom => r != null)
+}
+
+export async function createCampRoomInConvex(args: {
+  camp_year_id: string
+  name: string
+  building?: string
+  capacity: number
+  gender?: import('@/lib/types').CampRoomGender
+  notes?: string
+}): Promise<import('@/lib/types').CampRoom> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.camp.createCampRoomWithSecret, {
+    secret: requireCampAdminSecret(),
+    ...args,
+  })) as Record<string, unknown>
+  const room = convexCampRoomDocToCampRoom(doc)
+  if (!room) throw new Error('Failed to create room')
+  return room
+}
+
+export async function updateCampRoomInConvex(
+  id: string,
+  patch: {
+    name?: string
+    building?: string
+    capacity?: number
+    gender?: import('@/lib/types').CampRoomGender | null
+    notes?: string
+  }
+): Promise<import('@/lib/types').CampRoom> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.camp.updateCampRoomWithSecret, {
+    secret: requireCampAdminSecret(),
+    id: id as Id<'camp_rooms'>,
+    name: patch.name,
+    building: patch.building,
+    capacity: patch.capacity,
+    gender: patch.gender === null ? undefined : patch.gender,
+    notes: patch.notes,
+  })) as Record<string, unknown>
+  const room = convexCampRoomDocToCampRoom(doc)
+  if (!room) throw new Error('Failed to update room')
+  return room
+}
+
+export async function deleteCampRoomInConvex(id: string): Promise<{ deleted: boolean; unassigned: number }> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.camp.deleteCampRoomWithSecret, {
+    secret: requireCampAdminSecret(),
+    id: id as Id<'camp_rooms'>,
+  })) as { deleted: boolean; unassigned: number }
+}
+
+export async function assignCampRegistrationRoomInConvex(args: {
+  registration_id: string
+  room_id: string | null
+}): Promise<CampRegistration> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.camp.assignCampRegistrationRoomWithSecret, {
+    secret: requireCampAdminSecret(),
+    registration_id: args.registration_id as Id<'camp_registrations'>,
+    room_id: args.room_id ? (args.room_id as Id<'camp_rooms'>) : null,
+  })) as Record<string, unknown>
+  const reg = convexRegistrationDocToCampRegistration(doc)
+  if (!reg) throw new Error('Failed to assign room')
+  return reg
+}
+
+export async function randomAssignCampRoomsInConvex(args: {
+  camp_year_id: string
+  respect_gender?: boolean
+  only_unassigned?: boolean
+}): Promise<{ assigned: number; skipped: number }> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.camp.randomAssignCampRoomsWithSecret, {
+    secret: requireCampAdminSecret(),
+    ...args,
+  })) as { assigned: number; skipped: number }
+}
+
+export async function fetchCampRegistrationRoomContextFromConvex(
+  registrationId: string
+): Promise<import('@/lib/types').CampRegistrationRoomContext> {
+  const client = getConvexHttpClient()
+  const result = (await client.query(api.camp.getCampRegistrationRoomContextWithSecret, {
+    secret: requireCampAdminSecret(),
+    registration_id: registrationId as Id<'camp_registrations'>,
+  })) as {
+    room: Record<string, unknown> | null
+    occupants: Array<Record<string, unknown>>
+    room_leader_id: string | null
+  }
+
+  return {
+    room: convexCampRoomDocToCampRoom(result.room),
+    occupants: (result.occupants ?? [])
+      .map((d) => convexRegistrationDocToCampRegistration(d))
+      .filter((r): r is CampRegistration => r != null),
+    room_leader_id: result.room_leader_id ?? null,
+  }
+}
+
+export async function setCampRoomLeaderInConvex(args: {
+  room_id: string
+  registration_id: string | null
+}): Promise<import('@/lib/types').CampRoom> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.camp.setCampRoomLeaderWithSecret, {
+    secret: requireCampAdminSecret(),
+    room_id: args.room_id as Id<'camp_rooms'>,
+    registration_id: args.registration_id
+      ? (args.registration_id as Id<'camp_registrations'>)
+      : null,
+  })) as Record<string, unknown>
+  const room = convexCampRoomDocToCampRoom(doc)
+  if (!room) throw new Error('Failed to set room leader')
+  return room
 }

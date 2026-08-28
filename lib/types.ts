@@ -906,6 +906,8 @@ export interface CampRegistration {
   import_warnings?: string[]
   /** Desk check-in code, e.g. GEM-26-K7M3 */
   check_in_code?: string
+  /** Lodging room assignment for this camp year */
+  room_id?: string
   qr_code: string
   created_at: string
   updated_at: string
@@ -913,6 +915,31 @@ export interface CampRegistration {
   camp_year?: CampYear
   assigned_user?: AppUser
   interactions?: CampInteraction[]
+  room?: CampRoom
+}
+
+export type CampRoomGender = 'Male' | 'Female' | 'Mixed'
+
+export interface CampRoom {
+  id: string
+  camp_year_id: string
+  name: string
+  building?: string
+  capacity: number
+  gender?: CampRoomGender
+  notes?: string
+  room_leader_id?: string
+  created_at: string
+  updated_at: string
+  /** Populated in admin views */
+  occupant_count?: number
+  occupants?: CampRegistration[]
+}
+
+export type CampRegistrationRoomContext = {
+  room: CampRoom | null
+  occupants: CampRegistration[]
+  room_leader_id: string | null
 }
 
 export interface CampInteraction {
@@ -1027,6 +1054,7 @@ export interface CampSessionAttendance {
   registration_id: string
   checked_in_by: string
   checked_in_at: string
+  check_in_method?: 'qr' | 'manual' | 'code' | 'arrival'
   registration?: CampRegistration
   activity?: CampActivity
 }

@@ -654,6 +654,7 @@ export async function recordCampSessionCheckIn(args: {
   activity_id: string
   registration_id: string
   performed_by: string
+  check_in_method?: import('@/lib/types').CampSessionAttendance['check_in_method']
 }): Promise<{
   data: {
     already_checked_in: boolean
@@ -690,6 +691,162 @@ export async function getCampSessionAttendancesForActivity(activityId: string): 
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to load session attendance',
+    }
+  }
+}
+
+export async function getCampRooms(campYearId: string): Promise<{
+  data: import('@/lib/types').CampRoom[] | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { fetchCampRoomsFromConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await fetchCampRoomsFromConvex(campYearId)
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load rooms',
+    }
+  }
+}
+
+export async function createCampRoom(input: {
+  camp_year_id: string
+  name: string
+  building?: string
+  capacity: number
+  gender?: import('@/lib/types').CampRoomGender
+  notes?: string
+}): Promise<{ data: import('@/lib/types').CampRoom | null; error: string | null }> {
+  requireConvexEnv()
+  try {
+    const { createCampRoomInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await createCampRoomInConvex(input)
+    revalidatePath('/admin/camp-meeting/rooms')
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to create room',
+    }
+  }
+}
+
+export async function updateCampRoom(
+  id: string,
+  patch: {
+    name?: string
+    building?: string
+    capacity?: number
+    gender?: import('@/lib/types').CampRoomGender | null
+    notes?: string
+  }
+): Promise<{ data: import('@/lib/types').CampRoom | null; error: string | null }> {
+  requireConvexEnv()
+  try {
+    const { updateCampRoomInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await updateCampRoomInConvex(id, patch)
+    revalidatePath('/admin/camp-meeting/rooms')
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to update room',
+    }
+  }
+}
+
+export async function deleteCampRoom(id: string): Promise<{
+  data: { deleted: boolean; unassigned: number } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { deleteCampRoomInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await deleteCampRoomInConvex(id)
+    revalidatePath('/admin/camp-meeting/rooms')
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to delete room',
+    }
+  }
+}
+
+export async function assignCampRegistrationRoom(args: {
+  registration_id: string
+  room_id: string | null
+}): Promise<{ data: CampRegistration | null; error: string | null }> {
+  requireConvexEnv()
+  try {
+    const { assignCampRegistrationRoomInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await assignCampRegistrationRoomInConvex(args)
+    revalidatePath('/admin/camp-meeting/rooms')
+    revalidatePath('/admin/camp-meeting/registrations')
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to assign room',
+    }
+  }
+}
+
+export async function randomAssignCampRooms(args: {
+  camp_year_id: string
+  respect_gender?: boolean
+  only_unassigned?: boolean
+}): Promise<{ data: { assigned: number; skipped: number } | null; error: string | null }> {
+  requireConvexEnv()
+  try {
+    const { randomAssignCampRoomsInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await randomAssignCampRoomsInConvex(args)
+    revalidatePath('/admin/camp-meeting/rooms')
+    revalidatePath('/admin/camp-meeting/registrations')
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Random assignment failed',
+    }
+  }
+}
+
+export async function getCampRegistrationRoomContext(registrationId: string): Promise<{
+  data: import('@/lib/types').CampRegistrationRoomContext | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { fetchCampRegistrationRoomContextFromConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await fetchCampRegistrationRoomContextFromConvex(registrationId)
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load room details',
+    }
+  }
+}
+
+export async function setCampRoomLeader(args: {
+  room_id: string
+  registration_id: string | null
+}): Promise<{ data: import('@/lib/types').CampRoom | null; error: string | null }> {
+  requireConvexEnv()
+  try {
+    const { setCampRoomLeaderInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await setCampRoomLeaderInConvex(args)
+    revalidatePath('/admin/camp-meeting/rooms')
+    revalidatePath('/admin/camp-meeting/registrations')
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to set room leader',
     }
   }
 }

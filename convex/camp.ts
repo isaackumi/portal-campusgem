@@ -880,6 +880,9 @@ export const recordCampSessionCheckInWithSecret = mutation({
     activity_id: v.string(),
     registration_id: v.id('camp_registrations'),
     performed_by: v.string(),
+    check_in_method: v.optional(
+      v.union(v.literal('qr'), v.literal('manual'), v.literal('code'), v.literal('arrival'))
+    ),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -921,6 +924,7 @@ export const recordCampSessionCheckInWithSecret = mutation({
       registration_id: String(args.registration_id),
       checked_in_by: args.performed_by,
       checked_in_at: now,
+      check_in_method: args.check_in_method,
     })
 
     if (reg.status === 'registered') {
@@ -1396,5 +1400,317 @@ export const backfillCampCheckInCodesWithSecret = mutation({
       updated++
     }
     return { updated }
+  },
+})
+
+const campRoomGender = v.optional(
+  v.union(v.literal('Male'), v.literal('Female'), v.literal('Mixed'))
+)
+
+export const listCampRoomsWithSecret = query({
+  args: { secret: v.string(), camp_year_id: v.string() },
+  returns: v.array(v.any()),
+  handler: async (ctx, { secret, camp_year_id }) => {
+    assertServerSecret(secret)
+    return await ctx.db
+      .query('camp_rooms')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', camp_year_id))
+      .collect()
+  },
+})
+
+export const createCampRoomWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    camp_year_id: v.string(),
+    name: v.string(),
+    building: v.optional(v.string()),
+    capacity: v.number(),
+    gender: campRoomGender,
+    notes: v.optional(v.string()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const name = args.name.trim()
+    if (!name) throw new Error('Room name is required.')
+    const capacity = Math.max(1, Math.floor(args.capacity))
+    const now = Date.now()
+    const id = await ctx.db.insert('camp_rooms', {
+      camp_year_id: args.camp_year_id,
+      name,
+      building: args.building?.trim() || undefined,
+      capacity,
+      gender: args.gender,
+      notes: args.notes?.trim() || undefined,
+      updated_at: now,
+    })
+    return await ctx.db.get('camp_rooms', id)
+  },
+})
+
+export const updateCampRoomWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    id: v.id('camp_rooms'),
+    name: v.optional(v.string()),
+    building: v.optional(v.string()),
+    capacity: v.optional(v.number()),
+    gender: campRoomGender,
+    notes: v.optional(v.string()),
+  },
+  returns: v.any(),
+  handler: async (ctx, { secret, id, ...updates }) => {
+    assertServerSecret(secret)
+    const existing = await ctx.db.get('camp_rooms', id)
+    if (!existing) throw new Error('Room not found.')
+    const patch: Record<string, unknown> = { updated_at: Date.now() }
+    if (updates.name != null) {
+      const name = updates.name.trim()
+      if (!name) throw new Error('Room name is required.')
+      patch.name = name
+    }
+    if (updates.building != null) patch.building = updates.building.trim() || undefined
+    if (updates.capacity != null) patch.capacity = Math.max(1, Math.floor(updates.capacity))
+    if (updates.gender !== undefined) patch.gender = updates.gender
+    if (updates.notes != null) patch.notes = updates.notes.trim() || undefined
+    await ctx.db.patch('camp_rooms', id, patch)
+    return await ctx.db.get('camp_rooms', id)
+  },
+})
+
+export const deleteCampRoomWithSecret = mutation({
+  args: { secret: v.string(), id: v.id('camp_rooms') },
+  returns: v.object({ deleted: v.boolean(), unassigned: v.number() }),
+  handler: async (ctx, { secret, id }) => {
+    assertServerSecret(secret)
+    const room = await ctx.db.get('camp_rooms', id)
+    if (!room) throw new Error('Room not found.')
+    const roomId = String(id)
+    const occupants = await ctx.db
+      .query('camp_registrations')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', room.camp_year_id))
+      .collect()
+    let unassigned = 0
+    const now = Date.now()
+    for (const reg of occupants) {
+      if (reg.room_id !== roomId) continue
+      await ctx.db.patch(reg._id, { room_id: undefined, updated_at: now })
+      unassigned++
+    }
+    await ctx.db.delete('camp_rooms', id)
+    return { deleted: true, unassigned }
+  },
+})
+
+export const assignCampRegistrationRoomWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    registration_id: v.id('camp_registrations'),
+    room_id: v.union(v.id('camp_rooms'), v.null()),
+  },
+  returns: v.any(),
+  handler: async (ctx, { secret, registration_id, room_id }) => {
+    assertServerSecret(secret)
+    const reg = await ctx.db.get(registration_id)
+    if (!reg) throw new Error('Registration not found.')
+    if (room_id) {
+      const room = await ctx.db.get('camp_rooms', room_id)
+      if (!room) throw new Error('Room not found.')
+      if (room.camp_year_id !== reg.camp_year_id) {
+        throw new Error('Room belongs to a different camp year.')
+      }
+      const occupants = await ctx.db
+        .query('camp_registrations')
+        .withIndex('by_camp_year', (q) => q.eq('camp_year_id', reg.camp_year_id))
+        .collect()
+      const count = occupants.filter(
+        (row) => row.room_id === String(room_id) && String(row._id) !== String(registration_id)
+      ).length
+      if (count >= room.capacity) {
+        throw new Error(`${room.name} is full (${room.capacity} beds).`)
+      }
+      if (
+        room.gender &&
+        room.gender !== 'Mixed' &&
+        reg.sex &&
+        reg.sex !== room.gender
+      ) {
+        throw new Error(`${room.name} is for ${room.gender} campers only.`)
+      }
+    }
+
+    const previousRoomId = reg.room_id
+    await ctx.db.patch(registration_id, {
+      room_id: room_id ? String(room_id) : undefined,
+      updated_at: Date.now(),
+    })
+
+    if (previousRoomId && previousRoomId !== (room_id ? String(room_id) : undefined)) {
+      const previousRoom = await ctx.db.get(
+        'camp_rooms',
+        previousRoomId as import('./_generated/dataModel').Id<'camp_rooms'>
+      )
+      if (previousRoom?.room_leader_id === String(registration_id)) {
+        await ctx.db.patch(previousRoom._id, {
+          room_leader_id: undefined,
+          updated_at: Date.now(),
+        })
+      }
+    }
+
+    if (!room_id) {
+      return await ctx.db.get('camp_registrations', registration_id)
+    }
+
+    return await ctx.db.get('camp_registrations', registration_id)
+  },
+})
+
+function shuffleInPlace<T>(items: T[]): T[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[items[i], items[j]] = [items[j]!, items[i]!]
+  }
+  return items
+}
+
+export const randomAssignCampRoomsWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    camp_year_id: v.string(),
+    respect_gender: v.optional(v.boolean()),
+    only_unassigned: v.optional(v.boolean()),
+  },
+  returns: v.object({ assigned: v.number(), skipped: v.number() }),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const respectGender = args.respect_gender ?? true
+    const onlyUnassigned = args.only_unassigned ?? true
+
+    const rooms = await ctx.db
+      .query('camp_rooms')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', args.camp_year_id))
+      .collect()
+    if (rooms.length === 0) throw new Error('Create rooms before running random assignment.')
+
+    const registrations = await ctx.db
+      .query('camp_registrations')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', args.camp_year_id))
+      .collect()
+
+    const eligible = registrations.filter((reg) => {
+      if (reg.status === 'cancelled') return false
+      if (onlyUnassigned && reg.room_id) return false
+      return true
+    })
+
+    shuffleInPlace(eligible)
+
+    const occupancy = new Map<string, number>()
+    for (const room of rooms) {
+      const count = registrations.filter((reg) => reg.room_id === String(room._id)).length
+      occupancy.set(String(room._id), count)
+    }
+
+    let assigned = 0
+    let skipped = 0
+    const now = Date.now()
+
+    for (const reg of eligible) {
+      const candidates = rooms.filter((room) => {
+        const roomId = String(room._id)
+        const used = occupancy.get(roomId) ?? 0
+        if (used >= room.capacity) return false
+        if (!respectGender || !room.gender || room.gender === 'Mixed') return true
+        if (!reg.sex) return true
+        return reg.sex === room.gender
+      })
+
+      if (candidates.length === 0) {
+        skipped++
+        continue
+      }
+
+      candidates.sort((a, b) => {
+        const aUsed = occupancy.get(String(a._id)) ?? 0
+        const bUsed = occupancy.get(String(b._id)) ?? 0
+        return aUsed - bUsed
+      })
+
+      const room = candidates[0]!
+      const roomId = String(room._id)
+      await ctx.db.patch(reg._id, { room_id: roomId, updated_at: now })
+      occupancy.set(roomId, (occupancy.get(roomId) ?? 0) + 1)
+      assigned++
+    }
+
+    return { assigned, skipped }
+  },
+})
+
+export const getCampRegistrationRoomContextWithSecret = query({
+  args: { secret: v.string(), registration_id: v.id('camp_registrations') },
+  returns: v.any(),
+  handler: async (ctx, { secret, registration_id }) => {
+    assertServerSecret(secret)
+    const reg = await ctx.db.get('camp_registrations', registration_id)
+    if (!reg?.room_id) {
+      return { room: null, occupants: [], room_leader_id: null }
+    }
+
+    const room = await ctx.db.get(
+      'camp_rooms',
+      reg.room_id as import('./_generated/dataModel').Id<'camp_rooms'>
+    )
+    if (!room) {
+      return { room: null, occupants: [], room_leader_id: null }
+    }
+
+    const allRegs = await ctx.db
+      .query('camp_registrations')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', reg.camp_year_id))
+      .collect()
+
+    const occupants = allRegs
+      .filter((row) => row.room_id === String(room._id) && row.status !== 'cancelled')
+      .sort((a, b) => a.full_name.localeCompare(b.full_name))
+
+    return {
+      room,
+      occupants,
+      room_leader_id: room.room_leader_id ?? null,
+    }
+  },
+})
+
+export const setCampRoomLeaderWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    room_id: v.id('camp_rooms'),
+    registration_id: v.union(v.id('camp_registrations'), v.null()),
+  },
+  returns: v.any(),
+  handler: async (ctx, { secret, room_id, registration_id }) => {
+    assertServerSecret(secret)
+    const room = await ctx.db.get('camp_rooms', room_id)
+    if (!room) throw new Error('Room not found.')
+
+    if (registration_id) {
+      const reg = await ctx.db.get('camp_registrations', registration_id)
+      if (!reg) throw new Error('Registration not found.')
+      if (reg.room_id !== String(room_id)) {
+        throw new Error('Room leader must be assigned to this room.')
+      }
+      if (reg.status === 'cancelled') {
+        throw new Error('Cannot set a cancelled registration as room leader.')
+      }
+    }
+
+    await ctx.db.patch('camp_rooms', room_id, {
+      room_leader_id: registration_id ? String(registration_id) : undefined,
+      updated_at: Date.now(),
+    })
+    return await ctx.db.get('camp_rooms', room_id)
   },
 })

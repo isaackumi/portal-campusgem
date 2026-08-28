@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   BarChart3,
+  BedDouble,
   Bell,
   Briefcase,
   Building2,
@@ -100,9 +101,15 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         roles: ['admin', 'pastor', 'elder'],
       },
       {
-        name: 'Check-in scan',
+        name: 'Check-in hub',
         href: '/admin/camp-meeting/scan',
         icon: QrCode,
+        roles: ['admin', 'pastor', 'elder'],
+      },
+      {
+        name: 'Rooms',
+        href: '/admin/camp-meeting/rooms',
+        icon: BedDouble,
         roles: ['admin', 'pastor', 'elder'],
       },
       {
