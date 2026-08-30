@@ -579,6 +579,33 @@ export async function loadRlcMemberAction(id: string): Promise<ApiResponse<Membe
   }
 }
 
+export async function createRlcMemberAction(
+  form: import('@/lib/types').CreateRlcMemberForm,
+  performedBy: string
+): Promise<ApiResponse<Member>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  if (!form.first_name?.trim()) {
+    return { data: null, error: 'First name is required', loading: false }
+  }
+  if (!form.phone?.trim()) {
+    return { data: null, error: 'Phone number is required', loading: false }
+  }
+  try {
+    const { createRlcMemberInConvex } = await import('@/lib/convex/rlc-bridge')
+    const member = await createRlcMemberInConvex(form, performedBy)
+    const [enriched] = await enrichRlcMembers([member])
+    return { data: enriched ?? member, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to add RLC member',
+      loading: false,
+    }
+  }
+}
+
 export async function updateRlcMemberAction(args: {
   memberId: string
   performedBy: string
@@ -673,6 +700,25 @@ export async function updateRlcAttendanceAction(args: {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to update attendance',
+      loading: false,
+    }
+  }
+}
+
+export async function deleteRlcAttendanceAction(
+  attendanceId: string
+): Promise<ApiResponse<{ deleted: boolean }>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  try {
+    const { deleteRlcAttendanceInConvex } = await import('@/lib/convex/rlc-bridge')
+    const data = await deleteRlcAttendanceInConvex(attendanceId)
+    return { data, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to remove attendance',
       loading: false,
     }
   }

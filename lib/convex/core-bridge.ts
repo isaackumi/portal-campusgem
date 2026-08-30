@@ -76,10 +76,26 @@ export function convexUserDocToAppUser(doc: Record<string, unknown> | null | und
     auth_uid: doc.auth_uid != null ? String(doc.auth_uid) : undefined,
     membership_id: String(doc.membership_id ?? ''),
     phone: doc.phone != null ? String(doc.phone) : undefined,
+    secondary_phone: doc.secondary_phone != null ? String(doc.secondary_phone) : undefined,
+    whatsapp: doc.whatsapp != null ? String(doc.whatsapp) : undefined,
     email: doc.email != null ? String(doc.email) : undefined,
     full_name: String(doc.full_name ?? ''),
+    first_name: doc.first_name != null ? String(doc.first_name) : undefined,
+    middle_name: doc.middle_name != null ? String(doc.middle_name) : undefined,
+    last_name: doc.last_name != null ? String(doc.last_name) : undefined,
     role: (doc.role as AppUser['role']) ?? 'member',
     join_year: Number(doc.join_year ?? new Date().getFullYear()),
+    occupation: doc.occupation != null ? String(doc.occupation) : undefined,
+    place_of_work: doc.place_of_work != null ? String(doc.place_of_work) : undefined,
+    marital_status: doc.marital_status as AppUser['marital_status'],
+    spouse_name: doc.spouse_name != null ? String(doc.spouse_name) : undefined,
+    children_count: doc.children_count != null ? Number(doc.children_count) : undefined,
+    emergency_contact_name:
+      doc.emergency_contact_name != null ? String(doc.emergency_contact_name) : undefined,
+    emergency_contact_phone:
+      doc.emergency_contact_phone != null ? String(doc.emergency_contact_phone) : undefined,
+    emergency_contact_relation:
+      doc.emergency_contact_relation != null ? String(doc.emergency_contact_relation) : undefined,
     created_at: isoFromMs(ct) || new Date().toISOString(),
     updated_at: isoFromMs(ut) || isoFromMs(ct) || new Date().toISOString(),
   }

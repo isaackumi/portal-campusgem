@@ -11,6 +11,7 @@ import {
   loadRlcVisitorsAction,
   recordRlcAttendanceAction,
   updateRlcAttendanceAction,
+  deleteRlcAttendanceAction,
 } from '@/lib/actions/rlc'
 import { RLC_NAME } from '@/lib/constants/rlc'
 import {
@@ -62,6 +63,7 @@ import {
   Printer,
   QrCode,
   Search,
+  Trash2,
   UserCheck,
   UserX,
 } from 'lucide-react'
@@ -70,12 +72,16 @@ function RosterRow({
   row,
   variant,
   onEditNote,
+  onRemove,
   editingNoteId,
+  removingId,
 }: {
   row: RlcAttendanceRosterRow
   variant: 'present' | 'absent'
   onEditNote?: (row: RlcAttendanceRosterRow) => void
+  onRemove?: (row: RlcAttendanceRosterRow) => void
   editingNoteId?: string | null
+  removingId?: string | null
 }) {
   return (
     <div key={row.attendance.id} className="rounded-lg border px-3 py-2 text-sm">
@@ -109,18 +115,32 @@ function RosterRow({
       ) : variant === 'absent' ? (
         <p className="mt-2 text-xs italic text-muted-foreground">No note recorded</p>
       ) : null}
-      {variant === 'absent' && onEditNote ? (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="mt-2 h-8 px-2 text-xs text-rose-700"
-          disabled={editingNoteId === row.attendance.id}
-          onClick={() => onEditNote(row)}
-        >
-          <Pencil className="mr-1 h-3 w-3" />
-          Edit note
-        </Button>
-      ) : null}
+      <div className="mt-2 flex flex-wrap gap-1">
+        {onEditNote ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2 text-xs text-rose-700"
+            disabled={editingNoteId === row.attendance.id}
+            onClick={() => onEditNote(row)}
+          >
+            <Pencil className="mr-1 h-3 w-3" />
+            {variant === 'absent' ? 'Edit' : 'Change'}
+          </Button>
+        ) : null}
+        {onRemove ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2 text-xs text-red-700"
+            disabled={removingId === row.attendance.id}
+            onClick={() => onRemove(row)}
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
+            {removingId === row.attendance.id ? 'Removing…' : 'Remove'}
+          </Button>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -143,7 +163,10 @@ export default function RlcAttendancePage() {
   const [absentNote, setAbsentNote] = useState('')
   const [editRow, setEditRow] = useState<RlcAttendanceRosterRow | null>(null)
   const [editNote, setEditNote] = useState('')
+  const [editStatus, setEditStatus] = useState<'present' | 'absent'>('present')
   const [savingNote, setSavingNote] = useState(false)
+  const [removeRow, setRemoveRow] = useState<RlcAttendanceRosterRow | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
   const [pageView, setPageView] = useState<'register' | 'calendar'>('register')
 
   const reload = useCallback(async () => {
@@ -290,16 +313,33 @@ export default function RlcAttendancePage() {
     const { error } = await updateRlcAttendanceAction({
       attendanceId: editRow.attendance.id,
       notes: editNote.trim() || undefined,
-      status: 'absent',
+      status: editStatus,
     })
     setSavingNote(false)
     if (error) {
-      toast({ variant: 'destructive', title: 'Could not save note', description: error })
+      toast({ variant: 'destructive', title: 'Could not save record', description: error })
       return
     }
-    toast({ title: 'Note updated', description: editRow.name })
+    toast({
+      title: editStatus === 'present' ? 'Marked present' : 'Attendance updated',
+      description: editRow.name,
+    })
     setEditRow(null)
     setEditNote('')
+    await reload()
+  }
+
+  async function confirmRemoveAttendance() {
+    if (!removeRow) return
+    setRemovingId(removeRow.attendance.id)
+    const { error } = await deleteRlcAttendanceAction(removeRow.attendance.id)
+    setRemovingId(null)
+    if (error) {
+      toast({ variant: 'destructive', title: 'Could not remove', description: error })
+      return
+    }
+    toast({ title: 'Attendance removed', description: `${removeRow.name} is no longer recorded for this service.` })
+    setRemoveRow(null)
     await reload()
   }
 
@@ -518,7 +558,18 @@ export default function RlcAttendancePage() {
                   <p className="text-sm text-muted-foreground">No check-ins for this service yet.</p>
                 ) : (
                   present.map((row) => (
-                    <RosterRow key={row.attendance.id} row={row} variant="present" />
+                    <RosterRow
+                      key={row.attendance.id}
+                      row={row}
+                      variant="present"
+                      removingId={removingId}
+                      onEditNote={(target) => {
+                        setEditRow(target)
+                        setEditNote(target.attendance.notes ?? '')
+                        setEditStatus('present')
+                      }}
+                      onRemove={setRemoveRow}
+                    />
                   ))
                 )}
               </CardContent>
@@ -614,10 +665,13 @@ export default function RlcAttendancePage() {
                       row={row}
                       variant="absent"
                       editingNoteId={savingNote ? editRow?.attendance.id ?? null : null}
+                      removingId={removingId}
                       onEditNote={(target) => {
                         setEditRow(target)
                         setEditNote(target.attendance.notes ?? '')
+                        setEditStatus('absent')
                       }}
+                      onRemove={setRemoveRow}
                     />
                   ))
                 )}
@@ -681,24 +735,80 @@ export default function RlcAttendancePage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit absence note</DialogTitle>
-            <DialogDescription>{editRow?.name}</DialogDescription>
+            <DialogTitle>Edit attendance</DialogTitle>
+            <DialogDescription>
+              {editRow?.name} · change status or notes. Use Remove to undo a mistaken record.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="edit-absent-note">Note</Label>
-            <Textarea
-              id="edit-absent-note"
-              value={editNote}
-              onChange={(e) => setEditNote(e.target.value)}
-              rows={4}
-            />
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={editStatus === 'present' ? 'default' : 'outline'}
+                  className={editStatus === 'present' ? 'bg-rose-700 hover:bg-rose-800' : ''}
+                  onClick={() => setEditStatus('present')}
+                >
+                  Present
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={editStatus === 'absent' ? 'default' : 'outline'}
+                  className={editStatus === 'absent' ? 'bg-amber-700 hover:bg-amber-800' : ''}
+                  onClick={() => setEditStatus('absent')}
+                >
+                  Absent
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-absent-note">Note (optional)</Label>
+              <Textarea
+                id="edit-absent-note"
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                rows={4}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditRow(null)}>
               Cancel
             </Button>
             <Button disabled={savingNote} onClick={() => void saveEditedNote()}>
-              {savingNote ? 'Saving…' : 'Save note'}
+              {savingNote ? 'Saving…' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={removeRow != null}
+        onOpenChange={(open) => {
+          if (!open) setRemoveRow(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove attendance?</DialogTitle>
+            <DialogDescription>
+              {removeRow?.name} will no longer be recorded for {serviceLabel} on {serviceDate}. You can
+              check them in again later if needed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemoveRow(null)}>
+              Keep record
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={removingId === removeRow?.attendance.id}
+              onClick={() => void confirmRemoveAttendance()}
+            >
+              {removingId ? 'Removing…' : 'Remove'}
             </Button>
           </DialogFooter>
         </DialogContent>

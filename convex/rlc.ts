@@ -159,6 +159,7 @@ const visitorInputFields = {
   last_name: v.optional(v.string()),
   phone: v.optional(v.string()),
   secondary_phone: v.optional(v.string()),
+  whatsapp: v.optional(v.string()),
   email: v.optional(v.string()),
   address: v.optional(v.string()),
   hometown: v.optional(v.string()),
@@ -272,6 +273,11 @@ export const createRlcVisitorWithSecret = mutation({
       last_name: args.last_name?.trim(),
       phone: args.phone ? normalizeGhanaPhone(args.phone) : undefined,
       secondary_phone: args.secondary_phone ? normalizeGhanaPhone(args.secondary_phone) : undefined,
+      whatsapp: args.whatsapp
+        ? normalizeGhanaPhone(args.whatsapp)
+        : args.phone
+          ? normalizeGhanaPhone(args.phone)
+          : undefined,
       email: args.email?.trim() || undefined,
       address: args.address?.trim(),
       hometown: args.hometown?.trim() || undefined,
@@ -352,6 +358,11 @@ export const updateRlcVisitorWithSecret = mutation({
       last_name: args.last_name?.trim(),
       phone: args.phone ? normalizeGhanaPhone(args.phone) : undefined,
       secondary_phone: args.secondary_phone ? normalizeGhanaPhone(args.secondary_phone) : undefined,
+      whatsapp: args.whatsapp
+        ? normalizeGhanaPhone(args.whatsapp)
+        : args.phone
+          ? normalizeGhanaPhone(args.phone)
+          : undefined,
       email: args.email?.trim() || undefined,
       address: args.address?.trim(),
       hometown: args.hometown?.trim() || undefined,
@@ -885,6 +896,127 @@ export const addPersonToRlcWithSecret = mutation({
   },
 })
 
+export const createRlcMemberWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    performed_by: v.string(),
+    first_name: v.string(),
+    middle_name: v.optional(v.string()),
+    last_name: v.optional(v.string()),
+    phone: v.string(),
+    secondary_phone: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    email: v.optional(v.string()),
+    occupation: v.optional(v.string()),
+    place_of_work: v.optional(v.string()),
+    school_or_workplace: v.optional(v.string()),
+    address: v.optional(v.string()),
+    hometown: v.optional(v.string()),
+    area_of_residence: v.optional(v.string()),
+    gender: v.optional(gender),
+    dob: v.optional(v.string()),
+    marital_status: v.optional(maritalStatus),
+    spouse_name: v.optional(v.string()),
+    children_count: v.optional(v.number()),
+    emergency_contact_name: v.optional(v.string()),
+    emergency_contact_phone: v.optional(v.string()),
+    emergency_contact_relation: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    rlc_roles: v.optional(v.array(v.string())),
+    rlc_membership_type: v.optional(
+      v.union(v.literal('full_member'), v.literal('associate'), v.literal('visitor_converted'))
+    ),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const firstName = args.first_name.trim()
+    if (!firstName) throw new Error('First name is required.')
+    const phone = normalizeGhanaPhone(args.phone)
+    if (phone.replace(/\D/g, '').length < 9) {
+      throw new Error('Enter a valid Ghana phone number.')
+    }
+
+    const now = Date.now()
+    const lastName = args.last_name?.trim() || undefined
+    const middleName = args.middle_name?.trim() || undefined
+    const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ')
+    const whatsapp = args.whatsapp?.trim()
+      ? normalizeGhanaPhone(args.whatsapp)
+      : phone
+
+    for (const candidate of phoneLookupVariants(args.phone)) {
+      const existing = await ctx.db
+        .query('users')
+        .withIndex('by_phone', (q) => q.eq('phone', candidate))
+        .first()
+      if (existing) {
+        throw new Error('A person with this phone number already exists. Search and add them to RLC instead.')
+      }
+    }
+
+    const userId = await ctx.db.insert('users', {
+      full_name: fullName,
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      phone,
+      secondary_phone: args.secondary_phone ? normalizeGhanaPhone(args.secondary_phone) : undefined,
+      whatsapp,
+      email: args.email?.trim() || undefined,
+      occupation: args.occupation?.trim() || undefined,
+      place_of_work: args.place_of_work?.trim() || undefined,
+      marital_status: args.marital_status,
+      spouse_name: args.spouse_name?.trim() || undefined,
+      children_count: args.children_count,
+      emergency_contact_name: args.emergency_contact_name?.trim() || undefined,
+      emergency_contact_phone: args.emergency_contact_phone
+        ? normalizeGhanaPhone(args.emergency_contact_phone)
+        : undefined,
+      emergency_contact_relation: args.emergency_contact_relation?.trim() || undefined,
+      role: 'member',
+      membership_id: generateRlcMembershipId(phone),
+      auth_uid: `rlc-member-${Date.now()}`,
+      join_year: new Date().getFullYear(),
+      updated_at: now,
+    })
+
+    const roles = args.rlc_roles?.length ? args.rlc_roles : ['member']
+    const emergencyContacts =
+      args.emergency_contact_name && args.emergency_contact_phone
+        ? [
+            {
+              name: args.emergency_contact_name.trim(),
+              relation: args.emergency_contact_relation?.trim() || 'Emergency',
+              phone: normalizeGhanaPhone(args.emergency_contact_phone),
+            },
+          ]
+        : []
+
+    const memberId = await ctx.db.insert('members', {
+      user_id: String(userId),
+      dob: args.dob || undefined,
+      gender: args.gender,
+      address: args.address?.trim() || undefined,
+      hometown: args.hometown?.trim() || undefined,
+      area_of_residence: args.area_of_residence?.trim() || undefined,
+      school_or_workplace: args.school_or_workplace?.trim() || args.place_of_work?.trim() || undefined,
+      notes: args.notes?.trim() || undefined,
+      emergency_contacts: emergencyContacts,
+      documents: [],
+      status: 'active',
+      congregation: 'rlc',
+      rlc_roles: roles,
+      rlc_membership_type:
+        args.rlc_membership_type ?? inferRlcMembershipType(roles, 'full_member'),
+      updated_at: now,
+    })
+
+    await sealMemberCheckIn(ctx, memberId, fullName)
+    return await ctx.db.get('members', memberId)
+  },
+})
+
 export const createRlcVisitorFromCampRegistrationWithSecret = mutation({
   args: {
     secret: v.string(),
@@ -1341,6 +1473,24 @@ export const updateRlcAttendanceWithSecret = mutation({
 
     await ctx.db.patch('attendance', row._id, patch)
     return await ctx.db.get('attendance', row._id)
+  },
+})
+
+export const deleteRlcAttendanceWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    attendance_id: v.string(),
+  },
+  returns: v.object({ deleted: v.boolean(), attendance_id: v.string() }),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const row = await ctx.db.get('attendance', args.attendance_id as never)
+    if (!row) throw new Error('Attendance record not found.')
+    if (row.congregation !== 'rlc' && row.congregation) {
+      throw new Error('Not an RLC attendance record.')
+    }
+    await ctx.db.delete('attendance', row._id)
+    return { deleted: true, attendance_id: args.attendance_id }
   },
 })
 

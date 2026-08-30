@@ -76,6 +76,27 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
             />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="whatsapp">WhatsApp number</Label>
+            <Input
+              id="whatsapp"
+              value={form.whatsapp ?? form.phone ?? ''}
+              onChange={(e) => onChange({ ...form, whatsapp: e.target.value })}
+            />
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={!form.whatsapp || form.whatsapp === (form.phone ?? '')}
+                onChange={(e) =>
+                  onChange({
+                    ...form,
+                    whatsapp: e.target.checked ? form.phone ?? '' : form.whatsapp,
+                  })
+                }
+              />
+              Same as phone
+            </label>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"

@@ -45,6 +45,7 @@ export interface AppUser {
   membership_id: string
   phone?: string
   secondary_phone?: string
+  whatsapp?: string
   email?: string
   full_name: string
   first_name?: string
@@ -191,6 +192,7 @@ export interface Visitor {
   last_name?: string
   phone?: string
   secondary_phone?: string
+  whatsapp?: string
   email?: string
   address?: string
   hometown?: string
@@ -551,6 +553,7 @@ export interface CreateUserForm {
   last_name: string
   phone: string
   secondary_phone?: string
+  whatsapp?: string
   email?: string
   role: UserRole
   
@@ -641,6 +644,7 @@ export interface CreateVisitorForm {
   last_name?: string
   phone?: string
   secondary_phone?: string
+  whatsapp?: string
   email?: string
   address?: string
   hometown?: string
@@ -700,6 +704,34 @@ export interface ConvertRlcVisitorForm {
   notes?: string
   rlc_membership_type?: RlcMembershipType
   link_existing_user_id?: string
+}
+
+export interface CreateRlcMemberForm {
+  first_name: string
+  middle_name?: string
+  last_name?: string
+  phone: string
+  secondary_phone?: string
+  whatsapp?: string
+  whatsapp_same_as_phone?: boolean
+  email?: string
+  occupation?: string
+  place_of_work?: string
+  school_or_workplace?: string
+  address?: string
+  hometown?: string
+  area_of_residence?: string
+  gender?: 'male' | 'female' | 'other'
+  dob?: string
+  marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
+  spouse_name?: string
+  children_count?: number
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+  emergency_contact_relation?: string
+  notes?: string
+  rlc_roles?: RlcRole[]
+  rlc_membership_type?: RlcMembershipType
 }
 
 export interface CreateDependantForm {

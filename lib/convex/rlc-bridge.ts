@@ -41,6 +41,7 @@ export function convexRlcVisitorDocToVisitor(doc: Record<string, unknown> | null
     last_name: doc.last_name != null ? String(doc.last_name) : undefined,
     phone: doc.phone != null ? String(doc.phone) : undefined,
     secondary_phone: doc.secondary_phone != null ? String(doc.secondary_phone) : undefined,
+    whatsapp: doc.whatsapp != null ? String(doc.whatsapp) : undefined,
     email: doc.email != null ? String(doc.email) : undefined,
     address: doc.address != null ? String(doc.address) : undefined,
     hometown: doc.hometown != null ? String(doc.hometown) : undefined,
@@ -168,6 +169,7 @@ export async function createRlcVisitorInConvex(
     last_name: form.last_name,
     phone: form.phone,
     secondary_phone: form.secondary_phone,
+    whatsapp: form.whatsapp,
     email: form.email,
     address: form.address,
     hometown: form.hometown,
@@ -224,6 +226,7 @@ export async function updateRlcVisitorInConvex(
     last_name: form.last_name,
     phone: form.phone,
     secondary_phone: form.secondary_phone,
+    whatsapp: form.whatsapp,
     email: form.email,
     address: form.address,
     hometown: form.hometown,
@@ -589,6 +592,57 @@ export async function updateRlcAttendanceInConvex(args: {
   const row = convexAttendanceDocToAttendance(doc)
   if (!row) throw new Error('Failed to update attendance')
   return row
+}
+
+export async function deleteRlcAttendanceInConvex(attendanceId: string): Promise<{ deleted: boolean }> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.rlc.deleteRlcAttendanceWithSecret, {
+    secret: requireCoreServerSecret(),
+    attendance_id: attendanceId,
+  })) as { deleted: boolean }
+}
+
+export async function createRlcMemberInConvex(
+  form: import('@/lib/types').CreateRlcMemberForm,
+  performedBy: string
+): Promise<Member> {
+  const client = getConvexHttpClient()
+  const whatsapp =
+    form.whatsapp_same_as_phone !== false
+      ? form.phone
+      : form.whatsapp?.trim() || form.phone
+  const doc = (await client.mutation(api.rlc.createRlcMemberWithSecret, {
+    secret: requireCoreServerSecret(),
+    performed_by: performedBy,
+    first_name: form.first_name,
+    middle_name: form.middle_name,
+    last_name: form.last_name,
+    phone: form.phone,
+    secondary_phone: form.secondary_phone,
+    whatsapp,
+    email: form.email,
+    occupation: form.occupation,
+    place_of_work: form.place_of_work,
+    school_or_workplace: form.school_or_workplace,
+    address: form.address,
+    hometown: form.hometown,
+    area_of_residence: form.area_of_residence,
+    gender: form.gender,
+    dob: form.dob,
+    marital_status: form.marital_status,
+    spouse_name: form.spouse_name,
+    children_count: form.children_count,
+    emergency_contact_name: form.emergency_contact_name,
+    emergency_contact_phone: form.emergency_contact_phone,
+    emergency_contact_relation: form.emergency_contact_relation,
+    notes: form.notes,
+    rlc_roles: form.rlc_roles,
+    rlc_membership_type: form.rlc_membership_type,
+  })) as Record<string, unknown>
+  const { convexMemberDocToMember } = await import('@/lib/convex/core-bridge')
+  const member = convexMemberDocToMember(doc)
+  if (!member) throw new Error('Failed to create RLC member')
+  return member
 }
 
 export function convexRlcCustomServiceDocToRlcCustomService(

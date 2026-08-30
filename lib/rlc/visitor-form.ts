@@ -22,6 +22,7 @@ export function visitorToForm(visitor: Visitor): CreateVisitorForm {
     last_name: visitor.last_name,
     phone: visitor.phone,
     secondary_phone: visitor.secondary_phone,
+    whatsapp: visitor.whatsapp ?? visitor.phone,
     email: visitor.email,
     address: visitor.address,
     hometown: visitor.hometown,

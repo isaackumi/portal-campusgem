@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
-import { Upload, Pencil } from 'lucide-react'
+import { Upload, Pencil, UserPlus } from 'lucide-react'
 
 export default function RlcMembersPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -56,12 +56,20 @@ export default function RlcMembersPage() {
         title="RLC Members"
         subtitle="Full-time and associate members linked to Redemption Light Chapel."
         actions={
-          <Button variant="outline" className="w-full sm:w-auto" asChild>
-            <Link href="/admin/rlc/import">
-              <Upload className="mr-2 h-4 w-4" />
-              Import from Campus Gem
-            </Link>
-          </Button>
+          <>
+            <Button className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto" asChild>
+              <Link href="/admin/rlc/members/add">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add member
+              </Link>
+            </Button>
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
+              <Link href="/admin/rlc/import">
+                <Upload className="mr-2 h-4 w-4" />
+                Import from Campus Gem
+              </Link>
+            </Button>
+          </>
         }
       />
 

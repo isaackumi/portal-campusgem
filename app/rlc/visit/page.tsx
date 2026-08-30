@@ -23,6 +23,7 @@ export default function PublicRlcVisitPage() {
     first_name: '',
     last_name: '',
     phone: '',
+    whatsapp: '',
     email: '',
     address: '',
     visit_date: '',

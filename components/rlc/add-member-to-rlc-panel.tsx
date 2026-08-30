@@ -40,9 +40,12 @@ export function AddMemberToRlcPanel({ onAdded }: Props) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Church className="h-5 w-5 text-rose-700" />
-            Add member to RLC
+            Link existing person
           </CardTitle>
-          <CardDescription>Search the directory, then assign ministry roles.</CardDescription>
+          <CardDescription>
+            Search Campus Gem / the directory, then assign ministry roles. To register someone new,
+            use Add member.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row">
