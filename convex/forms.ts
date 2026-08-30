@@ -7,6 +7,9 @@ import {
   countPastCampRegistrationsForPhone,
   insertCampRegistrationPublic,
 } from './lib/campRegistrationInsert'
+import {
+  campRegistrationDuplicateStatus,
+} from './lib/campRegistrationDuplicate'
 import { mapFormValuesToCampRegistrationInput } from './lib/campFormSubmit'
 
 const formFieldType = v.union(
@@ -536,41 +539,42 @@ export const submitFormResponsePublic = mutation({
 
     if (respondentPhone) {
       const normalized = normalizeGhanaPhone(respondentPhone)
-
       if (isCampMeetingForm && campYearId) {
-        let alreadyRegisteredForYear = false
-        for (const variant of phoneLookupVariants(normalized)) {
-          const existingCamp = await ctx.db
-            .query('camp_registrations')
-            .withIndex('by_camp_year_phone', (q) =>
-              q.eq('camp_year_id', campYearId).eq('phone', variant)
-            )
-            .first()
-          if (existingCamp) {
-            alreadyRegisteredForYear = true
-            break
-          }
+        if (!normalized || !isValidGhanaPhone(normalized)) {
+          throw new Error('A valid Ghana mobile number is required to register for Camp Meeting.')
         }
-        if (alreadyRegisteredForYear) {
-          throw new Error('This phone number is already registered for this Camp Meeting.')
+        const duplicate = await campRegistrationDuplicateStatus(
+          ctx,
+          campYearId,
+          normalized,
+          respondentEmail
+        )
+        if (duplicate.already_registered) {
+          throw new Error(
+            duplicate.reason === 'email'
+              ? 'This email is already registered for this Camp Meeting.'
+              : 'This phone number is already registered for this Camp Meeting.'
+          )
         }
       }
 
-      const existing = await ctx.db
-        .query('form_responses')
-        .withIndex('by_form_and_phone', (q) =>
-          q.eq('form_id', String(form._id)).eq('respondent_phone', normalized)
-        )
-        .first()
-      if (existing) {
-        const when = new Date(existing.submitted_at).toLocaleDateString('en-GB', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
-        throw new Error(
-          `This phone number already submitted this form on ${when}. Contact the church office if you need to update your answers.`
-        )
+      if (normalized) {
+        const existing = await ctx.db
+          .query('form_responses')
+          .withIndex('by_form_and_phone', (q) =>
+            q.eq('form_id', String(form._id)).eq('respondent_phone', normalized)
+          )
+          .first()
+        if (existing) {
+          const when = new Date(existing.submitted_at).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })
+          throw new Error(
+            `This phone number already submitted this form on ${when}. Contact the church office if you need to update your answers.`
+          )
+        }
       }
     }
 

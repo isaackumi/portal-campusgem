@@ -12,14 +12,17 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { Tabs, ScrollableTabsList, TabsContent, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
-import { Search, UserPlus, Users } from 'lucide-react'
+import { Search, UserPlus, Upload, Users } from 'lucide-react'
+import { RlcCampBulkImportPanel } from '@/components/rlc/rlc-camp-bulk-import-panel'
 
 function RlcImportContent() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const [pageTab, setPageTab] = useState('search')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<RlcImportSearchResult[]>([])
   const [searching, setSearching] = useState(false)
@@ -39,6 +42,11 @@ function RlcImportContent() {
     },
     [toast]
   )
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'camp-bulk') setPageTab('camp-bulk')
+  }, [searchParams])
 
   useEffect(() => {
     const q = searchParams.get('q')?.trim()
@@ -94,12 +102,25 @@ function RlcImportContent() {
   }
 
   return (
-    <PageContainer size="sm">
+    <PageContainer>
       <RlcPageHeader
         title="Import to RLC"
         subtitle="Pull contacts from Campus Gem members or camp registrations into the mother church."
       />
 
+      <Tabs value={pageTab} onValueChange={setPageTab} className="space-y-6">
+        <ScrollableTabsList>
+          <TabsTrigger value="search">
+            <Search className="mr-2 h-4 w-4 shrink-0" />
+            Search
+          </TabsTrigger>
+          <TabsTrigger value="camp-bulk">
+            <Upload className="mr-2 h-4 w-4 shrink-0" />
+            Bulk from Camp
+          </TabsTrigger>
+        </ScrollableTabsList>
+
+        <TabsContent value="search" className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Search directory</CardTitle>
@@ -174,6 +195,12 @@ function RlcImportContent() {
           )
         })}
       </div>
+        </TabsContent>
+
+        <TabsContent value="camp-bulk">
+          <RlcCampBulkImportPanel />
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   )
 }

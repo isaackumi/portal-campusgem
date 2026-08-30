@@ -6,6 +6,7 @@ import { extractBirthdayParts, memberDobIsoFromCampRegistration } from './lib/bi
 import { allocateCampCheckInCode } from './lib/campCheckInCode'
 import { sealMemberCheckIn } from './lib/rlcCheckInCode'
 import { insertCampRegistrationPublic } from './lib/campRegistrationInsert'
+import { campRegistrationDuplicateStatus } from './lib/campRegistrationDuplicate'
 import {
   isValidGhanaPhone,
   normalizeGhanaPhone,
@@ -99,6 +100,24 @@ export const getCampYearByYearPublic = query({
       .query('camp_years')
       .withIndex('by_year', (q) => q.eq('year', year))
       .first()
+  },
+})
+
+/** Public duplicate check before camp registration submit (legacy page + forms). */
+export const checkCampRegistrationDuplicatePublic = query({
+  args: {
+    camp_year_id: v.string(),
+    phone: v.string(),
+    email: v.optional(v.string()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    return await campRegistrationDuplicateStatus(
+      ctx,
+      args.camp_year_id,
+      args.phone,
+      args.email
+    )
   },
 })
 

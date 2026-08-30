@@ -260,7 +260,7 @@ export function usePublicForm({
     }
 
     const phone = getRespondentPhone()
-    if (profileLookupEnabled && !isValidPhone(phone)) {
+    if ((profileLookupEnabled || isCampForm) && !isValidPhone(phone)) {
       toast({
         variant: 'destructive',
         title: 'Phone required',
@@ -276,6 +276,20 @@ export function usePublicForm({
       })
       setSubmitted(true)
       return true
+    }
+
+    if (isValidPhone(phone)) {
+      const freshLookup = await lookupFormProfileByPhone(form.slug, phone, values)
+      setAlreadySubmitted(freshLookup.already_submitted)
+      setSubmittedAt(freshLookup.submitted_at ?? null)
+      if (freshLookup.already_submitted) {
+        toast({
+          variant: 'destructive',
+          title: freshLookup.already_registered_this_year ? 'Already registered' : 'Already submitted',
+          description: blockedSubmitMessage(freshLookup.already_registered_this_year),
+        })
+        return false
+      }
     }
 
     setSubmitting(true)
@@ -342,6 +356,7 @@ export function usePublicForm({
     fields,
     form.slug,
     getRespondentPhone,
+    isCampForm,
     previewMode,
     profileLookupEnabled,
     profileName,

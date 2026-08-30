@@ -138,6 +138,19 @@ function CampRegistrationPageContent() {
         }))
     }
 
+    const syncPhoneRegistrationStatus = async (phone: string) => {
+        if (!campYear || !isValidPhone(phone)) {
+            setAlreadyRegistered(false)
+            return false
+        }
+        const result = await lookupCampRegistrationByPhone(phone, campYear.id)
+        if (result.error) {
+            throw new Error(result.error)
+        }
+        setAlreadyRegistered(result.already_registered_this_year)
+        return result.already_registered_this_year
+    }
+
     const handlePhoneLookup = async () => {
         if (!campYear || !formData.phone.trim()) {
             toast({
@@ -169,6 +182,7 @@ function CampRegistrationPageContent() {
 
             if (result.already_registered_this_year) {
                 toast({
+                    variant: 'destructive',
                     title: 'Already registered',
                     description: `This phone number is already registered for Camp Meeting ${campYear.year}.`,
                 })
@@ -238,6 +252,15 @@ function CampRegistrationPageContent() {
         e.preventDefault()
         if (!formData.camp_year_id || alreadyRegistered) return
 
+        if (!isValidPhone(formData.phone)) {
+            toast({
+                variant: 'destructive',
+                title: 'Invalid phone number',
+                description: 'Enter a valid Ghana mobile number before submitting.',
+            })
+            return
+        }
+
         if (!validateSection(currentSection)) {
             toast({
                 variant: 'destructive',
@@ -248,6 +271,18 @@ function CampRegistrationPageContent() {
         }
 
         setSubmitting(true)
+        try {
+            const alreadyRegisteredThisYear = await syncPhoneRegistrationStatus(formData.phone)
+            if (alreadyRegisteredThisYear) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Already registered',
+                    description: `This phone number is already registered for Camp Meeting ${campYear?.year}.`,
+                })
+                setSubmitting(false)
+                return
+            }
+
         // Ensure boolean values are set (convert null to false if needed)
         const submissionData = {
             ...formData,
@@ -278,6 +313,14 @@ function CampRegistrationPageContent() {
                 title: "Registration Failed",
                 description: res.error || "Please try again later.",
             })
+        }
+        } catch (error: unknown) {
+            toast({
+                variant: 'destructive',
+                title: 'Registration failed',
+                description: error instanceof Error ? error.message : 'Please try again later.',
+            })
+        } finally {
             setSubmitting(false)
         }
     }
@@ -440,6 +483,12 @@ function CampRegistrationPageContent() {
                                             setLookupDone(false)
                                             setAlreadyRegistered(false)
                                             setFormData({ ...formData, phone: e.target.value })
+                                        }}
+                                        onBlur={() => {
+                                            if (!formData.phone.trim() || !campYear) return
+                                            void syncPhoneRegistrationStatus(formData.phone).catch(() => {
+                                                // Lookup errors are surfaced on explicit search/submit.
+                                            })
                                         }}
                                         placeholder="0241234567"
                                         className="h-11 text-base bg-white border-gray-300 focus:border-slate-900 focus:ring-slate-900"

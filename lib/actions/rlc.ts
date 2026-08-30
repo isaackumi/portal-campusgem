@@ -467,6 +467,76 @@ export async function importToRlcAction(args: {
   }
 }
 
+export type BulkImportCampToRlcResult = {
+  imported: number
+  skipped: number
+  failed: Array<{ camp_registration_id: string; full_name: string; error: string }>
+}
+
+export async function bulkImportCampToRlcAction(args: {
+  campRegistrationIds: string[]
+  performedBy: string
+  linkAsMember?: boolean
+  rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
+}): Promise<ApiResponse<BulkImportCampToRlcResult>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+
+  const uniqueIds = Array.from(new Set(args.campRegistrationIds.filter(Boolean)))
+  if (uniqueIds.length === 0) {
+    return { data: { imported: 0, skipped: 0, failed: [] }, error: null, loading: false }
+  }
+
+  const result: BulkImportCampToRlcResult = {
+    imported: 0,
+    skipped: 0,
+    failed: [],
+  }
+
+  const regNameById = new Map<string, string>()
+  try {
+    const { fetchAllCampYearsFromConvex, fetchRegistrationsFromConvex } = await import(
+      '@/lib/convex/camp-bridge'
+    )
+    const campYears = await fetchAllCampYearsFromConvex()
+    for (const year of campYears) {
+      const regs = await fetchRegistrationsFromConvex(year.id)
+      for (const reg of regs) {
+        regNameById.set(reg.id, reg.full_name)
+      }
+    }
+  } catch {
+    // Optional name lookup for error rows.
+  }
+
+  for (const campRegistrationId of uniqueIds) {
+    const fullName = regNameById.get(campRegistrationId) ?? 'Camper'
+    const { data, error } = await importToRlcAction({
+      type: 'camp_registration',
+      campRegistrationId,
+      fullName,
+      performedBy: args.performedBy,
+      linkAsMember: args.linkAsMember ?? false,
+      rlcMembershipType: args.rlcMembershipType ?? 'full_member',
+    })
+
+    if (error) {
+      if (/already|duplicate|exists/i.test(error)) {
+        result.skipped += 1
+      } else {
+        result.failed.push({ camp_registration_id: campRegistrationId, full_name: fullName, error })
+      }
+      continue
+    }
+
+    if (data) result.imported += 1
+    else result.skipped += 1
+  }
+
+  return { data: result, error: null, loading: false }
+}
+
 export async function loadRlcMembersAction(): Promise<ApiResponse<Member[]>> {
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }

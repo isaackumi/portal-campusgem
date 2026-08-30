@@ -2,7 +2,12 @@ import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
 import { allocateCampCheckInCode } from './campCheckInCode'
 import { extractBirthdayParts } from './birthday'
-import { normalizeGhanaPhone, phoneLookupVariants } from './phone'
+import {
+  assertCampRegistrationSlotAvailable,
+  campYearIdFromUnknown,
+  normalizeCampRegistrationEmail,
+} from './campRegistrationDuplicate'
+import { phoneLookupVariants } from './phone'
 
 export type CampRegistrationPublicInput = {
   camp_year_id: Id<'camp_years'>
@@ -30,23 +35,6 @@ export type CampRegistrationPublicInput = {
   parent_name: string
   parent_contact: string
   role?: string
-}
-
-async function findRegistrationByPhoneForYear(
-  ctx: MutationCtx,
-  campYearId: string,
-  phone: string
-) {
-  for (const variant of phoneLookupVariants(phone)) {
-    const existing = await ctx.db
-      .query('camp_registrations')
-      .withIndex('by_camp_year_phone', (q) =>
-        q.eq('camp_year_id', campYearId).eq('phone', variant)
-      )
-      .first()
-    if (existing) return existing
-  }
-  return null
 }
 
 export async function countPastCampRegistrationsForPhone(
@@ -87,30 +75,17 @@ export async function insertCampRegistrationPublic(
     throw new Error('Registration is closed for this Camp Meeting.')
   }
 
-  const yearIdStr = String(args.camp_year_id)
-  const normalizedPhone = normalizeGhanaPhone(args.phone)
+  const yearIdStr = campYearIdFromUnknown(args.camp_year_id)
+  const normalizedPhone = await assertCampRegistrationSlotAvailable(
+    ctx,
+    yearIdStr,
+    args.phone,
+    args.email
+  )
   const birthday =
     args.birth_month != null && args.birth_day != null
       ? { birth_month: args.birth_month, birth_day: args.birth_day }
       : extractBirthdayParts(args.date_of_birth)
-
-  const existingPhone = await findRegistrationByPhoneForYear(ctx, yearIdStr, normalizedPhone)
-  if (existingPhone) {
-    throw new Error('This phone number is already registered for this event.')
-  }
-
-  const emailNorm = (args.email || '').trim()
-  if (emailNorm.length > 0) {
-    const existingEmail = await ctx.db
-      .query('camp_registrations')
-      .withIndex('by_camp_year_email', (q) =>
-        q.eq('camp_year_id', yearIdStr).eq('email', emailNorm)
-      )
-      .first()
-    if (existingEmail) {
-      throw new Error('This email is already registered for this event.')
-    }
-  }
 
   let healthChallenges = args.health_challenges ?? []
   if (args.other_health_challenge?.trim() && healthChallenges.includes('other')) {
@@ -119,6 +94,7 @@ export async function insertCampRegistrationPublic(
 
   const fullName =
     args.full_name?.trim() || `${args.first_name} ${args.last_name}`.trim()
+  const emailNorm = normalizeCampRegistrationEmail(args.email)
   const isNewRegistrant = (args.times_attended || 0) === 0
   const role = args.role || 'Participant'
   const checkInCode = await allocateCampCheckInCode(ctx, yearIdStr, year.year)

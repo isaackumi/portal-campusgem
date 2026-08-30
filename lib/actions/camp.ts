@@ -7,6 +7,7 @@ import {
   CampInteraction,
   CampCommunication,
 } from '@/lib/types'
+import { isValidPhone } from '@/lib/phone'
 import { revalidatePath } from 'next/cache'
 
 function requireConvexEnv(): void {
@@ -115,7 +116,19 @@ export async function registerCamper(formData: CampRegistrationForm): Promise<{
   error?: string
 }> {
   requireConvexEnv()
+  if (!isValidPhone(formData.phone)) {
+    return { success: false, error: 'Enter a valid Ghana mobile number to register.' }
+  }
+
   try {
+    const duplicate = await lookupCampRegistrationByPhone(formData.phone, formData.camp_year_id)
+    if (duplicate.already_registered_this_year) {
+      return {
+        success: false,
+        error: 'This phone number is already registered for this Camp Meeting.',
+      }
+    }
+
     const { registerCamperViaConvex } = await import('@/lib/convex/camp-bridge')
     const updatedReg = await registerCamperViaConvex(formData)
     revalidatePath('/admin/camp-meeting')

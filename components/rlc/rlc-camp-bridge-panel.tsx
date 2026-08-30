@@ -134,6 +134,9 @@ export function RlcCampBridgePanel({ campRows, visitors, members }: RlcCampBridg
           )}
 
           <Button variant="ghost" size="sm" className="px-0 text-rose-700" asChild>
+            <Link href="/admin/rlc/import?tab=camp-bulk">Bulk import from camp</Link>
+          </Button>
+          <Button variant="ghost" size="sm" className="px-0 text-rose-700" asChild>
             <Link href="/admin/rlc/import">Open full import search</Link>
           </Button>
         </div>
