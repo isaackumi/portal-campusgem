@@ -3,6 +3,7 @@ import {
   attendanceRosterToCsv,
   filterAttendancePeople,
   sessionCheckedKeys,
+  splitAttendanceRoster,
   type RlcAttendancePerson,
 } from '@/lib/rlc/attendance-roster'
 import { defaultRlcServiceSelection, type RlcServiceSelection } from '@/lib/rlc/service-selection'
@@ -77,6 +78,43 @@ describe('rlc attendance roster helpers', () => {
         sessionCheckedKeys(rows, { kind: 'custom', customServiceId: 'custom1', label: 'Leadership retreat' })
       )
     ).toEqual(['m:3'])
+  })
+
+  test('splits roster into present and absent noted rows', () => {
+    const rows = [
+      {
+        attendance: {
+          id: 'a1',
+          service_date: '2026-08-24',
+          check_in_time: '2026-08-24T09:00:00.000Z',
+          method: 'admin',
+          metadata: {},
+          created_at: '2026-08-24T09:00:00.000Z',
+          status: 'present' as const,
+        },
+        name: 'Present Person',
+        kind: 'member' as const,
+      },
+      {
+        attendance: {
+          id: 'a2',
+          service_date: '2026-08-24',
+          check_in_time: '2026-08-24T09:00:00.000Z',
+          method: 'admin',
+          metadata: {},
+          created_at: '2026-08-24T09:00:00.000Z',
+          status: 'absent' as const,
+          notes: 'Travelling',
+        },
+        name: 'Absent Person',
+        kind: 'visitor' as const,
+      },
+    ]
+
+    const split = splitAttendanceRoster(rows)
+    expect(split.present).toHaveLength(1)
+    expect(split.absentNoted).toHaveLength(1)
+    expect(split.absentNoted[0]?.attendance.notes).toBe('Travelling')
   })
 
   test('csv includes evidence header and rows', () => {

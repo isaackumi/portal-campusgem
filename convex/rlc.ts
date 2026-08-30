@@ -9,6 +9,7 @@ import {
   sealMemberCheckIn,
   sealVisitorCheckIn,
 } from './lib/rlcCheckInCode'
+import { normalizePersonNameKey } from './lib/personIdentity'
 
 const followUpStatus = v.union(
   v.literal('pending'),
@@ -908,6 +909,17 @@ export const createRlcVisitorFromCampRegistrationWithSecret = mutation({
     )
     if (dup) return dup
 
+    const regPhone = reg.phone ? normalizeGhanaPhone(reg.phone) : undefined
+    if (regPhone) {
+      const dupByPhone = existing.find(
+        (v) =>
+          v.congregation === 'rlc' &&
+          v.phone &&
+          normalizeGhanaPhone(String(v.phone)) === regPhone
+      )
+      if (dupByPhone) return dupByPhone
+    }
+
     const now = Date.now()
     const sponsorIds = args.invited_by_member_ids ?? []
     const id = await ctx.db.insert('visitors', {
@@ -1198,6 +1210,7 @@ export const recordRlcAttendanceWithSecret = mutation({
     ),
     created_by: v.optional(v.string()),
     notes: v.optional(v.string()),
+    status: v.optional(v.union(v.literal('present'), v.literal('absent'), v.literal('late'))),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -1205,6 +1218,8 @@ export const recordRlcAttendanceWithSecret = mutation({
     if (!args.member_id && !args.visitor_id) {
       throw new Error('Either member_id or visitor_id is required.')
     }
+
+    const targetStatus = args.status ?? 'present'
 
     let serviceTypeValue = args.service_type ?? 'sunday_service'
     let metadata: Record<string, string> = {}
@@ -1245,11 +1260,31 @@ export const recordRlcAttendanceWithSecret = mutation({
       return false
     })
 
+    const now = Date.now()
+
     if (already) {
-      return { already_checked_in: true, attendance: already }
+      const currentStatus = already.status ?? 'present'
+      if (targetStatus === 'present' && currentStatus === 'present') {
+        return { already_checked_in: true, attendance: already }
+      }
+
+      await ctx.db.patch('attendance', already._id, {
+        status: targetStatus,
+        notes: args.notes !== undefined ? args.notes : already.notes,
+        check_in_time:
+          targetStatus === 'present' ? args.check_in_time : already.check_in_time || args.check_in_time,
+        method: args.method,
+        checked_in_by: args.created_by ?? already.checked_in_by,
+        updated_at: now,
+      })
+
+      return {
+        already_checked_in: false,
+        updated: true,
+        attendance: await ctx.db.get('attendance', already._id),
+      }
     }
 
-    const now = Date.now()
     const id = await ctx.db.insert('attendance', {
       member_id: args.member_id,
       visitor_id: args.visitor_id,
@@ -1261,12 +1296,35 @@ export const recordRlcAttendanceWithSecret = mutation({
       metadata,
       created_by: args.created_by,
       checked_in_by: args.created_by,
-      status: 'present',
+      status: targetStatus,
       notes: args.notes,
       updated_at: now,
     })
 
     return { already_checked_in: false, attendance: await ctx.db.get('attendance', id) }
+  },
+})
+
+export const updateRlcAttendanceWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    attendance_id: v.string(),
+    notes: v.optional(v.string()),
+    status: v.optional(v.union(v.literal('present'), v.literal('absent'), v.literal('late'))),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const row = await ctx.db.get('attendance', args.attendance_id as never)
+    if (!row) throw new Error('Attendance record not found.')
+    if (row.congregation !== 'rlc') throw new Error('Not an RLC attendance record.')
+
+    const patch: Record<string, unknown> = { updated_at: Date.now() }
+    if (args.notes !== undefined) patch.notes = args.notes
+    if (args.status !== undefined) patch.status = args.status
+
+    await ctx.db.patch('attendance', row._id, patch)
+    return await ctx.db.get('attendance', row._id)
   },
 })
 
@@ -1432,8 +1490,11 @@ export const searchPeopleForRlcImportWithSecret = query({
     const users = await ctx.db.query('users').collect()
     const members = await ctx.db.query('members').collect()
     const memberByUserId = new Map(members.map((m) => [m.user_id, m]))
+    const campYears = await ctx.db.query('camp_years').collect()
+    const yearById = new Map(campYears.map((year) => [String(year._id), year.year]))
 
     const results: Array<Record<string, unknown>> = []
+    const campusPhones = new Set<string>()
 
     for (const user of users) {
       const hay = [
@@ -1451,6 +1512,10 @@ export const searchPeopleForRlcImportWithSecret = query({
       if (!hay.includes(needle)) continue
 
       const member = memberByUserId.get(String(user._id))
+      if (user.phone) {
+        const phoneKey = normalizeGhanaPhone(String(user.phone))
+        if (phoneKey) campusPhones.add(phoneKey)
+      }
       results.push({
         type: 'campus_member',
         user_id: String(user._id),
@@ -1465,17 +1530,60 @@ export const searchPeopleForRlcImportWithSecret = query({
     }
 
     if (results.length < limit) {
-      const campRegs = await ctx.db.query('camp_registrations').order('desc').take(500)
+      type CampImportBucket = {
+        camp_registration_id: string
+        full_name: string
+        phone?: string
+        email?: string
+        camp_year_id?: string
+        camp_registration_count: number
+        camp_years: number[]
+      }
+
+      const campByKey = new Map<string, CampImportBucket>()
+      const campRegs = await ctx.db.query('camp_registrations').order('desc').take(2000)
+
       for (const reg of campRegs) {
         const hay = [reg.full_name, reg.phone, reg.email].filter(Boolean).join(' ').toLowerCase()
         if (!hay.includes(needle)) continue
-        results.push({
-          type: 'camp_registration',
+
+        const phoneKey = reg.phone ? normalizeGhanaPhone(String(reg.phone)) : ''
+        if (phoneKey && campusPhones.has(phoneKey)) continue
+
+        const dedupeKey =
+          phoneKey || `name:${normalizePersonNameKey(String(reg.full_name ?? ''))}`
+        const yearNum = yearById.get(String(reg.camp_year_id)) ?? 0
+        const existing = campByKey.get(dedupeKey)
+
+        if (existing) {
+          existing.camp_registration_count += 1
+          if (yearNum > 0 && !existing.camp_years.includes(yearNum)) {
+            existing.camp_years.push(yearNum)
+          }
+          continue
+        }
+
+        campByKey.set(dedupeKey, {
           camp_registration_id: String(reg._id),
           full_name: reg.full_name,
           phone: reg.phone,
           email: reg.email,
           camp_year_id: reg.camp_year_id,
+          camp_registration_count: 1,
+          camp_years: yearNum > 0 ? [yearNum] : [],
+        })
+      }
+
+      for (const bucket of Array.from(campByKey.values())) {
+        results.push({
+          type: 'camp_registration',
+          camp_registration_id: bucket.camp_registration_id,
+          full_name: bucket.full_name,
+          phone: bucket.phone,
+          email: bucket.email,
+          camp_year_id: bucket.camp_year_id,
+          camp_registration_count: bucket.camp_registration_count,
+          camp_years: bucket.camp_years.sort((a, b) => b - a),
         })
         if (results.length >= limit) break
       }

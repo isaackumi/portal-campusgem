@@ -122,6 +122,12 @@ function RlcImportContent() {
       <div className="space-y-3">
         {results.map((row) => {
           const key = `${row.type}-${row.member_id ?? row.user_id ?? row.camp_registration_id}`
+          const campYearLabel =
+            row.type === 'camp_registration' && row.camp_years && row.camp_years.length > 0
+              ? row.camp_years.length > 1
+                ? `Camp ${row.camp_years.join(', ')} (${row.camp_registration_count ?? row.camp_years.length} registrations)`
+                : `Camp ${row.camp_years[0]}`
+              : null
           return (
             <Card key={key}>
               <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -135,6 +141,9 @@ function RlcImportContent() {
                   <p className="text-sm text-muted-foreground">
                     {[row.phone, row.email, row.membership_id].filter(Boolean).join(' · ')}
                   </p>
+                  {campYearLabel ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{campYearLabel}</p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {canImportAsMember(row) ? (

@@ -563,6 +563,7 @@ export async function recordRlcAttendanceAction(args: {
   method?: Attendance['method']
   createdBy?: string
   notes?: string
+  status?: Attendance['status']
 }): Promise<ApiResponse<{ already_checked_in: boolean; attendance: Attendance }>> {
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
@@ -578,6 +579,27 @@ export async function recordRlcAttendanceAction(args: {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to record attendance',
+      loading: false,
+    }
+  }
+}
+
+export async function updateRlcAttendanceAction(args: {
+  attendanceId: string
+  notes?: string
+  status?: Attendance['status']
+}): Promise<ApiResponse<Attendance>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  try {
+    const { updateRlcAttendanceInConvex } = await import('@/lib/convex/rlc-bridge')
+    const data = await updateRlcAttendanceInConvex(args)
+    return { data, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to update attendance',
       loading: false,
     }
   }

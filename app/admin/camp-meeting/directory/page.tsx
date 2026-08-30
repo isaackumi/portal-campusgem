@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { getCamperDirectory } from '@/lib/actions/camp'
+import { CampDirectoryMergePanel } from '@/components/camp/camp-directory-merge-panel'
 import type { CampCamperDirectoryRow } from '@/lib/types'
 
 export default function CampDirectoryPage() {
@@ -70,9 +71,9 @@ export default function CampDirectoryPage() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">Camper Directory</h1>
               <p className="mt-1 max-w-3xl text-muted-foreground">
-                One row per phone number across every imported and live camp year. Year chips open that
-                year&apos;s registration. New public registration still uses phone lookup to prefill the
-                active year and blocks duplicate sign-up for that year only.
+                One row per person (matched by phone, or by name when phone is missing). Year chips
+                open that year&apos;s registration. Duplicate import rows with the same name and no
+                phone are merged here automatically.
               </p>
             </div>
           </div>
@@ -112,6 +113,8 @@ export default function CampDirectoryPage() {
             </CardContent>
           </Card>
         </div>
+
+        <CampDirectoryMergePanel rows={rows} onMerged={() => void loadDirectory()} />
 
         <Card>
           <CardHeader>

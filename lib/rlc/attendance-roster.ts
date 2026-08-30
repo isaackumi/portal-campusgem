@@ -127,6 +127,28 @@ export function buildAttendanceRoster(
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
+export function splitAttendanceRoster(rows: RlcAttendanceRosterRow[]): {
+  present: RlcAttendanceRosterRow[]
+  absentNoted: RlcAttendanceRosterRow[]
+} {
+  const present: RlcAttendanceRosterRow[] = []
+  const absentNoted: RlcAttendanceRosterRow[] = []
+  for (const row of rows) {
+    if (row.attendance.status === 'absent') {
+      absentNoted.push(row)
+    } else {
+      present.push(row)
+    }
+  }
+  return { present, absentNoted }
+}
+
+export function attendanceStatusLabel(status?: Attendance['status']): string {
+  if (status === 'absent') return 'Absent (noted)'
+  if (status === 'late') return 'Late'
+  return 'Present'
+}
+
 export function attendanceRosterToCsv(
   rows: RlcAttendanceRosterRow[],
   meta: { serviceDate: string; serviceLabel: string; churchName?: string }
@@ -135,6 +157,8 @@ export function attendanceRosterToCsv(
   const header = [
     'Name',
     'Type',
+    'Status',
+    'Note',
     'Phone',
     'Check-in code',
     'Membership ID',
@@ -154,6 +178,8 @@ export function attendanceRosterToCsv(
       [
         escape(row.name),
         row.kind,
+        escape(attendanceStatusLabel(row.attendance.status)),
+        escape(row.attendance.notes ?? ''),
         escape(row.phone ?? ''),
         escape(row.code ?? ''),
         escape(row.membershipId ?? ''),

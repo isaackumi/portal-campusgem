@@ -191,6 +191,26 @@ export async function getCamperDirectory(): Promise<{
   }
 }
 
+export async function mergeCampDirectoryContacts(args: {
+  canonicalPhone: string
+  registrationIds: string[]
+}): Promise<{
+  data: { merged: number; skipped: number; conflicts: Array<{ registration_id: string; reason: string }> } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const { mergeCampDirectoryContactsInConvex } = await import('@/lib/convex/camp-bridge')
+    const data = await mergeCampDirectoryContactsInConvex(args)
+    return { data, error: null }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to merge contacts',
+    }
+  }
+}
+
 export async function getCampRegistrationById(
   id: string
 ): Promise<{ data: CampRegistration | null; error: string | null }> {

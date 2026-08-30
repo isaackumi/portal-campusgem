@@ -340,6 +340,13 @@ export function convexImportSearchDocToResult(
     membership_id: doc.membership_id != null ? String(doc.membership_id) : undefined,
     congregation: doc.congregation as RlcImportSearchResult['congregation'],
     camp_year_id: doc.camp_year_id != null ? String(doc.camp_year_id) : undefined,
+    camp_registration_count:
+      typeof doc.camp_registration_count === 'number'
+        ? doc.camp_registration_count
+        : undefined,
+    camp_years: Array.isArray(doc.camp_years)
+      ? doc.camp_years.filter((y): y is number => typeof y === 'number')
+      : undefined,
   }
 }
 
@@ -496,6 +503,7 @@ export async function recordRlcAttendanceInConvex(args: {
   method: Attendance['method']
   createdBy?: string
   notes?: string
+  status?: Attendance['status']
 }): Promise<{ already_checked_in: boolean; attendance: Attendance }> {
   const client = getConvexHttpClient()
   const result = (await client.mutation(api.rlc.recordRlcAttendanceWithSecret, {
@@ -509,6 +517,7 @@ export async function recordRlcAttendanceInConvex(args: {
     method: args.method,
     created_by: args.createdBy,
     notes: args.notes,
+    status: args.status,
   })) as { already_checked_in?: boolean; attendance?: Record<string, unknown> } & Record<string, unknown>
 
   const { convexAttendanceDocToAttendance } = await import('@/lib/convex/core-bridge')
@@ -558,6 +567,24 @@ export async function listRlcAttendanceFromConvex(args?: {
   })) as Record<string, unknown>[]
   const { convexAttendanceDocToAttendance } = await import('@/lib/convex/core-bridge')
   return docs.map((d) => convexAttendanceDocToAttendance(d)).filter((a): a is Attendance => a != null)
+}
+
+export async function updateRlcAttendanceInConvex(args: {
+  attendanceId: string
+  notes?: string
+  status?: Attendance['status']
+}): Promise<Attendance> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.rlc.updateRlcAttendanceWithSecret, {
+    secret: requireCoreServerSecret(),
+    attendance_id: args.attendanceId,
+    notes: args.notes,
+    status: args.status,
+  })) as Record<string, unknown>
+  const { convexAttendanceDocToAttendance } = await import('@/lib/convex/core-bridge')
+  const row = convexAttendanceDocToAttendance(doc)
+  if (!row) throw new Error('Failed to update attendance')
+  return row
 }
 
 export function convexRlcCustomServiceDocToRlcCustomService(

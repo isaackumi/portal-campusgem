@@ -32,6 +32,12 @@ export type FormPrefillKey =
   | 'prayer_request'
   | 'whatsapp'
   | 'university'
+  | 'where_we_met'
+  | 'how_joined'
+  | 'contact_tags'
+  | 'employment_status'
+  | 'workplace_name'
+  | 'job_role'
 
 export const FORM_PREFILL_KEY_GROUPS: Array<{
   label: string
@@ -71,7 +77,7 @@ export const FORM_PREFILL_KEY_GROUPS: Array<{
   {
     label: 'Student / campus',
     keys: [
-      { value: 'university', label: 'University / campus name', hint: 'Often prefilled from the form’s campus group' },
+      { value: 'university', label: 'University / campus / school', hint: 'Often prefilled from the form’s campus group' },
       { value: 'program_of_study', label: 'Program of study' },
       { value: 'student_id', label: 'Student ID' },
       { value: 'hall_of_residence', label: 'Hall of residence' },
@@ -80,6 +86,17 @@ export const FORM_PREFILL_KEY_GROUPS: Array<{
       { value: 'ministry_contribution', label: 'Ministry contribution' },
       { value: 'prayer_request', label: 'Prayer request' },
       { value: 'whatsapp', label: 'WhatsApp number' },
+    ],
+  },
+  {
+    label: 'Outreach tracking',
+    keys: [
+      { value: 'where_we_met', label: 'Where we met' },
+      { value: 'how_joined', label: 'How they joined / connected' },
+      { value: 'contact_tags', label: 'Contact tags (checkbox list)' },
+      { value: 'employment_status', label: 'Student or working (radio)' },
+      { value: 'workplace_name', label: 'Workplace / company' },
+      { value: 'job_role', label: 'Job title / role' },
     ],
   },
   {

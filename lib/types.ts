@@ -291,6 +291,9 @@ export interface RlcImportSearchResult {
   membership_id?: string
   congregation?: Congregation
   camp_year_id?: string
+  /** When the same camper appears in multiple camp years, one row with counts. */
+  camp_registration_count?: number
+  camp_years?: number[]
 }
 
 /** Unified sponsor lookup — church members, Campus Gem, or camp directory. */

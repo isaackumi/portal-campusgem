@@ -54,6 +54,10 @@ const DEMOGRAPHIC_KEYS: Array<{ key: FormPrefillKey; title: string }> = [
   { key: 'highest_qualification', title: 'Qualification' },
   { key: 'residence', title: 'Residence' },
   { key: 'role', title: 'Role' },
+  { key: 'how_joined', title: 'How they joined' },
+  { key: 'where_we_met', title: 'Where we met' },
+  { key: 'employment_status', title: 'Student or working' },
+  { key: 'contact_tags', title: 'Tags' },
 ]
 
 function formatValue(value: unknown): string {

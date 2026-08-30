@@ -128,6 +128,8 @@ export function convexAttendanceDocToAttendance(
     client_uuid: doc.client_uuid != null ? String(doc.client_uuid) : undefined,
     created_by: doc.created_by != null ? String(doc.created_by) : undefined,
     checked_in_by: doc.checked_in_by != null ? String(doc.checked_in_by) : undefined,
+    status: doc.status as Attendance['status'],
+    notes: doc.notes != null ? String(doc.notes) : undefined,
     created_at: isoFromMs(ct) || new Date().toISOString(),
   }
 }

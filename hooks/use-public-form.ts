@@ -18,6 +18,17 @@ import type { RespondentLocation } from '@/lib/actions/reverse-geocode'
 
 export type ClassicStep = 'fill' | 'review'
 
+function profileFieldDescription(
+  fieldDescription: string | undefined,
+  profileLookupEnabled: boolean
+): string {
+  if (fieldDescription?.trim()) return fieldDescription.trim()
+  if (profileLookupEnabled) {
+    return 'Enter your Ghana mobile number to load your details and prevent duplicate submissions.'
+  }
+  return 'Ghana mobile number.'
+}
+
 function findPhoneField(fields: ChurchFormField[]): ChurchFormField | undefined {
   return fields.find((field) => field.field_type === 'phone' || field.prefill_key === 'phone')
 }
@@ -65,8 +76,7 @@ export function usePublicForm({
   const isStepped = normalizeFormDisplayMode(form.display_mode) === 'stepped'
   const phoneFieldEarly = phoneField != null && phoneField.sort_order <= 3
   const showPhoneStep = Boolean(
-    phoneField &&
-      (isStepped || ((profileLookupEnabled || phoneField.required) && phoneFieldEarly))
+    profileLookupEnabled && phoneField && (isStepped || phoneFieldEarly)
   )
   const visibleFields = useMemo(() => {
     const sorted = [...fields].sort((a, b) => a.sort_order - b.sort_order)
@@ -345,10 +355,7 @@ export function usePublicForm({
   const phoneInputValue = phoneField ? String(values[phoneField.id] ?? '') : lookupPhone
   const phoneLookupLabel = phoneField?.label ?? 'Phone number'
   const phoneLookupDescription =
-    phoneField?.description ||
-    (profileLookupEnabled
-      ? 'Enter your Ghana mobile number to load your details and prevent duplicate submissions.'
-      : 'Optional — used to find your existing records.')
+    profileFieldDescription(phoneField?.description, profileLookupEnabled)
   const phoneLookupRequired = Boolean(phoneField?.required || profileLookupEnabled)
 
   return {

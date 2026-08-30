@@ -18,6 +18,10 @@ import {
   isValidImportEmail,
   resolveImportPhoneForStorage,
 } from './lib/importContact'
+import {
+  mergeCamperDirectoryBuckets,
+  type CamperDirectoryBucket,
+} from './lib/personIdentity'
 
 const directoryRoleValue = v.union(
   v.literal('admin'),
@@ -1275,20 +1279,7 @@ export const listCamperDirectoryWithSecret = query({
       registration_id: string
     }
 
-    type Bucket = {
-      phone_key: string
-      full_name: string
-      first_name?: string
-      last_name?: string
-      email?: string
-      phone: string
-      years: YearChip[]
-      registration_count: number
-      user_id?: string
-      user_role?: string
-    }
-
-    const buckets = new Map<string, Bucket>()
+    const buckets = new Map<string, CamperDirectoryBucket>()
     let cursor: string | null = null
 
     for (;;) {
@@ -1344,7 +1335,9 @@ export const listCamperDirectoryWithSecret = query({
     const members = await ctx.db.query('members').collect()
     const memberByUserId = new Map(members.map((m) => [m.user_id, m]))
 
-    return Array.from(buckets.values())
+    const mergedBuckets = mergeCamperDirectoryBuckets(buckets)
+
+    return mergedBuckets
       .map((bucket) => {
         const user = userByPhone.get(bucket.phone_key)
         const member = user ? memberByUserId.get(String(user._id)) : undefined
@@ -1359,6 +1352,68 @@ export const listCamperDirectoryWithSecret = query({
         }
       })
       .sort((a, b) => a.full_name.localeCompare(b.full_name))
+  },
+})
+
+/** Reassign registrations from duplicate directory contacts onto one canonical phone. */
+export const mergeCampDirectoryContactsWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    canonical_phone: v.string(),
+    registration_ids: v.array(v.string()),
+  },
+  returns: v.object({
+    merged: v.number(),
+    skipped: v.number(),
+    conflicts: v.array(v.object({ registration_id: v.string(), reason: v.string() })),
+  }),
+  handler: async (ctx, { secret, canonical_phone, registration_ids }) => {
+    assertServerSecret(secret)
+    const canonical =
+      normalizeGhanaPhone(canonical_phone) ||
+      sanitizePhoneInput(canonical_phone)
+    if (!canonical) {
+      throw new Error('Choose a valid canonical phone number.')
+    }
+
+    let merged = 0
+    let skipped = 0
+    const conflicts: Array<{ registration_id: string; reason: string }> = []
+
+    for (const registrationId of registration_ids) {
+      const reg = await ctx.db.get(
+        'camp_registrations',
+        registrationId as import('./_generated/dataModel').Id<'camp_registrations'>
+      )
+      if (!reg) {
+        skipped++
+        continue
+      }
+
+      const yearId = String(reg.camp_year_id)
+      const existing = await findRegistrationByPhoneForYear(ctx, yearId, canonical)
+      if (existing && String(existing._id) !== registrationId) {
+        conflicts.push({
+          registration_id: registrationId,
+          reason: `${reg.full_name} already has a registration for this camp year on the canonical phone.`,
+        })
+        continue
+      }
+
+      const currentPhone = normalizeGhanaPhone(String(reg.phone ?? ''))
+      if (currentPhone === canonical) {
+        skipped++
+        continue
+      }
+
+      await ctx.db.patch(reg._id, {
+        phone: canonical,
+        updated_at: Date.now(),
+      })
+      merged++
+    }
+
+    return { merged, skipped, conflicts }
   },
 })
 

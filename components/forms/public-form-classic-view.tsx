@@ -29,6 +29,7 @@ export function PublicFormClassicView({ controller }: { controller: PublicFormCo
     campusGroupName,
     campYearLabel,
     previewMode,
+    profileLookupEnabled,
     submitting,
     lookupLoading,
     submitted,
@@ -141,6 +142,7 @@ export function PublicFormClassicView({ controller }: { controller: PublicFormCo
               profileName={profileName}
               alreadySubmitted={alreadySubmitted}
               submittedAt={submittedAt}
+              showLookupButton={profileLookupEnabled}
             />
           ) : null}
 

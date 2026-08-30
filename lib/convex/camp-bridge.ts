@@ -630,6 +630,18 @@ export async function fetchCamperDirectoryFromConvex(): Promise<import('@/lib/ty
   })) as import('@/lib/types').CampCamperDirectoryRow[]
 }
 
+export async function mergeCampDirectoryContactsInConvex(args: {
+  canonicalPhone: string
+  registrationIds: string[]
+}): Promise<{ merged: number; skipped: number; conflicts: Array<{ registration_id: string; reason: string }> }> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.camp.mergeCampDirectoryContactsWithSecret, {
+    secret: requireCampAdminSecret(),
+    canonical_phone: args.canonicalPhone,
+    registration_ids: args.registrationIds,
+  })) as { merged: number; skipped: number; conflicts: Array<{ registration_id: string; reason: string }> }
+}
+
 export function convexActivityDocToCampActivity(
   doc: Record<string, unknown> | null | undefined
 ): import('@/lib/types').CampActivity | null {

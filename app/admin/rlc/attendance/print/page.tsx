@@ -12,6 +12,7 @@ import {
 import { RLC_NAME } from '@/lib/constants/rlc'
 import {
   buildAttendanceRoster,
+  splitAttendanceRoster,
   type RlcAttendanceRosterRow,
 } from '@/lib/rlc/attendance-roster'
 import {
@@ -66,6 +67,8 @@ function PrintContent() {
     [attendance, members, visitors, serviceSelection]
   )
 
+  const { present, absentNoted } = useMemo(() => splitAttendanceRoster(roster), [roster])
+
   useEffect(() => {
     if (!loading && roster.length >= 0) {
       const timer = setTimeout(() => window.print(), 400)
@@ -106,7 +109,8 @@ function PrintContent() {
           <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">{RLC_NAME}</p>
           <h1 className="mt-1 text-2xl font-semibold">Service attendance record</h1>
           <p className="mt-2 text-sm text-slate-600">
-            {serviceLabel} · {serviceDate} · {roster.length} present
+            {serviceLabel} · {serviceDate} · {present.length} present
+            {absentNoted.length > 0 ? ` · ${absentNoted.length} absent (noted)` : ''}
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Printed {new Date().toLocaleString()} · Official check-in evidence
@@ -114,36 +118,73 @@ function PrintContent() {
         </header>
 
         {roster.length === 0 ? (
-          <p className="mt-8 text-sm text-slate-600">No check-ins recorded for this service.</p>
+          <p className="mt-8 text-sm text-slate-600">No attendance records for this service.</p>
         ) : (
-          <table className="mt-6 w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="py-2 pr-2">#</th>
-                <th className="py-2 pr-2">Name</th>
-                <th className="py-2 pr-2">Type</th>
-                <th className="py-2 pr-2">Phone / code</th>
-                <th className="py-2">Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {roster.map((row: RlcAttendanceRosterRow, index) => (
-                <tr key={row.attendance.id} className="border-b border-slate-100">
-                  <td className="py-2 pr-2 tabular-nums text-slate-500">{index + 1}</td>
-                  <td className="py-2 pr-2 font-medium">{row.name}</td>
-                  <td className="py-2 pr-2 capitalize">{row.kind}</td>
-                  <td className="py-2 pr-2 text-slate-600">
-                    {[row.phone, row.code, row.membershipId].filter(Boolean).join(' · ') || '—'}
-                  </td>
-                  <td className="py-2 tabular-nums text-slate-600">
-                    {row.attendance.check_in_time
-                      ? new Date(row.attendance.check_in_time).toLocaleTimeString()
-                      : '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <>
+            {present.length > 0 ? (
+              <>
+                <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-emerald-800">
+                  Present ({present.length})
+                </h2>
+                <table className="mt-3 w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
+                      <th className="py-2 pr-2">#</th>
+                      <th className="py-2 pr-2">Name</th>
+                      <th className="py-2 pr-2">Type</th>
+                      <th className="py-2 pr-2">Phone / code</th>
+                      <th className="py-2">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {present.map((row: RlcAttendanceRosterRow, index) => (
+                      <tr key={row.attendance.id} className="border-b border-slate-100">
+                        <td className="py-2 pr-2 tabular-nums text-slate-500">{index + 1}</td>
+                        <td className="py-2 pr-2 font-medium">{row.name}</td>
+                        <td className="py-2 pr-2 capitalize">{row.kind}</td>
+                        <td className="py-2 pr-2 text-slate-600">
+                          {[row.phone, row.code, row.membershipId].filter(Boolean).join(' · ') || '—'}
+                        </td>
+                        <td className="py-2 tabular-nums text-slate-600">
+                          {row.attendance.check_in_time
+                            ? new Date(row.attendance.check_in_time).toLocaleTimeString()
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+
+            {absentNoted.length > 0 ? (
+              <>
+                <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-amber-800">
+                  Absent with note ({absentNoted.length})
+                </h2>
+                <table className="mt-3 w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
+                      <th className="py-2 pr-2">#</th>
+                      <th className="py-2 pr-2">Name</th>
+                      <th className="py-2 pr-2">Type</th>
+                      <th className="py-2">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {absentNoted.map((row: RlcAttendanceRosterRow, index) => (
+                      <tr key={row.attendance.id} className="border-b border-slate-100">
+                        <td className="py-2 pr-2 tabular-nums text-slate-500">{index + 1}</td>
+                        <td className="py-2 pr-2 font-medium">{row.name}</td>
+                        <td className="py-2 pr-2 capitalize">{row.kind}</td>
+                        <td className="py-2 text-slate-600">{row.attendance.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+          </>
         )}
 
         <footer className="mt-10 grid gap-6 border-t border-slate-300 pt-6 text-sm sm:grid-cols-2">

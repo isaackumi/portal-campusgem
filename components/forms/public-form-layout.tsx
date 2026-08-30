@@ -141,6 +141,7 @@ type PhoneLookupProps = {
   profileName: string | null
   alreadySubmitted: boolean
   submittedAt: string | null
+  showLookupButton?: boolean
 }
 
 export function PublicFormPhoneLookup({
@@ -154,6 +155,7 @@ export function PublicFormPhoneLookup({
   profileName,
   alreadySubmitted,
   submittedAt,
+  showLookupButton = true,
 }: PhoneLookupProps) {
   const theme = usePublicFormTheme()
 
@@ -175,22 +177,24 @@ export function PublicFormPhoneLookup({
           onChange={(event) => onChange(event.target.value)}
           placeholder="054 123 4567"
         />
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 shrink-0 border-slate-300 px-5"
-          onClick={onLookup}
-          disabled={lookupLoading}
-        >
-          {lookupLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Searching…
-            </>
-          ) : (
-            'Find my details'
-          )}
-        </Button>
+        {showLookupButton ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 shrink-0 border-slate-300 px-5"
+            onClick={onLookup}
+            disabled={lookupLoading}
+          >
+            {lookupLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Searching…
+              </>
+            ) : (
+              'Find my details'
+            )}
+          </Button>
+        ) : null}
       </div>
 
       {profileName ? (
