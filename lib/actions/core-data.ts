@@ -36,7 +36,7 @@ function matchesMemberSearch(member: Member, user: AppUser | undefined, search: 
   )
 }
 
-async function attachUsersToMembers(members: Member[]): Promise<Member[]> {
+export async function attachUsersToMembers(members: Member[]): Promise<Member[]> {
   if (members.length === 0) return members
   const { fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
   const userIds = Array.from(new Set(members.map((m) => m.user_id).filter(Boolean)))

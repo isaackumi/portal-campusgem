@@ -537,6 +537,9 @@ export async function updateRlcMemberAction(args: {
 
 export async function loadRlcAttendanceAction(args?: {
   serviceDate?: string
+  fromDate?: string
+  toDate?: string
+  limit?: number
 }): Promise<ApiResponse<Attendance[]>> {
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }

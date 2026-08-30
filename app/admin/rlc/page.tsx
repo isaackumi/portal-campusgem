@@ -19,6 +19,7 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import {
   BarChart3,
   Calendar,
+  Cake,
   Church,
   Printer,
   QrCode,
@@ -249,6 +250,7 @@ export default function RlcDashboardPage() {
           { href: '/admin/rlc/members', icon: Users, title: 'Members', desc: 'Church member records' },
           { href: '/admin/rlc/roster', icon: Church, title: 'Ministry roster', desc: 'Ushers, choir, protocol' },
           { href: '/admin/rlc/attendance', icon: Calendar, title: 'Attendance', desc: 'Name / phone check-in + print' },
+          { href: '/admin/rlc/birthdays', icon: Cake, title: 'Birthdays', desc: 'Upcoming member & visitor birthdays' },
           { href: '/admin/rlc/scan', icon: QrCode, title: 'Optional QR scan', desc: 'Camera only when needed' },
           { href: '/admin/rlc/visitors/print', icon: Printer, title: 'Welcome slips', desc: 'Print visitor QR cards' },
           { href: '/admin/rlc/analytics', icon: BarChart3, title: 'Analytics', desc: 'Conversion & sources' },

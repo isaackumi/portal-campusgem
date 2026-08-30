@@ -34,6 +34,7 @@ import {
 } from '@/lib/rlc/service-selection'
 import type { Attendance, Member, RlcCustomService, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
+import { RlcAttendanceCalendarView } from '@/components/rlc/rlc-attendance-calendar-view'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { RlcServiceSelect } from '@/components/rlc/rlc-service-select'
 import { Badge } from '@/components/ui/badge'
@@ -53,7 +54,17 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { CheckCircle, Download, Pencil, Printer, QrCode, Search, UserCheck, UserX } from 'lucide-react'
+import {
+  CalendarDays,
+  CheckCircle,
+  Download,
+  Pencil,
+  Printer,
+  QrCode,
+  Search,
+  UserCheck,
+  UserX,
+} from 'lucide-react'
 
 function RosterRow({
   row,
@@ -133,6 +144,7 @@ export default function RlcAttendancePage() {
   const [editRow, setEditRow] = useState<RlcAttendanceRosterRow | null>(null)
   const [editNote, setEditNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [pageView, setPageView] = useState<'register' | 'calendar'>('register')
 
   const reload = useCallback(async () => {
     const [a, m, v, custom] = await Promise.all([
@@ -310,33 +322,66 @@ export default function RlcAttendancePage() {
     )
   }
 
+  function openSessionFromCalendar(date: string, selection: RlcServiceSelection) {
+    setServiceDate(date)
+    setServiceSelection(selection)
+    setPageView('register')
+  }
+
   return (
     <PageContainer className="space-y-6">
       <RlcPageHeader
         title="RLC Attendance"
-        subtitle="Check in present members and visitors, or mark someone absent with an optional note. Anyone not checked in is implicitly absent."
+        subtitle={
+          pageView === 'calendar'
+            ? 'Browse attendance by month. Each colored marker is a service session — click a day for details or open the register.'
+            : 'Check in present members and visitors, or mark someone absent with an optional note. Anyone not checked in is implicitly absent.'
+        }
         actions={
-          <>
-            <Button variant="outline" asChild>
-              <Link href={printHref} target="_blank">
-                <Printer className="mr-2 h-4 w-4" />
-                Print
-              </Link>
-            </Button>
-            <Button variant="outline" onClick={handleDownloadCsv} disabled={roster.length === 0}>
-              <Download className="mr-2 h-4 w-4" />
-              Download CSV
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/admin/rlc/scan">
-                <QrCode className="mr-2 h-4 w-4" />
-                Optional QR scan
-              </Link>
-            </Button>
-          </>
+          pageView === 'register' ? (
+            <>
+              <Button variant="outline" asChild>
+                <Link href={printHref} target="_blank">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print
+                </Link>
+              </Button>
+              <Button variant="outline" onClick={handleDownloadCsv} disabled={roster.length === 0}>
+                <Download className="mr-2 h-4 w-4" />
+                Download CSV
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/admin/rlc/scan">
+                  <QrCode className="mr-2 h-4 w-4" />
+                  Optional QR scan
+                </Link>
+              </Button>
+            </>
+          ) : null
         }
       />
 
+      <Tabs
+        value={pageView}
+        onValueChange={(value) => setPageView(value as 'register' | 'calendar')}
+        className="space-y-6"
+      >
+        <ScrollableTabsList>
+          <TabsTrigger value="register">
+            <UserCheck className="mr-2 h-4 w-4 shrink-0" />
+            Register
+          </TabsTrigger>
+          <TabsTrigger value="calendar">
+            <CalendarDays className="mr-2 h-4 w-4 shrink-0" />
+            Calendar
+          </TabsTrigger>
+        </ScrollableTabsList>
+
+        <TabsContent value="calendar">
+          <RlcAttendanceCalendarView onOpenSession={openSessionFromCalendar} />
+        </TabsContent>
+
+        <TabsContent value="register" className="space-y-6">
       <Card className="border-rose-100/80">
         <CardHeader>
           <CardTitle>Service</CardTitle>
@@ -579,6 +624,8 @@ export default function RlcAttendancePage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+      </Tabs>
         </TabsContent>
       </Tabs>
 

@@ -557,12 +557,16 @@ export async function resolveRlcScanFromConvex(scanned: string): Promise<{
 
 export async function listRlcAttendanceFromConvex(args?: {
   serviceDate?: string
+  fromDate?: string
+  toDate?: string
   limit?: number
 }): Promise<Attendance[]> {
   const client = getConvexHttpClient()
   const docs = (await client.query(api.rlc.listRlcAttendanceWithSecret, {
     secret: requireCoreServerSecret(),
     service_date: args?.serviceDate,
+    from_date: args?.fromDate,
+    to_date: args?.toDate,
     limit: args?.limit,
   })) as Record<string, unknown>[]
   const { convexAttendanceDocToAttendance } = await import('@/lib/convex/core-bridge')

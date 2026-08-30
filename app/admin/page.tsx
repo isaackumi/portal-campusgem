@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Briefcase, Building2, Calendar, Church, ClipboardList, Group, Shield, Users } from 'lucide-react'
+import { Briefcase, Building2, Calendar, Church, ClipboardList, Cake, Group, Shield, Users } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const adminSections = [
@@ -40,6 +40,12 @@ const adminSections = [
     title: 'Forms Hub',
     description: 'Build outreach forms, publish links, and review responses centrally.',
     icon: ClipboardList,
+  },
+  {
+    href: '/admin/birthdays',
+    title: 'Birthdays',
+    description: 'Upcoming Campus Gem member birthdays — today, this week, or browse by month.',
+    icon: Cake,
   },
   {
     href: '/admin/users',

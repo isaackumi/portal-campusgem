@@ -1170,6 +1170,8 @@ export const listRlcAttendanceWithSecret = query({
   args: {
     secret: v.string(),
     service_date: v.optional(v.string()),
+    from_date: v.optional(v.string()),
+    to_date: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
   returns: v.array(v.any()),
@@ -1185,6 +1187,20 @@ export const listRlcAttendanceWithSecret = query({
         )
         .collect()
       return rows.slice(0, lim)
+    }
+
+    const fromDate = args.from_date?.trim()
+    const toDate = args.to_date?.trim()
+
+    if (fromDate && toDate) {
+      const all = await ctx.db.query('attendance').order('desc').take(lim * 4)
+      return all
+        .filter((row) => {
+          if (row.congregation !== 'rlc' && row.congregation) return false
+          const date = String(row.service_date ?? '')
+          return date >= fromDate && date <= toDate
+        })
+        .slice(0, lim)
     }
 
     const all = await ctx.db.query('attendance').order('desc').take(lim * 2)
