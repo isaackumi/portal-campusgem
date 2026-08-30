@@ -1,6 +1,7 @@
 import { RLC_SERVICES } from '@/lib/constants/rlc'
 import type { AgeRange, Attendance, Member, Visitor } from '@/lib/types'
 import { isChildAgeRange, resolveAgeRange } from '@/lib/rlc/age'
+import { phoneLast9 } from '@/lib/rlc/camp-bridge'
 import {
   attendanceMatchesService,
   type RlcServiceSelection,
@@ -58,6 +59,43 @@ export function visitorToAttendancePerson(visitor: Visitor): RlcAttendancePerson
   }
 }
 
+function attendancePersonKind(row: Attendance): 'member' | 'visitor' | 'unknown' {
+  const meta = (row.metadata ?? {}) as { person_kind?: string }
+  if (row.visitor_id || meta.person_kind === 'visitor') return 'visitor'
+  if (row.member_id) return 'member'
+  return 'unknown'
+}
+
+function activeVisitorPhoneIndex(visitors: Visitor[]): Map<string, Visitor> {
+  const byPhone = new Map<string, Visitor>()
+  for (const visitor of visitors) {
+    if (visitor.converted_to_member || visitor.is_active === false) continue
+    const key = phoneLast9(visitor.phone ?? visitor.secondary_phone)
+    if (key && !byPhone.has(key)) byPhone.set(key, visitor)
+  }
+  return byPhone
+}
+
+/** Visitors stay on the check-in list and are not hidden behind a matching directory member. */
+export function buildAttendancePeople(members: Member[], visitors: Visitor[]): RlcAttendancePerson[] {
+  const visitorPhones = activeVisitorPhoneIndex(visitors)
+  const visitorPeople = visitors
+    .filter((visitor) => visitor.converted_to_member !== true && visitor.is_active !== false)
+    .map(visitorToAttendancePerson)
+  const memberPeople = members
+    .filter((member) => {
+      const key = phoneLast9(member.user?.phone)
+      if (key && visitorPhones.has(key)) return false
+      return true
+    })
+    .map(memberToAttendancePerson)
+
+  return [...visitorPeople, ...memberPeople].sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === 'visitor' ? -1 : 1
+    return a.name.localeCompare(b.name)
+  })
+}
+
 export function personSearchHaystack(person: RlcAttendancePerson): string {
   return [person.name, person.phone, person.code, person.membershipId]
     .filter(Boolean)
@@ -94,12 +132,40 @@ export function buildAttendanceRoster(
 ): RlcAttendanceRosterRow[] {
   const memberById = new Map(members.map((m) => [m.id, m]))
   const visitorById = new Map(visitors.map((v) => [v.id, v]))
+  const visitorsByPhone = activeVisitorPhoneIndex(visitors)
 
   return attendance
     .filter((row) => attendanceMatchesService(row, selection))
     .map((row) => {
+      const storedKind = attendancePersonKind(row)
+      const visitorFromId = row.visitor_id ? visitorById.get(row.visitor_id) : undefined
+      const member = row.member_id ? memberById.get(row.member_id) : undefined
+      const visitorFromPhone = member
+        ? visitorsByPhone.get(phoneLast9(member.user?.phone))
+        : undefined
+      const visitor = visitorFromId ?? (storedKind === 'visitor' ? visitorFromPhone : undefined) ?? visitorFromPhone
+      const treatAsVisitor = Boolean(visitorFromId || storedKind === 'visitor' || visitorFromPhone)
+
+      if (treatAsVisitor) {
+        const person = visitor ? visitorToAttendancePerson(visitor) : null
+        return {
+          attendance: row,
+          name:
+            person?.name ??
+            (row.visitor_id ? `Visitor ${row.visitor_id.slice(-6)}` : member?.user?.full_name ?? 'Visitor'),
+          kind: 'visitor' as const,
+          phone: person?.phone ?? member?.user?.phone,
+          code: person?.code ?? member?.check_in_code,
+          gender: visitor?.gender ?? member?.gender ?? row.gender,
+          ageRange:
+            resolveAgeRange({
+              age_range: visitor?.age_range ?? member?.age_range,
+              dob: visitor?.date_of_birth ?? member?.dob,
+            }) ?? (row.age_category === 'child' ? '0_12' : undefined),
+        }
+      }
+
       if (row.member_id) {
-        const member = memberById.get(row.member_id)
         const person = member ? memberToAttendancePerson(member) : null
         return {
           attendance: row,
@@ -109,28 +175,14 @@ export function buildAttendanceRoster(
           code: person?.code,
           membershipId: person?.membershipId,
           gender: member?.gender ?? row.gender,
-          ageRange: resolveAgeRange({
-            age_range: member?.age_range,
-            dob: member?.dob,
-          }) ?? (row.age_category === 'child' ? '0_12' : undefined),
+          ageRange:
+            resolveAgeRange({
+              age_range: member?.age_range,
+              dob: member?.dob,
+            }) ?? (row.age_category === 'child' ? '0_12' : undefined),
         }
       }
-      if (row.visitor_id) {
-        const visitor = visitorById.get(row.visitor_id)
-        const person = visitor ? visitorToAttendancePerson(visitor) : null
-        return {
-          attendance: row,
-          name: person?.name ?? `Visitor ${row.visitor_id.slice(-6)}`,
-          kind: 'visitor' as const,
-          phone: person?.phone,
-          code: person?.code,
-          gender: visitor?.gender ?? row.gender,
-          ageRange: resolveAgeRange({
-            age_range: visitor?.age_range,
-            dob: visitor?.date_of_birth,
-          }) ?? (row.age_category === 'child' ? '0_12' : undefined),
-        }
-      }
+
       return {
         attendance: row,
         name: 'Unknown',
@@ -139,7 +191,10 @@ export function buildAttendanceRoster(
         ageRange: row.age_category === 'child' ? '0_12' : undefined,
       }
     })
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'visitor' ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
 }
 
 export function splitAttendanceRoster(rows: RlcAttendanceRosterRow[]): {

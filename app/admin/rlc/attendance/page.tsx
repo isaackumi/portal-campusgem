@@ -16,14 +16,13 @@ import {
 import { RLC_NAME } from '@/lib/constants/rlc'
 import {
   attendanceRosterToCsv,
+  buildAttendancePeople,
   buildAttendanceRoster,
   downloadAttendanceCsv,
   filterAttendancePeople,
-  memberToAttendancePerson,
   sessionCheckedKeys,
   splitAttendanceRoster,
   summarizeAttendancePresent,
-  visitorToAttendancePerson,
   type RlcAttendancePerson,
   type RlcAttendanceRosterRow,
 } from '@/lib/rlc/attendance-roster'
@@ -89,11 +88,24 @@ function RosterRow({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-medium">{row.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {row.kind === 'member' ? 'Member' : row.kind === 'visitor' ? 'Visitor' : 'Unknown'}
-            {row.phone ? ` · ${row.phone}` : ''}
-            {row.code ? ` · ${row.code}` : ''}
-          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+            <Badge
+              variant="outline"
+              className={
+                row.kind === 'visitor'
+                  ? 'border-sky-200 bg-sky-50 text-sky-800'
+                  : row.kind === 'member'
+                    ? 'border-rose-200 bg-rose-50 text-rose-800'
+                    : ''
+              }
+            >
+              {row.kind === 'member' ? 'Member' : row.kind === 'visitor' ? 'Visitor' : 'Unknown'}
+            </Badge>
+            {row.phone ? (
+              <span className="text-xs text-muted-foreground">{row.phone}</span>
+            ) : null}
+            {row.code ? <span className="text-xs text-muted-foreground">{row.code}</span> : null}
+          </div>
         </div>
         {variant === 'present' ? (
           <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
@@ -195,13 +207,10 @@ export default function RlcAttendancePage() {
     [attendance, serviceSelection]
   )
 
-  const people = useMemo(() => {
-    const list: RlcAttendancePerson[] = [
-      ...members.map(memberToAttendancePerson),
-      ...visitors.map(visitorToAttendancePerson),
-    ]
-    return list.sort((a, b) => a.name.localeCompare(b.name))
-  }, [members, visitors])
+  const people = useMemo(
+    () => buildAttendancePeople(members, visitors),
+    [members, visitors]
+  )
 
   const searchHits = useMemo(
     () => filterAttendancePeople(people, query, checkedKeys),
@@ -220,6 +229,14 @@ export default function RlcAttendancePage() {
 
   const { present, absentNoted } = useMemo(() => splitAttendanceRoster(roster), [roster])
   const summary = useMemo(() => summarizeAttendancePresent(present), [present])
+  const presentVisitors = useMemo(
+    () => present.filter((row) => row.kind === 'visitor'),
+    [present]
+  )
+  const presentMembers = useMemo(
+    () => present.filter((row) => row.kind !== 'visitor'),
+    [present]
+  )
 
   const implicitAbsentCount = Math.max(people.length - present.length - absentNoted.length, 0)
 
@@ -259,8 +276,8 @@ export default function RlcAttendancePage() {
     setRecordingKey(person.key)
     const recordArgs = recordArgsFromSelection(serviceSelection)
     const { data, error } = await recordRlcAttendanceAction({
-      memberId: person.memberId,
-      visitorId: person.visitorId,
+      memberId: person.kind === 'member' ? person.memberId : undefined,
+      visitorId: person.kind === 'visitor' ? person.visitorId : undefined,
       serviceDate,
       ...recordArgs,
       method: 'admin',
@@ -285,8 +302,8 @@ export default function RlcAttendancePage() {
     setRecordingKey(absentTarget.key)
     const recordArgs = recordArgsFromSelection(serviceSelection)
     const { data, error } = await recordRlcAttendanceAction({
-      memberId: absentTarget.memberId,
-      visitorId: absentTarget.visitorId,
+      memberId: absentTarget.kind === 'member' ? absentTarget.memberId : undefined,
+      visitorId: absentTarget.kind === 'visitor' ? absentTarget.visitorId : undefined,
       serviceDate,
       ...recordArgs,
       method: 'admin',
@@ -587,7 +604,13 @@ export default function RlcAttendancePage() {
                       <div className="min-w-0">
                         <p className="truncate font-medium">{person.name}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {person.kind === 'member' ? 'Member' : 'Visitor'}
+                          <span
+                            className={
+                              person.kind === 'visitor' ? 'font-medium text-sky-800' : 'text-rose-800'
+                            }
+                          >
+                            {person.kind === 'visitor' ? 'Visitor' : 'Member'}
+                          </span>
                           {person.phone ? ` · ${person.phone}` : ''}
                           {person.code ? ` · ${person.code}` : ''}
                         </p>
@@ -614,7 +637,8 @@ export default function RlcAttendancePage() {
                     Present · {serviceLabel}
                   </CardTitle>
                   <CardDescription>
-                    {serviceDate} · {present.length} checked in
+                    {serviceDate} · {present.length} checked in · {presentVisitors.length} visitors ·{' '}
+                    {presentMembers.length} members
                   </CardDescription>
                 </div>
                 <Badge variant="secondary">{present.length}</Badge>
@@ -623,20 +647,50 @@ export default function RlcAttendancePage() {
                 {present.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No check-ins for this service yet.</p>
                 ) : (
-                  present.map((row) => (
-                    <RosterRow
-                      key={row.attendance.id}
-                      row={row}
-                      variant="present"
-                      removingId={removingId}
-                      onEditNote={(target) => {
-                        setEditRow(target)
-                        setEditNote(target.attendance.notes ?? '')
-                        setEditStatus('present')
-                      }}
-                      onRemove={setRemoveRow}
-                    />
-                  ))
+                  <>
+                    {presentVisitors.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">
+                          Visitors ({presentVisitors.length})
+                        </p>
+                        {presentVisitors.map((row) => (
+                          <RosterRow
+                            key={row.attendance.id}
+                            row={row}
+                            variant="present"
+                            removingId={removingId}
+                            onEditNote={(target) => {
+                              setEditRow(target)
+                              setEditNote(target.attendance.notes ?? '')
+                              setEditStatus('present')
+                            }}
+                            onRemove={setRemoveRow}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                    {presentMembers.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">
+                          Members ({presentMembers.length})
+                        </p>
+                        {presentMembers.map((row) => (
+                          <RosterRow
+                            key={row.attendance.id}
+                            row={row}
+                            variant="present"
+                            removingId={removingId}
+                            onEditNote={(target) => {
+                              setEditRow(target)
+                              setEditNote(target.attendance.notes ?? '')
+                              setEditStatus('present')
+                            }}
+                            onRemove={setRemoveRow}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -684,7 +738,9 @@ export default function RlcAttendancePage() {
                       <div className="min-w-0">
                         <p className="truncate font-medium">{person.name}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {person.kind === 'member' ? 'Member' : 'Visitor'}
+                          <span className="font-medium text-sky-800">
+                            {person.kind === 'visitor' ? 'Visitor' : 'Member'}
+                          </span>
                           {person.phone ? ` · ${person.phone}` : ''}
                         </p>
                       </div>

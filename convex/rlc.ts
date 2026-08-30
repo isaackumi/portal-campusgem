@@ -1530,14 +1530,17 @@ export const recordRlcAttendanceWithSecret = mutation({
     }
 
     const id = await ctx.db.insert('attendance', {
-      member_id: args.member_id,
+      member_id: args.visitor_id ? undefined : args.member_id,
       visitor_id: args.visitor_id,
       congregation: 'rlc',
       service_date: args.service_date,
       service_type: serviceTypeValue,
       check_in_time: args.check_in_time,
       method: args.method,
-      metadata,
+      metadata: {
+        ...metadata,
+        person_kind: args.visitor_id ? 'visitor' : 'member',
+      },
       created_by: args.created_by,
       checked_in_by: args.created_by,
       status: targetStatus,

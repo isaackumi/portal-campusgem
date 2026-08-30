@@ -132,10 +132,10 @@ function PrintContent() {
           <p className="mt-8 text-sm text-slate-600">No attendance records for this service.</p>
         ) : (
           <>
-            {present.length > 0 ? (
+            {present.filter((row) => row.kind === 'visitor').length > 0 ? (
               <>
-                <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-emerald-800">
-                  Present ({present.length})
+                <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-sky-800">
+                  Present visitors ({present.filter((row) => row.kind === 'visitor').length})
                 </h2>
                 <table className="mt-3 w-full border-collapse text-sm">
                   <thead>
@@ -148,11 +148,51 @@ function PrintContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {present.map((row: RlcAttendanceRosterRow, index) => (
+                    {present
+                      .filter((row) => row.kind === 'visitor')
+                      .map((row: RlcAttendanceRosterRow, index) => (
                       <tr key={row.attendance.id} className="border-b border-slate-100">
                         <td className="py-2 pr-2 tabular-nums text-slate-500">{index + 1}</td>
                         <td className="py-2 pr-2 font-medium">{row.name}</td>
-                        <td className="py-2 pr-2 capitalize">{row.kind}</td>
+                        <td className="py-2 pr-2 font-semibold text-sky-800">Visitor</td>
+                        <td className="py-2 pr-2 text-slate-600">
+                          {[row.phone, row.code, row.membershipId].filter(Boolean).join(' · ') || '—'}
+                        </td>
+                        <td className="py-2 tabular-nums text-slate-600">
+                          {row.attendance.check_in_time
+                            ? new Date(row.attendance.check_in_time).toLocaleTimeString()
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+
+            {present.filter((row) => row.kind !== 'visitor').length > 0 ? (
+              <>
+                <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-emerald-800">
+                  Present members ({present.filter((row) => row.kind !== 'visitor').length})
+                </h2>
+                <table className="mt-3 w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
+                      <th className="py-2 pr-2">#</th>
+                      <th className="py-2 pr-2">Name</th>
+                      <th className="py-2 pr-2">Type</th>
+                      <th className="py-2 pr-2">Phone / code</th>
+                      <th className="py-2">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {present
+                      .filter((row) => row.kind !== 'visitor')
+                      .map((row: RlcAttendanceRosterRow, index) => (
+                      <tr key={row.attendance.id} className="border-b border-slate-100">
+                        <td className="py-2 pr-2 tabular-nums text-slate-500">{index + 1}</td>
+                        <td className="py-2 pr-2 font-medium">{row.name}</td>
+                        <td className="py-2 pr-2 capitalize">{row.kind === 'member' ? 'Member' : row.kind}</td>
                         <td className="py-2 pr-2 text-slate-600">
                           {[row.phone, row.code, row.membershipId].filter(Boolean).join(' · ') || '—'}
                         </td>
@@ -187,7 +227,9 @@ function PrintContent() {
                       <tr key={row.attendance.id} className="border-b border-slate-100">
                         <td className="py-2 pr-2 tabular-nums text-slate-500">{index + 1}</td>
                         <td className="py-2 pr-2 font-medium">{row.name}</td>
-                        <td className="py-2 pr-2 capitalize">{row.kind}</td>
+                        <td className="py-2 pr-2 font-semibold capitalize">
+                          {row.kind === 'visitor' ? 'Visitor' : row.kind === 'member' ? 'Member' : row.kind}
+                        </td>
                         <td className="py-2 text-slate-600">{row.attendance.notes || '—'}</td>
                       </tr>
                     ))}

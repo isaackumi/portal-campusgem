@@ -14,8 +14,8 @@ import {
   resolveRlcScanAction,
 } from '@/lib/actions/rlc'
 import {
+  buildAttendancePeople,
   filterAttendancePeople,
-  memberToAttendancePerson,
   sessionCheckedKeys,
   visitorToAttendancePerson,
   type RlcAttendancePerson,
@@ -108,12 +108,7 @@ export default function RlcScanPage() {
     [attendance, serviceSelection]
   )
 
-  const people = useMemo(() => {
-    return [
-      ...members.map(memberToAttendancePerson),
-      ...visitors.map(visitorToAttendancePerson),
-    ].sort((a, b) => a.name.localeCompare(b.name))
-  }, [members, visitors])
+  const people = useMemo(() => buildAttendancePeople(members, visitors), [members, visitors])
 
   const searchHits = useMemo(
     () => filterAttendancePeople(people, query, checkedKeys),
@@ -148,8 +143,8 @@ export default function RlcScanPage() {
     setRecordingKey(person.key)
     const recordArgs = recordArgsFromSelection(serviceSelection)
     const { data, error } = await recordRlcAttendanceAction({
-      memberId: person.memberId,
-      visitorId: person.visitorId,
+      memberId: person.kind === 'member' ? person.memberId : undefined,
+      visitorId: person.kind === 'visitor' ? person.visitorId : undefined,
       serviceDate,
       ...recordArgs,
       method,

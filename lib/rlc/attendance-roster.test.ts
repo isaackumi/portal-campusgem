@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import {
   attendanceRosterToCsv,
+  buildAttendancePeople,
+  buildAttendanceRoster,
   filterAttendancePeople,
   sessionCheckedKeys,
   splitAttendanceRoster,
@@ -8,7 +10,7 @@ import {
   type RlcAttendancePerson,
 } from '@/lib/rlc/attendance-roster'
 import { defaultRlcServiceSelection, type RlcServiceSelection } from '@/lib/rlc/service-selection'
-import type { Attendance } from '@/lib/types'
+import type { Attendance, Member, Visitor } from '@/lib/types'
 
 describe('rlc attendance roster helpers', () => {
   const people: RlcAttendancePerson[] = [
@@ -197,5 +199,58 @@ describe('rlc attendance roster helpers', () => {
     expect(csv).toContain('# RLC attendance evidence')
     expect(csv).toContain('Ama Mensah')
     expect(csv).toContain('Sunday Service')
+  })
+
+  test('keeps visitors on the check-in list and labels them visitor even with a matching member phone', () => {
+    const visitors = [
+      {
+        id: 'v1',
+        first_name: 'Kofi',
+        last_name: 'Boateng',
+        phone: '0244123456',
+        visit_date: '2026-08-24',
+        follow_up_completed: false,
+        converted_to_member: false,
+        is_active: true,
+        created_at: '',
+        updated_at: '',
+      },
+    ] as Visitor[]
+    const members = [
+      {
+        id: 'm1',
+        user_id: 'u1',
+        status: 'active',
+        emergency_contacts: [],
+        documents: [],
+        created_at: '',
+        updated_at: '',
+        user: { id: 'u1', membership_id: 'CG1', full_name: 'Kofi Boateng', phone: '0244123456', role: 'member' },
+      },
+    ] as Member[]
+
+    const people = buildAttendancePeople(members, visitors)
+    expect(people.map((p) => p.kind)).toEqual(['visitor'])
+    expect(people[0]?.visitorId).toBe('v1')
+
+    const roster = buildAttendanceRoster(
+      [
+        {
+          id: 'a1',
+          service_date: '2026-08-24',
+          service_type: 'sunday_service',
+          member_id: 'm1',
+          check_in_time: '2026-08-24T09:00:00.000Z',
+          method: 'admin',
+          metadata: {},
+          created_at: '2026-08-24T09:00:00.000Z',
+        },
+      ] as Attendance[],
+      members,
+      visitors,
+      { kind: 'standard', serviceType: 'sunday_service' }
+    )
+    expect(roster[0]?.kind).toBe('visitor')
+    expect(roster[0]?.name).toContain('Kofi')
   })
 })
