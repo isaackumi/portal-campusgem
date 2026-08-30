@@ -285,8 +285,10 @@ class DataService {
       }
     }
     return this.fetchPaginatedData(async () => {
-      const { loadVisitorsAction } = await import('@/lib/actions/core-data')
-      let rows = await loadVisitorsAction()
+      const { loadRlcVisitorsAction } = await import('@/lib/actions/rlc')
+      const { data: visitors, error } = await loadRlcVisitorsAction({ include_inactive: true })
+      if (error) throw new Error(error)
+      let rows = visitors ?? []
       if (search?.trim()) {
         const s = search.toLowerCase()
         rows = rows.filter(
@@ -297,8 +299,8 @@ class DataService {
         )
       }
       const total = rows.length
-      const data = rows.slice((page - 1) * limit, page * limit)
-      return { data, error: null, count: total }
+      const pageRows = rows.slice((page - 1) * limit, page * limit)
+      return { data: pageRows, error: null, count: total }
     }, page, limit, 'getVisitors')
   }
 

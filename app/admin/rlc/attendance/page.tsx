@@ -22,6 +22,7 @@ import {
   memberToAttendancePerson,
   sessionCheckedKeys,
   splitAttendanceRoster,
+  summarizeAttendancePresent,
   visitorToAttendancePerson,
   type RlcAttendancePerson,
   type RlcAttendanceRosterRow,
@@ -156,6 +157,7 @@ export default function RlcAttendancePage() {
   const [absentQuery, setAbsentQuery] = useState('')
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [members, setMembers] = useState<Member[]>([])
+  const [allVisitors, setAllVisitors] = useState<Visitor[]>([])
   const [visitors, setVisitors] = useState<Visitor[]>([])
   const [loading, setLoading] = useState(true)
   const [recordingKey, setRecordingKey] = useState<string | null>(null)
@@ -173,11 +175,12 @@ export default function RlcAttendancePage() {
     const [a, m, v, custom] = await Promise.all([
       loadRlcAttendanceAction({ serviceDate }),
       loadRlcMembersAction(),
-      loadRlcVisitorsAction(),
+      loadRlcVisitorsAction({ include_inactive: true }),
       loadRlcCustomServicesAction(),
     ])
     setAttendance(a.data ?? [])
     setMembers(m.data ?? [])
+    setAllVisitors(v.data ?? [])
     setVisitors((v.data ?? []).filter((x) => x.is_active !== false && !x.converted_to_member))
     setCustomServices(custom.data ?? [])
     setLoading(false)
@@ -211,11 +214,12 @@ export default function RlcAttendancePage() {
   )
 
   const roster = useMemo(
-    () => buildAttendanceRoster(attendance, members, visitors, serviceSelection),
-    [attendance, members, visitors, serviceSelection]
+    () => buildAttendanceRoster(attendance, members, allVisitors, serviceSelection),
+    [attendance, members, allVisitors, serviceSelection]
   )
 
   const { present, absentNoted } = useMemo(() => splitAttendanceRoster(roster), [roster])
+  const summary = useMemo(() => summarizeAttendancePresent(present), [present])
 
   const implicitAbsentCount = Math.max(people.length - present.length - absentNoted.length, 0)
 
@@ -450,7 +454,7 @@ export default function RlcAttendancePage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-emerald-700">{present.length}</p>
+            <p className="text-2xl font-bold text-emerald-700">{summary.present}</p>
             <p className="text-sm text-muted-foreground">Present (checked in)</p>
           </CardContent>
         </Card>
@@ -467,6 +471,68 @@ export default function RlcAttendancePage() {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-2xl font-bold">{summary.members}</p>
+            <p className="text-sm text-muted-foreground">Members present</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-2xl font-bold">{summary.visitors}</p>
+            <p className="text-sm text-muted-foreground">Visitors present</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-2xl font-bold">{summary.male}</p>
+            <p className="text-sm text-muted-foreground">Males</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-2xl font-bold">{summary.female}</p>
+            <p className="text-sm text-muted-foreground">Females</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-teal-100">
+          <CardContent className="pt-6">
+            <p className="text-2xl font-bold text-teal-800">{summary.children}</p>
+            <p className="text-sm text-muted-foreground">Children (0–12)</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-2xl font-bold">{summary.teens}</p>
+            <p className="text-sm text-muted-foreground">Teens (13–17)</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-2xl font-bold">{summary.youngAdults + summary.adults + summary.seniors}</p>
+            <p className="text-sm text-muted-foreground">Adults (18+)</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-2xl font-bold text-slate-500">{summary.genderUnspecified}</p>
+            <p className="text-sm text-muted-foreground">Gender not specified</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Age missing: {summary.ageUnspecified}
+              {summary.otherGender > 0 ? ` · Other gender: ${summary.otherGender}` : ''}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Gender and age come from member/visitor profiles. Existing records can be updated later so
+        these counts fill in.
+      </p>
 
       <Tabs defaultValue="check-in" className="space-y-4">
         <ScrollableTabsList>

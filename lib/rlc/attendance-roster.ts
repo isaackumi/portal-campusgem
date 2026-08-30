@@ -1,5 +1,6 @@
 import { RLC_SERVICES } from '@/lib/constants/rlc'
-import type { Attendance, Member, Visitor } from '@/lib/types'
+import type { AgeRange, Attendance, Member, Visitor } from '@/lib/types'
+import { isChildAgeRange, resolveAgeRange } from '@/lib/rlc/age'
 import {
   attendanceMatchesService,
   type RlcServiceSelection,
@@ -23,6 +24,8 @@ export type RlcAttendanceRosterRow = {
   phone?: string
   code?: string
   membershipId?: string
+  gender?: 'male' | 'female' | 'other'
+  ageRange?: AgeRange
 }
 
 export function rlcServiceLabel(serviceType?: string, customName?: string): string {
@@ -105,6 +108,11 @@ export function buildAttendanceRoster(
           phone: person?.phone,
           code: person?.code,
           membershipId: person?.membershipId,
+          gender: member?.gender ?? row.gender,
+          ageRange: resolveAgeRange({
+            age_range: member?.age_range,
+            dob: member?.dob,
+          }) ?? (row.age_category === 'child' ? '0_12' : undefined),
         }
       }
       if (row.visitor_id) {
@@ -116,12 +124,19 @@ export function buildAttendanceRoster(
           kind: 'visitor' as const,
           phone: person?.phone,
           code: person?.code,
+          gender: visitor?.gender ?? row.gender,
+          ageRange: resolveAgeRange({
+            age_range: visitor?.age_range,
+            dob: visitor?.date_of_birth,
+          }) ?? (row.age_category === 'child' ? '0_12' : undefined),
         }
       }
       return {
         attendance: row,
         name: 'Unknown',
         kind: 'unknown' as const,
+        gender: row.gender,
+        ageRange: row.age_category === 'child' ? '0_12' : undefined,
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -143,6 +158,59 @@ export function splitAttendanceRoster(rows: RlcAttendanceRosterRow[]): {
   return { present, absentNoted }
 }
 
+export type AttendanceSummaryStats = {
+  present: number
+  members: number
+  visitors: number
+  male: number
+  female: number
+  otherGender: number
+  genderUnspecified: number
+  children: number
+  teens: number
+  youngAdults: number
+  adults: number
+  seniors: number
+  ageUnspecified: number
+}
+
+export function summarizeAttendancePresent(present: RlcAttendanceRosterRow[]): AttendanceSummaryStats {
+  const stats: AttendanceSummaryStats = {
+    present: present.length,
+    members: 0,
+    visitors: 0,
+    male: 0,
+    female: 0,
+    otherGender: 0,
+    genderUnspecified: 0,
+    children: 0,
+    teens: 0,
+    youngAdults: 0,
+    adults: 0,
+    seniors: 0,
+    ageUnspecified: 0,
+  }
+
+  for (const row of present) {
+    if (row.kind === 'member') stats.members += 1
+    else if (row.kind === 'visitor') stats.visitors += 1
+
+    if (row.gender === 'male') stats.male += 1
+    else if (row.gender === 'female') stats.female += 1
+    else if (row.gender === 'other') stats.otherGender += 1
+    else stats.genderUnspecified += 1
+
+    if (!row.ageRange) stats.ageUnspecified += 1
+    else if (isChildAgeRange(row.ageRange)) stats.children += 1
+    else if (row.ageRange === '13_17') stats.teens += 1
+    else if (row.ageRange === '18_35') stats.youngAdults += 1
+    else if (row.ageRange === '36_59') stats.adults += 1
+    else stats.seniors += 1
+  }
+
+  return stats
+}
+
 export function attendanceStatusLabel(status?: Attendance['status']): string {
   if (status === 'absent') return 'Absent (noted)'
   if (status === 'late') return 'Late'
@@ -158,6 +226,8 @@ export function attendanceRosterToCsv(
     'Name',
     'Type',
     'Status',
+    'Gender',
+    'Age range',
     'Note',
     'Phone',
     'Check-in code',
@@ -179,6 +249,8 @@ export function attendanceRosterToCsv(
         escape(row.name),
         row.kind,
         escape(attendanceStatusLabel(row.attendance.status)),
+        row.gender ?? '',
+        row.ageRange ?? '',
         escape(row.attendance.notes ?? ''),
         escape(row.phone ?? ''),
         escape(row.code ?? ''),

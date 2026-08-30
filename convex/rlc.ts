@@ -37,6 +37,13 @@ const visitorSource = v.union(
 const congregation = v.union(v.literal('rlc'), v.literal('campus_gem'))
 
 const gender = v.union(v.literal('male'), v.literal('female'), v.literal('other'))
+const ageRange = v.union(
+  v.literal('0_12'),
+  v.literal('13_17'),
+  v.literal('18_35'),
+  v.literal('36_59'),
+  v.literal('60_plus')
+)
 
 const maritalStatus = v.union(
   v.literal('single'),
@@ -180,6 +187,7 @@ const visitorInputFields = {
   source_camp_registration_id: v.optional(v.string()),
   gender: v.optional(gender),
   date_of_birth: v.optional(v.string()),
+  age_range: v.optional(ageRange),
   occupation: v.optional(v.string()),
   marital_status: v.optional(maritalStatus),
   spouse_name: v.optional(v.string()),
@@ -300,6 +308,7 @@ export const createRlcVisitorWithSecret = mutation({
       source_camp_registration_id: args.source_camp_registration_id,
       gender: args.gender,
       date_of_birth: args.date_of_birth,
+      age_range: args.age_range,
       occupation: args.occupation,
       marital_status: args.marital_status,
       spouse_name: args.spouse_name?.trim() || undefined,
@@ -377,6 +386,7 @@ export const updateRlcVisitorWithSecret = mutation({
       follow_up_date: args.follow_up_date,
       gender: args.gender,
       date_of_birth: args.date_of_birth,
+      age_range: args.age_range,
       occupation: args.occupation,
       marital_status: args.marital_status,
       spouse_name: args.spouse_name?.trim() || undefined,
@@ -597,7 +607,8 @@ export const convertRlcVisitorToMemberWithSecret = mutation({
       auth_uid: `rlc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       join_year: new Date().getFullYear(),
       occupation: args.occupation ?? visitor.occupation,
-      place_of_work: args.place_of_work,
+      place_of_work: args.place_of_work ?? visitor.place_of_work,
+      whatsapp: visitor.whatsapp,
       marital_status: args.marital_status ?? visitor.marital_status,
       spouse_name: args.spouse_name,
       emergency_contact_name: args.emergency_contact_name,
@@ -621,6 +632,7 @@ export const convertRlcVisitorToMemberWithSecret = mutation({
       user_id: String(userId),
       dob: args.dob ?? visitor.date_of_birth,
       gender: args.gender ?? visitor.gender,
+      age_range: visitor.age_range,
       address: args.address ?? visitor.address,
       emergency_contacts:
         args.emergency_contact_name && args.emergency_contact_phone
@@ -645,6 +657,7 @@ export const convertRlcVisitorToMemberWithSecret = mutation({
       is_visitor: false,
       visitor_since: visitor.visit_date,
       visitor_converted_to_member: true,
+      rlc_roles: mergeRlcRoles(member?.rlc_roles, ['member']),
       congregation: 'rlc' as const,
       rlc_membership_type: args.rlc_membership_type ?? 'visitor_converted',
       source_visitor_id: args.visitor_id,
@@ -915,6 +928,7 @@ export const createRlcMemberWithSecret = mutation({
     area_of_residence: v.optional(v.string()),
     gender: v.optional(gender),
     dob: v.optional(v.string()),
+    age_range: v.optional(ageRange),
     marital_status: v.optional(maritalStatus),
     spouse_name: v.optional(v.string()),
     children_count: v.optional(v.number()),
@@ -1004,6 +1018,7 @@ export const createRlcMemberWithSecret = mutation({
           user_id: String(existingUser._id),
           dob: args.dob || undefined,
           gender: args.gender,
+          age_range: args.age_range,
           address: args.address?.trim() || undefined,
           hometown: args.hometown?.trim() || undefined,
           area_of_residence: args.area_of_residence?.trim() || undefined,
@@ -1031,6 +1046,7 @@ export const createRlcMemberWithSecret = mutation({
           inferRlcMembershipType(mergedRoles, member.rlc_membership_type),
         dob: args.dob || member.dob,
         gender: args.gender ?? member.gender,
+        age_range: args.age_range ?? member.age_range,
         address: args.address?.trim() || member.address,
         hometown: args.hometown?.trim() || member.hometown,
         area_of_residence: args.area_of_residence?.trim() || member.area_of_residence,
@@ -1076,6 +1092,7 @@ export const createRlcMemberWithSecret = mutation({
       user_id: String(userId),
       dob: args.dob || undefined,
       gender: args.gender,
+      age_range: args.age_range,
       address: args.address?.trim() || undefined,
       hometown: args.hometown?.trim() || undefined,
       area_of_residence: args.area_of_residence?.trim() || undefined,

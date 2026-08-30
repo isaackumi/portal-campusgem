@@ -52,7 +52,7 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
     items: [
       { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { name: 'Members', href: '/members', icon: Users },
-      { name: 'Visitors', href: '/visitors', icon: UserPlus },
+      { name: 'Visitors', href: '/admin/rlc/visitors', icon: UserPlus, permission: 'rlc.view' },
       { name: 'Groups', href: '/groups', icon: Group },
       { name: 'Recommendations', href: '/recommendations', icon: Gift },
     ],

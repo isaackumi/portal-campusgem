@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { deleteRlcVisitorAction } from '@/lib/actions/rlc'
 import type { Visitor } from '@/lib/types'
+import { ConvertVisitorToMemberDialog } from '@/components/rlc/convert-visitor-to-member-dialog'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -15,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
-import { Archive, Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Archive, Edit, Eye, MoreHorizontal, Trash2, UserCheck } from 'lucide-react'
 
 type Props = {
   visitor: Visitor
@@ -27,6 +28,7 @@ export function RlcVisitorRowActions({ visitor, onDeleted }: Props) {
   const { user } = useAuth()
   const { toast } = useToast()
   const [busy, setBusy] = useState(false)
+  const [convertOpen, setConvertOpen] = useState(false)
 
   const name = [visitor.first_name, visitor.last_name].filter(Boolean).join(' ')
 
@@ -65,7 +67,18 @@ export function RlcVisitorRowActions({ visitor, onDeleted }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1">
+      {!visitor.converted_to_member ? (
+        <Button
+          size="sm"
+          className="bg-rose-700 hover:bg-rose-800"
+          disabled={busy}
+          onClick={() => setConvertOpen(true)}
+        >
+          <UserCheck className="mr-2 h-4 w-4" />
+          Add as member
+        </Button>
+      ) : null}
       <Button variant="outline" size="sm" asChild disabled={busy}>
         <Link href={`/admin/rlc/visitors/${visitor.id}`}>
           <Eye className="mr-2 h-4 w-4" />
@@ -83,6 +96,12 @@ export function RlcVisitorRowActions({ visitor, onDeleted }: Props) {
             <Edit className="mr-2 h-4 w-4" />
             Edit record
           </DropdownMenuItem>
+          {!visitor.converted_to_member ? (
+            <DropdownMenuItem onClick={() => setConvertOpen(true)}>
+              <UserCheck className="mr-2 h-4 w-4" />
+              Import as member
+            </DropdownMenuItem>
+          ) : null}
           {visitor.is_active !== false ? (
             <DropdownMenuItem onClick={archive}>
               <Archive className="mr-2 h-4 w-4" />
@@ -96,6 +115,12 @@ export function RlcVisitorRowActions({ visitor, onDeleted }: Props) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ConvertVisitorToMemberDialog
+        open={convertOpen}
+        onOpenChange={setConvertOpen}
+        visitor={visitor}
+        onSuccess={() => onDeleted?.()}
+      />
     </div>
   )
 }

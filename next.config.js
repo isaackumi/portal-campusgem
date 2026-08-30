@@ -40,8 +40,18 @@ const nextConfig = {
       },
       // Redirect trailing slash routes to non-trailing slash
       {
+        source: '/visitors',
+        destination: '/admin/rlc/visitors',
+        permanent: false,
+      },
+      {
+        source: '/visitors/add',
+        destination: '/admin/rlc/visitors/add',
+        permanent: false,
+      },
+      {
         source: '/visitors/',
-        destination: '/visitors',
+        destination: '/admin/rlc/visitors',
         permanent: true,
       },
       {

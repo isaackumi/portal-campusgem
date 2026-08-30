@@ -1,4 +1,5 @@
 import type {
+  AgeRange,
   RlcMembershipType,
   RlcPipelineStatus,
   RlcVisitorSource,
@@ -83,6 +84,16 @@ export const RLC_SOURCE_LABELS: Record<RlcVisitorSource, string> = {
   corporate_gem: 'Corporate Gem',
   referral: 'Referral',
   other: 'Other',
+}
+
+export const RLC_AGE_RANGES: AgeRange[] = ['0_12', '13_17', '18_35', '36_59', '60_plus']
+
+export const RLC_AGE_RANGE_LABELS: Record<AgeRange, string> = {
+  '0_12': 'Child (0–12)',
+  '13_17': 'Teen (13–17)',
+  '18_35': 'Young adult (18–35)',
+  '36_59': 'Adult (36–59)',
+  '60_plus': 'Senior (60+)',
 }
 
 export const RLC_MEMBERSHIP_TYPES: RlcMembershipType[] = [

@@ -8,6 +8,7 @@ import { formatMembershipIdForDisplay } from '@/lib/membershipId'
 import type { Member } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
 import { AddMemberToRlcPanel } from '@/components/rlc/add-member-to-rlc-panel'
+import { ImportVisitorToMemberPanel } from '@/components/rlc/import-visitor-to-member-panel'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { RlcPublicVisitShare } from '@/components/rlc/rlc-public-visit-share'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
-import { Upload, Pencil, UserPlus } from 'lucide-react'
+import { Upload, Pencil, UserPlus, Users } from 'lucide-react'
 
 export default function RlcMembersPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -65,6 +66,18 @@ export default function RlcMembersPage() {
               </Link>
             </Button>
             <Button variant="outline" className="w-full sm:w-auto" asChild>
+              <a href="#import-visitors">
+                <Users className="mr-2 h-4 w-4" />
+                Import from visitors
+              </a>
+            </Button>
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
+              <Link href="/admin/rlc/import?tab=camp-bulk">
+                <Upload className="mr-2 h-4 w-4" />
+                Bulk from Camp
+              </Link>
+            </Button>
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
               <Link href="/admin/rlc/import">
                 <Upload className="mr-2 h-4 w-4" />
                 Import from Campus Gem
@@ -75,6 +88,8 @@ export default function RlcMembersPage() {
       />
 
       <RlcPublicVisitShare kind="join" className="mb-6" />
+
+      <ImportVisitorToMemberPanel onImported={reload} />
 
       <AddMemberToRlcPanel onAdded={reload} />
 

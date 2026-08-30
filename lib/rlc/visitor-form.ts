@@ -41,6 +41,7 @@ export function visitorToForm(visitor: Visitor): CreateVisitorForm {
     source: visitor.source,
     gender: visitor.gender,
     date_of_birth: visitor.date_of_birth,
+    age_range: visitor.age_range,
     occupation: visitor.occupation,
     marital_status: visitor.marital_status,
     spouse_name: visitor.spouse_name,

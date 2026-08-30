@@ -16,6 +16,7 @@ import { Tabs, ScrollableTabsList, TabsContent, TabsTrigger } from '@/components
 import { useToast } from '@/hooks/use-toast'
 import { Search, UserPlus, Upload, Users } from 'lucide-react'
 import { RlcCampBulkImportPanel } from '@/components/rlc/rlc-camp-bulk-import-panel'
+import { ImportVisitorToMemberPanel } from '@/components/rlc/import-visitor-to-member-panel'
 
 function RlcImportContent() {
   const { user } = useAuth()
@@ -45,7 +46,7 @@ function RlcImportContent() {
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab === 'camp-bulk') setPageTab('camp-bulk')
+    if (tab === 'camp-bulk' || tab === 'visitors-bulk') setPageTab(tab)
   }, [searchParams])
 
   useEffect(() => {
@@ -117,6 +118,10 @@ function RlcImportContent() {
           <TabsTrigger value="camp-bulk">
             <Upload className="mr-2 h-4 w-4 shrink-0" />
             Bulk from Camp
+          </TabsTrigger>
+          <TabsTrigger value="visitors-bulk">
+            <Users className="mr-2 h-4 w-4 shrink-0" />
+            Bulk from Visitors
           </TabsTrigger>
         </ScrollableTabsList>
 
@@ -199,6 +204,10 @@ function RlcImportContent() {
 
         <TabsContent value="camp-bulk">
           <RlcCampBulkImportPanel />
+        </TabsContent>
+
+        <TabsContent value="visitors-bulk">
+          <ImportVisitorToMemberPanel />
         </TabsContent>
       </Tabs>
     </PageContainer>

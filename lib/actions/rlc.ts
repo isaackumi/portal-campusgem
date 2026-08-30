@@ -8,6 +8,7 @@ import type {
   Member,
   RlcImportSearchResult,
   RlcInteraction,
+  RlcMembershipType,
   RlcStats,
   Visitor,
   VisitorFollowUpStatus,
@@ -212,6 +213,75 @@ export async function addRlcInteractionAction(args: {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to log interaction',
+      loading: false,
+    }
+  }
+}
+
+export type BulkConvertVisitorsResult = {
+  imported: number
+  skipped: number
+  failed: Array<{ visitor_id: string; name: string; error: string }>
+}
+
+export async function bulkConvertRlcVisitorsToMembersAction(args: {
+  visitorIds: string[]
+  performedBy: string
+  rlcMembershipType?: RlcMembershipType
+}): Promise<ApiResponse<BulkConvertVisitorsResult>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+
+  const uniqueIds = Array.from(new Set(args.visitorIds.filter(Boolean)))
+  const result: BulkConvertVisitorsResult = { imported: 0, skipped: 0, failed: [] }
+  if (uniqueIds.length === 0) {
+    return { data: result, error: null, loading: false }
+  }
+
+  try {
+    const { convertRlcVisitorInConvex, listRlcVisitorsFromConvex } = await import(
+      '@/lib/convex/rlc-bridge'
+    )
+    const { visitorToConvertForm } = await import('@/lib/rlc/visitor-convert')
+    const all = await listRlcVisitorsFromConvex({ include_inactive: true })
+    const byId = new Map(all.map((row) => [row.id, row]))
+    const membershipType = args.rlcMembershipType ?? 'full_member'
+
+    for (const visitorId of uniqueIds) {
+      const visitor = byId.get(visitorId)
+      const name = visitor
+        ? [visitor.first_name, visitor.last_name].filter(Boolean).join(' ') || 'Visitor'
+        : 'Visitor'
+
+      if (!visitor) {
+        result.failed.push({ visitor_id: visitorId, name, error: 'Visitor not found' })
+        continue
+      }
+      if (visitor.converted_to_member) {
+        result.skipped += 1
+        continue
+      }
+
+      try {
+        await convertRlcVisitorInConvex(
+          visitorId,
+          visitorToConvertForm(visitor, membershipType),
+          args.performedBy
+        )
+        result.imported += 1
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to convert visitor'
+        if (/already converted/i.test(message)) result.skipped += 1
+        else result.failed.push({ visitor_id: visitorId, name, error: message })
+      }
+    }
+
+    return { data: result, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Bulk import failed',
       loading: false,
     }
   }

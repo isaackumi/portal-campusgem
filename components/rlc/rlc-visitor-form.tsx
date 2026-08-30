@@ -1,13 +1,16 @@
 'use client'
 
 import {
+  RLC_AGE_RANGE_LABELS,
+  RLC_AGE_RANGES,
   RLC_FOLLOW_UP_LABELS,
   RLC_PIPELINE_LABELS,
   RLC_SERVICES,
   RLC_SOURCE_LABELS,
   RLC_VISITOR_SOURCES,
 } from '@/lib/constants/rlc'
-import type { CreateVisitorForm } from '@/lib/types'
+import { ageRangeFromYears, ageYearsFromDob } from '@/lib/rlc/age'
+import type { AgeRange, CreateVisitorForm } from '@/lib/types'
 import { MemberSingleSelect } from '@/components/rlc/member-select'
 import { RlcSponsorMultiSelect } from '@/components/rlc/rlc-sponsor-multi-select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -170,8 +173,38 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
               id="date_of_birth"
               type="date"
               value={form.date_of_birth ?? ''}
-              onChange={(e) => onChange({ ...form, date_of_birth: e.target.value })}
+              onChange={(e) => {
+                const date_of_birth = e.target.value
+                const years = ageYearsFromDob(date_of_birth)
+                onChange({
+                  ...form,
+                  date_of_birth,
+                  age_range: form.age_range ?? (years != null ? ageRangeFromYears(years) : undefined),
+                })
+              }}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Age range</Label>
+            <Select
+              value={form.age_range ?? 'none'}
+              onValueChange={(v) =>
+                onChange({ ...form, age_range: v === 'none' ? undefined : (v as AgeRange) })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select if no date of birth" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Not specified</SelectItem>
+                {RLC_AGE_RANGES.map((range) => (
+                  <SelectItem key={range} value={range}>
+                    {RLC_AGE_RANGE_LABELS[range]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Helps attendance count children even without a birth date.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="occupation">Occupation</Label>

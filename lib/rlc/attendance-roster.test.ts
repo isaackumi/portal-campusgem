@@ -4,6 +4,7 @@ import {
   filterAttendancePeople,
   sessionCheckedKeys,
   splitAttendanceRoster,
+  summarizeAttendancePresent,
   type RlcAttendancePerson,
 } from '@/lib/rlc/attendance-roster'
 import { defaultRlcServiceSelection, type RlcServiceSelection } from '@/lib/rlc/service-selection'
@@ -115,6 +116,60 @@ describe('rlc attendance roster helpers', () => {
     expect(split.present).toHaveLength(1)
     expect(split.absentNoted).toHaveLength(1)
     expect(split.absentNoted[0]?.attendance.notes).toBe('Travelling')
+  })
+
+  test('summarizes gender and children from present rows', () => {
+    const stats = summarizeAttendancePresent([
+      {
+        attendance: {
+          id: 'a1',
+          service_date: '2026-08-24',
+          check_in_time: '2026-08-24T09:00:00.000Z',
+          method: 'admin',
+          metadata: {},
+          created_at: '2026-08-24T09:00:00.000Z',
+        },
+        name: 'Boy',
+        kind: 'visitor',
+        gender: 'male',
+        ageRange: '0_12',
+      },
+      {
+        attendance: {
+          id: 'a2',
+          service_date: '2026-08-24',
+          check_in_time: '2026-08-24T09:00:00.000Z',
+          method: 'admin',
+          metadata: {},
+          created_at: '2026-08-24T09:00:00.000Z',
+        },
+        name: 'Woman',
+        kind: 'member',
+        gender: 'female',
+        ageRange: '36_59',
+      },
+      {
+        attendance: {
+          id: 'a3',
+          service_date: '2026-08-24',
+          check_in_time: '2026-08-24T09:00:00.000Z',
+          method: 'admin',
+          metadata: {},
+          created_at: '2026-08-24T09:00:00.000Z',
+        },
+        name: 'Unknown',
+        kind: 'member',
+      },
+    ])
+    expect(stats.present).toBe(3)
+    expect(stats.male).toBe(1)
+    expect(stats.female).toBe(1)
+    expect(stats.genderUnspecified).toBe(1)
+    expect(stats.children).toBe(1)
+    expect(stats.adults).toBe(1)
+    expect(stats.ageUnspecified).toBe(1)
+    expect(stats.members).toBe(2)
+    expect(stats.visitors).toBe(1)
   })
 
   test('csv includes evidence header and rows', () => {

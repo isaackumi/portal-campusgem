@@ -30,6 +30,7 @@ export function convexMemberDocToMember(doc: Record<string, unknown> | null | un
     user_id: String(doc.user_id ?? ''),
     dob: doc.dob != null ? String(doc.dob) : undefined,
     gender: doc.gender as Member['gender'],
+    age_range: doc.age_range as Member['age_range'],
     address: doc.address != null ? String(doc.address) : undefined,
     emergency_contacts: Array.isArray(doc.emergency_contacts)
       ? (doc.emergency_contacts as Member['emergency_contacts'])

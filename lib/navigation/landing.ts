@@ -102,9 +102,9 @@ export const landingSections: LandingSection[] = [
         accent: 'emerald',
       },
       {
-        href: '/visitors',
+        href: '/admin/rlc/visitors',
         title: 'Visitors',
-        description: 'Track guests and follow-up across ministries.',
+        description: 'RLC guests, follow-up, and membership pipeline.',
         icon: UserPlus,
         accent: 'violet',
       },

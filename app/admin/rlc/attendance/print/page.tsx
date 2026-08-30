@@ -13,6 +13,7 @@ import { RLC_NAME } from '@/lib/constants/rlc'
 import {
   buildAttendanceRoster,
   splitAttendanceRoster,
+  summarizeAttendancePresent,
   type RlcAttendanceRosterRow,
 } from '@/lib/rlc/attendance-roster'
 import {
@@ -41,7 +42,7 @@ function PrintContent() {
     Promise.all([
       loadRlcAttendanceAction({ serviceDate }),
       loadRlcMembersAction(),
-      loadRlcVisitorsAction(),
+      loadRlcVisitorsAction({ include_inactive: true }),
       loadRlcCustomServicesAction(),
     ]).then(([a, m, v, custom]) => {
       setAttendance(a.data ?? [])
@@ -68,6 +69,7 @@ function PrintContent() {
   )
 
   const { present, absentNoted } = useMemo(() => splitAttendanceRoster(roster), [roster])
+  const summary = useMemo(() => summarizeAttendancePresent(present), [present])
 
   useEffect(() => {
     if (!loading && roster.length >= 0) {
@@ -112,6 +114,15 @@ function PrintContent() {
             {serviceLabel} · {serviceDate} · {present.length} present
             {absentNoted.length > 0 ? ` · ${absentNoted.length} absent (noted)` : ''}
           </p>
+          {present.length > 0 ? (
+            <p className="mt-2 text-sm text-slate-700">
+              Members {summary.members} · Visitors {summary.visitors} · Male {summary.male} · Female{' '}
+              {summary.female} · Children (0–12) {summary.children}
+              {summary.genderUnspecified > 0 || summary.ageUnspecified > 0
+                ? ` · Unspecified gender ${summary.genderUnspecified} / age ${summary.ageUnspecified}`
+                : ''}
+            </p>
+          ) : null}
           <p className="mt-1 text-xs text-slate-500">
             Printed {new Date().toLocaleString()} · Official check-in evidence
           </p>

@@ -120,6 +120,15 @@ export default defineSchema({
     hometown: v.optional(v.string()),
     area_of_residence: v.optional(v.string()),
     school_or_workplace: v.optional(v.string()),
+    age_range: v.optional(
+      v.union(
+        v.literal('0_12'),
+        v.literal('13_17'),
+        v.literal('18_35'),
+        v.literal('36_59'),
+        v.literal('60_plus')
+      )
+    ),
     check_in_code: v.optional(v.string()),
     qr_code: v.optional(v.string()),
     updated_at: v.number(),
@@ -246,6 +255,15 @@ export default defineSchema({
     source_camp_registration_id: v.optional(v.string()),
     gender: v.optional(v.union(v.literal('male'), v.literal('female'), v.literal('other'))),
     date_of_birth: v.optional(v.string()),
+    age_range: v.optional(
+      v.union(
+        v.literal('0_12'),
+        v.literal('13_17'),
+        v.literal('18_35'),
+        v.literal('36_59'),
+        v.literal('60_plus')
+      )
+    ),
     occupation: v.optional(v.string()),
     marital_status: v.optional(
       v.union(

@@ -38,6 +38,7 @@ export type RlcRole =
   | 'administration'
 export type AttendanceMethod = 'qr' | 'kiosk' | 'admin' | 'pin' | 'mobile'
 export type ServiceType = 'sunday_service' | 'midweek_service' | 'prayer_meeting' | 'youth_service' | 'children_service' | 'special_event' | 'other'
+export type AgeRange = '0_12' | '13_17' | '18_35' | '36_59' | '60_plus'
 
 export interface AppUser {
   id: string
@@ -95,6 +96,7 @@ export interface Member {
   hometown?: string
   area_of_residence?: string
   school_or_workplace?: string
+  age_range?: AgeRange
   check_in_code?: string
   qr_code?: string
   created_at: string
@@ -215,6 +217,7 @@ export interface Visitor {
   source_camp_registration_id?: string
   gender?: 'male' | 'female' | 'other'
   date_of_birth?: string
+  age_range?: AgeRange
   occupation?: string
   marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
   spouse_name?: string
@@ -664,6 +667,7 @@ export interface CreateVisitorForm {
   source?: RlcVisitorSource
   gender?: 'male' | 'female' | 'other'
   date_of_birth?: string
+  age_range?: AgeRange
   occupation?: string
   marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
   spouse_name?: string
@@ -723,6 +727,7 @@ export interface CreateRlcMemberForm {
   area_of_residence?: string
   gender?: 'male' | 'female' | 'other'
   dob?: string
+  age_range?: AgeRange
   marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
   spouse_name?: string
   children_count?: number

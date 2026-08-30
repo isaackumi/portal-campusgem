@@ -1,7 +1,8 @@
 'use client'
 
-import { RLC_MEMBERSHIP_TYPES, RLC_MEMBERSHIP_TYPE_LABELS, RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
-import type { CreateRlcMemberForm, RlcRole } from '@/lib/types'
+import { RLC_AGE_RANGE_LABELS, RLC_AGE_RANGES, RLC_MEMBERSHIP_TYPES, RLC_MEMBERSHIP_TYPE_LABELS, RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
+import { ageRangeFromYears, ageYearsFromDob } from '@/lib/rlc/age'
+import type { AgeRange, CreateRlcMemberForm, RlcRole } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -34,6 +35,7 @@ export function emptyRlcMemberForm(): CreateRlcMemberForm {
     area_of_residence: '',
     gender: undefined,
     dob: '',
+    age_range: undefined,
     marital_status: undefined,
     spouse_name: '',
     children_count: undefined,
@@ -115,8 +117,35 @@ export function RlcCreateMemberForm({ form, onChange, publicMode }: Props) {
               id="dob"
               type="date"
               value={form.dob ?? ''}
-              onChange={(e) => onChange({ ...form, dob: e.target.value })}
+              onChange={(e) => {
+                const dob = e.target.value
+                const years = ageYearsFromDob(dob)
+                onChange({
+                  ...form,
+                  dob,
+                  age_range: form.age_range ?? (years != null ? ageRangeFromYears(years) : undefined),
+                })
+              }}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Age range</Label>
+            <Select
+              value={form.age_range}
+              onValueChange={(value) => onChange({ ...form, age_range: value as AgeRange })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select if no date of birth" />
+              </SelectTrigger>
+              <SelectContent>
+                {RLC_AGE_RANGES.map((range) => (
+                  <SelectItem key={range} value={range}>
+                    {RLC_AGE_RANGE_LABELS[range]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Used for children vs adult attendance counts.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="marital_status">Marital status</Label>
