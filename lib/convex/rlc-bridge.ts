@@ -607,37 +607,41 @@ export async function createRlcMemberInConvex(
   performedBy: string
 ): Promise<Member> {
   const client = getConvexHttpClient()
+  const blank = (value?: string) => {
+    const trimmed = value?.trim()
+    return trimmed ? trimmed : undefined
+  }
   const whatsapp =
     form.whatsapp_same_as_phone !== false
       ? form.phone
-      : form.whatsapp?.trim() || form.phone
+      : blank(form.whatsapp) || form.phone
   const doc = (await client.mutation(api.rlc.createRlcMemberWithSecret, {
     secret: requireCoreServerSecret(),
     performed_by: performedBy,
-    first_name: form.first_name,
-    middle_name: form.middle_name,
-    last_name: form.last_name,
+    first_name: form.first_name.trim(),
+    middle_name: blank(form.middle_name),
+    last_name: blank(form.last_name),
     phone: form.phone,
-    secondary_phone: form.secondary_phone,
-    whatsapp,
-    email: form.email,
-    occupation: form.occupation,
-    place_of_work: form.place_of_work,
-    school_or_workplace: form.school_or_workplace,
-    address: form.address,
-    hometown: form.hometown,
-    area_of_residence: form.area_of_residence,
+    secondary_phone: blank(form.secondary_phone),
+    whatsapp: blank(whatsapp),
+    email: blank(form.email),
+    occupation: blank(form.occupation),
+    place_of_work: blank(form.place_of_work),
+    school_or_workplace: blank(form.school_or_workplace),
+    address: blank(form.address),
+    hometown: blank(form.hometown),
+    area_of_residence: blank(form.area_of_residence),
     gender: form.gender,
-    dob: form.dob,
+    dob: blank(form.dob),
     marital_status: form.marital_status,
-    spouse_name: form.spouse_name,
+    spouse_name: blank(form.spouse_name),
     children_count: form.children_count,
-    emergency_contact_name: form.emergency_contact_name,
-    emergency_contact_phone: form.emergency_contact_phone,
-    emergency_contact_relation: form.emergency_contact_relation,
-    notes: form.notes,
-    rlc_roles: form.rlc_roles,
-    rlc_membership_type: form.rlc_membership_type,
+    emergency_contact_name: blank(form.emergency_contact_name),
+    emergency_contact_phone: blank(form.emergency_contact_phone),
+    emergency_contact_relation: blank(form.emergency_contact_relation),
+    notes: blank(form.notes),
+    rlc_roles: form.rlc_roles?.length ? form.rlc_roles : ['member'],
+    rlc_membership_type: form.rlc_membership_type ?? 'full_member',
   })) as Record<string, unknown>
   const { convexMemberDocToMember } = await import('@/lib/convex/core-bridge')
   const member = convexMemberDocToMember(doc)

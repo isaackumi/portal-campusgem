@@ -945,16 +945,105 @@ export const createRlcMemberWithSecret = mutation({
       ? normalizeGhanaPhone(args.whatsapp)
       : phone
 
+    let existingUser = null
     for (const candidate of phoneLookupVariants(args.phone)) {
-      const existing = await ctx.db
+      existingUser = await ctx.db
         .query('users')
         .withIndex('by_phone', (q) => q.eq('phone', candidate))
         .first()
-      if (existing) {
-        throw new Error(
-          'This phone number is already registered. Contact the church office if you need help.'
-        )
+      if (existingUser) break
+    }
+
+    const roles = args.rlc_roles?.length ? args.rlc_roles : ['member']
+    const membershipType =
+      args.rlc_membership_type ?? inferRlcMembershipType(roles, 'full_member')
+    const emergencyContacts =
+      args.emergency_contact_name && args.emergency_contact_phone
+        ? [
+            {
+              name: args.emergency_contact_name.trim(),
+              relation: args.emergency_contact_relation?.trim() || 'Emergency',
+              phone: normalizeGhanaPhone(args.emergency_contact_phone),
+            },
+          ]
+        : []
+
+    if (existingUser) {
+      await ctx.db.patch(existingUser._id, {
+        full_name: fullName || existingUser.full_name,
+        first_name: firstName || existingUser.first_name,
+        middle_name: middleName ?? existingUser.middle_name,
+        last_name: lastName ?? existingUser.last_name,
+        secondary_phone: args.secondary_phone
+          ? normalizeGhanaPhone(args.secondary_phone)
+          : existingUser.secondary_phone,
+        whatsapp,
+        email: args.email?.trim() || existingUser.email,
+        occupation: args.occupation?.trim() || existingUser.occupation,
+        place_of_work: args.place_of_work?.trim() || existingUser.place_of_work,
+        marital_status: args.marital_status ?? existingUser.marital_status,
+        spouse_name: args.spouse_name?.trim() || existingUser.spouse_name,
+        children_count: args.children_count ?? existingUser.children_count,
+        emergency_contact_name:
+          args.emergency_contact_name?.trim() || existingUser.emergency_contact_name,
+        emergency_contact_phone: args.emergency_contact_phone
+          ? normalizeGhanaPhone(args.emergency_contact_phone)
+          : existingUser.emergency_contact_phone,
+        emergency_contact_relation:
+          args.emergency_contact_relation?.trim() || existingUser.emergency_contact_relation,
+        updated_at: now,
+      })
+
+      let member = await ctx.db
+        .query('members')
+        .withIndex('by_user_id', (q) => q.eq('user_id', String(existingUser!._id)))
+        .first()
+
+      if (!member) {
+        const memberId = await ctx.db.insert('members', {
+          user_id: String(existingUser._id),
+          dob: args.dob || undefined,
+          gender: args.gender,
+          address: args.address?.trim() || undefined,
+          hometown: args.hometown?.trim() || undefined,
+          area_of_residence: args.area_of_residence?.trim() || undefined,
+          school_or_workplace:
+            args.school_or_workplace?.trim() || args.place_of_work?.trim() || undefined,
+          notes: args.notes?.trim() || undefined,
+          emergency_contacts: emergencyContacts,
+          documents: [],
+          status: 'active',
+          congregation: 'rlc',
+          rlc_roles: roles,
+          rlc_membership_type: membershipType,
+          updated_at: now,
+        })
+        await sealMemberCheckIn(ctx, memberId, fullName)
+        return await ctx.db.get('members', memberId)
       }
+
+      const mergedRoles = mergeRlcRoles(member.rlc_roles, roles)
+      await ctx.db.patch(member._id, {
+        congregation: resolveRlcCongregation(member.congregation),
+        rlc_roles: mergedRoles,
+        rlc_membership_type:
+          args.rlc_membership_type ??
+          inferRlcMembershipType(mergedRoles, member.rlc_membership_type),
+        dob: args.dob || member.dob,
+        gender: args.gender ?? member.gender,
+        address: args.address?.trim() || member.address,
+        hometown: args.hometown?.trim() || member.hometown,
+        area_of_residence: args.area_of_residence?.trim() || member.area_of_residence,
+        school_or_workplace:
+          args.school_or_workplace?.trim() ||
+          args.place_of_work?.trim() ||
+          member.school_or_workplace,
+        notes: args.notes?.trim() || member.notes,
+        emergency_contacts: emergencyContacts.length ? emergencyContacts : member.emergency_contacts,
+        updated_at: now,
+      })
+      await sealMemberCheckIn(ctx, member._id, fullName || existingUser.full_name)
+      return await ctx.db.get('members', member._id)
     }
 
     const userId = await ctx.db.insert('users', {
@@ -982,18 +1071,6 @@ export const createRlcMemberWithSecret = mutation({
       join_year: new Date().getFullYear(),
       updated_at: now,
     })
-
-    const roles = args.rlc_roles?.length ? args.rlc_roles : ['member']
-    const emergencyContacts =
-      args.emergency_contact_name && args.emergency_contact_phone
-        ? [
-            {
-              name: args.emergency_contact_name.trim(),
-              relation: args.emergency_contact_relation?.trim() || 'Emergency',
-              phone: normalizeGhanaPhone(args.emergency_contact_phone),
-            },
-          ]
-        : []
 
     const memberId = await ctx.db.insert('members', {
       user_id: String(userId),

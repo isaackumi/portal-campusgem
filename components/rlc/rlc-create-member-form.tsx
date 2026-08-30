@@ -94,7 +94,7 @@ export function RlcCreateMemberForm({ form, onChange, publicMode }: Props) {
           <div className="space-y-2">
             <Label htmlFor="gender">Gender</Label>
             <Select
-              value={form.gender ?? ''}
+              value={form.gender}
               onValueChange={(value) =>
                 onChange({ ...form, gender: value as CreateRlcMemberForm['gender'] })
               }
@@ -121,7 +121,7 @@ export function RlcCreateMemberForm({ form, onChange, publicMode }: Props) {
           <div className="space-y-2">
             <Label htmlFor="marital_status">Marital status</Label>
             <Select
-              value={form.marital_status ?? ''}
+              value={form.marital_status}
               onValueChange={(value) =>
                 onChange({
                   ...form,
