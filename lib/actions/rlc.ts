@@ -594,7 +594,14 @@ export async function createRlcMemberAction(
   }
   try {
     const { createRlcMemberInConvex } = await import('@/lib/convex/rlc-bridge')
-    const member = await createRlcMemberInConvex(form, performedBy)
+    const member = await createRlcMemberInConvex(
+      {
+        ...form,
+        rlc_roles: form.rlc_roles?.length ? form.rlc_roles : ['member'],
+        rlc_membership_type: form.rlc_membership_type ?? 'full_member',
+      },
+      performedBy
+    )
     const [enriched] = await enrichRlcMembers([member])
     return { data: enriched ?? member, error: null, loading: false }
   } catch (error: unknown) {
@@ -884,6 +891,32 @@ export async function resolveRlcSponsorToMemberAction(
     return { data: null, error: prepared.error ?? 'Could not link sponsor', loading: false }
   }
   return { data: { memberId: prepared.data.memberId }, error: null, loading: false }
+}
+
+export async function registerPublicRlcMemberAction(
+  form: import('@/lib/types').CreateRlcMemberForm
+): Promise<ApiResponse<{ id: string; first_name: string; check_in_code?: string }>> {
+  const { PUBLIC_RLC_MEMBER_PERFORMED_BY } = await import('@/lib/constants/rlc')
+  const result = await createRlcMemberAction(
+    {
+      ...form,
+      rlc_roles: ['member'],
+      rlc_membership_type: 'full_member',
+    },
+    PUBLIC_RLC_MEMBER_PERFORMED_BY
+  )
+  if (result.error || !result.data) {
+    return { data: null, error: result.error ?? 'Registration failed', loading: false }
+  }
+  return {
+    data: {
+      id: result.data.id,
+      first_name: form.first_name.trim(),
+      check_in_code: result.data.check_in_code,
+    },
+    error: null,
+    loading: false,
+  }
 }
 
 export async function registerPublicRlcVisitorAction(

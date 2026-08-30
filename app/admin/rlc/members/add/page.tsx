@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { createRlcMemberAction } from '@/lib/actions/rlc'
 import { emptyRlcMemberForm, RlcCreateMemberForm } from '@/components/rlc/rlc-create-member-form'
+import { RlcPublicVisitShare } from '@/components/rlc/rlc-public-visit-share'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Button } from '@/components/ui/button'
@@ -50,6 +51,8 @@ export default function AddRlcMemberPage() {
         subtitle="Create a full member profile — contact, WhatsApp, work, and ministry roles."
         backHref="/admin/rlc/members"
       />
+
+      <RlcPublicVisitShare kind="join" className="mb-6" />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <RlcCreateMemberForm form={form} onChange={setForm} />

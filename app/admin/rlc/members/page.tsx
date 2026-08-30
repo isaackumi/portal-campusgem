@@ -9,6 +9,7 @@ import type { Member } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
 import { AddMemberToRlcPanel } from '@/components/rlc/add-member-to-rlc-panel'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
+import { RlcPublicVisitShare } from '@/components/rlc/rlc-public-visit-share'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -72,6 +73,8 @@ export default function RlcMembersPage() {
           </>
         }
       />
+
+      <RlcPublicVisitShare kind="join" className="mb-6" />
 
       <AddMemberToRlcPanel onAdded={reload} />
 

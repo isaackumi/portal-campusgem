@@ -951,7 +951,9 @@ export const createRlcMemberWithSecret = mutation({
         .withIndex('by_phone', (q) => q.eq('phone', candidate))
         .first()
       if (existing) {
-        throw new Error('A person with this phone number already exists. Search and add them to RLC instead.')
+        throw new Error(
+          'This phone number is already registered. Contact the church office if you need help.'
+        )
       }
     }
 

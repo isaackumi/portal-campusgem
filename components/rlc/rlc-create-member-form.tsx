@@ -12,6 +12,8 @@ import { Textarea } from '@/components/ui/textarea'
 type Props = {
   form: CreateRlcMemberForm
   onChange: (form: CreateRlcMemberForm) => void
+  /** Public self-join hides staff-only ministry role assignment. Role defaults to member. */
+  publicMode?: boolean
 }
 
 export function emptyRlcMemberForm(): CreateRlcMemberForm {
@@ -44,7 +46,7 @@ export function emptyRlcMemberForm(): CreateRlcMemberForm {
   }
 }
 
-export function RlcCreateMemberForm({ form, onChange }: Props) {
+export function RlcCreateMemberForm({ form, onChange, publicMode }: Props) {
   function toggleRole(role: RlcRole, checked: boolean) {
     const current = form.rlc_roles ?? []
     onChange({
@@ -325,6 +327,7 @@ export function RlcCreateMemberForm({ form, onChange }: Props) {
         </CardContent>
       </Card>
 
+      {!publicMode ? (
       <Card>
         <CardHeader>
           <CardTitle>RLC membership</CardTitle>
@@ -355,11 +358,12 @@ export function RlcCreateMemberForm({ form, onChange }: Props) {
           </div>
           <div className="space-y-2">
             <Label>Ministry roles</Label>
+            <p className="text-xs text-muted-foreground">Default is Member. Add extra roles only if needed.</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {RLC_ROLES.filter((role) => role !== 'visitor').map((role) => (
                 <label key={role} className="flex items-center gap-2 text-sm">
                   <Checkbox
-                    checked={(form.rlc_roles ?? []).includes(role)}
+                    checked={(form.rlc_roles ?? ['member']).includes(role)}
                     onCheckedChange={(checked) => toggleRole(role, checked === true)}
                   />
                   {RLC_ROLE_LABELS[role]}
@@ -369,6 +373,7 @@ export function RlcCreateMemberForm({ form, onChange }: Props) {
           </div>
         </CardContent>
       </Card>
+      ) : null}
     </div>
   )
 }

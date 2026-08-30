@@ -90,6 +90,14 @@ export default function HomePage() {
             >
               <Link href="/rlc/visit">RLC visitor check-in</Link>
             </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="border-slate-600 bg-transparent text-white hover:bg-white/10 hover:text-white"
+            >
+              <Link href="/rlc/join">RLC membership</Link>
+            </Button>
           </div>
         </div>
       </section>

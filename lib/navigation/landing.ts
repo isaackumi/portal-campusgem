@@ -56,6 +56,14 @@ export const landingSections: LandingSection[] = [
         accent: 'sky',
         public: true,
       },
+      {
+        href: '/rlc/join',
+        title: 'RLC membership',
+        description: 'Join Redemption Light Chapel as a member — no staff sign-in required.',
+        icon: UserPlus,
+        accent: 'emerald',
+        public: true,
+      },
     ],
   },
   {

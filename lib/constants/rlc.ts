@@ -11,7 +11,11 @@ export const RLC_SHORT = 'RLC'
 /** Audit id for kiosk / QR public visitor registrations (no signed-in user). */
 export const PUBLIC_RLC_PERFORMED_BY = 'public:rlc-visitor-kiosk'
 
+/** Audit id for public member self-registration. */
+export const PUBLIC_RLC_MEMBER_PERFORMED_BY = 'public:rlc-member-join'
+
 export const RLC_PUBLIC_VISIT_PATH = '/rlc/visit'
+export const RLC_PUBLIC_JOIN_PATH = '/rlc/join'
 
 export function getRlcPublicVisitUrl(origin?: string): string {
   const base =
@@ -20,6 +24,15 @@ export function getRlcPublicVisitUrl(origin?: string): string {
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
     ''
   return `${base}${RLC_PUBLIC_VISIT_PATH}`
+}
+
+export function getRlcPublicJoinUrl(origin?: string): string {
+  const base =
+    origin ??
+    (typeof window !== 'undefined' ? window.location.origin : undefined) ??
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
+    ''
+  return `${base}${RLC_PUBLIC_JOIN_PATH}`
 }
 
 export const RLC_PIPELINE_STATUSES: RlcPipelineStatus[] = [
