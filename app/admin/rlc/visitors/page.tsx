@@ -22,6 +22,7 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UserPlus } from 'lucide-react'
 import { ContactActions } from '@/components/contact/contact-actions'
+import { RlcPublicVisitShare } from '@/components/rlc/rlc-public-visit-share'
 
 export default function RlcVisitorsPage() {
   return (
@@ -101,6 +102,8 @@ function RlcVisitorsContent() {
           </>
         }
       />
+
+      <RlcPublicVisitShare className="mb-6" />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Input placeholder="Search name, phone, email, or check-in code…" value={query} onChange={(e) => setQuery(e.target.value)} />

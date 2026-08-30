@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { canAccessPath, isUserRole } from '@/lib/auth/roles'
 import { CHMS_AUTH_SESSION_COOKIE } from '@/lib/auth/session-cookie'
+import { RLC_PUBLIC_VISIT_PATH } from '@/lib/constants/rlc'
 
 const publicRoutes = ['/', '/auth', '/camp-meeting/register', '/camp-meeting/success', '/f', '/rlc/visit']
+
+/** Staff-only admin form; guests without a session use the public self-registration page. */
+const RLC_ADMIN_VISITOR_ADD_PATH = '/admin/rlc/visitors/add'
 
 const protectedPrefixes = [
   '/dashboard',
@@ -33,9 +37,13 @@ export function middleware(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   )
   const isProtectedRoute = protectedPrefixes.some((prefix) => pathname.startsWith(prefix))
+  const hasAuthToken = request.cookies.has(CHMS_AUTH_SESSION_COOKIE)
+
+  if (pathname === RLC_ADMIN_VISITOR_ADD_PATH && !hasAuthToken) {
+    return NextResponse.redirect(new URL(RLC_PUBLIC_VISIT_PATH, request.url))
+  }
 
   if (isProtectedRoute) {
-    const hasAuthToken = request.cookies.has(CHMS_AUTH_SESSION_COOKIE)
     if (!hasAuthToken) {
       const redirectUrl = new URL('/auth', request.url)
       redirectUrl.searchParams.set('redirect', pathname)

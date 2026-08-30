@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers'
 import { createRlcVisitorAction } from '@/lib/actions/rlc'
 import { serviceSelectValueToLabel } from '@/lib/rlc/visitor-form'
 import type { CreateVisitorForm } from '@/lib/types'
+import { RlcPublicVisitShare } from '@/components/rlc/rlc-public-visit-share'
 import { RlcVisitorForm } from '@/components/rlc/rlc-visitor-form'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
@@ -69,9 +70,11 @@ export default function AddRlcVisitorPage() {
     <PageContainer size="sm">
       <RlcPageHeader
         title="Register RLC Visitor"
-        subtitle="Capture complete visitor details for follow-up and conversion."
+        subtitle="Staff registration with follow-up assignment. For guests, share the public link below."
         backHref="/admin/rlc/visitors"
       />
+
+      <RlcPublicVisitShare className="mb-6" />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <RlcVisitorForm form={form} onChange={setForm} />
