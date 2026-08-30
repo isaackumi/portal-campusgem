@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmailService } from '@/lib/services/email-service'
+import { sendSms } from '@/lib/comms/sms-client'
 import { getCampCommunications, recordCampCommunication } from '@/lib/actions/camp'
 import { CampRegistration, CampCommunication } from '@/lib/types'
 import { useCampRegistrations } from '@/lib/hooks/use-camp'
@@ -218,6 +219,8 @@ export default function BulkCommunicationsPage() {
                             continue
                         }
 
+                        const smsResult = await sendSms(registration.phone, personalizedMessage)
+
                         const logged = await recordCampCommunication({
                             camp_year_id: campYear.id,
                             communication_type: 'sms',
@@ -226,8 +229,10 @@ export default function BulkCommunicationsPage() {
                             recipient_registration_id: registration.id,
                             recipient_phone: registration.phone,
                             message_body: personalizedMessage,
-                            status: 'sent',
-                            sent_at: new Date().toISOString(),
+                            status: smsResult.success ? 'sent' : 'failed',
+                            provider_message_id: smsResult.messageId,
+                            error_message: smsResult.error,
+                            sent_at: smsResult.success ? new Date().toISOString() : undefined,
                         })
 
                         if (logged.error) {

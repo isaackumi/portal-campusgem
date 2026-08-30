@@ -10,6 +10,7 @@
 
 import type * as attendance from "../attendance.js";
 import type * as camp from "../camp.js";
+import type * as comms from "../comms.js";
 import type * as core from "../core.js";
 import type * as forms from "../forms.js";
 import type * as groups from "../groups.js";
@@ -38,6 +39,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   attendance: typeof attendance;
   camp: typeof camp;
+  comms: typeof comms;
   core: typeof core;
   forms: typeof forms;
   groups: typeof groups;

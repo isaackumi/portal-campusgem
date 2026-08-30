@@ -1036,6 +1036,29 @@ export const logCampCommunicationWithSecret = mutation({
       delivered_at: args.delivered_at,
       updated_at: now,
     })
+
+    await ctx.db.insert('communications', {
+      module: 'camp',
+      channel: args.communication_type,
+      audience_type: args.recipient_type === 'bulk' ? 'bulk' : 'individual',
+      sender_id: args.sender_id,
+      recipient_name: args.recipient_email ?? args.recipient_phone,
+      recipient_email: args.recipient_email,
+      recipient_phone: args.recipient_phone,
+      recipient_entity_type: args.recipient_registration_id ? 'registration' : undefined,
+      recipient_entity_id: args.recipient_registration_id,
+      subject: args.subject,
+      message_body: args.message_body,
+      filter_criteria: args.filter_criteria,
+      status: args.status,
+      provider_message_id: args.provider_message_id,
+      error_message: args.error_message,
+      metadata: { ...(args.metadata ?? {}), camp_year_id: args.camp_year_id, camp_communication_id: id },
+      sent_at: args.sent_at ?? now,
+      delivered_at: args.delivered_at,
+      updated_at: now,
+    })
+
     return await ctx.db.get('camp_communications', id)
   },
 })

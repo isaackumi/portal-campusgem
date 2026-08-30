@@ -540,4 +540,46 @@ export default defineSchema({
   })
     .index('by_camp_year', ['camp_year_id'])
     .index('by_recipient_registration', ['recipient_registration_id']),
+
+  /** Unified outbound message log — Campus Gem, RLC, and Camp. */
+  communications: defineTable({
+    module: v.union(v.literal('church'), v.literal('rlc'), v.literal('camp')),
+    channel: v.union(v.literal('email'), v.literal('sms')),
+    audience_type: v.union(v.literal('individual'), v.literal('group'), v.literal('bulk')),
+    sender_id: v.optional(v.string()),
+    batch_id: v.optional(v.string()),
+    recipient_name: v.optional(v.string()),
+    recipient_email: v.optional(v.string()),
+    recipient_phone: v.optional(v.string()),
+    recipient_entity_type: v.optional(
+      v.union(
+        v.literal('member'),
+        v.literal('visitor'),
+        v.literal('registration'),
+        v.literal('group'),
+        v.literal('manual')
+      )
+    ),
+    recipient_entity_id: v.optional(v.string()),
+    subject: v.optional(v.string()),
+    message_body: v.string(),
+    filter_criteria: v.optional(v.any()),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('sent'),
+      v.literal('delivered'),
+      v.literal('failed'),
+      v.literal('bounced')
+    ),
+    provider_message_id: v.optional(v.string()),
+    error_message: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    sent_at: v.optional(v.number()),
+    delivered_at: v.optional(v.number()),
+    updated_at: v.number(),
+  })
+    .index('by_module', ['module'])
+    .index('by_batch', ['batch_id'])
+    .index('by_channel', ['channel'])
+    .index('by_status', ['status']),
 })

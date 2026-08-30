@@ -136,6 +136,7 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/admin/groups', permission: 'groups.manage' },
   { prefix: '/admin/campus-activities', permission: 'groups.manage' },
   { prefix: '/admin/corporate-gem', permission: 'groups.manage' },
+  { prefix: '/admin/communications', permission: 'sms.send' },
   { prefix: '/admin/camp-meeting/years', permission: 'camp.settings' },
   { prefix: '/admin/camp-meeting/notifications', permission: 'camp.settings' },
   { prefix: '/admin/camp-meeting/payments', permission: 'camp.payments' },

@@ -160,6 +160,12 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         permission: 'rlc.manage',
       },
       {
+        name: 'Communications',
+        href: '/admin/communications',
+        icon: MessageSquare,
+        permission: 'rlc.manage',
+      },
+      {
         name: 'Attendance',
         href: '/admin/rlc/attendance',
         icon: Calendar,
@@ -223,19 +229,19 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
   {
     title: 'Communications',
     items: [
-      { name: 'SMS', href: '/sms', icon: MessageSquare },
-      { name: 'Celebrations', href: '/celebrations', icon: Cake },
       {
-        name: 'Email',
-        href: '/communication/email',
-        icon: Mail,
-        roles: ['admin', 'pastor', 'elder', 'finance_officer'],
+        name: 'Comms center',
+        href: '/admin/communications',
+        icon: MessageSquare,
+        permission: 'sms.send',
       },
+      { name: 'SMS (legacy)', href: '/sms', icon: MessageSquare, permission: 'sms.send' },
+      { name: 'Celebrations', href: '/celebrations', icon: Cake, permission: 'celebrations.view' },
       {
-        name: 'Notifications',
-        href: '/communication/notifications',
-        icon: Bell,
-        roles: ['admin', 'pastor', 'elder', 'finance_officer'],
+        name: 'Camp bulk',
+        href: '/admin/camp-meeting/communications',
+        icon: Mail,
+        permission: 'camp.manage',
       },
     ],
   },
