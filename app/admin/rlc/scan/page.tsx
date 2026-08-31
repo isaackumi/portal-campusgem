@@ -16,6 +16,7 @@ import {
 import {
   buildAttendancePeople,
   filterAttendancePeople,
+  memberToAttendancePerson,
   sessionCheckedKeys,
   visitorToAttendancePerson,
   type RlcAttendancePerson,

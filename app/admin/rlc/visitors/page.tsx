@@ -22,7 +22,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LoadingSpinner } from '@/components/ui/loading'
+import { ErrorDisplay } from '@/components/ui/error-display'
+import { LoadingCard } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Download, UserPlus, Users } from 'lucide-react'
 import { ContactActions } from '@/components/contact/contact-actions'
@@ -44,6 +45,7 @@ function RlcVisitorsContent() {
   const pipelineParam = searchParams.get('pipeline') as RlcPipelineStatus | null
   const [visitors, setVisitors] = useState<Visitor[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [pipelineFilter, setPipelineFilter] = useState<string>(pipelineParam ?? 'all')
   const [statusFilter, setStatusFilter] = useState<string>('active')
@@ -52,19 +54,52 @@ function RlcVisitorsContent() {
   const [importing, setImporting] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     const includeInactive = statusFilter === 'archived' || statusFilter === 'all'
-    loadRlcVisitorsAction({ include_inactive: includeInactive }).then(({ data }) => {
-      setVisitors(data ?? [])
-      setLoading(false)
-      setSelectedIds(new Set())
-    })
+    setLoading(true)
+    setLoadError(null)
+
+    loadRlcVisitorsAction({ include_inactive: includeInactive })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          setLoadError(error)
+          setVisitors([])
+        } else {
+          setVisitors(data ?? [])
+        }
+        setSelectedIds(new Set())
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setLoadError(err instanceof Error ? err.message : 'Failed to load RLC visitors')
+        setVisitors([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [statusFilter])
 
   const reload = () => {
     const includeInactive = statusFilter === 'archived' || statusFilter === 'all'
-    loadRlcVisitorsAction({ include_inactive: includeInactive }).then(({ data }) => {
-      setVisitors(data ?? [])
-    })
+    setLoadError(null)
+    loadRlcVisitorsAction({ include_inactive: includeInactive })
+      .then(({ data, error }) => {
+        if (error) {
+          setLoadError(error)
+          setVisitors([])
+          return
+        }
+        setVisitors(data ?? [])
+      })
+      .catch((err: unknown) => {
+        setLoadError(err instanceof Error ? err.message : 'Failed to load RLC visitors')
+        setVisitors([])
+      })
   }
 
   const filtered = useMemo(() => {
@@ -137,9 +172,12 @@ function RlcVisitorsContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <LoadingSpinner />
-      </div>
+      <PageContainer>
+        <LoadingCard
+          title="Loading RLC visitors"
+          description="Fetching visitor records from Redemption Light Chapel…"
+        />
+      </PageContainer>
     )
   }
 
@@ -171,6 +209,14 @@ function RlcVisitorsContent() {
           </>
         }
       />
+
+      {loadError ? (
+        <ErrorDisplay
+          title="Could not load RLC visitors"
+          error={loadError}
+          onRetry={reload}
+        />
+      ) : null}
 
       <RlcPublicVisitShare className="mb-6" />
 
@@ -256,7 +302,34 @@ function RlcVisitorsContent() {
       <div className="space-y-3">
         {filtered.length === 0 ? (
           <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">No visitors match your filters.</CardContent>
+            <CardContent className="space-y-3 py-10 text-center text-muted-foreground">
+              {visitors.length === 0 && !loadError ? (
+                <>
+                  <p>No RLC visitors registered yet.</p>
+                  <Button asChild className="bg-rose-700 hover:bg-rose-800">
+                    <Link href="/admin/rlc/visitors/add">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Register first visitor
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p>No visitors match your filters.</p>
+                  <p className="text-sm">
+                    {visitors.length} record{visitors.length === 1 ? '' : 's'} loaded — try{' '}
+                    <button
+                      type="button"
+                      className="font-medium text-rose-700 underline"
+                      onClick={() => setStatusFilter('all')}
+                    >
+                      All records
+                    </button>
+                    .
+                  </p>
+                </>
+              )}
+            </CardContent>
           </Card>
         ) : (
           filtered.map((v) => {
