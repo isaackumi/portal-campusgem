@@ -31,7 +31,7 @@ describe('Comprehensive Navigation Tests', () => {
       { path: '/members', name: 'Members' },
       { path: '/groups', name: 'Groups' },
       { path: '/attendance', name: 'Attendance' },
-      { path: '/visitors', name: 'Visitors' },
+      { path: '/admin/rlc/visitors', name: 'RLC Visitors' },
       { path: '/celebrations', name: 'Celebrations' },
       { path: '/sms', name: 'SMS' }
     ]
@@ -61,7 +61,8 @@ describe('Comprehensive Navigation Tests', () => {
       { path: '/attendance/bulk', name: 'Bulk Attendance' },
       { path: '/attendance/analytics', name: 'Attendance Analytics' },
       { path: '/attendance/comprehensive', name: 'Comprehensive Attendance' },
-      { path: '/visitors/add', name: 'Add Visitor' }
+      { path: '/admin/rlc/visitors/add', name: 'Add RLC Visitor' },
+      { path: '/visitors/add', name: 'Add Visitor (legacy redirect)' },
     ]
 
     subRoutes.forEach(route => {

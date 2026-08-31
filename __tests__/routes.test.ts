@@ -31,9 +31,11 @@ const routes = [
   { path: '/attendance/analytics', name: 'Attendance Analytics' },
   { path: '/attendance/comprehensive', name: 'Comprehensive Attendance' },
   
-  // Visitors
-  { path: '/visitors', name: 'Visitors' },
-  { path: '/visitors/add', name: 'Add Visitor' },
+  // RLC visitors (legacy /visitors redirects here)
+  { path: '/admin/rlc/visitors', name: 'RLC Visitors' },
+  { path: '/admin/rlc/visitors/add', name: 'Add RLC Visitor' },
+  { path: '/visitors', name: 'Visitors (legacy redirect)' },
+  { path: '/visitors/add', name: 'Add Visitor (legacy redirect)' },
   
   // Other pages
   { path: '/celebrations', name: 'Celebrations' },
@@ -79,9 +81,14 @@ describe('Application Routes', () => {
   
   it('should have consistent navigation structure', () => {
     // Test that all main navigation routes exist
-    const mainRoutes = ['/dashboard', '/members', '/groups', '/attendance', '/visitors']
+    const mainRoutes = ['/dashboard', '/members', '/groups', '/attendance']
     
     mainRoutes.forEach(route => {
+      expect(routes.some(r => r.path === route)).toBe(true)
+    })
+
+    const rlcVisitorRoutes = ['/admin/rlc/visitors', '/admin/rlc/visitors/add']
+    rlcVisitorRoutes.forEach(route => {
       expect(routes.some(r => r.path === route)).toBe(true)
     })
   })

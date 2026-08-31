@@ -33,9 +33,11 @@ const routes = [
   { path: '/attendance/analytics', name: 'Attendance Analytics', expectedStatus: [200] },
   { path: '/attendance/comprehensive', name: 'Comprehensive Attendance', expectedStatus: [200] },
   
-  // Visitors
-  { path: '/visitors', name: 'Visitors', expectedStatus: [200] },
-  { path: '/visitors/add', name: 'Add Visitor', expectedStatus: [200] },
+  // RLC visitors
+  { path: '/admin/rlc/visitors', name: 'RLC Visitors', expectedStatus: [200] },
+  { path: '/admin/rlc/visitors/add', name: 'Add RLC Visitor', expectedStatus: [200] },
+  { path: '/visitors', name: 'Visitors (legacy redirect)', expectedStatus: [200] },
+  { path: '/visitors/add', name: 'Add Visitor (legacy redirect)', expectedStatus: [200] },
   
   // Other pages
   { path: '/celebrations', name: 'Celebrations', expectedStatus: [200] },
@@ -182,7 +184,7 @@ describe('Route Performance Tests', () => {
     }, TIMEOUT)
     
     it('should handle concurrent requests', async () => {
-      const routes = ['/dashboard', '/members', '/groups', '/attendance', '/visitors']
+      const routes = ['/dashboard', '/members', '/groups', '/attendance', '/admin/rlc/visitors']
       
       const promises = routes.map(route => 
         fetch(`${BASE_URL}${route}`, { method: 'GET', redirect: 'follow' })

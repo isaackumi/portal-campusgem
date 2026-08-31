@@ -144,7 +144,7 @@ function DashboardContent() {
               <UserPlus className="h-4 w-4 mr-2" />
               Add Member
             </Button>
-            <Button variant="outline" onClick={() => router.push('/visitors/add')}>
+            <Button variant="outline" onClick={() => router.push('/admin/rlc/visitors/add')}>
               <Plus className="h-4 w-4 mr-2" />
               Add Visitor
             </Button>
@@ -360,7 +360,7 @@ function DashboardContent() {
                   <Button
                     variant="outline"
                     className="h-20 flex-col space-y-2"
-                    onClick={() => router.push('/visitors')}
+                    onClick={() => router.push('/admin/rlc/visitors')}
                   >
                     <UserPlus className="h-6 w-6" />
                     <span>Manage Visitors</span>

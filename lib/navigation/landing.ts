@@ -102,13 +102,6 @@ export const landingSections: LandingSection[] = [
         accent: 'emerald',
       },
       {
-        href: '/admin/rlc/visitors',
-        title: 'Visitors',
-        description: 'RLC guests, follow-up, and membership pipeline.',
-        icon: UserPlus,
-        accent: 'violet',
-      },
-      {
         href: '/groups',
         title: 'Groups',
         description: 'Campuses, fellowships, ministries, and small groups.',
