@@ -188,7 +188,7 @@ export function buildAttendanceRoster(
         name: 'Unknown',
         kind: 'unknown' as const,
         gender: row.gender,
-        ageRange: row.age_category === 'child' ? '0_12' : undefined,
+        ageRange: row.age_category === 'child' ? ('0_12' as AgeRange) : undefined,
       }
     })
     .sort((a, b) => {
