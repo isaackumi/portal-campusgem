@@ -25,8 +25,26 @@ const protectedPrefixes = [
   '/recommendations',
 ]
 
+function legacyVisitorsRedirect(request: NextRequest): NextResponse | null {
+  const { pathname } = request.nextUrl
+  if (pathname === '/visitors') {
+    return NextResponse.redirect(new URL('/admin/rlc/visitors', request.url))
+  }
+  if (pathname === '/visitors/add') {
+    return NextResponse.redirect(new URL('/admin/rlc/visitors/add', request.url))
+  }
+  if (pathname.startsWith('/visitors/')) {
+    const suffix = pathname.slice('/visitors'.length)
+    return NextResponse.redirect(new URL(`/admin/rlc/visitors${suffix}`, request.url))
+  }
+  return null
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  const visitorsRedirect = legacyVisitorsRedirect(request)
+  if (visitorsRedirect) return visitorsRedirect
 
   if (pathname.endsWith('/') && pathname !== '/') {
     const redirectUrl = new URL(request.url)

@@ -58,7 +58,7 @@ export default function NotFound() {
                   { label: 'Members', href: '/members' },
                   { label: 'Attendance', href: '/attendance' },
                   { label: 'Groups', href: '/groups' },
-                  { label: 'Visitors', href: '/admin/rlc/visitors' },
+                  { label: 'RLC visitors', href: '/admin/rlc/visitors' },
                 ].map((item) => (
                   <Button
                     key={item.href}

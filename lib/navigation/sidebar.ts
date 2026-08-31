@@ -132,7 +132,7 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
     ],
   },
   {
-    title: 'Redemption Light',
+    title: 'RLC',
     items: [
       {
         name: 'RLC overview',
@@ -141,10 +141,11 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         permission: 'rlc.view',
       },
       {
-        name: 'Visitors',
+        name: 'RLC visitors',
         href: '/admin/rlc/visitors',
         icon: UserPlus,
         permission: 'rlc.view',
+        description: 'Redemption Light guest records and follow-up pipeline',
       },
       {
         name: 'Members',

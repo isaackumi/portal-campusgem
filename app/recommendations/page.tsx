@@ -26,8 +26,11 @@ export default function RecommendationsPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>
-              Use <strong>Members</strong> and <strong>Visitors</strong> lists for now; camp follow-ups live under
-              Camp admin.
+              Use <strong>Members</strong> and{' '}
+              <Link href="/admin/rlc/visitors" className="font-medium text-rose-700 hover:underline">
+                RLC visitors
+              </Link>{' '}
+              for pastoral follow-up; camp follow-ups live under Camp admin.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="outline">

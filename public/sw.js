@@ -1,4 +1,4 @@
-const CACHE_NAME = "campus-gem-ministries-v1.0.6";
+const CACHE_NAME = "campus-gem-ministries-v1.0.7";
 const STATIC_CACHE_URLS = ["/manifest.json", "/offline.html"];
 
 const BYPASS_PREFIXES = [
