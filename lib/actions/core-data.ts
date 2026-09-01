@@ -111,13 +111,9 @@ export async function loadMemberById(id: string): Promise<{
   }
 
   try {
-    const { fetchMemberFromConvex, fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
-    const member = await fetchMemberFromConvex(id)
+    const { fetchMemberRefWithUserFromConvex } = await import('@/lib/convex/core-bridge')
+    const member = await fetchMemberRefWithUserFromConvex(id)
     if (!member) return { data: null, error: null }
-    if (member.user_id) {
-      const user = await fetchUserFromConvex(member.user_id)
-      if (user) return { data: { ...member, user }, error: null }
-    }
     return { data: member, error: null }
   } catch (error: unknown) {
     return {

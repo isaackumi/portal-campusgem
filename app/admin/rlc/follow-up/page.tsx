@@ -51,7 +51,13 @@ function FollowUpContent() {
   const filtered = useMemo(() => {
     return visitors.filter((v) => {
       if (statusFilter !== 'all' && (v.follow_up_status ?? 'pending') !== statusFilter) return false
-      if (assignedFilter !== 'all' && v.assigned_follow_up_member_id !== assignedFilter) return false
+      if (assignedFilter !== 'all') {
+        const matchesAssignee =
+          v.assigned_follow_up_member_id === assignedFilter ||
+          v.assigned_follow_up?.user_id === assignedFilter ||
+          v.assigned_follow_up?.id === assignedFilter
+        if (!matchesAssignee) return false
+      }
       if (slaFilter !== 'all') {
         const bucket = classifyRlcFollowUpSla(v)
         if (bucket !== slaFilter) return false

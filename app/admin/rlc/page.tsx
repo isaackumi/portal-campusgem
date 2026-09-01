@@ -89,7 +89,12 @@ export default function RlcDashboardPage() {
   )
   const sla = useMemo(() => summarizeRlcFollowUpSla(activeVisitors), [activeVisitors])
   const myFollowUps = useMemo(
-    () => activeVisitors.filter((row) => row.assigned_follow_up_member_id === user?.id),
+    () =>
+      activeVisitors.filter(
+        (row) =>
+          row.assigned_follow_up_member_id === user?.id ||
+          row.assigned_follow_up?.user_id === user?.id
+      ),
     [activeVisitors, user?.id]
   )
   const convertQueue = useMemo(

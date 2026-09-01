@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { query, mutation } from './_generated/server'
-import type { MutationCtx } from './_generated/server'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
 import {
@@ -127,6 +127,34 @@ function inferRlcMembershipType(
   return current ?? 'full_member'
 }
 
+/** Follow-up assignee fields may store either a members id or a users id (legacy camp imports). */
+async function resolveFollowUpAssigneeId(
+  ctx: QueryCtx | MutationCtx,
+  refId: string | undefined
+): Promise<string | undefined> {
+  if (!refId) return undefined
+
+  const byUser = await ctx.db
+    .query('members')
+    .withIndex('by_user_id', (q) => q.eq('user_id', refId))
+    .first()
+  if (byUser) return String(byUser._id)
+
+  return refId
+}
+
+async function memberIdForAssignedUser(
+  ctx: QueryCtx | MutationCtx,
+  userId: string | undefined
+): Promise<string | undefined> {
+  if (!userId) return undefined
+  const member = await ctx.db
+    .query('members')
+    .withIndex('by_user_id', (q) => q.eq('user_id', userId))
+    .first()
+  return member ? String(member._id) : undefined
+}
+
 function generateRlcMembershipId(phone?: string, joinYear?: number): string {
   const year = joinYear ?? new Date().getFullYear()
   let digits: string
@@ -235,7 +263,12 @@ export const listRlcVisitorsWithSecret = query({
       rows = rows.filter((v) => (v.follow_up_status ?? 'pending') === args.follow_up_status)
     }
     if (args.assigned_to) {
-      rows = rows.filter((v) => v.assigned_follow_up_member_id === args.assigned_to)
+      const memberId = await memberIdForAssignedUser(ctx, args.assigned_to)
+      rows = rows.filter(
+        (v) =>
+          v.assigned_follow_up_member_id === args.assigned_to ||
+          (memberId != null && v.assigned_follow_up_member_id === memberId)
+      )
     }
 
     return rows
@@ -275,6 +308,10 @@ export const createRlcVisitorWithSecret = mutation({
     assertServerSecret(args.secret)
     const now = Date.now()
     const sponsorIds = args.invited_by_member_ids ?? []
+    const assignedFollowUpMemberId = await resolveFollowUpAssigneeId(
+      ctx,
+      args.assigned_follow_up_member_id
+    )
     const id = await ctx.db.insert('visitors', {
       first_name: args.first_name.trim(),
       middle_name: args.middle_name?.trim() || undefined,
@@ -297,7 +334,7 @@ export const createRlcVisitorWithSecret = mutation({
       how_heard_about_church: args.how_heard_about_church,
       invited_by_member_id: sponsorIds[0],
       invited_by_member_ids: sponsorIds.length ? sponsorIds : undefined,
-      assigned_follow_up_member_id: args.assigned_follow_up_member_id,
+      assigned_follow_up_member_id: assignedFollowUpMemberId,
       follow_up_notes: args.follow_up_notes,
       follow_up_date: args.follow_up_date,
       follow_up_status: args.follow_up_status ?? 'pending',
@@ -361,6 +398,10 @@ export const updateRlcVisitorWithSecret = mutation({
 
     const sponsorIds = args.invited_by_member_ids
     const now = Date.now()
+    const assignedFollowUpMemberId = await resolveFollowUpAssigneeId(
+      ctx,
+      args.assigned_follow_up_member_id
+    )
     const patch: Record<string, unknown> = {
       first_name: args.first_name.trim(),
       middle_name: args.middle_name?.trim() || undefined,
@@ -381,7 +422,7 @@ export const updateRlcVisitorWithSecret = mutation({
       visit_date: args.visit_date,
       service_attended: args.service_attended,
       how_heard_about_church: args.how_heard_about_church,
-      assigned_follow_up_member_id: args.assigned_follow_up_member_id,
+      assigned_follow_up_member_id: assignedFollowUpMemberId,
       follow_up_notes: args.follow_up_notes,
       follow_up_date: args.follow_up_date,
       gender: args.gender,
@@ -1150,6 +1191,10 @@ export const createRlcVisitorFromCampRegistrationWithSecret = mutation({
 
     const now = Date.now()
     const sponsorIds = args.invited_by_member_ids ?? []
+    const assignedFollowUpMemberId = await resolveFollowUpAssigneeId(
+      ctx,
+      args.assigned_follow_up_member_id ?? reg.assigned_to
+    )
     const id = await ctx.db.insert('visitors', {
       first_name: reg.first_name ?? reg.full_name.split(' ')[0] ?? reg.full_name,
       last_name: reg.last_name ?? (reg.full_name.split(' ').slice(1).join(' ') || undefined),
@@ -1163,7 +1208,7 @@ export const createRlcVisitorFromCampRegistrationWithSecret = mutation({
       how_heard_about_church: 'Camp Meeting',
       invited_by_member_id: sponsorIds[0],
       invited_by_member_ids: sponsorIds.length ? sponsorIds : undefined,
-      assigned_follow_up_member_id: args.assigned_follow_up_member_id ?? reg.assigned_to,
+      assigned_follow_up_member_id: assignedFollowUpMemberId,
       follow_up_status: 'pending',
       follow_up_completed: false,
       pipeline_status: 'first_visit',
@@ -1215,6 +1260,10 @@ export const createRlcVisitorFromCampusMemberWithSecret = mutation({
 
     const now = Date.now()
     const sponsorIds = args.invited_by_member_ids ?? []
+    const assignedFollowUpMemberId = await resolveFollowUpAssigneeId(
+      ctx,
+      args.assigned_follow_up_member_id
+    )
     const id = await ctx.db.insert('visitors', {
       first_name: user.first_name ?? user.full_name.split(' ')[0] ?? user.full_name,
       last_name: user.last_name ?? (user.full_name.split(' ').slice(1).join(' ') || undefined),
@@ -1230,7 +1279,7 @@ export const createRlcVisitorFromCampusMemberWithSecret = mutation({
       source_user_id: String(user._id),
       invited_by_member_id: sponsorIds[0],
       invited_by_member_ids: sponsorIds.length ? sponsorIds : undefined,
-      assigned_follow_up_member_id: args.assigned_follow_up_member_id,
+      assigned_follow_up_member_id: assignedFollowUpMemberId,
       follow_up_status: 'pending',
       follow_up_completed: false,
       pipeline_status: 'first_visit',

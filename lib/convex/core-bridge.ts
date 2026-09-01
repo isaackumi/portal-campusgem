@@ -188,6 +188,34 @@ export async function fetchMemberFromConvex(id: string): Promise<Member | null> 
   return convexMemberDocToMember(doc)
 }
 
+function isMemberIdValidationError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('does not match the table name') || message.includes('ArgumentValidationError')
+}
+
+/** Resolve a member profile from either a members-table id or a users-table id. */
+export async function fetchMemberRefFromConvex(refId: string): Promise<Member | null> {
+  try {
+    const member = await fetchMemberFromConvex(refId)
+    if (member) return member
+  } catch (error) {
+    if (!isMemberIdValidationError(error)) throw error
+  }
+
+  return fetchMemberByUserIdFromConvex(refId)
+}
+
+export async function fetchMemberRefWithUserFromConvex(refId: string): Promise<Member | null> {
+  const member = await fetchMemberRefFromConvex(refId)
+  if (!member) return null
+
+  if (member.user?.full_name) return member
+
+  const userId = member.user_id || refId
+  const user = await fetchUserFromConvex(userId)
+  return user ? { ...member, user } : member
+}
+
 export async function fetchMemberByUserIdFromConvex(userId: string): Promise<Member | null> {
   const client = getConvexHttpClient()
   const doc = (await client.query(api.core.getMemberByUserIdWithSecret, {

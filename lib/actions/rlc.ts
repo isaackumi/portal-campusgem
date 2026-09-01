@@ -24,27 +24,33 @@ function convexUnavailable(): string {
 }
 
 async function enrichVisitors(visitors: Visitor[]): Promise<Visitor[]> {
-  const { fetchMemberFromConvex } = await import('@/lib/convex/core-bridge')
+  const { fetchMemberRefWithUserFromConvex } = await import('@/lib/convex/core-bridge')
   const memberIds = new Set<string>()
   for (const v of visitors) {
     if (v.invited_by_member_ids) v.invited_by_member_ids.forEach((id) => memberIds.add(id))
+    if (v.invited_by_member_id) memberIds.add(v.invited_by_member_id)
     if (v.assigned_follow_up_member_id) memberIds.add(v.assigned_follow_up_member_id)
     if (v.converted_member_id) memberIds.add(v.converted_member_id)
   }
 
-  const members = await Promise.all(Array.from(memberIds).map((id) => fetchMemberFromConvex(id)))
-  const memberById = new Map(members.filter(Boolean).map((m) => [m!.id, m!]))
+  const refIds = Array.from(memberIds)
+  const resolved = await Promise.all(
+    refIds.map(async (refId) => [refId, await fetchMemberRefWithUserFromConvex(refId)] as const)
+  )
+  const memberByRef = new Map(
+    resolved.filter((entry): entry is [string, Member] => entry[1] != null).map(([refId, member]) => [refId, member])
+  )
 
   return visitors.map((v) => ({
     ...v,
     invited_by_members: (v.invited_by_member_ids ?? [])
-      .map((id) => memberById.get(id))
+      .map((id) => memberByRef.get(id))
       .filter(Boolean) as Member[],
-    invited_by: v.invited_by_member_id ? memberById.get(v.invited_by_member_id) : undefined,
+    invited_by: v.invited_by_member_id ? memberByRef.get(v.invited_by_member_id) : undefined,
     assigned_follow_up: v.assigned_follow_up_member_id
-      ? memberById.get(v.assigned_follow_up_member_id)
+      ? memberByRef.get(v.assigned_follow_up_member_id)
       : undefined,
-    converted_member: v.converted_member_id ? memberById.get(v.converted_member_id) : undefined,
+    converted_member: v.converted_member_id ? memberByRef.get(v.converted_member_id) : undefined,
   }))
 }
 
