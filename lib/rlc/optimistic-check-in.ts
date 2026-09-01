@@ -65,3 +65,11 @@ export function removeOptimisticAttendanceForPerson(
     return true
   })
 }
+
+export function removeAttendanceRecordById(list: Attendance[], id: string): Attendance[] {
+  return list.filter((row) => row.id !== id)
+}
+
+export function removeAttendanceForPersonKey(list: Attendance[], personKey: string): Attendance[] {
+  return list.filter((row) => personKeyFromAttendance(row) !== personKey)
+}

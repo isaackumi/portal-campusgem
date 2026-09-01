@@ -11,7 +11,6 @@ import {
   loadRlcVisitorsAction,
   recordRlcAttendanceAction,
   updateRlcAttendanceAction,
-  deleteRlcAttendanceAction,
 } from '@/lib/actions/rlc'
 import { RLC_NAME } from '@/lib/constants/rlc'
 import {
@@ -244,7 +243,7 @@ export default function RlcAttendancePage() {
 
   const serviceLabel = useMemo(() => rlcServiceSelectionLabel(serviceSelection), [serviceSelection])
 
-  const { checkIn, pendingKeys, lastCheckedIn } = useRlcOptimisticCheckIn({
+  const { checkIn, removeFromSession, pendingKeys, lastCheckedIn } = useRlcOptimisticCheckIn({
     userId: user?.id,
     serviceDate,
     serviceSelection,
@@ -334,16 +333,17 @@ export default function RlcAttendancePage() {
 
   async function confirmRemoveAttendance() {
     if (!removeRow) return
-    setRemovingId(removeRow.attendance.id)
-    const { error } = await deleteRlcAttendanceAction(removeRow.attendance.id)
+    const row = removeRow.attendance
+    setRemovingId(row.id)
+    const { error } = await removeFromSession(row)
     setRemovingId(null)
     if (error) {
       toast({ variant: 'destructive', title: 'Could not remove', description: error })
+      await reload()
       return
     }
     toast({ title: 'Attendance removed', description: `${removeRow.name} is no longer recorded for this service.` })
     setRemoveRow(null)
-    await reload()
   }
 
   function handleDownloadCsv() {

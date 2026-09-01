@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   buildOptimisticAttendanceRecord,
+  removeAttendanceForPersonKey,
   removeOptimisticAttendanceForPerson,
   upsertAttendanceRecord,
 } from '@/lib/rlc/optimistic-check-in'
@@ -48,6 +49,30 @@ describe('rlc optimistic check-in', () => {
     const merged = upsertAttendanceRecord([optimistic], server)
     expect(merged).toHaveLength(1)
     expect(merged[0]?.id).toBe('server-id')
+  })
+
+  test('remove by person key clears optimistic and saved rows', () => {
+    const optimistic = buildOptimisticAttendanceRecord({
+      person,
+      serviceDate: '2026-09-01',
+      selection: defaultRlcServiceSelection(),
+      method: 'admin',
+      createdBy: 'user1',
+    })
+    const server = {
+      id: 'server-id',
+      visitor_id: '2',
+      service_date: '2026-09-01',
+      service_type: 'sunday_service',
+      check_in_time: '2026-09-01T09:00:00.000Z',
+      method: 'admin',
+      metadata: {},
+      created_at: '2026-09-01T09:00:00.000Z',
+      status: 'present',
+    } as Attendance
+
+    const cleared = removeAttendanceForPersonKey([optimistic, server], 'v:2')
+    expect(cleared).toEqual([])
   })
 
   test('rollback removes only optimistic rows for that person', () => {

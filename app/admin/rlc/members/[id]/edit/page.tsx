@@ -11,6 +11,7 @@ import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
+import { Save } from 'lucide-react'
 
 export default function EditRlcMemberPage() {
   const params = useParams()
@@ -43,8 +44,8 @@ export default function EditRlcMemberPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toast/router stable enough; avoid re-fetch loops
   }, [id])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault()
     if (!user?.id || !form) return
     if (form.rlcRoles.length === 0) {
       toast({ variant: 'destructive', title: 'Select at least one role' })
@@ -62,7 +63,7 @@ export default function EditRlcMemberPage() {
       toast({ variant: 'destructive', title: 'Update failed', description: error })
       return
     }
-    toast({ title: 'Member updated' })
+    toast({ title: 'RLC settings saved' })
     router.push('/admin/rlc/members')
   }
 
@@ -74,26 +75,56 @@ export default function EditRlcMemberPage() {
     )
   }
 
+  const memberName = member.user?.full_name?.trim() || 'Member'
+
   return (
-    <PageContainer size="sm">
+    <PageContainer size="lg" className="pb-24 lg:pb-8">
       <RlcPageHeader
-        title={`Edit ${member.user?.full_name ?? 'Member'}`}
-        subtitle="Update RLC membership type and ministry roles."
+        title={memberName}
+        subtitle="Update RLC membership type and ministry roles. Contact details are edited separately in the directory."
         backHref="/admin/rlc/members"
+        actions={
+          <>
+            <Button type="button" variant="outline" onClick={() => router.push('/admin/rlc/members')}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={saving}
+              className="bg-rose-700 hover:bg-rose-800"
+              onClick={() => void handleSubmit()}
+            >
+              <Save className="mr-2 h-4 w-4" aria-hidden />
+              {saving ? 'Saving…' : 'Save changes'}
+            </Button>
+          </>
+        }
       />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="mt-6">
         <RlcMemberForm member={member} form={form} onChange={setForm} />
+      </form>
 
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => router.push('/admin/rlc/members')}>
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 lg:hidden">
+        <div className="mx-auto flex max-w-lg gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            onClick={() => router.push('/admin/rlc/members')}
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={saving} className="bg-rose-700 hover:bg-rose-800">
+          <Button
+            type="button"
+            disabled={saving}
+            className="flex-1 bg-rose-700 hover:bg-rose-800"
+            onClick={() => void handleSubmit()}
+          >
             {saving ? 'Saving…' : 'Save changes'}
           </Button>
         </div>
-      </form>
+      </div>
     </PageContainer>
   )
 }

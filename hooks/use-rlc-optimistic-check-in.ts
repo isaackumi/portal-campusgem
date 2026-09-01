@@ -1,10 +1,13 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { recordRlcAttendanceAction } from '@/lib/actions/rlc'
+import { deleteRlcAttendanceAction, recordRlcAttendanceAction } from '@/lib/actions/rlc'
 import type { RlcAttendancePerson } from '@/lib/rlc/attendance-roster'
 import {
   buildOptimisticAttendanceRecord,
+  isOptimisticAttendanceId,
+  personKeyFromAttendance,
+  removeAttendanceForPersonKey,
   removeOptimisticAttendanceForPerson,
   upsertAttendanceRecord,
 } from '@/lib/rlc/optimistic-check-in'
@@ -29,6 +32,7 @@ export function useRlcOptimisticCheckIn(options: {
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set())
   const [lastCheckedIn, setLastCheckedIn] = useState<string | null>(null)
   const inFlightRef = useRef<Set<string>>(new Set())
+  const dismissedKeysRef = useRef<Set<string>>(new Set())
 
   const checkIn = useCallback(
     async (person: RlcAttendancePerson, method: Attendance['method'] = 'admin') => {
@@ -38,6 +42,7 @@ export function useRlcOptimisticCheckIn(options: {
       }
       if (inFlightRef.current.has(person.key)) return
 
+      dismissedKeysRef.current.delete(person.key)
       inFlightRef.current.add(person.key)
       setPendingKeys((prev) => new Set(prev).add(person.key))
 
@@ -72,6 +77,14 @@ export function useRlcOptimisticCheckIn(options: {
           return
         }
 
+        if (dismissedKeysRef.current.has(person.key)) {
+          dismissedKeysRef.current.delete(person.key)
+          if (!isOptimisticAttendanceId(data.attendance.id)) {
+            void deleteRlcAttendanceAction(data.attendance.id)
+          }
+          return
+        }
+
         setAttendance((prev) => upsertAttendanceRecord(prev, data.attendance))
         if (data.already_checked_in) {
           toast({ title: 'Already checked in', description: person.name })
@@ -88,5 +101,36 @@ export function useRlcOptimisticCheckIn(options: {
     [userId, serviceDate, serviceSelection, setAttendance, toast, onCheckedIn]
   )
 
-  return { checkIn, pendingKeys, lastCheckedIn }
+  const removeFromSession = useCallback(
+    async (row: Attendance): Promise<{ error: string | null }> => {
+      const personKey = personKeyFromAttendance(row)
+      if (personKey) {
+        dismissedKeysRef.current.add(personKey)
+        inFlightRef.current.delete(personKey)
+        setPendingKeys((prev) => {
+          const next = new Set(prev)
+          next.delete(personKey)
+          return next
+        })
+      }
+
+      setAttendance((prev) =>
+        personKey ? removeAttendanceForPersonKey(prev, personKey) : prev.filter((r) => r.id !== row.id)
+      )
+
+      if (isOptimisticAttendanceId(row.id)) {
+        return { error: null }
+      }
+
+      const { error } = await deleteRlcAttendanceAction(row.id)
+      if (error) {
+        if (personKey) dismissedKeysRef.current.delete(personKey)
+        return { error }
+      }
+      return { error: null }
+    },
+    [setAttendance]
+  )
+
+  return { checkIn, removeFromSession, pendingKeys, lastCheckedIn }
 }

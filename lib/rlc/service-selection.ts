@@ -25,7 +25,10 @@ export function attendanceMatchesService(row: Attendance, selection: RlcServiceS
 
 export function rlcServiceSelectionLabel(selection: RlcServiceSelection): string {
   if (selection.kind === 'custom') return selection.label
-  return RLC_SERVICES.find((s) => s.value === selection.serviceType)?.label ?? selection.serviceType
+  return (
+    RLC_SERVICES.find((s) => s.value === selection.serviceType)?.label ??
+    titleCaseServiceSlug(selection.serviceType)
+  )
 }
 
 export function attendanceServiceLabel(row: Attendance): string {
@@ -35,7 +38,14 @@ export function attendanceServiceLabel(row: Attendance): string {
     return 'Other service'
   }
   if (!row.service_type) return 'Service'
-  return RLC_SERVICES.find((s) => s.value === row.service_type)?.label ?? row.service_type.replace(/_/g, ' ')
+  return (
+    RLC_SERVICES.find((s) => s.value === row.service_type)?.label ??
+    titleCaseServiceSlug(row.service_type)
+  )
+}
+
+function titleCaseServiceSlug(value: string): string {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 export function printQueryFromSelection(selection: RlcServiceSelection): URLSearchParams {
