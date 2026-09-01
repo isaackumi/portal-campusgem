@@ -28,7 +28,7 @@ export function sanitizePhoneInput(value: unknown): string {
   if (/^233\d{8,9}$/.test(compact)) return `+${compact}`
   if (/^0\d{8,9}$/.test(compact)) return compact
   if (/^\d{9}$/.test(compact)) return `0${compact}`
-  return primary
+  return ''
 }
 
 export function isValidGhanaPhone(phone: string): boolean {

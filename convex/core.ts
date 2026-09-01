@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { query, mutation } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
+import { isValidGhanaPhone, normalizeGhanaPhone, phoneLookupVariants } from './lib/phone'
 import { sealMemberCheckIn, sealVisitorCheckIn } from './lib/rlcCheckInCode'
 
 const attendanceMethod = v.union(
@@ -42,31 +43,6 @@ const userRole = v.union(
   v.literal('member'),
   v.literal('visitor')
 )
-
-function normalizeGhanaPhone(phone: string): string {
-  const trimmed = phone.replace(/\s/g, '')
-  if (trimmed.startsWith('+233')) return trimmed
-  if (trimmed.startsWith('0')) return `+233${trimmed.slice(1)}`
-  if (trimmed.startsWith('233')) return `+${trimmed}`
-  return `+233${trimmed}`
-}
-
-function phoneLookupVariants(phone: string): string[] {
-  const trimmed = phone.replace(/\s/g, '')
-  const variants = new Set<string>([trimmed, normalizeGhanaPhone(trimmed)])
-  const intl = normalizeGhanaPhone(trimmed)
-  if (intl.startsWith('+233')) {
-    variants.add(`0${intl.slice(4)}`)
-    variants.add(intl.slice(1))
-  }
-  if (trimmed.startsWith('0')) {
-    variants.add(`+233${trimmed.slice(1)}`)
-  }
-  if (/^233\d{8,9}$/.test(trimmed)) {
-    variants.add(`+${trimmed}`)
-  }
-  return Array.from(variants)
-}
 
 function normalizeMembershipForLookup(raw: string): string {
   return raw.replace(/\W+/g, '').toUpperCase()

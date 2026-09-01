@@ -10,6 +10,26 @@ import {
   sealVisitorCheckIn,
 } from './lib/rlcCheckInCode'
 import { normalizePersonNameKey } from './lib/personIdentity'
+import { isValidGhanaPhone, normalizeGhanaPhone, phoneLookupVariants } from './lib/phone'
+
+function optionalNormalizedPhone(value: string | undefined, label: string): string | undefined {
+  const trimmed = value?.trim()
+  if (!trimmed) return undefined
+  if (!isValidGhanaPhone(trimmed)) {
+    throw new Error(`${label} must be a valid Ghana mobile number (e.g. 0244123456).`)
+  }
+  const normalized = normalizeGhanaPhone(trimmed)
+  if (!normalized) {
+    throw new Error(`${label} must be a valid Ghana mobile number (e.g. 0244123456).`)
+  }
+  return normalized
+}
+
+function normalizedPhoneOrUndefined(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  if (!trimmed || !isValidGhanaPhone(trimmed)) return undefined
+  return normalizeGhanaPhone(trimmed) || undefined
+}
 
 const followUpStatus = v.union(
   v.literal('pending'),
@@ -79,28 +99,6 @@ function normalizeRlcCustomServiceName(name: string): string {
 
 function normalizeRlcCustomServiceKey(name: string): string {
   return normalizeRlcCustomServiceName(name).toLowerCase()
-}
-
-function normalizeGhanaPhone(phone: string): string {
-  const trimmed = phone.replace(/\s/g, '')
-  if (trimmed.startsWith('+233')) return trimmed
-  if (trimmed.startsWith('0')) return `+233${trimmed.slice(1)}`
-  if (trimmed.startsWith('233')) return `+${trimmed}`
-  return `+233${trimmed}`
-}
-
-function phoneLookupVariants(phone: string): string[] {
-  const trimmed = phone.replace(/\s/g, '')
-  const variants = new Set<string>([trimmed, normalizeGhanaPhone(trimmed)])
-  const intl = normalizeGhanaPhone(trimmed)
-  if (intl.startsWith('+233')) {
-    variants.add(`0${intl.slice(4)}`)
-    variants.add(intl.slice(1))
-  }
-  if (trimmed.startsWith('0')) {
-    variants.add(`+233${trimmed.slice(1)}`)
-  }
-  return Array.from(variants)
 }
 
 function normalizeMembershipForLookup(raw: string): string {
@@ -316,13 +314,11 @@ export const createRlcVisitorWithSecret = mutation({
       first_name: args.first_name.trim(),
       middle_name: args.middle_name?.trim() || undefined,
       last_name: args.last_name?.trim(),
-      phone: args.phone ? normalizeGhanaPhone(args.phone) : undefined,
-      secondary_phone: args.secondary_phone ? normalizeGhanaPhone(args.secondary_phone) : undefined,
-      whatsapp: args.whatsapp
-        ? normalizeGhanaPhone(args.whatsapp)
-        : args.phone
-          ? normalizeGhanaPhone(args.phone)
-          : undefined,
+      phone: optionalNormalizedPhone(args.phone, 'Phone'),
+      secondary_phone: optionalNormalizedPhone(args.secondary_phone, 'Secondary phone'),
+      whatsapp:
+        optionalNormalizedPhone(args.whatsapp, 'WhatsApp') ??
+        optionalNormalizedPhone(args.phone, 'Phone'),
       email: args.email?.trim() || undefined,
       address: args.address?.trim(),
       hometown: args.hometown?.trim() || undefined,
@@ -351,9 +347,10 @@ export const createRlcVisitorWithSecret = mutation({
       spouse_name: args.spouse_name?.trim() || undefined,
       children_count: args.children_count,
       emergency_contact_name: args.emergency_contact_name?.trim() || undefined,
-      emergency_contact_phone: args.emergency_contact_phone
-        ? normalizeGhanaPhone(args.emergency_contact_phone)
-        : undefined,
+      emergency_contact_phone: optionalNormalizedPhone(
+        args.emergency_contact_phone,
+        'Emergency contact phone'
+      ),
       emergency_contact_relation: args.emergency_contact_relation?.trim() || undefined,
       prayer_request: args.prayer_request?.trim() || undefined,
       notes: args.notes?.trim() || undefined,
@@ -406,13 +403,11 @@ export const updateRlcVisitorWithSecret = mutation({
       first_name: args.first_name.trim(),
       middle_name: args.middle_name?.trim() || undefined,
       last_name: args.last_name?.trim(),
-      phone: args.phone ? normalizeGhanaPhone(args.phone) : undefined,
-      secondary_phone: args.secondary_phone ? normalizeGhanaPhone(args.secondary_phone) : undefined,
-      whatsapp: args.whatsapp
-        ? normalizeGhanaPhone(args.whatsapp)
-        : args.phone
-          ? normalizeGhanaPhone(args.phone)
-          : undefined,
+      phone: optionalNormalizedPhone(args.phone, 'Phone'),
+      secondary_phone: optionalNormalizedPhone(args.secondary_phone, 'Secondary phone'),
+      whatsapp:
+        optionalNormalizedPhone(args.whatsapp, 'WhatsApp') ??
+        optionalNormalizedPhone(args.phone, 'Phone'),
       email: args.email?.trim() || undefined,
       address: args.address?.trim(),
       hometown: args.hometown?.trim() || undefined,
@@ -433,9 +428,10 @@ export const updateRlcVisitorWithSecret = mutation({
       spouse_name: args.spouse_name?.trim() || undefined,
       children_count: args.children_count,
       emergency_contact_name: args.emergency_contact_name?.trim() || undefined,
-      emergency_contact_phone: args.emergency_contact_phone
-        ? normalizeGhanaPhone(args.emergency_contact_phone)
-        : undefined,
+      emergency_contact_phone: optionalNormalizedPhone(
+        args.emergency_contact_phone,
+        'Emergency contact phone'
+      ),
       emergency_contact_relation: args.emergency_contact_relation?.trim() || undefined,
       prayer_request: args.prayer_request?.trim() || undefined,
       notes: args.notes?.trim() || undefined,
@@ -605,7 +601,10 @@ export const convertRlcVisitorToMemberWithSecret = mutation({
 
     const now = Date.now()
     const today = new Date().toISOString().split('T')[0]
-    const phone = normalizeGhanaPhone(args.phone ?? visitor.phone ?? '')
+    const phone =
+      optionalNormalizedPhone(args.phone, 'Phone') ??
+      normalizedPhoneOrUndefined(visitor.phone ?? '') ??
+      ''
     const fullName =
       args.full_name?.trim() ||
       [visitor.first_name, visitor.last_name].filter(Boolean).join(' ').trim() ||
@@ -837,7 +836,7 @@ export const addPersonToRlcWithSecret = mutation({
         }
       }
       if (!user) {
-        const phone = reg.phone ? normalizeGhanaPhone(reg.phone) : undefined
+        const phone = normalizedPhoneOrUndefined(reg.phone)
         const userId = await ctx.db.insert('users', {
           full_name: reg.full_name,
           first_name: reg.first_name,
@@ -987,18 +986,16 @@ export const createRlcMemberWithSecret = mutation({
     assertServerSecret(args.secret)
     const firstName = args.first_name.trim()
     if (!firstName) throw new Error('First name is required.')
-    const phone = normalizeGhanaPhone(args.phone)
-    if (phone.replace(/\D/g, '').length < 9) {
-      throw new Error('Enter a valid Ghana phone number.')
+    const phone = optionalNormalizedPhone(args.phone, 'Phone')
+    if (!phone) {
+      throw new Error('Phone is required and must be a valid Ghana mobile number (e.g. 0244123456).')
     }
 
     const now = Date.now()
     const lastName = args.last_name?.trim() || undefined
     const middleName = args.middle_name?.trim() || undefined
     const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ')
-    const whatsapp = args.whatsapp?.trim()
-      ? normalizeGhanaPhone(args.whatsapp)
-      : phone
+    const whatsapp = optionalNormalizedPhone(args.whatsapp, 'WhatsApp') ?? phone
 
     let existingUser = null
     for (const candidate of phoneLookupVariants(args.phone)) {
@@ -1018,7 +1015,7 @@ export const createRlcMemberWithSecret = mutation({
             {
               name: args.emergency_contact_name.trim(),
               relation: args.emergency_contact_relation?.trim() || 'Emergency',
-              phone: normalizeGhanaPhone(args.emergency_contact_phone),
+              phone: optionalNormalizedPhone(args.emergency_contact_phone, 'Emergency contact phone')!,
             },
           ]
         : []
@@ -1029,9 +1026,7 @@ export const createRlcMemberWithSecret = mutation({
         first_name: firstName || existingUser.first_name,
         middle_name: middleName ?? existingUser.middle_name,
         last_name: lastName ?? existingUser.last_name,
-        secondary_phone: args.secondary_phone
-          ? normalizeGhanaPhone(args.secondary_phone)
-          : existingUser.secondary_phone,
+        secondary_phone: optionalNormalizedPhone(args.secondary_phone, 'Secondary phone') ?? existingUser.secondary_phone,
         whatsapp,
         email: args.email?.trim() || existingUser.email,
         occupation: args.occupation?.trim() || existingUser.occupation,
@@ -1041,9 +1036,9 @@ export const createRlcMemberWithSecret = mutation({
         children_count: args.children_count ?? existingUser.children_count,
         emergency_contact_name:
           args.emergency_contact_name?.trim() || existingUser.emergency_contact_name,
-        emergency_contact_phone: args.emergency_contact_phone
-          ? normalizeGhanaPhone(args.emergency_contact_phone)
-          : existingUser.emergency_contact_phone,
+        emergency_contact_phone:
+          optionalNormalizedPhone(args.emergency_contact_phone, 'Emergency contact phone') ??
+          existingUser.emergency_contact_phone,
         emergency_contact_relation:
           args.emergency_contact_relation?.trim() || existingUser.emergency_contact_relation,
         updated_at: now,
@@ -1109,7 +1104,7 @@ export const createRlcMemberWithSecret = mutation({
       middle_name: middleName,
       last_name: lastName,
       phone,
-      secondary_phone: args.secondary_phone ? normalizeGhanaPhone(args.secondary_phone) : undefined,
+      secondary_phone: optionalNormalizedPhone(args.secondary_phone, 'Secondary phone'),
       whatsapp,
       email: args.email?.trim() || undefined,
       occupation: args.occupation?.trim() || undefined,
@@ -1118,9 +1113,10 @@ export const createRlcMemberWithSecret = mutation({
       spouse_name: args.spouse_name?.trim() || undefined,
       children_count: args.children_count,
       emergency_contact_name: args.emergency_contact_name?.trim() || undefined,
-      emergency_contact_phone: args.emergency_contact_phone
-        ? normalizeGhanaPhone(args.emergency_contact_phone)
-        : undefined,
+      emergency_contact_phone: optionalNormalizedPhone(
+        args.emergency_contact_phone,
+        'Emergency contact phone'
+      ),
       emergency_contact_relation: args.emergency_contact_relation?.trim() || undefined,
       role: 'member',
       membership_id: generateRlcMembershipId(phone),
@@ -1178,13 +1174,13 @@ export const createRlcVisitorFromCampRegistrationWithSecret = mutation({
     )
     if (dup) return dup
 
-    const regPhone = reg.phone ? normalizeGhanaPhone(reg.phone) : undefined
+    const regPhone = normalizedPhoneOrUndefined(reg.phone)
     if (regPhone) {
       const dupByPhone = existing.find(
         (v) =>
           v.congregation === 'rlc' &&
           v.phone &&
-          normalizeGhanaPhone(String(v.phone)) === regPhone
+          normalizedPhoneOrUndefined(String(v.phone)) === regPhone
       )
       if (dupByPhone) return dupByPhone
     }
@@ -1198,7 +1194,7 @@ export const createRlcVisitorFromCampRegistrationWithSecret = mutation({
     const id = await ctx.db.insert('visitors', {
       first_name: reg.first_name ?? reg.full_name.split(' ')[0] ?? reg.full_name,
       last_name: reg.last_name ?? (reg.full_name.split(' ').slice(1).join(' ') || undefined),
-      phone: reg.phone ? normalizeGhanaPhone(reg.phone) : undefined,
+      phone: normalizedPhoneOrUndefined(reg.phone),
       email: reg.email,
       address: reg.address_school_work ?? reg.residence,
       school_or_workplace: reg.address_school_work ?? undefined,

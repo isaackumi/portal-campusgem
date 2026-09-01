@@ -10,6 +10,7 @@ import {
   RLC_VISITOR_SOURCES,
 } from '@/lib/constants/rlc'
 import { ageRangeFromYears, ageYearsFromDob } from '@/lib/rlc/age'
+import { ghanaPhoneFieldInput } from '@/lib/rlc/visitor-phone'
 import type { AgeRange, CreateVisitorForm } from '@/lib/types'
 import { MemberSingleSelect } from '@/components/rlc/member-select'
 import { RlcSponsorMultiSelect } from '@/components/rlc/rlc-sponsor-multi-select'
@@ -66,24 +67,39 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
             <Label htmlFor="phone">Phone</Label>
             <Input
               id="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="0244123456"
               value={form.phone ?? ''}
-              onChange={(e) => onChange({ ...form, phone: e.target.value })}
+              onChange={(e) => onChange({ ...form, phone: ghanaPhoneFieldInput(e.target.value) })}
             />
+            <p className="text-xs text-muted-foreground">Digits only — e.g. 0244123456 or +233244123456</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="secondary_phone">Secondary phone <span className="font-normal text-muted-foreground">(optional)</span></Label>
             <Input
               id="secondary_phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="0244123456"
               value={form.secondary_phone ?? ''}
-              onChange={(e) => onChange({ ...form, secondary_phone: e.target.value })}
+              onChange={(e) =>
+                onChange({ ...form, secondary_phone: ghanaPhoneFieldInput(e.target.value) })
+              }
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="whatsapp">WhatsApp number</Label>
             <Input
               id="whatsapp"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="0244123456"
               value={form.whatsapp ?? form.phone ?? ''}
-              onChange={(e) => onChange({ ...form, whatsapp: e.target.value })}
+              onChange={(e) => onChange({ ...form, whatsapp: ghanaPhoneFieldInput(e.target.value) })}
             />
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
               <input
@@ -281,8 +297,14 @@ export function RlcVisitorForm({ form, onChange, showPipelineFields, publicMode 
             <Label htmlFor="emergency_contact_phone">Emergency contact phone</Label>
             <Input
               id="emergency_contact_phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="0244123456"
               value={form.emergency_contact_phone ?? ''}
-              onChange={(e) => onChange({ ...form, emergency_contact_phone: e.target.value })}
+              onChange={(e) =>
+                onChange({ ...form, emergency_contact_phone: ghanaPhoneFieldInput(e.target.value) })
+              }
             />
           </div>
           <div className="space-y-2 sm:col-span-2">

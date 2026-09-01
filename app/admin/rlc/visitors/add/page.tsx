@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { createRlcVisitorAction } from '@/lib/actions/rlc'
 import { serviceSelectValueToLabel } from '@/lib/rlc/visitor-form'
+import { validateVisitorPhoneFields } from '@/lib/rlc/visitor-phone'
 import type { CreateVisitorForm } from '@/lib/types'
 import { RlcPublicVisitShare } from '@/components/rlc/rlc-public-visit-share'
 import { RlcVisitorForm } from '@/components/rlc/rlc-visitor-form'
@@ -51,6 +52,11 @@ export default function AddRlcVisitorPage() {
     if (!user?.id) return
     if (!form.first_name.trim()) {
       toast({ variant: 'destructive', title: 'First name is required' })
+      return
+    }
+    const phoneError = validateVisitorPhoneFields(form)
+    if (phoneError) {
+      toast({ variant: 'destructive', title: 'Invalid phone number', description: phoneError })
       return
     }
     setLoading(true)
