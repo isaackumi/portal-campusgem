@@ -10,7 +10,6 @@ import {
   loadRlcCustomServicesAction,
   loadRlcMembersAction,
   loadRlcVisitorsAction,
-  recordRlcAttendanceAction,
   resolveRlcScanAction,
 } from '@/lib/actions/rlc'
 import {
@@ -19,11 +18,9 @@ import {
   memberToAttendancePerson,
   sessionCheckedKeys,
   visitorToAttendancePerson,
-  type RlcAttendancePerson,
 } from '@/lib/rlc/attendance-roster'
 import {
   defaultRlcServiceSelection,
-  recordArgsFromSelection,
   rlcServiceSelectionLabel,
   type RlcServiceSelection,
 } from '@/lib/rlc/service-selection'
@@ -34,7 +31,9 @@ import { RlcServiceSelect } from '@/components/rlc/rlc-service-select'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { RlcCheckInSearchHit } from '@/components/rlc/rlc-check-in-search-hit'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { useRlcOptimisticCheckIn } from '@/hooks/use-rlc-optimistic-check-in'
 import { useToast } from '@/hooks/use-toast'
 import { Camera, CheckCircle, Search } from 'lucide-react'
 
@@ -51,11 +50,19 @@ export default function RlcScanPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [loading, setLoading] = useState(true)
-  const [recordingKey, setRecordingKey] = useState<string | null>(null)
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const lastScannedRef = useRef<string | null>(null)
 
   const serviceLabel = useMemo(() => rlcServiceSelectionLabel(serviceSelection), [serviceSelection])
+
+  const { checkIn, pendingKeys, lastCheckedIn } = useRlcOptimisticCheckIn({
+    userId: user?.id,
+    serviceDate,
+    serviceSelection,
+    setAttendance,
+    toast,
+    onCheckedIn: () => setQuery(''),
+  })
 
   const loadAll = useCallback(async () => {
     const [a, m, v, custom] = await Promise.all([
@@ -136,34 +143,6 @@ export default function RlcScanPage() {
     return data
   }
 
-  async function checkIn(person: RlcAttendancePerson, method: Attendance['method'] = 'admin') {
-    if (!user?.id) {
-      toast({ variant: 'destructive', title: 'Sign in required' })
-      return
-    }
-    setRecordingKey(person.key)
-    const recordArgs = recordArgsFromSelection(serviceSelection)
-    const { data, error } = await recordRlcAttendanceAction({
-      memberId: person.kind === 'member' ? person.memberId : undefined,
-      visitorId: person.kind === 'visitor' ? person.visitorId : undefined,
-      serviceDate,
-      ...recordArgs,
-      method,
-      createdBy: user.id,
-    })
-    setRecordingKey(null)
-    if (error || !data) {
-      toast({ variant: 'destructive', title: 'Check-in failed', description: error ?? 'Try again' })
-      return
-    }
-    toast({
-      title: data.already_checked_in ? 'Already in this service' : 'Checked in',
-      description: person.name,
-    })
-    setQuery('')
-    await loadAll()
-  }
-
   async function onScan(decodedText: string) {
     if (lastScannedRef.current === decodedText) return
     lastScannedRef.current = decodedText
@@ -180,9 +159,9 @@ export default function RlcScanPage() {
       return
     }
     if (data.type === 'visitor' && data.visitor) {
-      await checkIn(visitorToAttendancePerson(data.visitor), 'qr')
+      void checkIn(visitorToAttendancePerson(data.visitor), 'qr')
     } else if (data.type === 'member' && data.member) {
-      await checkIn(memberToAttendancePerson(data.member), 'qr')
+      void checkIn(memberToAttendancePerson(data.member), 'qr')
     }
     setTimeout(() => {
       lastScannedRef.current = null
@@ -249,24 +228,19 @@ export default function RlcScanPage() {
               }
             }}
           />
+          {lastCheckedIn ? (
+            <p className="flex items-center gap-1.5 text-sm text-emerald-700">
+              <CheckCircle className="h-4 w-4 shrink-0" />
+              Checked in {lastCheckedIn}
+            </p>
+          ) : null}
           {searchHits.map((person) => (
-            <div key={person.key} className="flex items-center justify-between gap-2 rounded-lg border p-3">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{person.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {person.kind === 'member' ? 'Member' : 'Visitor'}
-                  {person.phone ? ` · ${person.phone}` : ''}
-                  {person.code ? ` · ${person.code}` : ''}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                disabled={recordingKey === person.key}
-                onClick={() => void checkIn(person)}
-              >
-                {recordingKey === person.key ? '…' : 'Check in'}
-              </Button>
-            </div>
+            <RlcCheckInSearchHit
+              key={person.key}
+              person={person}
+              pending={pendingKeys.has(person.key)}
+              onCheckIn={(p) => void checkIn(p)}
+            />
           ))}
           {searchHits.length === 0 ? (
             <p className="text-sm text-muted-foreground">

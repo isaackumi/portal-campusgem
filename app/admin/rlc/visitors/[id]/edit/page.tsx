@@ -52,6 +52,11 @@ export default function EditRlcVisitorPage() {
       toast({ variant: 'destructive', title: 'First name is required' })
       return
     }
+    const phoneError = validateVisitorPhoneFields(form)
+    if (phoneError) {
+      toast({ variant: 'destructive', title: 'Invalid phone number', description: phoneError })
+      return
+    }
     setSaving(true)
     const payload = {
       ...form,

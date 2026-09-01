@@ -36,6 +36,7 @@ import {
 import type { Attendance, Member, RlcCustomService, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcAttendanceCalendarView } from '@/components/rlc/rlc-attendance-calendar-view'
+import { RlcCheckInSearchHit } from '@/components/rlc/rlc-check-in-search-hit'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { RlcServiceSelect } from '@/components/rlc/rlc-service-select'
 import { Badge } from '@/components/ui/badge'
@@ -54,6 +55,7 @@ import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { useRlcOptimisticCheckIn } from '@/hooks/use-rlc-optimistic-check-in'
 import { useToast } from '@/hooks/use-toast'
 import {
   CalendarDays,
@@ -242,6 +244,15 @@ export default function RlcAttendancePage() {
 
   const serviceLabel = useMemo(() => rlcServiceSelectionLabel(serviceSelection), [serviceSelection])
 
+  const { checkIn, pendingKeys, lastCheckedIn } = useRlcOptimisticCheckIn({
+    userId: user?.id,
+    serviceDate,
+    serviceSelection,
+    setAttendance,
+    toast,
+    onCheckedIn: () => setQuery(''),
+  })
+
   const printHref = useMemo(() => {
     const params = printQueryFromSelection(serviceSelection)
     params.set('date', serviceDate)
@@ -266,35 +277,6 @@ export default function RlcAttendancePage() {
     })
     toast({ title: 'Other service saved', description: data.name })
     return data
-  }
-
-  async function checkIn(person: RlcAttendancePerson) {
-    if (!user?.id) {
-      toast({ variant: 'destructive', title: 'Sign in required' })
-      return
-    }
-    setRecordingKey(person.key)
-    const recordArgs = recordArgsFromSelection(serviceSelection)
-    const { data, error } = await recordRlcAttendanceAction({
-      memberId: person.kind === 'member' ? person.memberId : undefined,
-      visitorId: person.kind === 'visitor' ? person.visitorId : undefined,
-      serviceDate,
-      ...recordArgs,
-      method: 'admin',
-      createdBy: user.id,
-      status: 'present',
-    })
-    setRecordingKey(null)
-    if (error || !data) {
-      toast({ variant: 'destructive', title: 'Check-in failed', description: error ?? 'Try again' })
-      return
-    }
-    toast({
-      title: data.already_checked_in ? 'Already checked in' : 'Checked in',
-      description: `${person.name} · ${serviceLabel}`,
-    })
-    setQuery('')
-    await reload()
   }
 
   async function confirmMarkAbsent() {
@@ -589,6 +571,12 @@ export default function RlcAttendancePage() {
                     }
                   }}
                 />
+                {lastCheckedIn ? (
+                  <p className="flex items-center gap-1.5 text-sm text-emerald-700">
+                    <CheckCircle className="h-4 w-4 shrink-0" />
+                    Checked in {lastCheckedIn}
+                  </p>
+                ) : null}
                 {searchHits.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     {query.trim()
@@ -597,33 +585,12 @@ export default function RlcAttendancePage() {
                   </p>
                 ) : (
                   searchHits.map((person) => (
-                    <div
+                    <RlcCheckInSearchHit
                       key={person.key}
-                      className="flex items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{person.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          <span
-                            className={
-                              person.kind === 'visitor' ? 'font-medium text-sky-800' : 'text-rose-800'
-                            }
-                          >
-                            {person.kind === 'visitor' ? 'Visitor' : 'Member'}
-                          </span>
-                          {person.phone ? ` · ${person.phone}` : ''}
-                          {person.code ? ` · ${person.code}` : ''}
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        className="shrink-0 bg-rose-700 hover:bg-rose-800"
-                        disabled={recordingKey === person.key}
-                        onClick={() => void checkIn(person)}
-                      >
-                        {recordingKey === person.key ? '…' : 'Check in'}
-                      </Button>
-                    </div>
+                      person={person}
+                      pending={pendingKeys.has(person.key)}
+                      onCheckIn={(p) => void checkIn(p)}
+                    />
                   ))
                 )}
               </CardContent>
