@@ -20,6 +20,7 @@ export type RlcRole =
   | 'member'
   | 'associate'
   | 'full_member'
+  | 'founder'
   | 'pastor'
   | 'assistant_pastor'
   | 'elder'

@@ -4,6 +4,8 @@ import {
   buildAttendancePeople,
   buildAttendanceRoster,
   filterAttendancePeople,
+  groupPresentMembersByMembershipType,
+  presentMemberSectionLabel,
   sessionCheckedKeys,
   splitAttendanceRoster,
   summarizeAttendancePresent,
@@ -252,5 +254,44 @@ describe('rlc attendance roster helpers', () => {
     )
     expect(roster[0]?.kind).toBe('visitor')
     expect(roster[0]?.name).toContain('Kofi')
+  })
+
+  test('groups present members by RLC membership type', () => {
+    const rows = [
+      {
+        attendance: {
+          id: 'a1',
+          service_date: '2026-09-01',
+          check_in_time: '2026-09-01T09:00:00.000Z',
+          method: 'admin',
+          metadata: {},
+          created_at: '2026-09-01T09:00:00.000Z',
+          status: 'present' as const,
+        },
+        name: 'Full Member Person',
+        kind: 'member' as const,
+        rlcMembershipType: 'full_member' as const,
+      },
+      {
+        attendance: {
+          id: 'a2',
+          service_date: '2026-09-01',
+          check_in_time: '2026-09-01T09:00:00.000Z',
+          method: 'admin',
+          metadata: {},
+          created_at: '2026-09-01T09:00:00.000Z',
+          status: 'present' as const,
+        },
+        name: 'Associate Person',
+        kind: 'member' as const,
+        rlcMembershipType: 'associate' as const,
+      },
+    ]
+
+    const groups = groupPresentMembersByMembershipType(rows)
+    expect(groups).toHaveLength(2)
+    expect(groups[0]?.label).toBe('Present full members')
+    expect(groups[0]?.rows).toHaveLength(1)
+    expect(presentMemberSectionLabel('full_member')).toBe('Present full members')
   })
 })

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { RLC_MEMBERSHIP_TYPES, RLC_MEMBERSHIP_TYPE_LABELS, RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
+import { RLC_MEMBERSHIP_TYPES, RLC_MEMBERSHIP_TYPE_LABELS, RLC_NAME, RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
 import type { Member, RlcMembershipType, RlcRole } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -240,6 +240,10 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
                       </span>
                       {role === 'member' ? (
                         <span className="mt-0.5 block text-xs text-muted-foreground">Required for most people</span>
+                      ) : role === 'founder' ? (
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          Founding leader of {RLC_NAME}
+                        </span>
                       ) : null}
                     </span>
                   </label>

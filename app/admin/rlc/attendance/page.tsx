@@ -19,6 +19,8 @@ import {
   buildAttendanceRoster,
   downloadAttendanceCsv,
   filterAttendancePeople,
+  groupPresentMembersByMembershipType,
+  presentMemberSectionLabel,
   sessionCheckedKeys,
   splitAttendanceRoster,
   summarizeAttendancePresent,
@@ -236,6 +238,10 @@ export default function RlcAttendancePage() {
   )
   const presentMembers = useMemo(
     () => present.filter((row) => row.kind !== 'visitor'),
+    [present]
+  )
+  const presentMemberGroups = useMemo(
+    () => groupPresentMembersByMembershipType(present),
     [present]
   )
 
@@ -636,12 +642,12 @@ export default function RlcAttendancePage() {
                         ))}
                       </div>
                     ) : null}
-                    {presentMembers.length > 0 ? (
-                      <div className="space-y-2">
+                    {presentMemberGroups.map((group) => (
+                      <div key={group.type} className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">
-                          Members ({presentMembers.length})
+                          {presentMemberSectionLabel(group.type)} ({group.rows.length})
                         </p>
-                        {presentMembers.map((row) => (
+                        {group.rows.map((row) => (
                           <RosterRow
                             key={row.attendance.id}
                             row={row}
@@ -656,7 +662,7 @@ export default function RlcAttendancePage() {
                           />
                         ))}
                       </div>
-                    ) : null}
+                    ))}
                   </>
                 )}
               </CardContent>

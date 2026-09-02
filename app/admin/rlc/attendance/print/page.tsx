@@ -12,6 +12,7 @@ import {
 import { RLC_NAME } from '@/lib/constants/rlc'
 import {
   buildAttendanceRoster,
+  groupPresentMembersByMembershipType,
   splitAttendanceRoster,
   summarizeAttendancePresent,
   type AttendanceSummaryStats,
@@ -116,7 +117,7 @@ function PresentTable({
 
   return (
     <>
-      <h2 className={`mt-8 text-sm font-semibold uppercase tracking-wide ${titleClass}`}>{title}</h2>
+      <h2 className={`mt-8 text-base font-semibold text-slate-900 ${titleClass}`}>{title}</h2>
       <table className="mt-3 w-full border-collapse text-sm print:break-inside-auto">
         <thead>
           <tr className="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -194,7 +195,7 @@ function PrintContent() {
   const { present, absentNoted } = useMemo(() => splitAttendanceRoster(roster), [roster])
   const summary = useMemo(() => summarizeAttendancePresent(present), [present])
   const presentVisitors = useMemo(() => present.filter((row) => row.kind === 'visitor'), [present])
-  const presentMembers = useMemo(() => present.filter((row) => row.kind !== 'visitor'), [present])
+  const presentMemberGroups = useMemo(() => groupPresentMembersByMembershipType(present), [present])
 
   useEffect(() => {
     if (!loading && roster.length >= 0) {
@@ -254,15 +255,18 @@ function PrintContent() {
               titleClass="text-sky-800"
               rows={presentVisitors}
             />
-            <PresentTable
-              title={`Present members (${presentMembers.length})`}
-              titleClass="text-emerald-800"
-              rows={presentMembers}
-            />
+            {presentMemberGroups.map((group) => (
+              <PresentTable
+                key={group.type}
+                title={`${group.label} (${group.rows.length})`}
+                titleClass="text-emerald-800"
+                rows={group.rows}
+              />
+            ))}
 
             {absentNoted.length > 0 ? (
               <>
-                <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-amber-800">
+                <h2 className="mt-8 text-base font-semibold text-amber-800">
                   Absent with note ({absentNoted.length})
                 </h2>
                 <table className="mt-3 w-full border-collapse text-sm">

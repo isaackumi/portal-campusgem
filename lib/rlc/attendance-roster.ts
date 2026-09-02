@@ -1,5 +1,5 @@
 import { RLC_SERVICES } from '@/lib/constants/rlc'
-import type { AgeRange, Attendance, Member, Visitor } from '@/lib/types'
+import type { AgeRange, Attendance, Member, RlcMembershipType, Visitor } from '@/lib/types'
 import { isChildAgeRange, resolveAgeRange } from '@/lib/rlc/age'
 import { phoneLast9 } from '@/lib/rlc/camp-bridge'
 import {
@@ -27,6 +27,7 @@ export type RlcAttendanceRosterRow = {
   membershipId?: string
   gender?: 'male' | 'female' | 'other'
   ageRange?: AgeRange
+  rlcMembershipType?: RlcMembershipType
 }
 
 export function rlcServiceLabel(serviceType?: string, customName?: string): string {
@@ -175,6 +176,7 @@ export function buildAttendanceRoster(
           code: person?.code,
           membershipId: person?.membershipId,
           gender: member?.gender ?? row.gender,
+          rlcMembershipType: member?.rlc_membership_type ?? 'full_member',
           ageRange:
             resolveAgeRange({
               age_range: member?.age_range,
@@ -211,6 +213,42 @@ export function splitAttendanceRoster(rows: RlcAttendanceRosterRow[]): {
     }
   }
   return { present, absentNoted }
+}
+
+const PRESENT_MEMBER_SECTION_ORDER: RlcMembershipType[] = [
+  'full_member',
+  'associate',
+  'visitor_converted',
+]
+
+const PRESENT_MEMBER_SECTION_LABELS: Record<RlcMembershipType, string> = {
+  full_member: 'Present full members',
+  associate: 'Present associate members',
+  visitor_converted: 'Present converted members',
+}
+
+export function presentMemberSectionLabel(type: RlcMembershipType): string {
+  return PRESENT_MEMBER_SECTION_LABELS[type]
+}
+
+export function groupPresentMembersByMembershipType(
+  rows: RlcAttendanceRosterRow[]
+): { type: RlcMembershipType; label: string; rows: RlcAttendanceRosterRow[] }[] {
+  const buckets = new Map<RlcMembershipType, RlcAttendanceRosterRow[]>()
+  for (const type of PRESENT_MEMBER_SECTION_ORDER) {
+    buckets.set(type, [])
+  }
+  for (const row of rows) {
+    if (row.kind === 'visitor') continue
+    const type = row.rlcMembershipType ?? 'full_member'
+    const bucket = buckets.get(type) ?? buckets.get('full_member')!
+    bucket.push(row)
+  }
+  return PRESENT_MEMBER_SECTION_ORDER.map((type) => ({
+    type,
+    label: presentMemberSectionLabel(type),
+    rows: buckets.get(type) ?? [],
+  })).filter((group) => group.rows.length > 0)
 }
 
 export type AttendanceSummaryStats = {
