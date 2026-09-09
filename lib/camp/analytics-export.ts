@@ -50,11 +50,32 @@ function yearReportSections(report: CampYearAnalyticsReport): string[] {
     ...breakdownSection('Gender', report.demographics.gender),
     ...breakdownSection('Age bracket', report.demographics.ageBracket),
     ...breakdownSection('Education band', report.demographics.educationBand),
+    ...breakdownSection('Education level', report.demographics.educationLevel),
     ...breakdownSection('Residence', report.demographics.residence),
+    ...breakdownSection('Birth month', report.demographics.birthMonth),
+    ...breakdownSection('Parent contact', report.operations.parentContact),
     ...breakdownSection('NHIS', report.operations.nhis),
     ...breakdownSection('Health', report.operations.health),
     ...breakdownSection('Follow-up', report.operations.followUp),
     ...breakdownSection('Payment status', report.operations.paymentStatus)
+  )
+
+  lines.push(
+    ...section('Live pulse', [
+      row(['Today', report.livePulse.today]),
+      row(['Last 24 hours', report.livePulse.last24Hours]),
+      row(['Last 7 days', report.livePulse.last7Days]),
+      row(['Avg per day', report.livePulse.avgPerDay]),
+      row(['Recent share %', report.livePulse.recentSharePercent]),
+      row(['Momentum', report.livePulse.momentum]),
+      row(['Peak day', report.livePulse.peakDay]),
+      row(['Peak day count', report.livePulse.peakDayCount]),
+    ]),
+    ...section('Contact coverage', [
+      row(['Email %', report.contactCoverage.emailPercent]),
+      row(['Date of birth %', report.contactCoverage.dateOfBirthPercent]),
+      row(['Parent contact %', report.contactCoverage.parentContactPercent]),
+    ])
   )
 
   if (report.timeline.length > 0) {

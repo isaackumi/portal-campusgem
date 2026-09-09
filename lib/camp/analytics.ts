@@ -145,6 +145,46 @@ export type DataQualityRow = {
   percent: number
 }
 
+/** Live form-season velocity signals for an open registration year. */
+export type LiveRegistrationPulse = {
+  today: number
+  last24Hours: number
+  last7Days: number
+  avgPerDay: number
+  activeDays: number
+  daysSinceFirst: number | null
+  daysSinceLatest: number | null
+  peakDay: string | null
+  peakDayCount: number
+  /** Share of all registrations that arrived in the last 7 days. */
+  recentSharePercent: number
+  momentum: 'accelerating' | 'steady' | 'slowing' | 'none'
+}
+
+export type CrossTabCell = {
+  row: string
+  column: string
+  count: number
+}
+
+export type CrossTabMatrix = {
+  title: string
+  rowLabel: string
+  columnLabel: string
+  rows: string[]
+  columns: string[]
+  cells: CrossTabCell[]
+}
+
+export type ContactCoverage = {
+  withEmail: number
+  withDateOfBirth: number
+  withParentContact: number
+  emailPercent: number
+  dateOfBirthPercent: number
+  parentContactPercent: number
+}
+
 export type CampYearAnalyticsReport = {
   scope: 'year'
   yearId: string
@@ -176,6 +216,7 @@ export type CampYearAnalyticsReport = {
     educationLevel: AnalyticsSlice[]
     residence: AnalyticsSlice[]
     role: AnalyticsSlice[]
+    birthMonth: AnalyticsSlice[]
   }
   operations: {
     nhis: AnalyticsSlice[]
@@ -185,6 +226,12 @@ export type CampYearAnalyticsReport = {
     followUp: AnalyticsSlice[]
     paymentStatus: AnalyticsSlice[]
     healthConditions: AnalyticsSlice[]
+  }
+  livePulse: LiveRegistrationPulse
+  contactCoverage: ContactCoverage
+  crossTabs: {
+    ageByGender: CrossTabMatrix
+    educationByAge: CrossTabMatrix
   }
   timeline: TimelinePoint[]
   dataQuality: DataQualityRow[]
@@ -836,9 +883,11 @@ function buildDataQuality(registrations: CampRegistration[]): DataQualityRow[] {
     { field: 'Phone', filled: (r) => Boolean(r.phone?.trim()) },
     { field: 'Email', filled: (r) => Boolean(r.email?.trim() && r.email.trim() !== ' ') },
     { field: 'Sex', filled: (r) => Boolean(r.sex) },
+    { field: 'Date of birth', filled: (r) => Boolean(r.date_of_birth?.trim() || (r.birth_month && r.birth_day)) },
     { field: 'Age bracket', filled: (r) => Boolean(r.age_bracket) },
     { field: 'Residence', filled: (r) => Boolean(r.residence?.trim()) },
     { field: 'Education', filled: (r) => Boolean(r.education_level || r.highest_qualification) },
+    { field: 'School / work', filled: (r) => Boolean(r.address_school_work?.trim()) },
     { field: 'Parent contact', filled: (r) => Boolean(r.parent_name?.trim() && r.parent_contact?.trim()) },
     { field: 'NHIS response', filled: (r) => r.has_nhis_card === true || r.has_nhis_card === false },
     { field: 'Health response', filled: (r) => r.has_health_challenge === true || r.has_health_challenge === false },
@@ -850,20 +899,233 @@ function buildDataQuality(registrations: CampRegistration[]): DataQualityRow[] {
   })
 }
 
+function daysBetweenUtc(fromIsoDay: string, toIsoDay: string): number {
+  const from = Date.parse(`${fromIsoDay}T00:00:00.000Z`)
+  const to = Date.parse(`${toIsoDay}T00:00:00.000Z`)
+  if (Number.isNaN(from) || Number.isNaN(to)) return 0
+  return Math.max(0, Math.round((to - from) / 86_400_000))
+}
+
+function isoDay(date: Date): string {
+  return date.toISOString().split('T')[0]
+}
+
+export function buildLiveRegistrationPulse(
+  registrations: CampRegistration[],
+  now: Date = new Date()
+): LiveRegistrationPulse {
+  const total = registrations.length
+  if (total === 0) {
+    return {
+      today: 0,
+      last24Hours: 0,
+      last7Days: 0,
+      avgPerDay: 0,
+      activeDays: 0,
+      daysSinceFirst: null,
+      daysSinceLatest: null,
+      peakDay: null,
+      peakDayCount: 0,
+      recentSharePercent: 0,
+      momentum: 'none',
+    }
+  }
+
+  const nowMs = now.getTime()
+  const todayKey = isoDay(now)
+  const dayMs = 86_400_000
+  const last24Cutoff = nowMs - dayMs
+  const last7Cutoff = nowMs - 7 * dayMs
+  const last3Cutoff = nowMs - 3 * dayMs
+  const prev3Cutoff = nowMs - 6 * dayMs
+
+  let today = 0
+  let last24Hours = 0
+  let last7Days = 0
+  let last3Days = 0
+  let prev3Days = 0
+
+  for (const reg of registrations) {
+    const created = Date.parse(reg.created_at)
+    if (Number.isNaN(created)) continue
+    const day = new Date(created).toISOString().split('T')[0]
+    if (day === todayKey) today += 1
+    if (created >= last24Cutoff) last24Hours += 1
+    if (created >= last7Cutoff) last7Days += 1
+    if (created >= last3Cutoff) last3Days += 1
+    else if (created >= prev3Cutoff) prev3Days += 1
+  }
+
+  const timeline = buildTimeline(registrations)
+  const peak = [...timeline].sort((a, b) => b.count - a.count)[0]
+  const firstDay = timeline[0]?.date ?? null
+  const latestDay = timeline[timeline.length - 1]?.date ?? null
+  const spanDays = firstDay ? daysBetweenUtc(firstDay, todayKey) + 1 : 1
+  const avgPerDay = Math.round((total / Math.max(spanDays, 1)) * 10) / 10
+
+  let momentum: LiveRegistrationPulse['momentum'] = 'none'
+  if (total >= 6 && (last3Days > 0 || prev3Days > 0)) {
+    if (last3Days >= prev3Days * 1.25 && last3Days > prev3Days) momentum = 'accelerating'
+    else if (prev3Days >= last3Days * 1.25 && prev3Days > last3Days) momentum = 'slowing'
+    else momentum = 'steady'
+  } else if (total > 0) {
+    momentum = 'steady'
+  }
+
+  return {
+    today,
+    last24Hours,
+    last7Days,
+    avgPerDay,
+    activeDays: timeline.length,
+    daysSinceFirst: firstDay ? daysBetweenUtc(firstDay, todayKey) : null,
+    daysSinceLatest: latestDay ? daysBetweenUtc(latestDay, todayKey) : null,
+    peakDay: peak?.label ?? null,
+    peakDayCount: peak?.count ?? 0,
+    recentSharePercent: Math.round((last7Days / total) * 100),
+    momentum,
+  }
+}
+
+function buildContactCoverage(registrations: CampRegistration[]): ContactCoverage {
+  const total = registrations.length
+  if (total === 0) {
+    return {
+      withEmail: 0,
+      withDateOfBirth: 0,
+      withParentContact: 0,
+      emailPercent: 0,
+      dateOfBirthPercent: 0,
+      parentContactPercent: 0,
+    }
+  }
+  const withEmail = registrations.filter((r) => Boolean(r.email?.trim() && r.email.trim() !== ' ')).length
+  const withDateOfBirth = registrations.filter(
+    (r) => Boolean(r.date_of_birth?.trim() || (r.birth_month && r.birth_day))
+  ).length
+  const withParentContact = registrations.filter(
+    (r) => Boolean(r.parent_name?.trim() && r.parent_contact?.trim())
+  ).length
+  return {
+    withEmail,
+    withDateOfBirth,
+    withParentContact,
+    emailPercent: Math.round((withEmail / total) * 100),
+    dateOfBirthPercent: Math.round((withDateOfBirth / total) * 100),
+    parentContactPercent: Math.round((withParentContact / total) * 100),
+  }
+}
+
+function buildCrossTabMatrix(args: {
+  title: string
+  rowLabel: string
+  columnLabel: string
+  registrations: CampRegistration[]
+  getRow: (r: CampRegistration) => string
+  getColumn: (r: CampRegistration) => string
+  rowOrder?: string[]
+  columnOrder?: string[]
+  maxRows?: number
+  maxColumns?: number
+}): CrossTabMatrix {
+  const { registrations } = args
+  const counts = new Map<string, Map<string, number>>()
+  const rowTotals = new Map<string, number>()
+  const colTotals = new Map<string, number>()
+
+  for (const reg of registrations) {
+    const row = args.getRow(reg)
+    const column = args.getColumn(reg)
+    if (!counts.has(row)) counts.set(row, new Map())
+    const rowMap = counts.get(row)!
+    rowMap.set(column, (rowMap.get(column) ?? 0) + 1)
+    rowTotals.set(row, (rowTotals.get(row) ?? 0) + 1)
+    colTotals.set(column, (colTotals.get(column) ?? 0) + 1)
+  }
+
+  const sortKeys = (keys: string[], order?: string[], maxItems?: number) => {
+    const sorted = order
+      ? [...keys].sort((a, b) => {
+          const ai = order.indexOf(a)
+          const bi = order.indexOf(b)
+          if (ai === -1 && bi === -1) return (colTotals.get(b) ?? rowTotals.get(b) ?? 0) - (colTotals.get(a) ?? rowTotals.get(a) ?? 0)
+          if (ai === -1) return 1
+          if (bi === -1) return -1
+          return ai - bi
+        })
+      : [...keys].sort((a, b) => (rowTotals.get(b) ?? colTotals.get(b) ?? 0) - (rowTotals.get(a) ?? colTotals.get(a) ?? 0))
+    return maxItems ? sorted.slice(0, maxItems) : sorted
+  }
+
+  const rows = sortKeys(Array.from(rowTotals.keys()), args.rowOrder, args.maxRows)
+  const columns = sortKeys(Array.from(colTotals.keys()), args.columnOrder, args.maxColumns)
+  const cells: CrossTabCell[] = []
+  for (const row of rows) {
+    for (const column of columns) {
+      const count = counts.get(row)?.get(column) ?? 0
+      if (count > 0) cells.push({ row, column, count })
+    }
+  }
+
+  return {
+    title: args.title,
+    rowLabel: args.rowLabel,
+    columnLabel: args.columnLabel,
+    rows,
+    columns,
+    cells,
+  }
+}
+
+function birthMonthLabel(reg: CampRegistration): string {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ]
+  if (reg.birth_month && reg.birth_month >= 1 && reg.birth_month <= 12) {
+    return months[reg.birth_month - 1]!
+  }
+  if (reg.date_of_birth) {
+    const parsed = new Date(reg.date_of_birth)
+    if (!Number.isNaN(parsed.getTime())) return months[parsed.getUTCMonth()]!
+  }
+  return 'Not recorded'
+}
+
 function buildYearInsights(
   report: Omit<CampYearAnalyticsReport, 'insights'>,
   registrations: CampRegistration[]
 ): string[] {
   const insights: string[] = []
-  const { total, overview, demographics } = report
+  const { total, overview, demographics, livePulse, contactCoverage, crossTabs } = report
 
   if (total === 0) {
     insights.push('No registrations recorded for this camp year yet.')
     return insights
   }
 
+  if (livePulse.last7Days > 0) {
+    insights.push(
+      `${livePulse.last7Days} registrations in the last 7 days (${livePulse.recentSharePercent}% of the year so far) — ${livePulse.momentum === 'accelerating' ? 'sign-ups are accelerating.' : livePulse.momentum === 'slowing' ? 'pace is slowing vs the prior 3 days.' : 'pace is steady.'}`
+    )
+  }
+
+  if (livePulse.today > 0) {
+    insights.push(`${livePulse.today} people registered today (avg ${livePulse.avgPerDay}/day across the window).`)
+  }
+
   const topAge = demographics.ageBracket[0]
-  if (topAge && topAge.percent >= 40) {
+  if (topAge && topAge.percent >= 35) {
     insights.push(`${topAge.percent}% of registrants are in the ${topAge.label} age bracket — plan sessions accordingly.`)
   }
 
@@ -872,9 +1134,21 @@ function buildYearInsights(
     insights.push(`${topGender.label} registrants make up ${topGender.percent}% of this year's camp.`)
   }
 
+  const topEdu = demographics.educationLevel[0]
+  if (topEdu && topEdu.label !== 'Not recorded' && topEdu.percent >= 20) {
+    insights.push(`${topEdu.label} is the most common education level (${topEdu.percent}%).`)
+  }
+
   const topRegion = demographics.residence.find((s) => s.label !== 'Not recorded')
   if (topRegion && topRegion.percent >= 20) {
     insights.push(`${topRegion.label} is the most common residence area (${topRegion.percent}%).`)
+  }
+
+  const ageGenderTop = crossTabs.ageByGender.cells.sort((a, b) => b.count - a.count)[0]
+  if (ageGenderTop && ageGenderTop.count >= 3) {
+    insights.push(
+      `Largest age × gender group: ${ageGenderTop.column} · ${ageGenderTop.row} (${ageGenderTop.count}).`
+    )
   }
 
   if (overview.returning > 0) {
@@ -894,17 +1168,23 @@ function buildYearInsights(
     )
   }
 
+  if (contactCoverage.dateOfBirthPercent < 40 && total >= 10) {
+    insights.push(
+      `Only ${contactCoverage.dateOfBirthPercent}% provided a date of birth — optional on the form, but useful for birthday follow-up.`
+    )
+  }
+
+  if (contactCoverage.emailPercent < 50 && total >= 10) {
+    insights.push(`Email on ${contactCoverage.emailPercent}% of records — SMS/WhatsApp remains the primary channel.`)
+  }
+
   const healthYes = report.operations.health.find((s) => s.label.includes('Reported'))
   if (healthYes && healthYes.percent >= 10) {
     insights.push(`${healthYes.percent}% reported a health challenge — review medical staffing needs.`)
   }
 
-  const timeline = buildTimeline(registrations)
-  if (timeline.length >= 3) {
-    const peak = [...timeline].sort((a, b) => b.count - a.count)[0]
-    if (peak.count >= 5) {
-      insights.push(`Peak registration day: ${peak.label} (${peak.count} sign-ups).`)
-    }
+  if (livePulse.peakDay && livePulse.peakDayCount >= 5) {
+    insights.push(`Peak registration day: ${livePulse.peakDay} (${livePulse.peakDayCount} sign-ups).`)
   }
 
   const incompleteParent = report.operations.parentContact.find((s) => s.label.includes('Missing'))
@@ -912,7 +1192,7 @@ function buildYearInsights(
     insights.push(`${incompleteParent.percent}% lack complete parent/guardian contact — prioritize follow-up for minors.`)
   }
 
-  return insights.slice(0, 6)
+  return insights.slice(0, 8)
 }
 
 function buildOperationsSlices(registrations: CampRegistration[], total: number) {
@@ -992,6 +1272,21 @@ function buildOperationsSlices(registrations: CampRegistration[], total: number)
 }
 
 function buildDemographicsSlices(registrations: CampRegistration[], total: number) {
+  const monthOrder = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+    'Not recorded',
+  ]
   return {
     gender: toSlices(countBy(registrations, (r) => normalizeGender(r.sex)), total),
     ageBracket: toSlices(
@@ -1007,12 +1302,13 @@ function buildDemographicsSlices(registrations: CampRegistration[], total: numbe
     educationLevel: toSlices(
       countBy(registrations, (r) => normalizeEducationLevel(r.education_level, r.highest_qualification)),
       total,
-      { maxItems: 8 }
+      { maxItems: 10 }
     ),
     residence: toSlices(countBy(registrations, (r) => normalizeResidenceLabel(r.residence)), total, {
       maxItems: 12,
     }),
     role: toSlices(countBy(registrations, (r) => normalizeRole(r.role)), total, { maxItems: 8 }),
+    birthMonth: toSlices(countBy(registrations, birthMonthLabel), total, { sortOrder: monthOrder, maxItems: 13 }),
   }
 }
 
@@ -1050,6 +1346,30 @@ export function buildCampYearAnalyticsReport(
 
   const dataQuality = buildDataQuality(registrations)
   const dataQualityScore = computeDataQualityScore(dataQuality)
+  const livePulse = buildLiveRegistrationPulse(registrations)
+  const contactCoverage = buildContactCoverage(registrations)
+  const crossTabs = {
+    ageByGender: buildCrossTabMatrix({
+      title: 'Age × Gender',
+      rowLabel: 'Gender',
+      columnLabel: 'Age bracket',
+      registrations,
+      getRow: (r) => normalizeGender(r.sex),
+      getColumn: (r) => r.age_bracket ?? 'Unknown',
+      rowOrder: ['Male', 'Female', 'Not recorded'],
+      columnOrder: AGE_ORDER,
+    }),
+    educationByAge: buildCrossTabMatrix({
+      title: 'Education × Age',
+      rowLabel: 'Education band',
+      columnLabel: 'Age bracket',
+      registrations,
+      getRow: (r) => normalizeEducationBand(r.education_level, r.highest_qualification),
+      getColumn: (r) => r.age_bracket ?? 'Unknown',
+      rowOrder: ['JHS', 'SHS', 'University / Tertiary', 'Other', 'Not recorded'],
+      columnOrder: AGE_ORDER,
+    }),
+  }
 
   const base = {
     scope: 'year' as const,
@@ -1061,6 +1381,9 @@ export function buildCampYearAnalyticsReport(
     overview,
     demographics: buildDemographicsSlices(registrations, total),
     operations: buildOperationsSlices(registrations, total),
+    livePulse,
+    contactCoverage,
+    crossTabs,
     timeline: buildTimeline(registrations),
     dataQuality,
     dataQualityScore,

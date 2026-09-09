@@ -1,6 +1,12 @@
 'use client'
 
-import type { AnalyticsSlice, CampAnalyticsReport, CampYearAnalyticsReport } from '@/lib/camp/analytics'
+import type {
+  AnalyticsSlice,
+  CampAnalyticsReport,
+  CampYearAnalyticsReport,
+  CrossTabMatrix,
+  LiveRegistrationPulse,
+} from '@/lib/camp/analytics'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -13,13 +19,17 @@ import { AnalyticsPieChart } from '@/components/charts/analytics-pie-chart'
 import { AnalyticsHorizontalBarChart } from '@/components/charts/analytics-charts'
 import { CampTrendAnalysisPanel } from '@/components/camp/camp-trend-analysis-panel'
 import {
+  Activity,
   BarChart3,
+  Cake,
   Calendar,
   DollarSign,
   GraduationCap,
   Heart,
   Lightbulb,
+  Mail,
   MapPin,
+  Phone,
   Shield,
   TrendingDown,
   TrendingUp,
@@ -150,8 +160,133 @@ export function StatTile({
   )
 }
 
+function momentumLabel(momentum: LiveRegistrationPulse['momentum']): string {
+  if (momentum === 'accelerating') return 'Accelerating'
+  if (momentum === 'slowing') return 'Slowing'
+  if (momentum === 'steady') return 'Steady'
+  return 'No signal yet'
+}
+
+function LivePulsePanel({ pulse, total }: { pulse: LiveRegistrationPulse; total: number }) {
+  if (total === 0) return null
+
+  return (
+    <Card className="border-2 border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-white">
+      <CardHeader className="border-b border-indigo-100">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base text-indigo-950">
+              <Activity className="h-5 w-5 text-indigo-600" />
+              Live registration pulse
+            </CardTitle>
+            <CardDescription>How the open form is performing right now</CardDescription>
+          </div>
+          <Badge
+            variant="outline"
+            className={
+              pulse.momentum === 'accelerating'
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                : pulse.momentum === 'slowing'
+                  ? 'border-amber-300 bg-amber-50 text-amber-900'
+                  : 'border-indigo-200 bg-white text-indigo-800'
+            }
+          >
+            {momentumLabel(pulse.momentum)}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-indigo-100 bg-white p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Today</p>
+            <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.today}</p>
+            <p className="text-xs text-slate-500">{pulse.last24Hours} in last 24h</p>
+          </div>
+          <div className="rounded-xl border border-indigo-100 bg-white p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Last 7 days</p>
+            <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.last7Days}</p>
+            <p className="text-xs text-slate-500">{pulse.recentSharePercent}% of all sign-ups</p>
+          </div>
+          <div className="rounded-xl border border-indigo-100 bg-white p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Avg / day</p>
+            <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.avgPerDay}</p>
+            <p className="text-xs text-slate-500">{pulse.activeDays} active days</p>
+          </div>
+          <div className="rounded-xl border border-indigo-100 bg-white p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Peak day</p>
+            <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.peakDayCount}</p>
+            <p className="text-xs text-slate-500">{pulse.peakDay ?? '—'} · window {pulse.daysSinceFirst ?? 0}d</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function CrossTabCard({ matrix }: { matrix: CrossTabMatrix }) {
+  if (matrix.cells.length === 0 || matrix.rows.length === 0 || matrix.columns.length === 0) return null
+  const max = Math.max(...matrix.cells.map((c) => c.count), 1)
+  const lookup = new Map(matrix.cells.map((c) => [`${c.row}::${c.column}`, c.count]))
+
+  return (
+    <Card className="border-2">
+      <CardHeader className="border-b bg-slate-50">
+        <CardTitle className="text-base">{matrix.title}</CardTitle>
+        <CardDescription>
+          {matrix.rowLabel} across {matrix.columnLabel.toLowerCase()} — useful for session and seating planning
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="overflow-x-auto pt-4">
+        <table className="w-full min-w-[420px] border-collapse text-sm">
+          <thead>
+            <tr>
+              <th className="sticky left-0 bg-white px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {matrix.rowLabel}
+              </th>
+              {matrix.columns.map((column) => (
+                <th
+                  key={column}
+                  className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-500"
+                >
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {matrix.rows.map((row) => (
+              <tr key={row} className="border-t border-slate-100">
+                <td className="sticky left-0 bg-white px-2 py-2 font-medium text-slate-800">{row}</td>
+                {matrix.columns.map((column) => {
+                  const count = lookup.get(`${row}::${column}`) ?? 0
+                  const intensity = count === 0 ? 0 : 0.12 + (count / max) * 0.75
+                  return (
+                    <td key={`${row}-${column}`} className="px-1.5 py-1.5 text-center">
+                      <div
+                        className="rounded-md px-2 py-2 font-semibold tabular-nums"
+                        style={{
+                          backgroundColor: count === 0 ? 'transparent' : `rgba(79, 70, 229, ${intensity})`,
+                          color: intensity > 0.45 ? '#fff' : '#312e81',
+                        }}
+                      >
+                        {count || '·'}
+                      </div>
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
+  )
+}
+
 function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
-  const { overview, demographics, operations, timeline, dataQuality } = report
+  const { overview, demographics, operations, timeline, dataQuality, livePulse, contactCoverage, crossTabs } =
+    report
+  const birthMonths = demographics.birthMonth.filter((s) => s.label !== 'Not recorded')
 
   return (
     <>
@@ -177,6 +312,8 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
         />
       </div>
 
+      <LivePulsePanel pulse={livePulse} total={report.total} />
+
       <InsightsPanel title="Key patterns this year" insights={report.insights} />
 
       <Card className="border-2">
@@ -192,6 +329,23 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Return rate" value={`${report.returnRate}%`} hint="Returning campers this year" valueClassName="text-violet-600" />
         <StatTile label="Data quality" value={`${report.dataQualityScore}%`} hint="Average field completeness" />
+        <StatTile
+          label="Email on file"
+          value={`${contactCoverage.emailPercent}%`}
+          hint={`${contactCoverage.withEmail} of ${report.total}`}
+          icon={Mail}
+        />
+        <StatTile
+          label="Date of birth"
+          value={`${contactCoverage.dateOfBirthPercent}%`}
+          hint={`${contactCoverage.withDateOfBirth} provided DOB`}
+          icon={Cake}
+        />
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900">Demographics from the form</h2>
+        <p className="text-sm text-muted-foreground">Gender, age, education, and residence from live 2026 registrations</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -223,6 +377,15 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
           barClassName="bg-gradient-to-r from-orange-500 to-orange-600"
         />
         <AnalyticsBreakdownCard
+          title="Education level (detail)"
+          description="Exact form options — JHS 1, SHS 2, Level 100…"
+          icon={GraduationCap}
+          iconClassName="text-amber-600"
+          slices={demographics.educationLevel}
+          total={report.total}
+          barClassName="bg-gradient-to-r from-amber-500 to-amber-600"
+        />
+        <AnalyticsBreakdownCard
           title="Residence areas"
           description="Normalized regions (top areas + Other)"
           icon={MapPin}
@@ -231,6 +394,26 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
           total={report.total}
           barClassName="bg-gradient-to-r from-red-500 to-red-600"
         />
+        {birthMonths.length > 0 ? (
+          <AnalyticsBreakdownCard
+            title="Birth months"
+            description="From date of birth — useful for birthday outreach"
+            icon={Cake}
+            iconClassName="text-pink-600"
+            slices={birthMonths}
+            total={contactCoverage.withDateOfBirth}
+            barClassName="bg-gradient-to-r from-pink-500 to-pink-600"
+          />
+        ) : null}
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900">Cross-cuts</h2>
+        <p className="text-sm text-muted-foreground">How demographics stack together for planning</p>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CrossTabCard matrix={crossTabs.ageByGender} />
+        <CrossTabCard matrix={crossTabs.educationByAge} />
       </div>
 
       <Card className="border-2 lg:col-span-2">
@@ -248,9 +431,18 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
 
       <div>
         <h2 className="text-lg font-semibold text-slate-900">Operations & planning</h2>
-        <p className="text-sm text-muted-foreground">Medical, follow-up, and payment signals</p>
+        <p className="text-sm text-muted-foreground">Guardian contacts, medical, follow-up, and payment signals</p>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
+        <AnalyticsBreakdownCard
+          title="Parent / guardian contact"
+          description="Completeness of guardian fields from the form"
+          icon={Phone}
+          iconClassName="text-sky-600"
+          slices={operations.parentContact}
+          total={report.total}
+          barClassName="bg-gradient-to-r from-sky-500 to-sky-600"
+        />
         <AnalyticsBreakdownCard
           title="NHIS coverage"
           description="Medical planning"
@@ -293,7 +485,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
         <Card className="border-2">
           <CardHeader className="border-b bg-slate-50">
             <CardTitle className="text-base">Data completeness</CardTitle>
-            <CardDescription>How complete registration records are for this year</CardDescription>
+            <CardDescription>How complete registration records are for this year — includes live form fields</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <AnalyticsHorizontalBarChart

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import {
   buildCampMultiYearAnalyticsReport,
   buildCampYearAnalyticsReport,
+  buildLiveRegistrationPulse,
   buildTrendAlerts,
   normalizeEducationBand,
   normalizePhoneKey,
@@ -79,6 +80,9 @@ describe('camp year analytics report', () => {
         status: 'checked_in',
         payment_status: 'paid',
         payment_amount: 30,
+        date_of_birth: '2008-05-12',
+        parent_name: 'Ama',
+        parent_contact: '0244000000',
       }),
       makeReg({
         id: '2',
@@ -90,6 +94,7 @@ describe('camp year analytics report', () => {
         is_new_registrant: false,
         payment_status: 'pending',
         payment_amount: 30,
+        created_at: new Date().toISOString(),
       }),
     ]
 
@@ -97,7 +102,27 @@ describe('camp year analytics report', () => {
     expect(report.total).toBe(2)
     expect(report.overview.checkedIn).toBe(1)
     expect(report.demographics.ageBracket[0]?.label).toBe('13-19')
+    expect(report.demographics.educationLevel.some((s) => s.label.includes('SHS') || s.label.includes('JHS'))).toBe(true)
+    expect(report.livePulse.last7Days).toBeGreaterThanOrEqual(1)
+    expect(report.crossTabs.ageByGender.cells.length).toBeGreaterThan(0)
+    expect(report.contactCoverage.withParentContact).toBe(1)
     expect(report.insights.length).toBeGreaterThan(0)
+  })
+
+  it('builds live pulse momentum from recent registrations', () => {
+    const now = new Date('2026-09-09T12:00:00.000Z')
+    const regs = [
+      makeReg({ id: 'a', camp_year_id: 'year-2026', created_at: '2026-09-08T10:00:00.000Z' }),
+      makeReg({ id: 'b', camp_year_id: 'year-2026', created_at: '2026-09-08T11:00:00.000Z' }),
+      makeReg({ id: 'c', camp_year_id: 'year-2026', created_at: '2026-09-09T09:00:00.000Z' }),
+      makeReg({ id: 'd', camp_year_id: 'year-2026', created_at: '2026-09-09T10:00:00.000Z' }),
+      makeReg({ id: 'e', camp_year_id: 'year-2026', created_at: '2026-09-09T11:00:00.000Z' }),
+      makeReg({ id: 'f', camp_year_id: 'year-2026', created_at: '2026-09-03T10:00:00.000Z' }),
+    ]
+    const pulse = buildLiveRegistrationPulse(regs, now)
+    expect(pulse.today).toBe(3)
+    expect(pulse.last7Days).toBe(6)
+    expect(pulse.peakDayCount).toBeGreaterThanOrEqual(3)
   })
 })
 
