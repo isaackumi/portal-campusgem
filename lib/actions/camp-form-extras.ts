@@ -1,6 +1,6 @@
 'use server'
 
-import type { ApiResponse } from '@/lib/types'
+import type { ApiResponse } from '@/lib/services/api-types'
 
 export async function syncAndBackfillCampFormExtrasAction(): Promise<
   ApiResponse<{
