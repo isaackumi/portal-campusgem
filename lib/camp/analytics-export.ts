@@ -73,8 +73,11 @@ function yearReportSections(report: CampYearAnalyticsReport): string[] {
     ]),
     ...section('Contact coverage', [
       row(['Email %', report.contactCoverage.emailPercent]),
+      row(['WhatsApp %', report.contactCoverage.whatsappPercent]),
       row(['Date of birth %', report.contactCoverage.dateOfBirthPercent]),
       row(['Parent contact %', report.contactCoverage.parentContactPercent]),
+      row(['Location note %', report.contactCoverage.campLocationPercent]),
+      row(['Comments %', report.contactCoverage.registrationNotesPercent]),
     ])
   )
 

@@ -180,9 +180,15 @@ export type ContactCoverage = {
   withEmail: number
   withDateOfBirth: number
   withParentContact: number
+  withWhatsapp: number
+  withCampLocation: number
+  withRegistrationNotes: number
   emailPercent: number
   dateOfBirthPercent: number
   parentContactPercent: number
+  whatsappPercent: number
+  campLocationPercent: number
+  registrationNotesPercent: number
 }
 
 export type CampYearAnalyticsReport = {
@@ -889,6 +895,9 @@ function buildDataQuality(registrations: CampRegistration[]): DataQualityRow[] {
     { field: 'Education', filled: (r) => Boolean(r.education_level || r.highest_qualification) },
     { field: 'School / work', filled: (r) => Boolean(r.address_school_work?.trim()) },
     { field: 'Parent contact', filled: (r) => Boolean(r.parent_name?.trim() && r.parent_contact?.trim()) },
+    { field: 'WhatsApp', filled: (r) => Boolean(r.whatsapp?.trim()) },
+    { field: 'Location note', filled: (r) => Boolean(r.camp_location?.trim()) },
+    { field: 'Comments', filled: (r) => Boolean(r.registration_notes?.trim()) },
     { field: 'NHIS response', filled: (r) => r.has_nhis_card === true || r.has_nhis_card === false },
     { field: 'Health response', filled: (r) => r.has_health_challenge === true || r.has_health_challenge === false },
   ]
@@ -994,9 +1003,15 @@ function buildContactCoverage(registrations: CampRegistration[]): ContactCoverag
       withEmail: 0,
       withDateOfBirth: 0,
       withParentContact: 0,
+      withWhatsapp: 0,
+      withCampLocation: 0,
+      withRegistrationNotes: 0,
       emailPercent: 0,
       dateOfBirthPercent: 0,
       parentContactPercent: 0,
+      whatsappPercent: 0,
+      campLocationPercent: 0,
+      registrationNotesPercent: 0,
     }
   }
   const withEmail = registrations.filter((r) => Boolean(r.email?.trim() && r.email.trim() !== ' ')).length
@@ -1006,13 +1021,22 @@ function buildContactCoverage(registrations: CampRegistration[]): ContactCoverag
   const withParentContact = registrations.filter(
     (r) => Boolean(r.parent_name?.trim() && r.parent_contact?.trim())
   ).length
+  const withWhatsapp = registrations.filter((r) => Boolean(r.whatsapp?.trim())).length
+  const withCampLocation = registrations.filter((r) => Boolean(r.camp_location?.trim())).length
+  const withRegistrationNotes = registrations.filter((r) => Boolean(r.registration_notes?.trim())).length
   return {
     withEmail,
     withDateOfBirth,
     withParentContact,
+    withWhatsapp,
+    withCampLocation,
+    withRegistrationNotes,
     emailPercent: Math.round((withEmail / total) * 100),
     dateOfBirthPercent: Math.round((withDateOfBirth / total) * 100),
     parentContactPercent: Math.round((withParentContact / total) * 100),
+    whatsappPercent: Math.round((withWhatsapp / total) * 100),
+    campLocationPercent: Math.round((withCampLocation / total) * 100),
+    registrationNotesPercent: Math.round((withRegistrationNotes / total) * 100),
   }
 }
 

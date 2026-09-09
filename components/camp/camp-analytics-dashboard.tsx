@@ -326,7 +326,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatTile label="Return rate" value={`${report.returnRate}%`} hint="Returning campers this year" valueClassName="text-violet-600" />
         <StatTile label="Data quality" value={`${report.dataQualityScore}%`} hint="Average field completeness" />
         <StatTile
@@ -336,10 +336,22 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
           icon={Mail}
         />
         <StatTile
+          label="WhatsApp on file"
+          value={`${contactCoverage.whatsappPercent}%`}
+          hint={`${contactCoverage.withWhatsapp} of ${report.total}`}
+          icon={Phone}
+        />
+        <StatTile
           label="Date of birth"
           value={`${contactCoverage.dateOfBirthPercent}%`}
           hint={`${contactCoverage.withDateOfBirth} provided DOB`}
           icon={Cake}
+        />
+        <StatTile
+          label="Location notes"
+          value={`${contactCoverage.campLocationPercent}%`}
+          hint={`${contactCoverage.withCampLocation} left a location note`}
+          icon={MapPin}
         />
       </div>
 

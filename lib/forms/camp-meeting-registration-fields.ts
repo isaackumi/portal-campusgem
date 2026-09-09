@@ -111,6 +111,7 @@ export const CAMP_MEETING_REGISTRATION_FIELDS: FormTemplateField[] = [
     description: 'Optional — where you are coming from or staying during camp',
     field_type: 'short_text',
     required: false,
+    prefill_key: 'camp_location',
     sort_order: 12,
   },
   {
@@ -118,6 +119,7 @@ export const CAMP_MEETING_REGISTRATION_FIELDS: FormTemplateField[] = [
     description: 'Optional — questions or notes for the camp team',
     field_type: 'long_text',
     required: false,
+    prefill_key: 'registration_notes',
     sort_order: 13,
   },
 ]

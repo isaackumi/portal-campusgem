@@ -34,6 +34,9 @@ export type CampRegistrationPublicInput = {
   other_health_challenge?: string
   parent_name: string
   parent_contact: string
+  whatsapp?: string
+  camp_location?: string
+  registration_notes?: string
   role?: string
 }
 
@@ -124,6 +127,9 @@ export async function insertCampRegistrationPublic(
     health_challenges: healthChallenges,
     parent_name: args.parent_name,
     parent_contact: args.parent_contact,
+    whatsapp: args.whatsapp,
+    camp_location: args.camp_location,
+    registration_notes: args.registration_notes,
     role,
     is_new_registrant: isNewRegistrant,
     status: 'registered',

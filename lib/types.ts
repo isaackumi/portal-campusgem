@@ -934,6 +934,9 @@ export interface CampRegistration {
   health_challenges?: string[]
   parent_name?: string
   parent_contact?: string
+  whatsapp?: string
+  camp_location?: string
+  registration_notes?: string
   payment_status?: 'pending' | 'paid' | 'confirmed' | 'refunded'
   payment_reference?: string
   payment_amount?: number
@@ -1019,6 +1022,9 @@ export interface CampRegistrationForm {
   other_health_challenge?: string
   parent_name: string
   parent_contact: string
+  whatsapp?: string
+  camp_location?: string
+  registration_notes?: string
   role?: string
   is_new_registrant?: boolean // Will be derived from times_attended (0 = new)
   qr_code?: string // Generated backend/frontend

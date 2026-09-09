@@ -379,6 +379,12 @@ export default defineSchema({
     health_challenges: v.optional(v.array(v.string())),
     parent_name: v.optional(v.string()),
     parent_contact: v.optional(v.string()),
+    /** WhatsApp number from the public registration form. */
+    whatsapp: v.optional(v.string()),
+    /** Free-text location / travel note from the form (not residence). */
+    camp_location: v.optional(v.string()),
+    /** Optional comments / questions from the registrant. */
+    registration_notes: v.optional(v.string()),
     payment_status: v.optional(
       v.union(v.literal('pending'), v.literal('paid'), v.literal('confirmed'), v.literal('refunded'))
     ),

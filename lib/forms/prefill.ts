@@ -31,6 +31,8 @@ export type FormPrefillKey =
   | 'ministry_contribution'
   | 'prayer_request'
   | 'whatsapp'
+  | 'camp_location'
+  | 'registration_notes'
   | 'university'
   | 'where_we_met'
   | 'how_joined'
@@ -72,6 +74,9 @@ export const FORM_PREFILL_KEY_GROUPS: Array<{
       { value: 'times_attended', label: 'Times attended (number)' },
       { value: 'is_new_registrant', label: 'Is new registrant (yes/no)' },
       { value: 'role', label: 'Role' },
+      { value: 'camp_location', label: 'Camp location / travel note' },
+      { value: 'registration_notes', label: 'Registration comments' },
+      { value: 'whatsapp', label: 'WhatsApp number' },
     ],
   },
   {
@@ -85,7 +90,6 @@ export const FORM_PREFILL_KEY_GROUPS: Array<{
       { value: 'academic_level', label: 'Level (100, 200, Masters…)' },
       { value: 'ministry_contribution', label: 'Ministry contribution' },
       { value: 'prayer_request', label: 'Prayer request' },
-      { value: 'whatsapp', label: 'WhatsApp number' },
     ],
   },
   {

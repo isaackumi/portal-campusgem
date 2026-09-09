@@ -339,3 +339,23 @@ export async function checkFormSubmissionByPhoneFromConvex(
     submitted_at: result.submitted_at ?? null,
   }
 }
+
+export async function syncCampMeetingFormPrefillKeysInConvex(): Promise<{
+  forms_scanned: number
+  fields_updated: number
+}> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.forms.syncCampMeetingFormPrefillKeysWithSecret, {
+    secret: requireCampAdminSecret(),
+  })) as { forms_scanned: number; fields_updated: number }
+}
+
+export async function backfillCampRegistrationExtrasInConvex(): Promise<{
+  responses_scanned: number
+  registrations_patched: number
+}> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.forms.backfillCampRegistrationExtrasFromFormResponsesWithSecret, {
+    secret: requireCampAdminSecret(),
+  })) as { responses_scanned: number; registrations_patched: number }
+}

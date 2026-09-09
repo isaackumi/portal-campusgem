@@ -10,7 +10,7 @@ import {
 import {
   campRegistrationDuplicateStatus,
 } from './lib/campRegistrationDuplicate'
-import { mapFormValuesToCampRegistrationInput } from './lib/campFormSubmit'
+import { mapFormValuesToCampRegistrationInput, resolveCampFormPrefillKey } from './lib/campFormSubmit'
 
 const formFieldType = v.union(
   v.literal('short_text'),
@@ -675,5 +675,117 @@ export const deleteFormWithSecret = mutation({
 
     await ctx.db.delete('forms', form_id)
     return { deleted: true }
+  },
+})
+
+/** Patch live camp registration form fields so WhatsApp / Location / Comments map correctly. */
+export const syncCampMeetingFormPrefillKeysWithSecret = mutation({
+  args: { secret: v.string() },
+  returns: v.object({
+    forms_scanned: v.number(),
+    fields_updated: v.number(),
+  }),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    const forms = await ctx.db.query('forms').collect()
+    const campForms = forms.filter((row) => row.category === CAMP_MEETING_REGISTRATION_CATEGORY)
+    let fieldsUpdated = 0
+
+    for (const form of campForms) {
+      const fields = await ctx.db
+        .query('form_fields')
+        .withIndex('by_form', (q) => q.eq('form_id', String(form._id)))
+        .collect()
+      for (const field of fields) {
+        const resolved = resolveCampFormPrefillKey(field)
+        if (!resolved) continue
+        if ((field.prefill_key ?? '').trim() === resolved) continue
+        await ctx.db.patch('form_fields', field._id, {
+          prefill_key: resolved,
+          updated_at: Date.now(),
+        })
+        fieldsUpdated += 1
+      }
+    }
+
+    return { forms_scanned: campForms.length, fields_updated: fieldsUpdated }
+  },
+})
+
+/**
+ * Recover WhatsApp / location / comments already submitted on the form into camp registrations.
+ * Safe to re-run — only fills empty registration fields.
+ */
+export const backfillCampRegistrationExtrasFromFormResponsesWithSecret = mutation({
+  args: { secret: v.string() },
+  returns: v.object({
+    responses_scanned: v.number(),
+    registrations_patched: v.number(),
+  }),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    const forms = await ctx.db.query('forms').collect()
+    const campForms = forms.filter((row) => row.category === CAMP_MEETING_REGISTRATION_CATEGORY)
+    let responsesScanned = 0
+    let registrationsPatched = 0
+
+    for (const form of campForms) {
+      const campYearId = form.camp_year_id?.trim()
+      if (!campYearId) continue
+
+      const fields = await ctx.db
+        .query('form_fields')
+        .withIndex('by_form', (q) => q.eq('form_id', String(form._id)))
+        .collect()
+      const responses = await ctx.db
+        .query('form_responses')
+        .withIndex('by_form', (q) => q.eq('form_id', String(form._id)))
+        .collect()
+
+      for (const response of responses) {
+        responsesScanned += 1
+        const values = (response.values ?? {}) as Record<string, unknown>
+        const mapped = mapFormValuesToCampRegistrationInput(
+          fields,
+          values,
+          campYearId as Id<'camp_years'>,
+          0
+        )
+        const phone =
+          response.respondent_phone ||
+          (mapped.phone ? normalizeGhanaPhone(mapped.phone) : '')
+        if (!phone) continue
+
+        let registration = null
+        for (const variant of phoneLookupVariants(phone)) {
+          registration = await ctx.db
+            .query('camp_registrations')
+            .withIndex('by_camp_year_phone', (q) =>
+              q.eq('camp_year_id', campYearId).eq('phone', variant)
+            )
+            .first()
+          if (registration) break
+        }
+        if (!registration) continue
+
+        const patch: Record<string, unknown> = {}
+        if (!registration.whatsapp?.trim() && mapped.whatsapp) patch.whatsapp = mapped.whatsapp
+        if (!registration.camp_location?.trim() && mapped.camp_location) {
+          patch.camp_location = mapped.camp_location
+        }
+        if (!registration.registration_notes?.trim() && mapped.registration_notes) {
+          patch.registration_notes = mapped.registration_notes
+        }
+        if (Object.keys(patch).length === 0) continue
+
+        await ctx.db.patch('camp_registrations', registration._id, {
+          ...patch,
+          updated_at: Date.now(),
+        })
+        registrationsPatched += 1
+      }
+    }
+
+    return { responses_scanned: responsesScanned, registrations_patched: registrationsPatched }
   },
 })

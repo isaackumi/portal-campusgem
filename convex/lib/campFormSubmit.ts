@@ -1,8 +1,36 @@
 import type { Doc, Id } from '../_generated/dataModel'
 import type { CampRegistrationPublicInput } from './campRegistrationInsert'
+import { sanitizePhoneInput } from './phone'
 
 const AGE_BRACKETS = new Set(['1-12', '13-19', '20-29', '30-39', '40-49', '50+'])
 const SEX_VALUES = new Set(['Male', 'Female'])
+
+/** When live form fields lack prefill_key, map by normalized label. */
+const LABEL_TO_PREFILL: Record<string, string> = {
+  'full name': 'full_name',
+  'first name': 'first_name',
+  'last name': 'last_name',
+  'phone number': 'phone',
+  phone: 'phone',
+  'whatsapp number': 'whatsapp',
+  whatsapp: 'whatsapp',
+  email: 'email',
+  'sex / gender': 'sex',
+  sex: 'sex',
+  gender: 'sex',
+  'date of birth': 'date_of_birth',
+  'residence / area': 'residence',
+  residence: 'residence',
+  'school / work address': 'address_school_work',
+  'education level': 'education_level',
+  'age bracket': 'age_bracket',
+  'parent / guardian name': 'parent_name',
+  'parent / guardian phone': 'parent_contact',
+  location: 'camp_location',
+  comments: 'registration_notes',
+  comment: 'registration_notes',
+  notes: 'registration_notes',
+}
 
 function splitFullName(fullName: string): { first_name: string; last_name: string } {
   const trimmed = fullName.trim()
@@ -34,13 +62,27 @@ function stringValue(value: unknown): string {
   return String(value).trim()
 }
 
-function buildPrefillMap(
-  fields: Doc<'form_fields'>[],
+function normalizeLabel(label: string): string {
+  return label.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+export function resolveCampFormPrefillKey(field: {
+  prefill_key?: string | null
+  label?: string | null
+}): string | null {
+  const explicit = field.prefill_key?.trim()
+  if (explicit) return explicit
+  const fromLabel = LABEL_TO_PREFILL[normalizeLabel(field.label ?? '')]
+  return fromLabel ?? null
+}
+
+export function buildCampFormPrefillMap(
+  fields: Array<{ _id: unknown; prefill_key?: string | null; label?: string | null }>,
   values: Record<string, unknown>
 ): Map<string, unknown> {
   const map = new Map<string, unknown>()
   for (const field of fields) {
-    const key = field.prefill_key?.trim()
+    const key = resolveCampFormPrefillKey(field)
     if (!key) continue
     const raw = values[String(field._id)]
     if (raw == null || raw === '') continue
@@ -55,7 +97,7 @@ export function mapFormValuesToCampRegistrationInput(
   campYearId: Id<'camp_years'>,
   timesAttended: number
 ): CampRegistrationPublicInput {
-  const prefill = buildPrefillMap(fields, values)
+  const prefill = buildCampFormPrefillMap(fields, values)
 
   const fullName = stringValue(prefill.get('full_name'))
   const firstFromPrefill = stringValue(prefill.get('first_name'))
@@ -88,6 +130,10 @@ export function mapFormValuesToCampRegistrationInput(
 
   const parentName = stringValue(prefill.get('parent_name'))
   const parentContact = stringValue(prefill.get('parent_contact'))
+  const whatsappRaw = stringValue(prefill.get('whatsapp'))
+  const whatsapp = whatsappRaw ? sanitizePhoneInput(whatsappRaw) || whatsappRaw : undefined
+  const camp_location = stringValue(prefill.get('camp_location')) || undefined
+  const registration_notes = stringValue(prefill.get('registration_notes')) || undefined
 
   return {
     camp_year_id: campYearId,
@@ -114,6 +160,9 @@ export function mapFormValuesToCampRegistrationInput(
     other_health_challenge: stringValue(prefill.get('other_health_challenge')) || undefined,
     parent_name: parentName || 'N/A',
     parent_contact: parentContact || 'N/A',
+    whatsapp: whatsapp || undefined,
+    camp_location,
+    registration_notes,
     role: stringValue(prefill.get('role')) || undefined,
   }
 }

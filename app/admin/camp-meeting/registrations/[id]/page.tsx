@@ -586,6 +586,12 @@ export default function RegistrationDetailPage() {
                                                         <span>{data.phone}</span>
                                                     </div>
                                                 )}
+                                                {data.whatsapp ? (
+                                                    <div className="flex items-center text-sm">
+                                                        <Phone className="h-4 w-4 mr-3 text-emerald-500" />
+                                                        <span>WhatsApp: {data.whatsapp}</span>
+                                                    </div>
+                                                ) : null}
                                                 {data.facebook_username && (
                                                     <div className="flex items-center text-sm">
                                                         <User className="h-4 w-4 mr-3 text-gray-400" />
@@ -656,6 +662,26 @@ export default function RegistrationDetailPage() {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {data.camp_location ? (
+                                            <div>
+                                                <Label className="text-xs text-slate-500 uppercase">Location note</Label>
+                                                <div className="flex items-start text-sm mt-2">
+                                                    <MapPin className="h-4 w-4 mr-3 text-gray-400 mt-0.5" />
+                                                    <span>{data.camp_location}</span>
+                                                </div>
+                                            </div>
+                                        ) : null}
+
+                                        {data.registration_notes ? (
+                                            <div>
+                                                <Label className="text-xs text-slate-500 uppercase">Comments</Label>
+                                                <div className="flex items-start text-sm mt-2">
+                                                    <MessageSquare className="h-4 w-4 mr-3 text-gray-400 mt-0.5" />
+                                                    <span className="whitespace-pre-wrap">{data.registration_notes}</span>
+                                                </div>
+                                            </div>
+                                        ) : null}
 
                                         {data.parent_name && (
                                             <div>

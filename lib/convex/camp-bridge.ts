@@ -184,6 +184,9 @@ export function convexRegistrationDocToCampRegistration(
       : undefined,
     parent_name: doc.parent_name != null ? String(doc.parent_name) : undefined,
     parent_contact: doc.parent_contact != null ? String(doc.parent_contact) : undefined,
+    whatsapp: doc.whatsapp != null ? String(doc.whatsapp) : undefined,
+    camp_location: doc.camp_location != null ? String(doc.camp_location) : undefined,
+    registration_notes: doc.registration_notes != null ? String(doc.registration_notes) : undefined,
     payment_status: doc.payment_status as CampRegistration['payment_status'],
     payment_reference: doc.payment_reference != null ? String(doc.payment_reference) : undefined,
     payment_amount: doc.payment_amount != null ? Number(doc.payment_amount) : undefined,
@@ -231,6 +234,9 @@ export async function registerCamperViaConvex(formData: CampRegistrationForm): P
     other_health_challenge: formData.other_health_challenge,
     parent_name: formData.parent_name,
     parent_contact: formData.parent_contact,
+    whatsapp: formData.whatsapp,
+    camp_location: formData.camp_location,
+    registration_notes: formData.registration_notes,
     role: formData.role,
   })) as Record<string, unknown> | null
 
