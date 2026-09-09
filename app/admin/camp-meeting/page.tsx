@@ -11,6 +11,8 @@ import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { useAuth } from '@/components/providers'
 import { CampActiveYearEmpty } from '@/components/camp/camp-active-year-empty'
 import { CampMyFollowUpsCard } from '@/components/camp/camp-my-follow-ups-card'
+import { CampDailySummaryShare } from '@/components/camp/camp-daily-summary-share'
+import { buildLiveRegistrationPulse } from '@/lib/camp/analytics'
 import { getPublishedCampFormForYear } from '@/lib/actions/forms'
 import { 
   Users, 
@@ -173,6 +175,8 @@ export default function CampAdminDashboard() {
     const total = registrations.length
     const checkedIn = registrations.filter(r => r.status === 'checked_in').length
     const newRegistrants = registrations.filter(r => r.is_new_registrant).length
+    const returning = total - newRegistrants
+    const livePulse = buildLiveRegistrationPulse(registrations)
 
     const byRole = registrations.reduce((acc, curr) => {
         acc[curr.role] = (acc[curr.role] || 0) + 1
@@ -467,6 +471,20 @@ export default function CampAdminDashboard() {
                         </CardContent>
                     </Card>
                 </div>
+
+                {total > 0 ? (
+                    <CampDailySummaryShare
+                        variant="card"
+                        input={{
+                            year: campYear.year,
+                            theme: campYear.theme,
+                            total,
+                            newRegistrants,
+                            returning,
+                            pulse: livePulse,
+                        }}
+                    />
+                ) : null}
 
                 {/* Content Grid */}
                 <div className="grid gap-6 lg:grid-cols-3">

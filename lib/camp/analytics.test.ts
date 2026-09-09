@@ -121,7 +121,9 @@ describe('camp year analytics report', () => {
     ]
     const pulse = buildLiveRegistrationPulse(regs, now)
     expect(pulse.today).toBe(3)
+    expect(pulse.todayNew + pulse.todayReturning).toBe(3)
     expect(pulse.last7Days).toBe(6)
+    expect(pulse.last7New + pulse.last7Returning).toBe(6)
     expect(pulse.peakDayCount).toBeGreaterThanOrEqual(3)
   })
 })

@@ -63,8 +63,12 @@ function yearReportSections(report: CampYearAnalyticsReport): string[] {
   lines.push(
     ...section('Live pulse', [
       row(['Today', report.livePulse.today]),
+      row(['Today new', report.livePulse.todayNew]),
+      row(['Today returning', report.livePulse.todayReturning]),
       row(['Last 24 hours', report.livePulse.last24Hours]),
       row(['Last 7 days', report.livePulse.last7Days]),
+      row(['Last 7 new', report.livePulse.last7New]),
+      row(['Last 7 returning', report.livePulse.last7Returning]),
       row(['Avg per day', report.livePulse.avgPerDay]),
       row(['Recent share %', report.livePulse.recentSharePercent]),
       row(['Momentum', report.livePulse.momentum]),

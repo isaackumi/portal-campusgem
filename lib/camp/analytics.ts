@@ -148,8 +148,12 @@ export type DataQualityRow = {
 /** Live form-season velocity signals for an open registration year. */
 export type LiveRegistrationPulse = {
   today: number
+  todayNew: number
+  todayReturning: number
   last24Hours: number
   last7Days: number
+  last7New: number
+  last7Returning: number
   avgPerDay: number
   activeDays: number
   daysSinceFirst: number | null
@@ -927,8 +931,12 @@ export function buildLiveRegistrationPulse(
   if (total === 0) {
     return {
       today: 0,
+      todayNew: 0,
+      todayReturning: 0,
       last24Hours: 0,
       last7Days: 0,
+      last7New: 0,
+      last7Returning: 0,
       avgPerDay: 0,
       activeDays: 0,
       daysSinceFirst: null,
@@ -949,8 +957,12 @@ export function buildLiveRegistrationPulse(
   const prev3Cutoff = nowMs - 6 * dayMs
 
   let today = 0
+  let todayNew = 0
+  let todayReturning = 0
   let last24Hours = 0
   let last7Days = 0
+  let last7New = 0
+  let last7Returning = 0
   let last3Days = 0
   let prev3Days = 0
 
@@ -958,9 +970,18 @@ export function buildLiveRegistrationPulse(
     const created = Date.parse(reg.created_at)
     if (Number.isNaN(created)) continue
     const day = new Date(created).toISOString().split('T')[0]
-    if (day === todayKey) today += 1
+    const isNew = Boolean(reg.is_new_registrant)
+    if (day === todayKey) {
+      today += 1
+      if (isNew) todayNew += 1
+      else todayReturning += 1
+    }
     if (created >= last24Cutoff) last24Hours += 1
-    if (created >= last7Cutoff) last7Days += 1
+    if (created >= last7Cutoff) {
+      last7Days += 1
+      if (isNew) last7New += 1
+      else last7Returning += 1
+    }
     if (created >= last3Cutoff) last3Days += 1
     else if (created >= prev3Cutoff) prev3Days += 1
   }
@@ -983,8 +1004,12 @@ export function buildLiveRegistrationPulse(
 
   return {
     today,
+    todayNew,
+    todayReturning,
     last24Hours,
     last7Days,
+    last7New,
+    last7Returning,
     avgPerDay,
     activeDays: timeline.length,
     daysSinceFirst: firstDay ? daysBetweenUtc(firstDay, todayKey) : null,

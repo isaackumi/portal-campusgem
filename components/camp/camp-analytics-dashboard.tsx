@@ -35,6 +35,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react'
+import { CampDailySummaryShare } from '@/components/camp/camp-daily-summary-share'
 
 export function AnalyticsBreakdownCard({
   title,
@@ -167,7 +168,21 @@ function momentumLabel(momentum: LiveRegistrationPulse['momentum']): string {
   return 'No signal yet'
 }
 
-function LivePulsePanel({ pulse, total }: { pulse: LiveRegistrationPulse; total: number }) {
+function LivePulsePanel({
+  pulse,
+  total,
+  year,
+  theme,
+  newRegistrants,
+  returning,
+}: {
+  pulse: LiveRegistrationPulse
+  total: number
+  year: number
+  theme?: string
+  newRegistrants: number
+  returning: number
+}) {
   if (total === 0) return null
 
   return (
@@ -195,17 +210,21 @@ function LivePulsePanel({ pulse, total }: { pulse: LiveRegistrationPulse; total:
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-5">
+      <CardContent className="space-y-4 pt-5">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-indigo-100 bg-white p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Today</p>
             <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.today}</p>
-            <p className="text-xs text-slate-500">{pulse.last24Hours} in last 24h</p>
+            <p className="text-xs text-slate-500">
+              {pulse.todayNew} new · {pulse.todayReturning} returning
+            </p>
           </div>
           <div className="rounded-xl border border-indigo-100 bg-white p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Last 7 days</p>
             <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.last7Days}</p>
-            <p className="text-xs text-slate-500">{pulse.recentSharePercent}% of all sign-ups</p>
+            <p className="text-xs text-slate-500">
+              {pulse.last7New} new · {pulse.last7Returning} returning
+            </p>
           </div>
           <div className="rounded-xl border border-indigo-100 bg-white p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Avg / day</p>
@@ -218,6 +237,17 @@ function LivePulsePanel({ pulse, total }: { pulse: LiveRegistrationPulse; total:
             <p className="text-xs text-slate-500">{pulse.peakDay ?? '—'} · window {pulse.daysSinceFirst ?? 0}d</p>
           </div>
         </div>
+        <CampDailySummaryShare
+          variant="card"
+          input={{
+            year,
+            theme,
+            total,
+            newRegistrants,
+            returning,
+            pulse,
+          }}
+        />
       </CardContent>
     </Card>
   )
@@ -312,7 +342,14 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
         />
       </div>
 
-      <LivePulsePanel pulse={livePulse} total={report.total} />
+      <LivePulsePanel
+        pulse={livePulse}
+        total={report.total}
+        year={report.year}
+        theme={report.theme}
+        newRegistrants={overview.newRegistrants}
+        returning={overview.returning}
+      />
 
       <InsightsPanel title="Key patterns this year" insights={report.insights} />
 
