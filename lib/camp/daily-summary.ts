@@ -8,6 +8,8 @@ export type CampDailySummaryInput = {
   newRegistrants: number
   returning: number
   pulse: LiveRegistrationPulse
+  /** Absolute public registration URL (clickable in WhatsApp). */
+  registrationUrl?: string | null
   now?: Date
 }
 
@@ -46,6 +48,16 @@ export function buildCampDailySummaryText(input: CampDailySummaryInput): string 
 
   if (input.pulse.peakDay && input.pulse.peakDayCount > 0) {
     lines.push(`Peak day so far: ${input.pulse.peakDayCount} on ${input.pulse.peakDay}`)
+  }
+
+  const registrationUrl = input.registrationUrl?.trim()
+  if (registrationUrl) {
+    lines.push(
+      '',
+      '*Not registered yet?* Don’t miss out — sign up now, it only takes a few minutes.',
+      'Register here:',
+      registrationUrl
+    )
   }
 
   return lines.join('\n')

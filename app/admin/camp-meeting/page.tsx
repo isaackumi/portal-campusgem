@@ -475,6 +475,7 @@ export default function CampAdminDashboard() {
                 {total > 0 ? (
                     <CampDailySummaryShare
                         variant="card"
+                        yearId={campYear.id}
                         input={{
                             year: campYear.year,
                             theme: campYear.theme,
@@ -482,6 +483,7 @@ export default function CampAdminDashboard() {
                             newRegistrants,
                             returning,
                             pulse: livePulse,
+                            registrationUrl,
                         }}
                     />
                 ) : null}

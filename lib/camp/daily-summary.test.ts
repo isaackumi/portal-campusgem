@@ -64,6 +64,7 @@ describe('camp daily summary', () => {
       returning: 1,
       pulse,
       now,
+      registrationUrl: 'https://portal-gem.vercel.app/f/camp-2026',
     })
 
     expect(text).toContain('Camp Meeting 2026 — Light')
@@ -71,6 +72,9 @@ describe('camp daily summary', () => {
     expect(text).toContain('• New (first-timers): 1')
     expect(text).toContain('• Returning: 1')
     expect(text).toContain('*Season total:* 3')
+    expect(text).toContain('Not registered yet?')
+    expect(text).toContain('Register here:')
+    expect(text).toContain('https://portal-gem.vercel.app/f/camp-2026')
     expect(buildCampDailySummaryWhatsAppUrl({
       year: 2026,
       total: 3,
@@ -78,6 +82,21 @@ describe('camp daily summary', () => {
       returning: 1,
       pulse,
       now,
+      registrationUrl: 'https://portal-gem.vercel.app/f/camp-2026',
     })).toContain('wa.me/?text=')
+  })
+
+  it('omits the registration CTA when no link is provided', () => {
+    const now = new Date('2026-09-09T12:00:00.000Z')
+    const pulse = buildLiveRegistrationPulse([], now)
+    const text = buildCampDailySummaryText({
+      year: 2026,
+      total: 0,
+      newRegistrants: 0,
+      returning: 0,
+      pulse,
+      now,
+    })
+    expect(text).not.toContain('Register here:')
   })
 })

@@ -172,6 +172,7 @@ function LivePulsePanel({
   pulse,
   total,
   year,
+  yearId,
   theme,
   newRegistrants,
   returning,
@@ -179,6 +180,7 @@ function LivePulsePanel({
   pulse: LiveRegistrationPulse
   total: number
   year: number
+  yearId: string
   theme?: string
   newRegistrants: number
   returning: number
@@ -239,6 +241,7 @@ function LivePulsePanel({
         </div>
         <CampDailySummaryShare
           variant="card"
+          yearId={yearId}
           input={{
             year,
             theme,
@@ -346,6 +349,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
         pulse={livePulse}
         total={report.total}
         year={report.year}
+        yearId={report.yearId}
         theme={report.theme}
         newRegistrants={overview.newRegistrants}
         returning={overview.returning}
