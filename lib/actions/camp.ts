@@ -448,6 +448,9 @@ export async function sendCampBulkSmsAction(input: {
         recipient_registration_id: registration.id,
         recipient_phone: smsResult.normalizedPhone ?? to,
         message_body: message,
+        status: smsResult.success ? 'sent' : 'failed',
+        provider_message_id: smsResult.messageId,
+        error_message: smsResult.error,
         metadata: {
           batch_id,
           provider: smsResult.provider,
