@@ -35,6 +35,12 @@ import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { isValidSmsPhone, normalizeSmsPhone } from '@/lib/comms/sms-client'
+import {
+  SmsProviderBanner,
+  type SmsProviderStatus,
+  commsMetaBadge,
+} from '@/components/comms/sms-provider-banner'
 import {
   AlertCircle,
   CheckCircle2,
@@ -84,9 +90,11 @@ export function CommsCenterView() {
   const [moduleFilter, setModuleFilter] = useState<CommsModule | 'all'>('all')
   const [history, setHistory] = useState<CommunicationRecord[]>([])
   const [stats, setStats] = useState<CommsStats | null>(null)
-  const [providers, setProviders] = useState<{ email: string; sms: boolean } | null>(null)
+  const [providers, setProviders] = useState<SmsProviderStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [dryRun, setDryRun] = useState(false)
+  const [forceMock, setForceMock] = useState(false)
 
   // Compose state
   const [module, setModule] = useState<CommsModule>('church')
@@ -115,6 +123,9 @@ export function CommsCenterView() {
     setHistory(historyRes.data ?? [])
     setStats(statsRes.data ?? null)
     setProviders(providerRes.data ?? null)
+    if (providerRes.data?.devModeAvailable && providerRes.data.environment !== 'production') {
+      setDryRun((prev) => prev || false)
+    }
     setLoading(false)
   }, [moduleFilter])
 
@@ -170,7 +181,9 @@ export function CommsCenterView() {
   }
 
   const deliverableCount = useMemo(() => {
-    return selectedRecipients.filter((r) => (channel === 'email' ? r.email : r.phone)).length
+    return selectedRecipients.filter((r) =>
+      channel === 'email' ? Boolean(r.email) : isValidSmsPhone(r.phone)
+    ).length
   }, [selectedRecipients, channel])
 
   async function handleSend() {
@@ -197,6 +210,8 @@ export function CommsCenterView() {
       message_body: messageBody,
       recipients: audienceMode === 'manual' ? [] : selectedRecipients,
       manual_recipients: audienceMode === 'manual' ? manualRecipients : undefined,
+      dry_run: channel === 'sms' ? dryRun : undefined,
+      force_mock: channel === 'sms' ? forceMock : undefined,
       metadata:
         audienceMode === 'group' && selectedGroupId
           ? { group_id: selectedGroupId, group_name: groups.find((g) => g.id === selectedGroupId)?.name }
@@ -210,8 +225,10 @@ export function CommsCenterView() {
     }
 
     toast({
-      title: 'Messages sent',
-      description: `${data.success_count} sent${data.error_count ? `, ${data.error_count} failed` : ''}.`,
+      title: dryRun && channel === 'sms' ? 'Dry run complete' : 'Messages sent',
+      description: `${data.success_count} sent${data.error_count ? `, ${data.error_count} failed` : ''}${
+        data.batch_id ? ` · batch ${data.batch_id.slice(0, 8)}` : ''
+      }.`,
     })
 
     setMessageBody('')
@@ -253,9 +270,28 @@ export function CommsCenterView() {
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Total logged" value={stats?.total ?? 0} />
         <StatTile label="Sent / delivered" value={stats?.sent ?? 0} />
-        <StatTile label="Failed" value={stats?.failed ?? 0} hint={`Email: ${providers?.email ?? 'mock'} · SMS: ${providers?.sms ? 'live' : 'mock / not configured'}`} />
+        <StatTile
+          label="Failed"
+          value={stats?.failed ?? 0}
+          hint={`Email: ${providers?.email ?? 'mock'} · SMS: ${providers?.smsProvider ?? 'mock'}${
+            providers?.smsConfigured ? '' : ' (not configured)'
+          }`}
+        />
         <StatTile label="SMS messages" value={stats?.sms ?? 0} hint={`${stats?.email ?? 0} emails logged`} />
       </div>
+
+      {channel === 'sms' || providers ? (
+        <div className="mb-6">
+          <SmsProviderBanner
+            status={providers}
+            dryRun={dryRun}
+            onDryRunChange={setDryRun}
+            forceMock={forceMock}
+            onForceMockChange={setForceMock}
+            senderId={user?.id}
+          />
+        </div>
+      ) : null}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Label className="text-sm text-muted-foreground">History filter:</Label>
@@ -450,13 +486,21 @@ export function CommsCenterView() {
                 />
               </div>
 
-              {!providers?.sms && channel === 'sms' ? (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                  SMS provider not configured yet — messages will use mock mode until Hubtel
-                  credentials (<code className="text-xs">HUBTEL_CLIENT_ID</code> /{' '}
-                  <code className="text-xs">HUBTEL_CLIENT_SECRET</code>) or{' '}
-                  <code className="text-xs">SMS_API_URL</code> are set.
-                </p>
+              {channel === 'sms' && selectedRecipients.length > 0 ? (
+                <div className="rounded-lg border bg-slate-50 px-3 py-2 text-xs text-slate-700 space-y-1">
+                  <p>
+                    {deliverableCount} valid Ghana phones · Hubtel format 233XXXXXXXXX
+                  </p>
+                  {selectedRecipients
+                    .filter((r) => r.phone)
+                    .slice(0, 5)
+                    .map((r) => (
+                      <p key={`${r.entity_id}-${r.id}`} className="font-mono">
+                        {r.name}: {r.phone} → {normalizeSmsPhone(r.phone!)}{' '}
+                        {isValidSmsPhone(r.phone) ? '✓' : '✗'}
+                      </p>
+                    ))}
+                </div>
               ) : null}
 
               <Button
@@ -465,7 +509,11 @@ export function CommsCenterView() {
                 onClick={() => void handleSend()}
               >
                 <Send className="mr-2 h-4 w-4" />
-                {sending ? 'Sending…' : `Send ${COMMS_CHANNEL_LABELS[channel]}`}
+                {sending
+                  ? 'Sending…'
+                  : dryRun && channel === 'sms'
+                    ? `Dry-run ${COMMS_CHANNEL_LABELS[channel]}`
+                    : `Send ${COMMS_CHANNEL_LABELS[channel]}`}
               </Button>
             </CardContent>
           </Card>
@@ -482,7 +530,9 @@ export function CommsCenterView() {
                 <p className="p-6 text-sm text-muted-foreground">No messages logged yet.</p>
               ) : (
                 <div className="divide-y">
-                  {history.map((row) => (
+                  {history.map((row) => {
+                    const meta = commsMetaBadge(row.metadata)
+                    return (
                     <div key={row.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -501,6 +551,13 @@ export function CommsCenterView() {
                           >
                             {COMMS_STATUS_LABELS[row.status]}
                           </Badge>
+                          {meta.provider ? (
+                            <Badge variant="outline" className="font-mono text-[10px]">
+                              {meta.provider}
+                            </Badge>
+                          ) : null}
+                          {meta.dryRun ? <Badge variant="secondary">dry-run</Badge> : null}
+                          {meta.test ? <Badge variant="secondary">test</Badge> : null}
                         </div>
                         {row.subject ? <p className="text-sm font-medium text-slate-700">{row.subject}</p> : null}
                         <p className="line-clamp-2 text-sm text-muted-foreground">{row.message_body}</p>
@@ -508,6 +565,11 @@ export function CommsCenterView() {
                           {row.recipient_email ?? row.recipient_phone ?? '—'}
                           {row.sent_at ? ` · ${new Date(row.sent_at).toLocaleString()}` : ''}
                         </p>
+                        {row.provider_message_id ? (
+                          <p className="font-mono text-[11px] text-slate-500">
+                            id {row.provider_message_id}
+                          </p>
+                        ) : null}
                         {row.error_message ? (
                           <p className="text-xs text-red-600">{row.error_message}</p>
                         ) : null}
@@ -518,7 +580,8 @@ export function CommsCenterView() {
                         </Badge>
                       ) : null}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>

@@ -60,6 +60,10 @@ export interface SendCommsRequest {
   batch_id?: string
   filter_criteria?: Record<string, unknown>
   metadata?: Record<string, unknown>
+  /** SMS only — validate/normalize without calling Hubtel. */
+  dry_run?: boolean
+  /** SMS only — force mock provider. */
+  force_mock?: boolean
 }
 
 export interface SendCommsResult {

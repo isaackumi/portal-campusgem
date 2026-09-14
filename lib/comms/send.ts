@@ -8,13 +8,14 @@ import type {
   SendCommsResult,
 } from '@/lib/comms/types'
 import { personalizeMessage } from '@/lib/comms/recipients'
-import { normalizeSmsPhone, sendSms } from '@/lib/comms/sms-client'
+import { isValidSmsPhone, normalizeSmsPhone, resolveSmsProvider, sendSms } from '@/lib/comms/sms-client'
 import { EmailService } from '@/lib/services/email-service'
 
 const emailService = new EmailService()
 
 function canDeliver(recipient: CommsRecipient, channel: CommsChannel): boolean {
-  return channel === 'email' ? Boolean(recipient.email?.trim()) : Boolean(recipient.phone?.trim())
+  if (channel === 'email') return Boolean(recipient.email?.trim())
+  return isValidSmsPhone(recipient.phone)
 }
 
 export async function sendCommunications(request: SendCommsRequest): Promise<SendCommsResult> {
@@ -24,6 +25,7 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
   let error_count = 0
   const records: CommunicationRecord[] = []
   const smsGapMs = Math.max(0, Number(process.env.SMS_BULK_GAP_MS ?? 150))
+  const smsProvider = resolveSmsProvider()
 
   const { logCommunicationInConvex } = await import('@/lib/convex/comms-bridge')
 
@@ -41,7 +43,13 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
 
     if (!canDeliver(recipient, request.channel)) {
       error_count++
-      errors.push(`${recipient.name}: No ${request.channel === 'email' ? 'email' : 'phone'}`)
+      const reason =
+        request.channel === 'email'
+          ? 'No email'
+          : recipient.phone?.trim()
+            ? `Invalid phone (${recipient.phone})`
+            : 'No phone'
+      errors.push(`${recipient.name}: ${reason}`)
       const logged = await logCommunicationInConvex({
         module: request.module,
         channel: request.channel,
@@ -57,8 +65,12 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
         message_body: body,
         filter_criteria: request.filter_criteria,
         status: 'failed',
-        error_message: `Missing ${request.channel === 'email' ? 'email' : 'phone'}`,
-        metadata: request.metadata,
+        error_message: reason,
+        metadata: {
+          ...request.metadata,
+          provider: request.channel === 'sms' ? smsProvider : 'email',
+          dry_run: Boolean(request.dry_run),
+        },
       })
       records.push(logged)
       continue
@@ -90,7 +102,7 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
           status: result.success ? 'sent' : 'failed',
           provider_message_id: result.communication?.provider_message_id,
           error_message: result.error,
-          metadata: request.metadata,
+          metadata: { ...request.metadata, provider: 'email' },
           sent_at: result.success ? new Date().toISOString() : undefined,
         })
 
@@ -101,10 +113,14 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
         }
         records.push(logged)
       } else {
-        if (index > 0 && smsGapMs > 0) {
+        if (index > 0 && smsGapMs > 0 && !request.dry_run) {
           await new Promise((resolve) => setTimeout(resolve, smsGapMs))
         }
-        const result = await sendSms(recipient.phone!, body)
+        const result = await sendSms(recipient.phone!, body, {
+          dryRun: request.dry_run,
+          forceMock: request.force_mock,
+        })
+        const normalized = result.normalizedPhone ?? normalizeSmsPhone(recipient.phone!)
         const logged = await logCommunicationInConvex({
           module: request.module,
           channel: 'sms',
@@ -112,7 +128,7 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
           sender_id: request.sender_id,
           batch_id,
           recipient_name: recipient.name,
-          recipient_phone: recipient.phone ? normalizeSmsPhone(recipient.phone) : recipient.phone,
+          recipient_phone: normalized,
           recipient_entity_type: recipient.entity_type,
           recipient_entity_id: recipient.entity_id,
           message_body: body,
@@ -120,7 +136,13 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
           status: result.success ? 'sent' : 'failed',
           provider_message_id: result.messageId,
           error_message: result.error,
-          metadata: request.metadata,
+          metadata: {
+            ...request.metadata,
+            provider: result.provider,
+            dry_run: Boolean(result.dryRun || request.dry_run),
+            raw_phone: recipient.phone,
+            normalized_phone: normalized,
+          },
           sent_at: result.success ? new Date().toISOString() : undefined,
         })
 
@@ -151,7 +173,11 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
         filter_criteria: request.filter_criteria,
         status: 'failed',
         error_message: message,
-        metadata: request.metadata,
+        metadata: {
+          ...request.metadata,
+          provider: request.channel === 'sms' ? smsProvider : 'email',
+          dry_run: Boolean(request.dry_run),
+        },
       })
       records.push(logged)
     }

@@ -4,8 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmailService } from '@/lib/services/email-service'
 import { getCampCommunications, sendCampBulkSmsAction } from '@/lib/actions/camp'
+import { getCommsProviderStatusAction } from '@/lib/actions/comms'
 import { CampRegistration, CampCommunication } from '@/lib/types'
 import { isValidSmsPhone, normalizeSmsPhone } from '@/lib/comms/sms-client'
+import {
+  SmsProviderBanner,
+  type SmsProviderStatus,
+  commsMetaBadge,
+} from '@/components/comms/sms-provider-banner'
 import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -51,6 +57,9 @@ export default function BulkCommunicationsPage() {
     const [messageBody, setMessageBody] = useState('')
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [selectAll, setSelectAll] = useState(false)
+    const [smsStatus, setSmsStatus] = useState<SmsProviderStatus | null>(null)
+    const [dryRun, setDryRun] = useState(false)
+    const [forceMock, setForceMock] = useState(false)
 
     // Redirect to auth if not logged in
     useEffect(() => {
@@ -63,6 +72,9 @@ export default function BulkCommunicationsPage() {
         if (campYear) {
             loadCommunications()
         }
+        void getCommsProviderStatusAction().then((res) => {
+            if (res.data) setSmsStatus(res.data)
+        })
     }, [campYear])
 
     async function loadCommunications() {
@@ -189,6 +201,15 @@ export default function BulkCommunicationsPage() {
                     sender_id: user.id,
                     message_template: messageBody,
                     camp_year: campYear.year,
+                    dry_run: dryRun,
+                    force_mock: forceMock,
+                    filter_criteria: {
+                        role: roleFilter,
+                        status: statusFilter,
+                        payment: paymentFilter,
+                        type: typeFilter,
+                        search: searchQuery || undefined,
+                    },
                     recipients: selectedRegistrations.map((r) => ({
                         id: r.id,
                         full_name: r.full_name,
@@ -245,7 +266,12 @@ export default function BulkCommunicationsPage() {
             }
 
             toast({
-                title: errorCount > 0 && successCount === 0 ? 'Send failed' : 'Messages Sent',
+                title:
+                    errorCount > 0 && successCount === 0
+                        ? 'Send failed'
+                        : dryRun && communicationType === 'sms'
+                          ? 'Dry run complete'
+                          : 'Messages Sent',
                 variant: errorCount > 0 && successCount === 0 ? 'destructive' : 'default',
                 description: `Successfully sent to ${successCount} recipient(s). ${errorCount > 0 ? `${errorCount} failed.` : ''}${
                     errors.length ? ` ${errors.slice(0, 3).join(' · ')}` : ''
@@ -306,6 +332,15 @@ export default function BulkCommunicationsPage() {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:p-6">
                 <CampAdminPageHeader title="Bulk Communications" campYear={campYear} />
+
+                <SmsProviderBanner
+                    status={smsStatus}
+                    dryRun={dryRun}
+                    onDryRunChange={setDryRun}
+                    forceMock={forceMock}
+                    onForceMockChange={setForceMock}
+                    senderId={user?.id}
+                />
 
                 <Tabs defaultValue="send" className="space-y-6">
                     <ScrollableTabsList>
@@ -627,7 +662,12 @@ export default function BulkCommunicationsPage() {
                                     ) : (
                                         <>
                                             <Send className="mr-2 h-4 w-4" />
-                                            Send {selectedIds.size} {communicationType === 'email' ? 'Email(s)' : 'SMS'}
+                                            Send {selectedIds.size}{' '}
+                                            {communicationType === 'email'
+                                              ? 'Email(s)'
+                                              : dryRun
+                                                ? 'SMS (dry run)'
+                                                : 'SMS'}
                                         </>
                                     )}
                                 </Button>
@@ -686,6 +726,21 @@ export default function BulkCommunicationsPage() {
                                                             {comm.subject && (
                                                                 <p className="text-sm text-slate-600 mt-1">{comm.subject}</p>
                                                             )}
+                                                            <div className="mt-1 flex flex-wrap gap-1">
+                                                              {commsMetaBadge(comm.metadata).provider ? (
+                                                                <Badge variant="outline" className="font-mono text-[10px]">
+                                                                  {String(commsMetaBadge(comm.metadata).provider)}
+                                                                </Badge>
+                                                              ) : null}
+                                                              {commsMetaBadge(comm.metadata).dryRun ? (
+                                                                <Badge variant="secondary">dry-run</Badge>
+                                                              ) : null}
+                                                              {typeof comm.metadata?.batch_id === 'string' ? (
+                                                                <Badge variant="outline" className="font-mono text-[10px]">
+                                                                  batch {String(comm.metadata.batch_id).slice(0, 8)}
+                                                                </Badge>
+                                                              ) : null}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <Badge
@@ -704,13 +759,21 @@ export default function BulkCommunicationsPage() {
                                                 <div className="text-sm text-slate-700 bg-slate-50 p-3 rounded-md mb-3">
                                                     {comm.message_body}
                                                 </div>
+                                                {comm.provider_message_id ? (
+                                                  <p className="mb-2 font-mono text-[11px] text-slate-500">
+                                                    id {comm.provider_message_id}
+                                                  </p>
+                                                ) : null}
+                                                {comm.error_message ? (
+                                                  <p className="mb-2 text-xs text-red-600">{comm.error_message}</p>
+                                                ) : null}
 
                                                 <div className="flex items-center justify-between text-xs text-slate-500">
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex items-center gap-1">
                                                             <Clock className="h-3 w-3" />
                                                             <span>
-                                                                {new Date(comm.created_at).toLocaleString()}
+                                                                {new Date(comm.sent_at || comm.created_at).toLocaleString()}
                                                             </span>
                                                         </div>
                                                         {comm.recipient_registration && (

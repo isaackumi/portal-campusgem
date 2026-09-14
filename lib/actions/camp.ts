@@ -361,8 +361,18 @@ export async function sendCampBulkSmsAction(input: {
   message_template: string
   camp_year?: number | null
   recipients: CampSmsRecipient[]
+  dry_run?: boolean
+  force_mock?: boolean
+  filter_criteria?: Record<string, unknown>
 }): Promise<{
-  data: { success_count: number; error_count: number; errors: string[] } | null
+  data: {
+    success_count: number
+    error_count: number
+    errors: string[]
+    batch_id: string
+    provider: string
+    dry_run: boolean
+  } | null
   error: string | null
 }> {
   requireConvexEnv()
@@ -370,13 +380,23 @@ export async function sendCampBulkSmsAction(input: {
   if (!input.message_template.trim()) return { data: null, error: 'Message is required' }
   if (!input.recipients.length) return { data: null, error: 'Select at least one recipient' }
 
-  const { sendSms, normalizeSmsPhone, isValidSmsPhone, isSmsConfigured } = await import(
-    '@/lib/comms/sms-client'
-  )
-  if (!isSmsConfigured()) {
+  const {
+    sendSms,
+    normalizeSmsPhone,
+    isValidSmsPhone,
+    isSmsConfigured,
+    resolveSmsProvider,
+  } = await import('@/lib/comms/sms-client')
+  const { randomUUID } = await import('crypto')
+  const batch_id = randomUUID()
+  const dryRun = Boolean(input.dry_run)
+  const forceMock = Boolean(input.force_mock)
+
+  if (!dryRun && !forceMock && !isSmsConfigured()) {
     return {
       data: null,
-      error: 'SMS is not configured. Set Hubtel credentials on the server (HUBTEL_CLIENT_ID / HUBTEL_CLIENT_SECRET).',
+      error:
+        'SMS is not configured. Set Hubtel credentials on the server (HUBTEL_CLIENT_ID / HUBTEL_CLIENT_SECRET), or enable Dry run / Force mock in developer mode.',
     }
   }
 
@@ -385,6 +405,7 @@ export async function sendCampBulkSmsAction(input: {
   let success_count = 0
   let error_count = 0
   const errors: string[] = []
+  let lastProvider = dryRun ? 'dry_run' : resolveSmsProvider()
 
   for (let i = 0; i < input.recipients.length; i++) {
     const registration = input.recipients[i]
@@ -409,23 +430,33 @@ export async function sendCampBulkSmsAction(input: {
     const message = personalizeCampSms(input.message_template, registration, input.camp_year)
     const to = normalizeSmsPhone(registration.phone)
 
-    if (i > 0 && smsGapMs > 0) {
+    if (i > 0 && smsGapMs > 0 && !dryRun) {
       await new Promise((resolve) => setTimeout(resolve, smsGapMs))
     }
 
     try {
-      const smsResult = await sendSms(registration.phone, message)
+      const smsResult = await sendSms(registration.phone, message, {
+        dryRun,
+        forceMock,
+      })
+      lastProvider = smsResult.provider
       await logCampCommunicationInConvex({
         camp_year_id: input.camp_year_id,
         communication_type: 'sms',
         sender_id: input.sender_id,
-        recipient_type: 'individual',
+        recipient_type: input.recipients.length > 1 ? 'bulk' : 'individual',
         recipient_registration_id: registration.id,
-        recipient_phone: to,
+        recipient_phone: smsResult.normalizedPhone ?? to,
         message_body: message,
-        status: smsResult.success ? 'sent' : 'failed',
-        provider_message_id: smsResult.messageId,
-        error_message: smsResult.error,
+        metadata: {
+          batch_id,
+          provider: smsResult.provider,
+          dry_run: dryRun || Boolean(smsResult.dryRun),
+          recipient_name: label,
+          raw_phone: registration.phone,
+          normalized_phone: smsResult.normalizedPhone ?? to,
+          filters: input.filter_criteria,
+        },
         sent_at: smsResult.success ? new Date().toISOString() : undefined,
       })
 
@@ -441,7 +472,18 @@ export async function sendCampBulkSmsAction(input: {
   }
 
   revalidatePath('/admin/camp-meeting/communications')
-  return { data: { success_count, error_count, errors }, error: null }
+  revalidatePath('/admin/communications')
+  return {
+    data: {
+      success_count,
+      error_count,
+      errors,
+      batch_id,
+      provider: lastProvider,
+      dry_run: dryRun,
+    },
+    error: null,
+  }
 }
 
 export async function appendCampInteraction(data: {

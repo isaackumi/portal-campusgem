@@ -17,7 +17,12 @@ import {
   visitorToRecipient,
 } from '@/lib/comms/recipients'
 import { sendCommunications } from '@/lib/comms/send'
-import { isSmsConfigured } from '@/lib/comms/sms-client'
+import {
+  getSmsProviderStatus,
+  isValidSmsPhone,
+  normalizeSmsPhone,
+  sendSms,
+} from '@/lib/comms/sms-client'
 
 function isConvexDataSource(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_CONVEX_URL)
@@ -69,15 +74,108 @@ export async function getCommsStatsAction(
 }
 
 export async function getCommsProviderStatusAction(): Promise<
-  ApiResponse<{ email: string; sms: boolean }>
+  ApiResponse<{
+    email: string
+    sms: boolean
+    smsConfigured: boolean
+    smsProvider: string
+    smsSenderId: string
+    environment: string
+    devModeAvailable: boolean
+    forceMock: boolean
+  }>
 > {
   const emailProvider = process.env.NEXT_PUBLIC_EMAIL_PROVIDER ?? 'mock'
+  const sms = getSmsProviderStatus()
   return {
     data: {
       email: emailProvider,
-      sms: isSmsConfigured(),
+      sms: sms.configured,
+      smsConfigured: sms.configured,
+      smsProvider: sms.provider,
+      smsSenderId: sms.senderId,
+      environment: sms.environment,
+      devModeAvailable: sms.devModeAvailable,
+      forceMock: sms.forceMock,
     },
     error: null,
+    loading: false,
+  }
+}
+
+/** Single test/dry-run SMS for developer tooling. */
+export async function sendTestSmsAction(input: {
+  phone: string
+  message?: string
+  dry_run?: boolean
+  force_mock?: boolean
+  sender_id?: string
+}): Promise<
+  ApiResponse<{
+    success: boolean
+    messageId?: string
+    provider: string
+    normalizedPhone?: string
+    error?: string
+  }>
+> {
+  const phone = input.phone?.trim()
+  if (!phone) return { data: null, error: 'Phone is required', loading: false }
+  if (!isValidSmsPhone(phone)) {
+    return {
+      data: null,
+      error: `Invalid Ghana phone. Normalized: ${normalizeSmsPhone(phone) || 'empty'}`,
+      loading: false,
+    }
+  }
+
+  const message =
+    input.message?.trim() ||
+    'Campus Gem SMS test — developer check. You can ignore this message.'
+
+  const result = await sendSms(phone, message, {
+    dryRun: input.dry_run,
+    forceMock: input.force_mock,
+  })
+
+  if (isConvexDataSource() && input.sender_id) {
+    try {
+      const { logCommunicationInConvex } = await import('@/lib/convex/comms-bridge')
+      await logCommunicationInConvex({
+        module: 'church',
+        channel: 'sms',
+        audience_type: 'individual',
+        sender_id: input.sender_id,
+        recipient_name: 'Test send',
+        recipient_phone: result.normalizedPhone ?? normalizeSmsPhone(phone),
+        recipient_entity_type: 'manual',
+        recipient_entity_id: 'test',
+        message_body: message,
+        status: result.success ? 'sent' : 'failed',
+        provider_message_id: result.messageId,
+        error_message: result.error,
+        metadata: {
+          provider: result.provider,
+          dry_run: Boolean(result.dryRun || input.dry_run),
+          test: true,
+          raw_phone: phone,
+        },
+        sent_at: result.success ? new Date().toISOString() : undefined,
+      })
+    } catch {
+      // Logging failure should not hide send result
+    }
+  }
+
+  return {
+    data: {
+      success: result.success,
+      messageId: result.messageId,
+      provider: result.provider,
+      normalizedPhone: result.normalizedPhone,
+      error: result.error,
+    },
+    error: result.success ? null : result.error ?? 'SMS failed',
     loading: false,
   }
 }
@@ -243,6 +341,8 @@ export async function sendCommsAction(
       recipients,
       filter_criteria: request.filter_criteria,
       metadata: request.metadata,
+      dry_run: request.dry_run,
+      force_mock: request.force_mock,
     })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
