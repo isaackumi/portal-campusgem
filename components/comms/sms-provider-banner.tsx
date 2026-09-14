@@ -50,6 +50,7 @@ export function SmsProviderBanner({
   const live = status.smsConfigured && !forceMock && !dryRun && !status.forceMock
 
   async function handleTestSend() {
+    if (!status) return
     if (!isValidSmsPhone(testPhone)) {
       toast({
         variant: 'destructive',
