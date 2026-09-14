@@ -20,7 +20,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -30,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { BedDouble, Crown, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
+import { BedDouble, Crown, Pencil, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
 
 const GENDER_OPTIONS = ['Mixed', 'Male', 'Female'] as const
 
@@ -40,11 +39,12 @@ export default function CampRoomsPage() {
   const [rooms, setRooms] = useState<CampRoom[]>([])
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
   const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [randomizing, setRandomizing] = useState(false)
   const [leaderSavingRoomId, setLeaderSavingRoomId] = useState<string | null>(null)
-  const [createOpen, setCreateOpen] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingRoom, setEditingRoom] = useState<CampRoom | null>(null)
   const [name, setName] = useState('')
   const [building, setBuilding] = useState('')
   const [capacity, setCapacity] = useState('4')
@@ -104,32 +104,76 @@ export default function CampRoomsPage() {
     }
   }, [registrations, rooms, unassigned.length])
 
-  async function handleCreateRoom() {
-    if (!campYear || !name.trim()) {
-      toast({ variant: 'destructive', title: 'Room name required' })
-      return
-    }
-    setCreating(true)
-    const { data, error } = await campService.createRoom({
-      camp_year_id: campYear.id,
-      name: name.trim(),
-      building: building.trim() || undefined,
-      capacity: Number(capacity) || 4,
-      gender: gender === 'Mixed' ? 'Mixed' : gender,
-      notes: notes.trim() || undefined,
-    })
-    setCreating(false)
-    if (error || !data) {
-      toast({ variant: 'destructive', title: 'Create failed', description: error ?? undefined })
-      return
-    }
-    setCreateOpen(false)
+  function resetForm() {
+    setEditingRoom(null)
     setName('')
     setBuilding('')
     setCapacity('4')
     setGender('Mixed')
     setNotes('')
-    toast({ title: 'Room created', description: data.name })
+  }
+
+  function openCreateDialog() {
+    resetForm()
+    setDialogOpen(true)
+  }
+
+  function openEditDialog(room: CampRoom) {
+    setEditingRoom(room)
+    setName(room.name)
+    setBuilding(room.building ?? '')
+    setCapacity(String(room.capacity ?? 4))
+    setGender(
+      room.gender === 'Male' || room.gender === 'Female' || room.gender === 'Mixed'
+        ? room.gender
+        : 'Mixed'
+    )
+    setNotes(room.notes ?? '')
+    setDialogOpen(true)
+  }
+
+  function handleDialogOpenChange(open: boolean) {
+    setDialogOpen(open)
+    if (!open) resetForm()
+  }
+
+  async function handleSaveRoom() {
+    if (!campYear || !name.trim()) {
+      toast({ variant: 'destructive', title: 'Room name required' })
+      return
+    }
+    const capacityValue = Math.max(1, Number(capacity) || 4)
+    const patch = {
+      name: name.trim(),
+      building: building.trim() || undefined,
+      capacity: capacityValue,
+      gender: (gender === 'Mixed' ? 'Mixed' : gender) as CampRoom['gender'],
+      notes: notes.trim() || undefined,
+    }
+
+    setSaving(true)
+    const result = editingRoom
+      ? await campService.updateRoom(editingRoom.id, patch)
+      : await campService.createRoom({
+          camp_year_id: campYear.id,
+          ...patch,
+        })
+    setSaving(false)
+
+    if (result.error || !result.data) {
+      toast({
+        variant: 'destructive',
+        title: editingRoom ? 'Update failed' : 'Create failed',
+        description: result.error ?? undefined,
+      })
+      return
+    }
+
+    handleDialogOpenChange(false)
+    toast({
+      title: editingRoom ? 'Room updated' : 'Room created',
+      description: result.data.name,
+    })
     await loadData(campYear)
   }
 
@@ -274,16 +318,14 @@ export default function CampRoomsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add room
-              </Button>
-            </DialogTrigger>
+          <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+            <Button onClick={openCreateDialog}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add room
+            </Button>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create room</DialogTitle>
+                <DialogTitle>{editingRoom ? 'Edit room' : 'Create room'}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -343,11 +385,17 @@ export default function CampRoomsPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setCreateOpen(false)}>
+                <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => void handleCreateRoom()} disabled={creating}>
-                  {creating ? 'Creating…' : 'Create room'}
+                <Button onClick={() => void handleSaveRoom()} disabled={saving}>
+                  {saving
+                    ? editingRoom
+                      ? 'Saving…'
+                      : 'Creating…'
+                    : editingRoom
+                      ? 'Save changes'
+                      : 'Create room'}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -400,14 +448,25 @@ export default function CampRoomsPage() {
                             {room.gender ? ` · ${room.gender}` : ''}
                           </CardDescription>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => void handleDeleteRoom(room)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Edit room"
+                            onClick={() => openEditDialog(room)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive"
+                            title="Delete room"
+                            onClick={() => void handleDeleteRoom(room)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
