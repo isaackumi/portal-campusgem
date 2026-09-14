@@ -1,13 +1,25 @@
 /**
- * SMS client — calls your SMS API when configured, otherwise mock/logs only.
+ * SMS client — Hubtel, generic API, Twilio, or mock.
  *
- * Env:
+ * Env (Hubtel — recommended for Ghana):
+ * - NEXT_PUBLIC_SMS_PROVIDER=hubtel
+ * - HUBTEL_CLIENT_ID
+ * - HUBTEL_CLIENT_SECRET
+ * - SMS_SENDER_ID (registered sender, e.g. CAMPUSGEM)
+ * - HUBTEL_SMS_URL (optional, default https://smsc.hubtel.com/v1/messages/send)
+ *
+ * Env (generic JSON API):
  * - SMS_API_URL — POST endpoint (body: { to, message, sender? })
  * - SMS_API_KEY — Bearer token or x-api-key header
  * - SMS_API_KEY_HEADER — header name (default Authorization Bearer)
- * - NEXT_PUBLIC_SMS_PROVIDER — mock | api | twilio | africas_talking
- * - TWILIO_* / AFRICAS_TALKING_* — direct provider fallback
+ * - SMS_SENDER_ID
+ *
+ * Env (Twilio):
+ * - NEXT_PUBLIC_SMS_PROVIDER=twilio
+ * - TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER
  */
+
+import { phoneDigitsForWhatsApp } from '@/lib/contact-links'
 
 export interface SmsSendResult {
   success: boolean
@@ -15,8 +27,100 @@ export interface SmsSendResult {
   error?: string
 }
 
-function normalizePhone(phone: string): string {
-  return phone.trim().replace(/\s+/g, '')
+/** Hubtel expects digits like 23324xxxxxxx (no +). */
+export function normalizeSmsPhone(phone: string): string {
+  const digits = phoneDigitsForWhatsApp(phone)
+  if (digits) return digits
+  return phone.trim().replace(/\s+/g, '').replace(/^\+/, '')
+}
+
+function resolveProvider(): string {
+  if (process.env.NEXT_PUBLIC_SMS_PROVIDER) return process.env.NEXT_PUBLIC_SMS_PROVIDER
+  if (process.env.HUBTEL_CLIENT_ID && process.env.HUBTEL_CLIENT_SECRET) return 'hubtel'
+  if (process.env.SMS_API_URL) return 'api'
+  return 'mock'
+}
+
+async function sendViaHubtel(phone: string, message: string): Promise<SmsSendResult> {
+  const clientId = process.env.HUBTEL_CLIENT_ID
+  const clientSecret = process.env.HUBTEL_CLIENT_SECRET
+  const from = process.env.SMS_SENDER_ID || process.env.HUBTEL_SENDER_ID || 'CAMPUSGEM'
+  const baseUrl =
+    process.env.HUBTEL_SMS_URL?.trim() || 'https://smsc.hubtel.com/v1/messages/send'
+
+  if (!clientId || !clientSecret) {
+    return { success: false, error: 'Hubtel client id/secret not configured' }
+  }
+
+  const to = normalizeSmsPhone(phone)
+  if (!to) {
+    return { success: false, error: 'Invalid phone number for SMS' }
+  }
+
+  const url = new URL(baseUrl)
+  url.searchParams.set('clientid', clientId)
+  url.searchParams.set('clientsecret', clientSecret)
+  url.searchParams.set('from', from)
+  url.searchParams.set('to', to)
+  url.searchParams.set('content', message)
+
+  try {
+    const response = await fetch(url.toString(), { method: 'GET' })
+    const text = await response.text()
+    let data: Record<string, unknown> = {}
+    try {
+      data = text ? (JSON.parse(text) as Record<string, unknown>) : {}
+    } catch {
+      data = { raw: text }
+    }
+
+    // Hubtel commonly returns Status: 0 on success
+    const status = data.Status ?? data.status ?? data.responseCode
+    const okHttp = response.ok
+    const okStatus =
+      status === 0 ||
+      status === '0' ||
+      status === '0000' ||
+      status === 'Success' ||
+      status === 'success'
+
+    if (!okHttp && !okStatus) {
+      return {
+        success: false,
+        error:
+          (data.StatusDescription as string) ??
+          (data.statusDescription as string) ??
+          (data.message as string) ??
+          (data.Message as string) ??
+          text ??
+          `HTTP ${response.status}`,
+      }
+    }
+
+    if (okHttp && status !== undefined && !okStatus) {
+      return {
+        success: false,
+        error:
+          (data.StatusDescription as string) ??
+          (data.statusDescription as string) ??
+          (data.message as string) ??
+          `Hubtel status ${String(status)}`,
+      }
+    }
+
+    const messageId =
+      (data.MessageId as string) ??
+      (data.messageId as string) ??
+      (data.message_id as string) ??
+      (data.id as string)
+
+    return { success: true, messageId }
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Hubtel SMS request failed',
+    }
+  }
 }
 
 async function sendViaApi(phone: string, message: string): Promise<SmsSendResult> {
@@ -38,8 +142,8 @@ async function sendViaApi(phone: string, message: string): Promise<SmsSendResult
       method: 'POST',
       headers,
       body: JSON.stringify({
-        to: normalizePhone(phone),
-        phone: normalizePhone(phone),
+        to: normalizeSmsPhone(phone),
+        phone: normalizeSmsPhone(phone),
         message,
         body: message,
         sender: process.env.SMS_SENDER_ID,
@@ -92,7 +196,11 @@ async function sendViaTwilio(phone: string, message: string): Promise<SmsSendRes
         Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({ From: fromNumber, To: normalizePhone(phone), Body: message }),
+      body: new URLSearchParams({
+        From: fromNumber,
+        To: `+${normalizeSmsPhone(phone)}`,
+        Body: message,
+      }),
     }
   )
 
@@ -120,9 +228,11 @@ export async function sendSms(phone: string, message: string): Promise<SmsSendRe
     return { success: false, error: 'Message is required' }
   }
 
-  const provider = process.env.NEXT_PUBLIC_SMS_PROVIDER ?? (process.env.SMS_API_URL ? 'api' : 'mock')
+  const provider = resolveProvider()
 
   switch (provider) {
+    case 'hubtel':
+      return sendViaHubtel(phone, message)
     case 'api':
       return sendViaApi(phone, message)
     case 'twilio':
@@ -134,8 +244,11 @@ export async function sendSms(phone: string, message: string): Promise<SmsSendRe
 }
 
 export function isSmsConfigured(): boolean {
-  const provider = process.env.NEXT_PUBLIC_SMS_PROVIDER ?? (process.env.SMS_API_URL ? 'api' : 'mock')
+  const provider = resolveProvider()
   if (provider === 'mock') return false
+  if (provider === 'hubtel') {
+    return Boolean(process.env.HUBTEL_CLIENT_ID && process.env.HUBTEL_CLIENT_SECRET)
+  }
   if (provider === 'api') return Boolean(process.env.SMS_API_URL)
   if (provider === 'twilio') {
     return Boolean(

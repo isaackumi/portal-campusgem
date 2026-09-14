@@ -452,8 +452,10 @@ export function CommsCenterView() {
 
               {!providers?.sms && channel === 'sms' ? (
                 <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                  SMS provider not configured yet — messages will use mock mode until{' '}
-                  <code className="text-xs">SMS_API_URL</code> is set.
+                  SMS provider not configured yet — messages will use mock mode until Hubtel
+                  credentials (<code className="text-xs">HUBTEL_CLIENT_ID</code> /{' '}
+                  <code className="text-xs">HUBTEL_CLIENT_SECRET</code>) or{' '}
+                  <code className="text-xs">SMS_API_URL</code> are set.
                 </p>
               ) : null}
 
