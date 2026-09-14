@@ -323,6 +323,127 @@ export async function recordCampCommunication(
   }
 }
 
+type CampSmsRecipient = {
+  id: string
+  full_name?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  phone?: string | null
+  email?: string | null
+  role?: string | null
+  qr_code?: string | null
+}
+
+function personalizeCampSms(
+  template: string,
+  registration: CampSmsRecipient,
+  campYear?: number | null
+): string {
+  const fullName =
+    registration.full_name?.trim() ||
+    `${registration.first_name ?? ''} ${registration.last_name ?? ''}`.trim() ||
+    'Camper'
+  return template
+    .replace(/{{name}}/g, fullName)
+    .replace(/{{firstName}}/g, registration.first_name || '')
+    .replace(/{{lastName}}/g, registration.last_name || '')
+    .replace(/{{role}}/g, registration.role || 'Participant')
+    .replace(/{{campYear}}/g, campYear?.toString() || new Date().getFullYear().toString())
+    .replace(/{{phone}}/g, registration.phone || '')
+    .replace(/{{email}}/g, registration.email || '')
+    .replace(/{{qrCode}}/g, registration.qr_code || '')
+}
+
+/** Server-side Hubtel bulk SMS for camp registrations (one-by-one with small gap). */
+export async function sendCampBulkSmsAction(input: {
+  camp_year_id: string
+  sender_id: string
+  message_template: string
+  camp_year?: number | null
+  recipients: CampSmsRecipient[]
+}): Promise<{
+  data: { success_count: number; error_count: number; errors: string[] } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  if (!input.sender_id) return { data: null, error: 'Sender is required' }
+  if (!input.message_template.trim()) return { data: null, error: 'Message is required' }
+  if (!input.recipients.length) return { data: null, error: 'Select at least one recipient' }
+
+  const { sendSms, normalizeSmsPhone, isValidSmsPhone, isSmsConfigured } = await import(
+    '@/lib/comms/sms-client'
+  )
+  if (!isSmsConfigured()) {
+    return {
+      data: null,
+      error: 'SMS is not configured. Set Hubtel credentials on the server (HUBTEL_CLIENT_ID / HUBTEL_CLIENT_SECRET).',
+    }
+  }
+
+  const { logCampCommunicationInConvex } = await import('@/lib/convex/camp-bridge')
+  const smsGapMs = Math.max(0, Number(process.env.SMS_BULK_GAP_MS ?? 150))
+  let success_count = 0
+  let error_count = 0
+  const errors: string[] = []
+
+  for (let i = 0; i < input.recipients.length; i++) {
+    const registration = input.recipients[i]
+    const label =
+      registration.full_name?.trim() ||
+      `${registration.first_name ?? ''} ${registration.last_name ?? ''}`.trim() ||
+      registration.id
+
+    if (!registration.phone?.trim()) {
+      error_count++
+      errors.push(`${label}: No phone number`)
+      continue
+    }
+    if (!isValidSmsPhone(registration.phone)) {
+      error_count++
+      errors.push(
+        `${label}: Invalid phone (need Ghana mobile like 024… / +233… / 233…). Got: ${registration.phone}`
+      )
+      continue
+    }
+
+    const message = personalizeCampSms(input.message_template, registration, input.camp_year)
+    const to = normalizeSmsPhone(registration.phone)
+
+    if (i > 0 && smsGapMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, smsGapMs))
+    }
+
+    try {
+      const smsResult = await sendSms(registration.phone, message)
+      await logCampCommunicationInConvex({
+        camp_year_id: input.camp_year_id,
+        communication_type: 'sms',
+        sender_id: input.sender_id,
+        recipient_type: 'individual',
+        recipient_registration_id: registration.id,
+        recipient_phone: to,
+        message_body: message,
+        status: smsResult.success ? 'sent' : 'failed',
+        provider_message_id: smsResult.messageId,
+        error_message: smsResult.error,
+        sent_at: smsResult.success ? new Date().toISOString() : undefined,
+      })
+
+      if (smsResult.success) success_count++
+      else {
+        error_count++
+        errors.push(`${label}: ${smsResult.error ?? 'SMS failed'}`)
+      }
+    } catch (error: unknown) {
+      error_count++
+      errors.push(`${label}: ${error instanceof Error ? error.message : 'Send failed'}`)
+    }
+  }
+
+  revalidatePath('/admin/camp-meeting/communications')
+  return { data: { success_count, error_count, errors }, error: null }
+}
+
 export async function appendCampInteraction(data: {
   registration_id: string
   performed_by: string

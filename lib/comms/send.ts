@@ -8,7 +8,7 @@ import type {
   SendCommsResult,
 } from '@/lib/comms/types'
 import { personalizeMessage } from '@/lib/comms/recipients'
-import { sendSms } from '@/lib/comms/sms-client'
+import { normalizeSmsPhone, sendSms } from '@/lib/comms/sms-client'
 import { EmailService } from '@/lib/services/email-service'
 
 const emailService = new EmailService()
@@ -23,10 +23,12 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
   let success_count = 0
   let error_count = 0
   const records: CommunicationRecord[] = []
+  const smsGapMs = Math.max(0, Number(process.env.SMS_BULK_GAP_MS ?? 150))
 
   const { logCommunicationInConvex } = await import('@/lib/convex/comms-bridge')
 
-  for (const recipient of request.recipients) {
+  for (let index = 0; index < request.recipients.length; index++) {
+    const recipient = request.recipients[index]
     const variables = {
       name: recipient.name.split(' ')[0] ?? recipient.name,
       full_name: recipient.name,
@@ -99,6 +101,9 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
         }
         records.push(logged)
       } else {
+        if (index > 0 && smsGapMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, smsGapMs))
+        }
         const result = await sendSms(recipient.phone!, body)
         const logged = await logCommunicationInConvex({
           module: request.module,
@@ -107,7 +112,7 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
           sender_id: request.sender_id,
           batch_id,
           recipient_name: recipient.name,
-          recipient_phone: recipient.phone,
+          recipient_phone: recipient.phone ? normalizeSmsPhone(recipient.phone) : recipient.phone,
           recipient_entity_type: recipient.entity_type,
           recipient_entity_id: recipient.entity_id,
           message_body: body,

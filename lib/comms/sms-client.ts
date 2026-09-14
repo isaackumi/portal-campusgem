@@ -31,7 +31,16 @@ export interface SmsSendResult {
 export function normalizeSmsPhone(phone: string): string {
   const digits = phoneDigitsForWhatsApp(phone)
   if (digits) return digits
-  return phone.trim().replace(/\s+/g, '').replace(/^\+/, '')
+  const fallback = phone.trim().replace(/\s+/g, '').replace(/^\+/, '').replace(/\D/g, '')
+  if (fallback.startsWith('0') && fallback.length >= 10) return `233${fallback.slice(1)}`
+  return fallback
+}
+
+/** Ghana mobile for Hubtel: 233 + 9 digits (12 total). */
+export function isValidSmsPhone(phone: string | null | undefined): boolean {
+  if (!phone?.trim()) return false
+  const normalized = normalizeSmsPhone(phone)
+  return /^233\d{9}$/.test(normalized)
 }
 
 function resolveProvider(): string {
@@ -53,8 +62,11 @@ async function sendViaHubtel(phone: string, message: string): Promise<SmsSendRes
   }
 
   const to = normalizeSmsPhone(phone)
-  if (!to) {
-    return { success: false, error: 'Invalid phone number for SMS' }
+  if (!isValidSmsPhone(phone)) {
+    return {
+      success: false,
+      error: `Invalid phone for SMS (need Ghana mobile like 233XXXXXXXXX). Got: ${to || 'empty'}`,
+    }
   }
 
   const url = new URL(baseUrl)

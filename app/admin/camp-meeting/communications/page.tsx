@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmailService } from '@/lib/services/email-service'
-import { sendSms } from '@/lib/comms/sms-client'
-import { getCampCommunications, recordCampCommunication } from '@/lib/actions/camp'
+import { getCampCommunications, sendCampBulkSmsAction } from '@/lib/actions/camp'
 import { CampRegistration, CampCommunication } from '@/lib/types'
+import { isValidSmsPhone, normalizeSmsPhone } from '@/lib/comms/sms-client'
 import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -183,12 +183,37 @@ export default function BulkCommunicationsPage() {
         const errors: string[] = []
 
         try {
-            for (const registration of selectedRegistrations) {
-                try {
-                    const personalizedMessage = replaceTemplateVariables(messageBody, registration)
-                    const personalizedSubject = subject ? replaceTemplateVariables(subject, registration) : ''
+            if (communicationType === 'sms') {
+                const bulk = await sendCampBulkSmsAction({
+                    camp_year_id: campYear.id,
+                    sender_id: user.id,
+                    message_template: messageBody,
+                    camp_year: campYear.year,
+                    recipients: selectedRegistrations.map((r) => ({
+                        id: r.id,
+                        full_name: r.full_name,
+                        first_name: r.first_name,
+                        last_name: r.last_name,
+                        phone: r.phone,
+                        email: r.email,
+                        role: r.role,
+                        qr_code: r.qr_code,
+                    })),
+                })
+                if (bulk.error || !bulk.data) {
+                    throw new Error(bulk.error ?? 'Failed to send SMS')
+                }
+                successCount = bulk.data.success_count
+                errorCount = bulk.data.error_count
+                errors.push(...bulk.data.errors)
+            } else {
+                for (const registration of selectedRegistrations) {
+                    try {
+                        const personalizedMessage = replaceTemplateVariables(messageBody, registration)
+                        const personalizedSubject = subject
+                            ? replaceTemplateVariables(subject, registration)
+                            : ''
 
-                    if (communicationType === 'email') {
                         if (!registration.email) {
                             errors.push(`${registration.full_name}: No email address`)
                             errorCount++
@@ -202,7 +227,7 @@ export default function BulkCommunicationsPage() {
                             html: `<p>${personalizedMessage.replace(/\n/g, '<br>')}</p>`,
                             camp_year_id: campYear.id,
                             sender_id: user.id,
-                            recipient_registration_id: registration.id
+                            recipient_registration_id: registration.id,
                         })
 
                         if (result.success) {
@@ -211,47 +236,20 @@ export default function BulkCommunicationsPage() {
                             errors.push(`${registration.full_name}: ${result.error || 'Failed to send'}`)
                             errorCount++
                         }
-                    } else {
-                        // SMS
-                        if (!registration.phone) {
-                            errors.push(`${registration.full_name}: No phone number`)
-                            errorCount++
-                            continue
-                        }
-
-                        const smsResult = await sendSms(registration.phone, personalizedMessage)
-
-                        const logged = await recordCampCommunication({
-                            camp_year_id: campYear.id,
-                            communication_type: 'sms',
-                            sender_id: user.id,
-                            recipient_type: 'individual',
-                            recipient_registration_id: registration.id,
-                            recipient_phone: registration.phone,
-                            message_body: personalizedMessage,
-                            status: smsResult.success ? 'sent' : 'failed',
-                            provider_message_id: smsResult.messageId,
-                            error_message: smsResult.error,
-                            sent_at: smsResult.success ? new Date().toISOString() : undefined,
-                        })
-
-                        if (logged.error) {
-                            errors.push(`${registration.full_name}: ${logged.error}`)
-                            errorCount++
-                            continue
-                        }
-
-                        successCount++
+                    } catch (error: unknown) {
+                        const message = error instanceof Error ? error.message : 'Failed to send'
+                        errors.push(`${registration.full_name}: ${message}`)
+                        errorCount++
                     }
-                } catch (error: any) {
-                    errors.push(`${registration.full_name}: ${error.message}`)
-                    errorCount++
                 }
             }
 
             toast({
-                title: 'Messages Sent',
-                description: `Successfully sent to ${successCount} recipient(s). ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+                title: errorCount > 0 && successCount === 0 ? 'Send failed' : 'Messages Sent',
+                variant: errorCount > 0 && successCount === 0 ? 'destructive' : 'default',
+                description: `Successfully sent to ${successCount} recipient(s). ${errorCount > 0 ? `${errorCount} failed.` : ''}${
+                    errors.length ? ` ${errors.slice(0, 3).join(' · ')}` : ''
+                }`,
             })
 
             // Clear form and selection
@@ -263,11 +261,11 @@ export default function BulkCommunicationsPage() {
             // Reload communications history and refresh registrations
             await loadCommunications()
             await refreshRegistrations()
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: error.message || 'Failed to send messages'
+                description: error instanceof Error ? error.message : 'Failed to send messages',
             })
         } finally {
             setSending(false)
@@ -277,7 +275,9 @@ export default function BulkCommunicationsPage() {
     const uniqueRoles = Array.from(new Set((registrations || []).map(r => r.role).filter(Boolean)))
     const recipients = filteredRegistrations.filter(r => selectedIds.has(r.id))
     const canSendEmail = recipients.filter(r => r.email).length
-    const canSendSMS = recipients.filter(r => r.phone).length
+    const canSendSMS = recipients.filter((r) => isValidSmsPhone(r.phone)).length
+    const invalidSmsPhones = recipients.filter((r) => r.phone && !isValidSmsPhone(r.phone)).length
+    const missingSmsPhones = recipients.filter((r) => !r.phone?.trim()).length
 
     if (loading || registrationsLoading) {
         return (
@@ -571,7 +571,32 @@ export default function BulkCommunicationsPage() {
                                                 <p>• {canSendEmail} recipients have email addresses</p>
                                             )}
                                             {communicationType === 'sms' && (
-                                                <p>• {canSendSMS} recipients have phone numbers</p>
+                                                <>
+                                                    <p>
+                                                        • {canSendSMS} recipients have valid Ghana phones (Hubtel uses
+                                                        233XXXXXXXXX)
+                                                    </p>
+                                                    {missingSmsPhones > 0 ? (
+                                                        <p className="text-orange-600">
+                                                            ⚠️ {missingSmsPhones} selected have no phone and will be
+                                                            skipped
+                                                        </p>
+                                                    ) : null}
+                                                    {invalidSmsPhones > 0 ? (
+                                                        <p className="text-orange-600">
+                                                            ⚠️ {invalidSmsPhones} selected have invalid phone format
+                                                            and will be skipped
+                                                        </p>
+                                                    ) : null}
+                                                    {recipients
+                                                        .filter((r) => isValidSmsPhone(r.phone))
+                                                        .slice(0, 3)
+                                                        .map((r) => (
+                                                            <p key={r.id} className="text-xs text-muted-foreground">
+                                                                e.g. {r.phone} → {normalizeSmsPhone(r.phone!)}
+                                                            </p>
+                                                        ))}
+                                                </>
                                             )}
                                             {communicationType === 'email' && canSendEmail < selectedIds.size && (
                                                 <p className="text-orange-600">
@@ -580,7 +605,8 @@ export default function BulkCommunicationsPage() {
                                             )}
                                             {communicationType === 'sms' && canSendSMS < selectedIds.size && (
                                                 <p className="text-orange-600">
-                                                    ⚠️ {selectedIds.size - canSendSMS} recipients will be skipped (no phone)
+                                                    ⚠️ {selectedIds.size - canSendSMS} recipients will be skipped
+                                                    (missing/invalid phone)
                                                 </p>
                                             )}
                                         </div>
