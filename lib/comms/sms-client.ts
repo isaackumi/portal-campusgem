@@ -94,9 +94,19 @@ export function isSmsDevModeAvailable(): boolean {
 
 export function getHubtelCredentials(): { clientId?: string; clientSecret?: string; url: string } {
   return {
-    clientId: envValue('HUBTEL_CLIENT_ID', 'HUBTEL_CLIENTID'),
-    clientSecret: envValue('HUBTEL_CLIENT_SECRET', 'HUBTEL_CLIENTSECRET'),
-    url: envValue('HUBTEL_SMS_URL') || 'https://smsc.hubtel.com/v1/messages/send',
+    clientId: envValue(
+      'HUBTEL_CLIENT_ID',
+      'HUBTEL_CLIENTID',
+      'SMS_CLIENT_ID',
+      'CLIENT_ID'
+    ),
+    clientSecret: envValue(
+      'HUBTEL_CLIENT_SECRET',
+      'HUBTEL_CLIENTSECRET',
+      'SMS_CLIENT_SECRET',
+      'CLIENT_SECRET'
+    ),
+    url: envValue('HUBTEL_SMS_URL', 'SMS_API_URL') || 'https://smsc.hubtel.com/v1/messages/send',
   }
 }
 

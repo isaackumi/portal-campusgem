@@ -386,6 +386,8 @@ export async function sendCampBulkSmsAction(input: {
     isValidSmsPhone,
     isSmsConfigured,
     resolveSmsProvider,
+    getMissingSmsEnvKeys,
+    getSmsEnvPresence,
   } = await import('@/lib/comms/sms-client')
   const { randomUUID } = await import('crypto')
   const batch_id = randomUUID()
@@ -393,10 +395,15 @@ export async function sendCampBulkSmsAction(input: {
   const forceMock = Boolean(input.force_mock)
 
   if (!dryRun && !forceMock && !isSmsConfigured()) {
+    const missing = getMissingSmsEnvKeys()
+    const presence = getSmsEnvPresence()
     return {
       data: null,
-      error:
-        'SMS is not configured. Set Hubtel credentials on the server (HUBTEL_CLIENT_ID / HUBTEL_CLIENT_SECRET), or enable Dry run / Force mock in developer mode.',
+      error: `SMS is not configured on this server (provider=${resolveSmsProvider()}). Missing: ${
+        missing.join(', ') || 'unknown'
+      }. Seen: ${Object.entries(presence)
+        .map(([k, v]) => `${k}=${v ? 'yes' : 'no'}`)
+        .join(', ')}. Add Hubtel keys in Vercel → Settings → Environment Variables for Production, then Redeploy.`,
     }
   }
 
