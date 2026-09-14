@@ -49,71 +49,132 @@ export function isValidSmsPhone(phone: string | null | undefined): boolean {
   return /^233\d{9}$/.test(normalized)
 }
 
-export function resolveSmsProvider(): SmsProviderName {
-  if (process.env.SMS_FORCE_MOCK === 'true' || process.env.SMS_FORCE_MOCK === '1') {
-    return 'mock'
+function envFlag(name: string): boolean {
+  const value = process.env[name]?.trim().toLowerCase()
+  return value === 'true' || value === '1' || value === 'yes'
+}
+
+function envValue(...names: string[]): string | undefined {
+  for (const name of names) {
+    const value = process.env[name]?.trim()
+    if (value) return value
   }
-  const explicit = process.env.NEXT_PUBLIC_SMS_PROVIDER?.trim().toLowerCase()
+  return undefined
+}
+
+export function resolveSmsProvider(): SmsProviderName {
+  if (envFlag('SMS_FORCE_MOCK')) return 'mock'
+
+  const explicit = envValue('NEXT_PUBLIC_SMS_PROVIDER', 'SMS_PROVIDER')?.toLowerCase()
   if (explicit === 'hubtel' || explicit === 'api' || explicit === 'twilio' || explicit === 'mock') {
     return explicit
   }
-  if (process.env.HUBTEL_CLIENT_ID && process.env.HUBTEL_CLIENT_SECRET) return 'hubtel'
-  if (process.env.SMS_API_URL) return 'api'
+  if (envValue('HUBTEL_CLIENT_ID', 'HUBTEL_CLIENTID') && envValue('HUBTEL_CLIENT_SECRET', 'HUBTEL_CLIENTSECRET')) {
+    return 'hubtel'
+  }
+  if (envValue('SMS_API_URL')) return 'api'
   return 'mock'
 }
 
 export function getSmsSenderId(): string {
-  return process.env.SMS_SENDER_ID || process.env.HUBTEL_SENDER_ID || 'CAMPUSGEM'
+  return envValue('SMS_SENDER_ID', 'HUBTEL_SENDER_ID', 'HUBTEL_FROM') || 'CAMPUSGEM'
 }
 
 export function getAppEnvironment(): string {
-  return process.env.ENVIRONMENT || process.env.NODE_ENV || 'development'
+  return envValue('ENVIRONMENT', 'VERCEL_ENV', 'NODE_ENV') || 'development'
 }
 
 export function isSmsDevModeAvailable(): boolean {
   const env = getAppEnvironment().toLowerCase()
-  if (process.env.SMS_ALLOW_DRY_RUN === 'true' || process.env.SMS_ALLOW_DRY_RUN === '1') return true
-  if (process.env.SMS_ALLOW_DRY_RUN === 'false' || process.env.SMS_ALLOW_DRY_RUN === '0') return false
+  if (envFlag('SMS_ALLOW_DRY_RUN')) return true
+  if (process.env.SMS_ALLOW_DRY_RUN?.trim().toLowerCase() === 'false') return false
+  if (process.env.SMS_ALLOW_DRY_RUN?.trim() === '0') return false
   return env !== 'production'
+}
+
+export function getHubtelCredentials(): { clientId?: string; clientSecret?: string; url: string } {
+  return {
+    clientId: envValue('HUBTEL_CLIENT_ID', 'HUBTEL_CLIENTID'),
+    clientSecret: envValue('HUBTEL_CLIENT_SECRET', 'HUBTEL_CLIENTSECRET'),
+    url: envValue('HUBTEL_SMS_URL') || 'https://smsc.hubtel.com/v1/messages/send',
+  }
 }
 
 export function isSmsConfigured(): boolean {
   const provider = resolveSmsProvider()
   if (provider === 'mock') return false
   if (provider === 'hubtel') {
-    return Boolean(process.env.HUBTEL_CLIENT_ID && process.env.HUBTEL_CLIENT_SECRET)
+    const { clientId, clientSecret } = getHubtelCredentials()
+    return Boolean(clientId && clientSecret)
   }
-  if (provider === 'api') return Boolean(process.env.SMS_API_URL)
+  if (provider === 'api') return Boolean(envValue('SMS_API_URL'))
   if (provider === 'twilio') {
     return Boolean(
-      process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER
+      envValue('TWILIO_ACCOUNT_SID') && envValue('TWILIO_AUTH_TOKEN') && envValue('TWILIO_FROM_NUMBER')
     )
   }
   return false
 }
 
+/** Which env keys are present (boolean only — never returns secret values). */
+export function getSmsEnvPresence() {
+  return {
+    NEXT_PUBLIC_SMS_PROVIDER: Boolean(envValue('NEXT_PUBLIC_SMS_PROVIDER')),
+    SMS_PROVIDER: Boolean(envValue('SMS_PROVIDER')),
+    HUBTEL_CLIENT_ID: Boolean(envValue('HUBTEL_CLIENT_ID', 'HUBTEL_CLIENTID')),
+    HUBTEL_CLIENT_SECRET: Boolean(envValue('HUBTEL_CLIENT_SECRET', 'HUBTEL_CLIENTSECRET')),
+    SMS_SENDER_ID: Boolean(envValue('SMS_SENDER_ID', 'HUBTEL_SENDER_ID')),
+    SMS_API_URL: Boolean(envValue('SMS_API_URL')),
+    SMS_FORCE_MOCK: envFlag('SMS_FORCE_MOCK'),
+  }
+}
+
+export function getMissingSmsEnvKeys(): string[] {
+  const provider = resolveSmsProvider()
+  const missing: string[] = []
+  if (provider === 'hubtel') {
+    const { clientId, clientSecret } = getHubtelCredentials()
+    if (!clientId) missing.push('HUBTEL_CLIENT_ID')
+    if (!clientSecret) missing.push('HUBTEL_CLIENT_SECRET')
+  } else if (provider === 'api') {
+    if (!envValue('SMS_API_URL')) missing.push('SMS_API_URL')
+  } else if (provider === 'twilio') {
+    if (!envValue('TWILIO_ACCOUNT_SID')) missing.push('TWILIO_ACCOUNT_SID')
+    if (!envValue('TWILIO_AUTH_TOKEN')) missing.push('TWILIO_AUTH_TOKEN')
+    if (!envValue('TWILIO_FROM_NUMBER')) missing.push('TWILIO_FROM_NUMBER')
+  } else if (provider === 'mock') {
+    missing.push('NEXT_PUBLIC_SMS_PROVIDER=hubtel (or set HUBTEL_CLIENT_ID + HUBTEL_CLIENT_SECRET)')
+  }
+  return missing
+}
+
 export function getSmsProviderStatus() {
   const provider = resolveSmsProvider()
+  const missingKeys = getMissingSmsEnvKeys()
   return {
     provider,
     configured: isSmsConfigured(),
     senderId: getSmsSenderId(),
     environment: getAppEnvironment(),
     devModeAvailable: isSmsDevModeAvailable(),
-    forceMock: process.env.SMS_FORCE_MOCK === 'true' || process.env.SMS_FORCE_MOCK === '1',
+    forceMock: envFlag('SMS_FORCE_MOCK'),
+    missingKeys,
+    envPresence: getSmsEnvPresence(),
   }
 }
 
 async function sendViaHubtel(phone: string, message: string): Promise<SmsSendResult> {
-  const clientId = process.env.HUBTEL_CLIENT_ID
-  const clientSecret = process.env.HUBTEL_CLIENT_SECRET
+  const { clientId, clientSecret, url: baseUrl } = getHubtelCredentials()
   const from = getSmsSenderId()
-  const baseUrl =
-    process.env.HUBTEL_SMS_URL?.trim() || 'https://smsc.hubtel.com/v1/messages/send'
   const to = normalizeSmsPhone(phone)
 
   if (!clientId || !clientSecret) {
-    return { success: false, error: 'Hubtel client id/secret not configured', provider: 'hubtel', normalizedPhone: to }
+    return {
+      success: false,
+      error: `Hubtel credentials missing on server (${getMissingSmsEnvKeys().join(', ') || 'unknown'})`,
+      provider: 'hubtel',
+      normalizedPhone: to,
+    }
   }
   if (!isValidSmsPhone(phone)) {
     return {
@@ -335,9 +396,7 @@ export async function sendSms(
   }
 
   const provider =
-    options.forceMock || process.env.SMS_FORCE_MOCK === 'true' || process.env.SMS_FORCE_MOCK === '1'
-      ? 'mock'
-      : resolveSmsProvider()
+    options.forceMock || envFlag('SMS_FORCE_MOCK') ? 'mock' : resolveSmsProvider()
 
   switch (provider) {
     case 'hubtel':

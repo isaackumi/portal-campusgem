@@ -20,6 +20,8 @@ export type SmsProviderStatus = {
   environment: string
   devModeAvailable: boolean
   forceMock: boolean
+  missingKeys?: string[]
+  envPresence?: Record<string, boolean>
 }
 
 type Props = {
@@ -99,9 +101,22 @@ export function SmsProviderBanner({
             <span>· sender {status.smsSenderId}</span>
             <span>· env {status.environment}</span>
             {!status.smsConfigured ? (
-              <span className="text-amber-700">Hubtel credentials not configured on this server</span>
+              <span className="text-amber-700">
+                Not live yet
+                {status.missingKeys?.length
+                  ? ` — missing on this server: ${status.missingKeys.join(', ')}`
+                  : ' — Hubtel credentials not visible to this deployment'}
+              </span>
             ) : null}
           </div>
+          {!status.smsConfigured && status.envPresence ? (
+            <p className="mt-2 text-[11px] text-slate-500">
+              Seen by server:{' '}
+              {Object.entries(status.envPresence)
+                .map(([key, present]) => `${key}=${present ? 'yes' : 'no'}`)
+                .join(' · ')}
+            </p>
+          ) : null}
         </div>
         {status.devModeAvailable ? (
           <Badge variant="outline" className="gap-1">

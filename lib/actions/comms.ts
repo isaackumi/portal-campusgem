@@ -83,6 +83,8 @@ export async function getCommsProviderStatusAction(): Promise<
     environment: string
     devModeAvailable: boolean
     forceMock: boolean
+    missingKeys: string[]
+    envPresence: Record<string, boolean>
   }>
 > {
   const emailProvider = process.env.NEXT_PUBLIC_EMAIL_PROVIDER ?? 'mock'
@@ -97,6 +99,8 @@ export async function getCommsProviderStatusAction(): Promise<
       environment: sms.environment,
       devModeAvailable: sms.devModeAvailable,
       forceMock: sms.forceMock,
+      missingKeys: sms.missingKeys,
+      envPresence: sms.envPresence,
     },
     error: null,
     loading: false,
