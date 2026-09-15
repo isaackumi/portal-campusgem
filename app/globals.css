@@ -81,6 +81,7 @@
    */
   .app-page-title {
     @apply text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl;
+    font-family: 'Source Serif 4', 'Source Sans 3', Georgia, serif;
   }
 
   .app-page-description {
@@ -89,6 +90,7 @@
 
   .app-section-title {
     @apply text-lg font-semibold tracking-tight text-slate-900;
+    font-family: 'Source Serif 4', 'Source Sans 3', Georgia, serif;
   }
 
   .app-card-title {
@@ -96,11 +98,30 @@
   }
 
   .app-stat-label {
-    @apply text-xs font-medium uppercase tracking-wide text-slate-500;
+    @apply text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500;
   }
 
   .app-stat-value {
     @apply text-3xl font-semibold tabular-nums tracking-tight text-slate-900;
+    font-family: 'Source Serif 4', 'Source Sans 3', Georgia, serif;
+  }
+
+  .dashboard-shell {
+    @apply mx-auto max-w-7xl space-y-8;
+  }
+
+  .dashboard-panel {
+    @apply rounded-xl border border-slate-200/90 bg-white;
+  }
+
+  .dashboard-metric-strip {
+    @apply grid divide-y divide-slate-200 border border-slate-200/90 bg-white sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .dashboard-metric-cell {
+    @apply space-y-2 p-5 sm:p-6;
   }
 
   .app-meta {
@@ -127,21 +148,21 @@
     @apply h-full rounded-full bg-slate-900 transition-all duration-300;
   }
 
-  /** Dark nav shell — isolated from page `text-foreground` / ghost button styles */
+  /** Light editorial nav — matches dashboard paper surface */
   .sidebar-panel {
-    @apply flex h-full min-h-full flex-col bg-slate-950 text-slate-100;
+    @apply flex h-full min-h-full flex-col border-r border-slate-200 bg-[#f7f6f3] text-slate-800;
   }
 
   .sidebar-panel .sidebar-section-label {
-    @apply text-[10px] font-semibold uppercase tracking-widest text-slate-400;
+    @apply text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400;
   }
 
   .sidebar-panel .sidebar-nav-item {
-    @apply text-slate-200 hover:bg-white/10 hover:text-white;
+    @apply text-slate-600 hover:bg-white hover:text-slate-900;
   }
 
   .sidebar-panel .sidebar-nav-item[data-active='true'] {
-    @apply bg-white/10 text-white;
+    @apply bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80;
   }
 
   .sidebar-panel .sidebar-nav-icon {
@@ -150,11 +171,11 @@
 
   .sidebar-panel .sidebar-nav-item[data-active='true'] .sidebar-nav-icon,
   .sidebar-panel .sidebar-nav-item:hover .sidebar-nav-icon {
-    @apply text-amber-400;
+    @apply text-slate-800;
   }
 
   .sidebar-panel .sidebar-sign-out {
-    @apply text-slate-200 hover:bg-white/10 hover:text-white;
+    @apply text-slate-600 hover:bg-white hover:text-slate-900;
   }
 
   .mobile-nav-overlay {

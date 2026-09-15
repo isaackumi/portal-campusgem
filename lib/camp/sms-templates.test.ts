@@ -19,11 +19,15 @@ describe('personalizeCampMessage', () => {
     expect(out).toBe('Hi Ama! Code CG26-1042 for Camp 2026 (Fire Fall).')
   })
 
-  it('falls back full name when firstName missing', () => {
-    const out = personalizeCampMessage('Hello {{name}}', {
-      fullName: 'Isaac Kumi',
-    })
-    expect(out).toBe('Hello Isaac Kumi')
+  it('injects registration link for invites', () => {
+    const out = personalizeCampMessage(
+      'Hi {{firstName}}! Register: {{registrationLink}}',
+      {
+        firstName: 'Kojo',
+        registrationLink: 'https://example.com/camp-meeting/register',
+      }
+    )
+    expect(out).toBe('Hi Kojo! Register: https://example.com/camp-meeting/register')
   })
 })
 

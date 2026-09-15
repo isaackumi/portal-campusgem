@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmailService } from '@/lib/services/email-service'
-import { getCampCommunications, resendCampCommunicationAction, sendCampBulkSmsAction } from '@/lib/actions/camp'
+import { getCampCommunications, getCampUnregisteredAudienceAction, resendCampCommunicationAction, sendCampBulkSmsAction, type CampInviteAudienceRow } from '@/lib/actions/camp'
 import { getCommsProviderStatusAction } from '@/lib/actions/comms'
 import { CampRegistration, CampCommunication } from '@/lib/types'
 import { isValidSmsPhone } from '@/lib/comms/sms-client'
@@ -28,6 +28,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
@@ -67,6 +75,12 @@ export default function BulkCommunicationsPage() {
     const [forceMock, setForceMock] = useState(false)
     const [resendingId, setResendingId] = useState<string | null>(null)
     const [templateId, setTemplateId] = useState<CampMessageTemplateId | 'custom'>('custom')
+    const [smsReviewOpen, setSmsReviewOpen] = useState(false)
+    const [audienceMode, setAudienceMode] = useState<'registered' | 'unregistered'>('registered')
+    const [inviteRows, setInviteRows] = useState<CampInviteAudienceRow[]>([])
+    const [inviteLoading, setInviteLoading] = useState(false)
+    const [registrationLink, setRegistrationLink] = useState('')
+    const [registrationPath, setRegistrationPath] = useState('/camp-meeting/register')
 
     // Redirect to auth if not logged in
     useEffect(() => {
@@ -83,6 +97,42 @@ export default function BulkCommunicationsPage() {
             if (res.data) setSmsStatus(res.data)
         })
     }, [campYear])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        setRegistrationLink(`${window.location.origin}${registrationPath}`)
+    }, [registrationPath])
+
+    async function loadUnregisteredAudience() {
+        if (!campYear) return
+        setInviteLoading(true)
+        const { data, error } = await getCampUnregisteredAudienceAction(campYear.id)
+        setInviteLoading(false)
+        if (error || !data) {
+            toast({
+                variant: 'destructive',
+                title: 'Could not load invite list',
+                description: error ?? 'Unknown error',
+            })
+            return
+        }
+        setInviteRows(data.rows)
+        setRegistrationPath(data.registration_path)
+        setSelectedIds(new Set())
+        setSelectAll(false)
+    }
+
+    useEffect(() => {
+        if (audienceMode !== 'unregistered' || !campYear) return
+        void loadUnregisteredAudience()
+        setCommunicationType('sms')
+        const tpl = CAMP_MESSAGE_TEMPLATES.find((t) => t.id === 'registration_invite')
+        if (tpl) {
+            setTemplateId('registration_invite')
+            setMessageBody(tpl.body)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- load once when switching audience / year
+    }, [audienceMode, campYear?.id])
 
     async function loadCommunications() {
         if (!campYear) return
@@ -168,19 +218,32 @@ export default function BulkCommunicationsPage() {
         return matchesSearch && matchesRole && matchesStatus && matchesPayment && matchesType
     }), [registrations, searchQuery, roleFilter, statusFilter, paymentFilter, typeFilter])
 
-    const filteredRegistrationIds = useMemo(
-        () => filteredRegistrations.map((registration) => registration.id),
-        [filteredRegistrations]
+    const filteredInviteRows = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase()
+        if (!q) return inviteRows
+        return inviteRows.filter(
+            (row) =>
+                row.full_name.toLowerCase().includes(q) ||
+                row.phone.toLowerCase().includes(q) ||
+                (row.email || '').toLowerCase().includes(q) ||
+                `${row.first_name || ''} ${row.last_name || ''}`.toLowerCase().includes(q)
+        )
+    }, [inviteRows, searchQuery])
+
+    const selectableRows = audienceMode === 'unregistered' ? filteredInviteRows : filteredRegistrations
+    const selectableIds = useMemo(
+        () => selectableRows.map((row) => row.id),
+        [selectableRows]
     )
 
     // Auto-select all filtered when selectAll is true
     useEffect(() => {
         if (selectAll) {
-            setSelectedIds(new Set(filteredRegistrationIds))
+            setSelectedIds(new Set(selectableIds))
         } else {
             setSelectedIds(new Set())
         }
-    }, [selectAll, filteredRegistrationIds])
+    }, [selectAll, selectableIds])
 
     const handleSelectAll = (checked: boolean) => {
         setSelectAll(checked)
@@ -194,22 +257,35 @@ export default function BulkCommunicationsPage() {
             newSelected.delete(id)
         }
         setSelectedIds(newSelected)
-        setSelectAll(newSelected.size === filteredRegistrations.length)
+        setSelectAll(newSelected.size === selectableIds.length && selectableIds.length > 0)
     }
 
-    const replaceTemplateVariables = (template: string, registration: CampRegistration): string => {
+    const replaceTemplateVariables = (
+        template: string,
+        person: {
+            full_name?: string | null
+            first_name?: string | null
+            last_name?: string | null
+            phone?: string | null
+            email?: string | null
+            role?: string | null
+            check_in_code?: string | null
+            qr_code?: string | null
+        }
+    ): string => {
         return personalizeCampMessage(template, {
-            fullName: registration.full_name,
-            firstName: registration.first_name,
-            lastName: registration.last_name,
-            role: registration.role,
+            fullName: person.full_name,
+            firstName: person.first_name,
+            lastName: person.last_name,
+            role: person.role,
             campYear: campYear?.year,
-            phone: registration.phone,
-            email: registration.email,
-            checkInCode: registration.check_in_code,
-            qrCode: registration.check_in_code || registration.qr_code,
+            phone: person.phone,
+            email: person.email,
+            checkInCode: person.check_in_code,
+            qrCode: person.check_in_code || person.qr_code,
             theme: campYear?.theme,
             venue: campYear?.venue,
+            registrationLink,
         })
     }
 
@@ -232,75 +308,127 @@ export default function BulkCommunicationsPage() {
         setTemplateId('custom')
     }
 
-    const handleSend = async () => {
+    const canStartSend = (): boolean => {
         if (!campYear || !user) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Please log in to send communications'
+                description: 'Please log in to send communications',
             })
-            return
+            return false
         }
 
         if (selectedIds.size === 0) {
             toast({
                 variant: 'destructive',
                 title: 'No Recipients',
-                description: 'Please select at least one recipient'
+                description: 'Please select at least one recipient',
             })
-            return
+            return false
+        }
+
+        if (audienceMode === 'unregistered' && communicationType !== 'sms') {
+            toast({
+                variant: 'destructive',
+                title: 'SMS only',
+                description: 'Invite messages to unregistered people are SMS-only.',
+            })
+            return false
+        }
+
+        if (audienceMode === 'unregistered' && !registrationLink.trim()) {
+            toast({
+                variant: 'destructive',
+                title: 'Registration link required',
+                description: 'Add the registration link before sending invites.',
+            })
+            return false
         }
 
         if (communicationType === 'email' && !subject.trim()) {
             toast({
                 variant: 'destructive',
                 title: 'Missing Subject',
-                description: 'Email subject is required'
+                description: 'Email subject is required',
             })
-            return
+            return false
         }
 
         if (!messageBody.trim()) {
             toast({
                 variant: 'destructive',
                 title: 'Empty Message',
-                description: 'Please enter a message'
+                description: 'Please enter a message',
             })
-            return
+            return false
         }
 
+        return true
+    }
+
+    const requestSend = () => {
+        if (!canStartSend()) return
+        if (communicationType === 'sms') {
+            setSmsReviewOpen(true)
+            return
+        }
+        void handleSend()
+    }
+
+    const handleSend = async () => {
+        if (!canStartSend()) return
+
         setSending(true)
-        const selectedRegistrations = filteredRegistrations.filter(r => selectedIds.has(r.id))
+        const selectedRegistrations = filteredRegistrations.filter((r) => selectedIds.has(r.id))
+        const selectedInvites = filteredInviteRows.filter((r) => selectedIds.has(r.id))
         let successCount = 0
         let errorCount = 0
         const errors: string[] = []
 
         try {
             if (communicationType === 'sms') {
+                const recipients =
+                    audienceMode === 'unregistered'
+                        ? selectedInvites.map((r) => ({
+                              id: r.id,
+                              full_name: r.full_name,
+                              first_name: r.first_name,
+                              last_name: r.last_name,
+                              phone: r.phone,
+                              email: r.email,
+                              invite_only: true as const,
+                              source: r.source,
+                          }))
+                        : selectedRegistrations.map((r) => ({
+                              id: r.id,
+                              full_name: r.full_name,
+                              first_name: r.first_name,
+                              last_name: r.last_name,
+                              phone: r.phone,
+                              email: r.email,
+                              role: r.role,
+                              qr_code: r.qr_code,
+                              check_in_code: r.check_in_code,
+                              source: 'registration' as const,
+                          }))
+
                 const bulk = await sendCampBulkSmsAction({
-                    camp_year_id: campYear.id,
-                    sender_id: user.id,
+                    camp_year_id: campYear!.id,
+                    sender_id: user!.id,
                     message_template: messageBody,
-                    camp_year: campYear.year,
+                    camp_year: campYear!.year,
                     dry_run: dryRun,
                     force_mock: forceMock,
+                    registration_link: registrationLink || undefined,
                     filter_criteria: {
+                        audience: audienceMode,
                         role: roleFilter,
                         status: statusFilter,
                         payment: paymentFilter,
                         type: typeFilter,
                         search: searchQuery || undefined,
                     },
-                    recipients: selectedRegistrations.map((r) => ({
-                        id: r.id,
-                        full_name: r.full_name,
-                        first_name: r.first_name,
-                        last_name: r.last_name,
-                        phone: r.phone,
-                        email: r.email,
-                        role: r.role,
-                        qr_code: r.qr_code,
-                    })),
+                    recipients,
                 })
                 if (bulk.error || !bulk.data) {
                     throw new Error(bulk.error ?? 'Failed to send SMS')
@@ -327,8 +455,8 @@ export default function BulkCommunicationsPage() {
                             subject: personalizedSubject,
                             text: personalizedMessage,
                             html: `<p>${personalizedMessage.replace(/\n/g, '<br>')}</p>`,
-                            camp_year_id: campYear.id,
-                            sender_id: user.id,
+                            camp_year_id: campYear!.id,
+                            sender_id: user!.id,
                             recipient_registration_id: registration.id,
                         })
 
@@ -359,15 +487,19 @@ export default function BulkCommunicationsPage() {
                 }`,
             })
 
-            // Clear form and selection
+            setSmsReviewOpen(false)
             setSelectedIds(new Set())
             setSelectAll(false)
-            setMessageBody('')
-            setSubject('')
+            if (audienceMode === 'registered') {
+                setMessageBody('')
+                setSubject('')
+            }
 
-            // Reload communications history and refresh registrations
             await loadCommunications()
             await refreshRegistrations()
+            if (audienceMode === 'unregistered') {
+                await loadUnregisteredAudience()
+            }
         } catch (error: unknown) {
             toast({
                 variant: 'destructive',
@@ -380,11 +512,20 @@ export default function BulkCommunicationsPage() {
     }
 
     const uniqueRoles = Array.from(new Set((registrations || []).map(r => r.role).filter(Boolean)))
-    const recipients = filteredRegistrations.filter(r => selectedIds.has(r.id))
-    const canSendEmail = recipients.filter(r => r.email).length
+    const recipients =
+        audienceMode === 'unregistered'
+            ? filteredInviteRows.filter((r) => selectedIds.has(r.id))
+            : filteredRegistrations.filter((r) => selectedIds.has(r.id))
+    const canSendEmail = recipients.filter((r) => Boolean(r.email)).length
     const canSendSMS = recipients.filter((r) => isValidSmsPhone(r.phone)).length
     const invalidSmsPhones = recipients.filter((r) => r.phone && !isValidSmsPhone(r.phone)).length
     const missingSmsPhones = recipients.filter((r) => !r.phone?.trim()).length
+    const smsPreviewRecipient =
+        recipients.find((r) => isValidSmsPhone(r.phone)) || recipients[0] || selectableRows[0]
+    const smsPreviewBody = smsPreviewRecipient
+        ? replaceTemplateVariables(messageBody, smsPreviewRecipient)
+        : messageBody
+    const smsRecipientPreview = recipients.filter((r) => isValidSmsPhone(r.phone)).slice(0, 12)
 
     if (loading || registrationsLoading) {
         return (
@@ -437,6 +578,61 @@ export default function BulkCommunicationsPage() {
 
                     {/* Send Messages Tab */}
                     <TabsContent value="send" className="space-y-6">
+                        <Card className="border border-slate-200 shadow-sm">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Users className="h-5 w-5 text-slate-600" aria-hidden />
+                                    Audience
+                                </CardTitle>
+                                <CardDescription>
+                                    Message people already registered, or invite those who have not signed up yet.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    variant={audienceMode === 'registered' ? 'default' : 'outline'}
+                                    className="min-h-11 cursor-pointer"
+                                    aria-pressed={audienceMode === 'registered'}
+                                    onClick={() => {
+                                        setAudienceMode('registered')
+                                        setSelectedIds(new Set())
+                                        setSelectAll(false)
+                                    }}
+                                >
+                                    Already registered
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={audienceMode === 'unregistered' ? 'default' : 'outline'}
+                                    className="min-h-11 cursor-pointer"
+                                    aria-pressed={audienceMode === 'unregistered'}
+                                    onClick={() => {
+                                        setAudienceMode('unregistered')
+                                        setSelectedIds(new Set())
+                                        setSelectAll(false)
+                                    }}
+                                >
+                                    Not yet registered
+                                </Button>
+                                {audienceMode === 'unregistered' ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="min-h-11 cursor-pointer"
+                                        disabled={inviteLoading}
+                                        onClick={() => void loadUnregisteredAudience()}
+                                    >
+                                        <RefreshCw
+                                            className={cn('mr-2 h-4 w-4', inviteLoading && 'animate-spin')}
+                                            aria-hidden
+                                        />
+                                        Refresh list
+                                    </Button>
+                                ) : null}
+                            </CardContent>
+                        </Card>
+
                         {/* Filters */}
                         <Card className="border border-slate-200 shadow-sm">
                             <CardHeader>
@@ -445,11 +641,18 @@ export default function BulkCommunicationsPage() {
                                     Filter Recipients
                                 </CardTitle>
                                 <CardDescription>
-                                    Narrow who appears in the list below
+                                    {audienceMode === 'unregistered'
+                                        ? 'Church members and past campers who are not on this year’s registration list'
+                                        : 'Narrow who appears in the list below'}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                                <div
+                                    className={cn(
+                                        'grid gap-4 md:grid-cols-2',
+                                        audienceMode === 'registered' && 'lg:grid-cols-5'
+                                    )}
+                                >
                                     <div className="space-y-2">
                                         <Label htmlFor="camp-comms-search">Search</Label>
                                         <div className="relative">
@@ -463,10 +666,12 @@ export default function BulkCommunicationsPage() {
                                                 className="h-11 pl-8"
                                                 value={searchQuery}
                                                 onChange={e => setSearchQuery(e.target.value)}
-                                                aria-label="Search registrations"
+                                                aria-label="Search recipients"
                                             />
                                         </div>
                                     </div>
+                                    {audienceMode === 'registered' ? (
+                                        <>
                                     <div className="space-y-2">
                                         <Label htmlFor="camp-comms-role">Role</Label>
                                         <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -522,13 +727,16 @@ export default function BulkCommunicationsPage() {
                                             </SelectContent>
                                         </Select>
                                     </div>
+                                        </>
+                                    ) : null}
                                 </div>
 
                                 <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <p className="text-sm font-medium text-slate-800">
-                                            {filteredRegistrations.length} match
+                                            {selectableRows.length} match
                                             {selectedIds.size > 0 ? ` · ${selectedIds.size} selected` : ''}
+                                            {audienceMode === 'unregistered' && inviteLoading ? ' · loading…' : ''}
                                         </p>
                                     </div>
                                     <div className="flex min-h-11 items-center gap-2">
@@ -546,7 +754,7 @@ export default function BulkCommunicationsPage() {
                         </Card>
 
                         {/* Recipients List */}
-                        {filteredRegistrations.length > 0 && (
+                        {selectableRows.length > 0 && (
                             <Card className="border border-slate-200 shadow-sm">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
@@ -554,17 +762,63 @@ export default function BulkCommunicationsPage() {
                                         Select Recipients
                                     </CardTitle>
                                     <CardDescription>
-                                        Tap a row to select. {selectedIds.size} of {filteredRegistrations.length} selected.
+                                        Tap a row to select. {selectedIds.size} of {selectableRows.length} selected.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <div
                                         className="max-h-[320px] space-y-2 overflow-y-auto pr-1"
                                         role="listbox"
-                                        aria-label="Camp registration recipients"
+                                        aria-label={
+                                            audienceMode === 'unregistered'
+                                                ? 'People not yet registered for camp'
+                                                : 'Camp registration recipients'
+                                        }
                                         aria-multiselectable="true"
                                     >
-                                        {filteredRegistrations.map(reg => {
+                                        {audienceMode === 'unregistered'
+                                            ? filteredInviteRows.map((row) => {
+                                                  const selected = selectedIds.has(row.id)
+                                                  const label = row.full_name || 'Recipient'
+                                                  return (
+                                                      <button
+                                                          key={row.id}
+                                                          type="button"
+                                                          role="option"
+                                                          aria-selected={selected}
+                                                          onClick={() => handleSelectOne(row.id, !selected)}
+                                                          className={cn(
+                                                              'flex min-h-14 w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
+                                                              selected
+                                                                  ? 'border-emerald-300 bg-emerald-50/80'
+                                                                  : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                          )}
+                                                      >
+                                                          <Checkbox
+                                                              checked={selected}
+                                                              onCheckedChange={(checked) =>
+                                                                  handleSelectOne(row.id, checked === true)
+                                                              }
+                                                              onClick={(e) => e.stopPropagation()}
+                                                              aria-label={`Select ${label}`}
+                                                              className="shrink-0"
+                                                          />
+                                                          <div className="min-w-0 flex-1">
+                                                              <p className="truncate font-medium text-slate-900">
+                                                                  {label}
+                                                              </p>
+                                                              <p className="truncate text-xs text-slate-500">
+                                                                  {row.phone}
+                                                                  {row.email ? ` · ${row.email}` : ''}
+                                                              </p>
+                                                          </div>
+                                                          <Badge variant="outline" className="shrink-0 text-[10px]">
+                                                              {row.source === 'member' ? 'Member' : 'Past camper'}
+                                                          </Badge>
+                                                      </button>
+                                                  )
+                                              })
+                                            : filteredRegistrations.map(reg => {
                                             const selected = selectedIds.has(reg.id)
                                             const label =
                                                 reg.full_name ||
@@ -653,6 +907,7 @@ export default function BulkCommunicationsPage() {
                                             variant={communicationType === 'email' ? 'default' : 'outline'}
                                             className="min-h-11 cursor-pointer transition-colors duration-200"
                                             aria-pressed={communicationType === 'email'}
+                                            disabled={audienceMode === 'unregistered'}
                                             onClick={() => setCommunicationType('email')}
                                         >
                                             <Mail className="mr-2 h-4 w-4" aria-hidden />
@@ -679,7 +934,30 @@ export default function BulkCommunicationsPage() {
                                             ) : null}
                                         </Button>
                                     </div>
+                                    {audienceMode === 'unregistered' ? (
+                                        <p className="text-xs text-slate-500">
+                                            Invite audience is SMS-only so the registration link reaches phones quickly.
+                                        </p>
+                                    ) : null}
                                 </div>
+
+                                {audienceMode === 'unregistered' ||
+                                messageBody.includes('{{registrationLink}}') ||
+                                messageBody.includes('{{registration_link}}') ? (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="camp-registration-link">Registration link</Label>
+                                        <Input
+                                            id="camp-registration-link"
+                                            className="h-11"
+                                            value={registrationLink}
+                                            onChange={(e) => setRegistrationLink(e.target.value)}
+                                            placeholder="https://…/camp-meeting/register"
+                                        />
+                                        <p className="text-xs text-slate-500">
+                                            Inserted wherever the message uses {'{{registrationLink}}'}.
+                                        </p>
+                                    </div>
+                                ) : null}
 
                                 <div className="space-y-2">
                                     <Label className="flex items-center gap-2">
@@ -804,7 +1082,7 @@ export default function BulkCommunicationsPage() {
                                     </div>
                                 </div>
 
-                                {messageBody.trim() && filteredRegistrations[0] ? (
+                                {messageBody.trim() && smsPreviewRecipient ? (
                                     <div
                                         className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4"
                                         aria-live="polite"
@@ -813,29 +1091,16 @@ export default function BulkCommunicationsPage() {
                                             <Eye className="h-4 w-4 text-slate-500" aria-hidden />
                                             Live preview
                                             <span className="font-normal text-slate-500">
-                                                (
-                                                {(
-                                                    filteredRegistrations.find((r) => selectedIds.has(r.id)) ||
-                                                    filteredRegistrations[0]
-                                                ).full_name || 'sample'}
-                                                )
+                                                ({smsPreviewRecipient.full_name || 'sample'})
                                             </span>
                                         </div>
                                         {communicationType === 'email' && subject.trim() ? (
                                             <p className="mb-2 text-sm font-semibold text-slate-800">
-                                                {replaceTemplateVariables(
-                                                    subject,
-                                                    filteredRegistrations.find((r) => selectedIds.has(r.id)) ||
-                                                        filteredRegistrations[0]
-                                                )}
+                                                {replaceTemplateVariables(subject, smsPreviewRecipient)}
                                             </p>
                                         ) : null}
                                         <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                                            {replaceTemplateVariables(
-                                                messageBody,
-                                                filteredRegistrations.find((r) => selectedIds.has(r.id)) ||
-                                                    filteredRegistrations[0]
-                                            )}
+                                            {replaceTemplateVariables(messageBody, smsPreviewRecipient)}
                                         </p>
                                     </div>
                                 ) : null}
@@ -881,7 +1146,7 @@ export default function BulkCommunicationsPage() {
                                 ) : null}
 
                                 <Button
-                                    onClick={handleSend}
+                                    onClick={requestSend}
                                     disabled={
                                         sending ||
                                         selectedIds.size === 0 ||
@@ -900,12 +1165,9 @@ export default function BulkCommunicationsPage() {
                                     ) : (
                                         <>
                                             <Send className="mr-2 h-4 w-4" aria-hidden />
-                                            Send {selectedIds.size || ''}{' '}
-                                            {communicationType === 'email'
-                                                ? 'email(s)'
-                                                : dryRun
-                                                  ? 'SMS (dry run)'
-                                                  : 'SMS'}
+                                            {communicationType === 'sms'
+                                                ? `Review & send ${selectedIds.size || ''} SMS`
+                                                : `Send ${selectedIds.size || ''} email(s)`}
                                         </>
                                     )}
                                 </Button>
@@ -1082,6 +1344,121 @@ export default function BulkCommunicationsPage() {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            <Dialog
+                open={smsReviewOpen}
+                onOpenChange={(open) => {
+                    if (!sending) setSmsReviewOpen(open)
+                }}
+            >
+                <DialogContent className="max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Review SMS before sending</DialogTitle>
+                        <DialogDescription>
+                            Confirm the message and recipients. Nothing is sent until you confirm.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 text-sm">
+                        <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary">{canSendSMS} will receive SMS</Badge>
+                            <Badge variant="outline">{selectedIds.size} selected</Badge>
+                            {dryRun ? <Badge variant="outline">Dry run</Badge> : null}
+                            {forceMock ? <Badge variant="outline">Force mock</Badge> : null}
+                            {smsStatus?.smsProvider ? (
+                                <Badge variant="outline">Provider: {smsStatus.smsProvider}</Badge>
+                            ) : null}
+                        </div>
+
+                        {(missingSmsPhones > 0 || invalidSmsPhones > 0) && (
+                            <p className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                                {[
+                                    missingSmsPhones > 0 ? `${missingSmsPhones} missing phone` : null,
+                                    invalidSmsPhones > 0 ? `${invalidSmsPhones} invalid phone` : null,
+                                ]
+                                    .filter(Boolean)
+                                    .join(' · ')}{' '}
+                                — skipped
+                            </p>
+                        )}
+
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                                Sample message
+                                {smsPreviewRecipient?.full_name
+                                    ? ` · ${smsPreviewRecipient.full_name}`
+                                    : ''}
+                            </p>
+                            <p className="whitespace-pre-wrap leading-relaxed text-slate-900">
+                                {smsPreviewBody || '—'}
+                            </p>
+                            <p className="mt-2 text-xs tabular-nums text-slate-500">
+                                {smsPreviewBody.length} characters
+                                {smsPreviewBody.length > 160 ? ' · may split into multiple SMS' : ''}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                                Recipients
+                            </p>
+                            {smsRecipientPreview.length === 0 ? (
+                                <p className="text-slate-500">No valid phone numbers in this selection.</p>
+                            ) : (
+                                <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3">
+                                    {smsRecipientPreview.map((r) => (
+                                        <li
+                                            key={r.id}
+                                            className="flex items-center justify-between gap-3 text-slate-700"
+                                        >
+                                            <span className="truncate font-medium">{r.full_name}</span>
+                                            <span className="shrink-0 font-mono text-xs text-slate-500">
+                                                {r.phone}
+                                            </span>
+                                        </li>
+                                    ))}
+                                    {canSendSMS > smsRecipientPreview.length ? (
+                                        <li className="pt-1 text-xs text-slate-500">
+                                            +{canSendSMS - smsRecipientPreview.length} more
+                                        </li>
+                                    ) : null}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="min-h-11 cursor-pointer"
+                            disabled={sending}
+                            onClick={() => setSmsReviewOpen(false)}
+                        >
+                            Back
+                        </Button>
+                        <Button
+                            type="button"
+                            className="min-h-11 cursor-pointer"
+                            disabled={sending || canSendSMS === 0}
+                            aria-busy={sending}
+                            onClick={() => void handleSend()}
+                        >
+                            {sending ? (
+                                <>
+                                    <LoadingSpinner size="sm" className="mr-2" />
+                                    Sending…
+                                </>
+                            ) : dryRun ? (
+                                `Confirm dry run (${canSendSMS})`
+                            ) : (
+                                `Confirm send (${canSendSMS})`
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

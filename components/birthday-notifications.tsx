@@ -1,23 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { 
-  Cake, 
-  Bell, 
-  MessageSquare, 
-  Users, 
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  Send,
-  Phone,
-  Mail
-} from 'lucide-react'
+import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons'
 import { useToast } from '@/hooks/use-toast'
 import { useClientOnly } from '@/lib/hooks/use-client-only'
+import { cn } from '@/lib/utils'
 
 interface BirthdayPerson {
   id: string
@@ -35,12 +23,50 @@ interface BirthdayNotificationsProps {
   onSendMessage?: (person: BirthdayPerson) => void
 }
 
-export function BirthdayNotifications({ 
-  todayBirthdays, 
-  upcomingBirthdays, 
-  onSendMessage 
+function PersonRow({
+  person,
+  meta,
+  onSend,
+}: {
+  person: BirthdayPerson
+  meta: string
+  onSend: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-slate-100 py-3 last:border-0">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate text-sm font-medium text-slate-900">{person.name}</p>
+          {person.role ? (
+            <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              {person.role}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-0.5 text-xs text-slate-500">{meta}</p>
+        {person.phone || person.email ? (
+          <p className="mt-0.5 truncate text-xs text-slate-400">
+            {[person.phone, person.email].filter(Boolean).join(' · ')}
+          </p>
+        ) : null}
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onSend}
+        className="min-h-9 shrink-0 cursor-pointer border-slate-300"
+      >
+        Message
+      </Button>
+    </div>
+  )
+}
+
+export function BirthdayNotifications({
+  todayBirthdays,
+  upcomingBirthdays,
+  onSendMessage,
 }: BirthdayNotificationsProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
   const [isTodayExpanded, setIsTodayExpanded] = useState(true)
   const [isUpcomingExpanded, setIsUpcomingExpanded] = useState(false)
   const isMounted = useClientOnly()
@@ -49,51 +75,44 @@ export function BirthdayNotifications({
   const handleSendMessage = (person: BirthdayPerson) => {
     if (onSendMessage) {
       onSendMessage(person)
-    } else {
-      // Dummy SMS functionality
-      toast({
-        title: "Birthday Message Sent! 🎉",
-        description: `Happy birthday message sent to ${person.name}`,
-        variant: "default"
-      })
+      return
     }
+    toast({
+      title: 'Birthday message queued',
+      description: `Message prepared for ${person.name}`,
+      variant: 'default',
+    })
   }
 
   const handleSendBulkMessage = (people: BirthdayPerson[]) => {
-    people.forEach(person => {
-      handleSendMessage(person)
-    })
-    
+    people.forEach((person) => handleSendMessage(person))
     toast({
-      title: "Bulk Birthday Messages Sent! 🎉",
-      description: `Sent birthday messages to ${people.length} people`,
-      variant: "default"
+      title: 'Birthday messages queued',
+      description: `Prepared messages for ${people.length} people`,
+      variant: 'default',
     })
   }
 
   const getAge = (dob: string): number => {
-    if (!isMounted) return 0 // Prevent hydration mismatch
-    
+    if (!isMounted) return 0
     const today = new Date()
     const birthDate = new Date(dob)
     let age = today.getFullYear() - birthDate.getFullYear()
     const monthDiff = today.getMonth() - birthDate.getMonth()
-    
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--
     }
-    
     return age
   }
 
-  const getRoleColor = (role?: string) => {
-    switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800'
-      case 'pastor': return 'bg-purple-100 text-purple-800'
-      case 'elder': return 'bg-slate-100 text-slate-700'
-      case 'member': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
+  const daysUntilBirthday = (dob: string): number => {
+    if (!isMounted) return 0
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const birth = new Date(dob)
+    const next = new Date(today.getFullYear(), birth.getMonth(), birth.getDate())
+    if (next < today) next.setFullYear(today.getFullYear() + 1)
+    return Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   }
 
   if (todayBirthdays.length === 0 && upcomingBirthdays.length === 0) {
@@ -102,196 +121,101 @@ export function BirthdayNotifications({
 
   return (
     <div className="space-y-4">
-      {/* Today's Birthdays */}
-      {todayBirthdays.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setIsTodayExpanded(!isTodayExpanded)}
+      {todayBirthdays.length > 0 ? (
+        <section className="dashboard-panel overflow-hidden">
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 text-left sm:px-6"
+            onClick={() => setIsTodayExpanded((v) => !v)}
+            aria-expanded={isTodayExpanded}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Bell className="h-5 w-5 text-orange-600" />
-                <CardTitle className="text-orange-800">
-                  Today's Birthdays ({todayBirthdays.length})
-                </CardTitle>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                  {todayBirthdays.length} birthday{todayBirthdays.length !== 1 ? 's' : ''}
-                </Badge>
-                {isTodayExpanded ? (
-                  <ChevronUp className="h-4 w-4 text-orange-600" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-orange-600" />
-                )}
-              </div>
+            <div>
+              <h2 className="app-section-title text-base">Today’s birthdays</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {todayBirthdays.length} member{todayBirthdays.length !== 1 ? 's' : ''} celebrating today
+              </p>
             </div>
-            <CardDescription className="text-orange-700">
-              {todayBirthdays.length === 1 
-                ? "Someone is celebrating their birthday today!" 
-                : "Multiple people are celebrating their birthdays today!"
-              }
-            </CardDescription>
-          </CardHeader>
-          
-          {isTodayExpanded && (
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Button 
-                  size="sm" 
+            {isTodayExpanded ? (
+              <ChevronUpIcon className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+            ) : (
+              <ChevronDownIcon className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+            )}
+          </button>
+
+          {isTodayExpanded ? (
+            <div className="px-5 py-2 sm:px-6">
+              <div className="mb-2 flex justify-end">
+                <Button
+                  size="sm"
+                  className="min-h-9 cursor-pointer bg-slate-900 text-white hover:bg-slate-800"
                   onClick={() => handleSendBulkMessage(todayBirthdays)}
-                  className="bg-orange-600 hover:bg-orange-700"
                 >
-                  <Send className="h-4 w-4 mr-2" />
-                  Send All Messages
+                  Message all
                 </Button>
               </div>
-              
-              <div className="grid gap-3">
-                {todayBirthdays.map((person) => (
-                  <div 
-                    key={person.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                        <Cake className="h-5 w-5 text-orange-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-medium text-slate-900">{person.name}</h4>
-                          <Badge className={getRoleColor(person.role)}>
-                            {person.role || 'member'}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-slate-600">
-                          Turning {getAge(person.dob)} today • {person.membership_id}
-                        </p>
-                        <div className="flex items-center space-x-4 text-xs text-slate-500 mt-1">
-                          {person.phone && (
-                            <span className="flex items-center">
-                              <Phone className="h-3 w-3 mr-1" />
-                              {person.phone}
-                            </span>
-                          )}
-                          {person.email && (
-                            <span className="flex items-center">
-                              <Mail className="h-3 w-3 mr-1" />
-                              {person.email}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleSendMessage(person)}
-                        className="border-orange-300 text-orange-700 hover:bg-orange-50"
-                      >
-                        <MessageSquare className="h-4 w-4 mr-1" />
-                        Send Message
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          )}
-        </Card>
-      )}
-
-      {/* Upcoming Birthdays */}
-      {upcomingBirthdays.length > 0 && (
-        <Card>
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setIsUpcomingExpanded(!isUpcomingExpanded)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                <CardTitle>
-                  Upcoming Birthdays ({upcomingBirthdays.length})
-                </CardTitle>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary">
-                  {upcomingBirthdays.length} upcoming
-                </Badge>
-                {isUpcomingExpanded ? (
-                  <ChevronUp className="h-4 w-4 text-slate-600" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-slate-600" />
-                )}
-              </div>
+              {todayBirthdays.map((person) => (
+                <PersonRow
+                  key={person.id}
+                  person={person}
+                  meta={`Turning ${getAge(person.dob)}${person.membership_id ? ` · ${person.membership_id}` : ''}`}
+                  onSend={() => handleSendMessage(person)}
+                />
+              ))}
             </div>
-            <CardDescription>
-              Birthdays coming up in the next 7 days
-            </CardDescription>
-          </CardHeader>
-          
-          {isUpcomingExpanded && (
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Button 
-                  size="sm" 
+          ) : null}
+        </section>
+      ) : null}
+
+      {upcomingBirthdays.length > 0 ? (
+        <section className="dashboard-panel overflow-hidden">
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 text-left sm:px-6"
+            onClick={() => setIsUpcomingExpanded((v) => !v)}
+            aria-expanded={isUpcomingExpanded}
+          >
+            <div>
+              <h2 className="app-section-title text-base">Upcoming birthdays</h2>
+              <p className="mt-1 text-sm text-slate-500">Next 7 days · {upcomingBirthdays.length}</p>
+            </div>
+            {isUpcomingExpanded ? (
+              <ChevronUpIcon className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+            ) : (
+              <ChevronDownIcon className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+            )}
+          </button>
+
+          {isUpcomingExpanded ? (
+            <div className="px-5 py-2 sm:px-6">
+              <div className="mb-2 flex justify-end">
+                <Button
+                  size="sm"
                   variant="outline"
+                  className="min-h-9 cursor-pointer border-slate-300"
                   onClick={() => handleSendBulkMessage(upcomingBirthdays)}
                 >
-                  <Send className="h-4 w-4 mr-2" />
-                  Send All Messages
+                  Message all
                 </Button>
               </div>
-              
-              <div className="grid gap-3">
-                {upcomingBirthdays.map((person) => {
-                  const daysUntil = Math.ceil(
-                    (new Date(person.dob).setFullYear(new Date().getFullYear()) - new Date().getTime()) / (1000 * 60 * 60 * 24)
-                  )
-                  
-                  return (
-                    <div 
-                      key={person.id}
-                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
-                          <Cake className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <h4 className="font-medium text-slate-900">{person.name}</h4>
-                            <Badge className={getRoleColor(person.role)}>
-                              {person.role || 'member'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-slate-600">
-                            {daysUntil === 0 ? 'Today' : `In ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`} • 
-                            Turning {getAge(person.dob) + 1} • {person.membership_id}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleSendMessage(person)}
-                        >
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          Send Message
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          )}
-        </Card>
-      )}
+              {upcomingBirthdays.map((person) => {
+                const days = daysUntilBirthday(person.dob)
+                return (
+                  <PersonRow
+                    key={person.id}
+                    person={person}
+                    meta={cn(
+                      days === 0 ? 'Today' : `In ${days} day${days !== 1 ? 's' : ''}`,
+                      `· turning ${getAge(person.dob) + 1}`,
+                      person.membership_id ? `· ${person.membership_id}` : ''
+                    )}
+                    onSend={() => handleSendMessage(person)}
+                  />
+                )
+              })}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   )
 }

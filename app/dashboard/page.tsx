@@ -6,9 +6,7 @@ import { useAuth } from '@/components/providers'
 import { useAllUsers } from '@/lib/hooks/use-data'
 import { useDashboardStats, useUpcomingEvents } from '@/lib/hooks/use-data'
 import { getActiveCampYear, getCampRegistrations } from '@/lib/actions/camp'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { LoadingPage } from '@/components/ui/loading'
 import { ErrorDisplay } from '@/components/ui/error-display'
@@ -18,23 +16,16 @@ import { OfflineSync } from '@/components/offline-sync'
 import { DataTable } from '@/components/data-table/data-table'
 import { getCamperDirectory } from '@/lib/actions/camp'
 import type { CampCamperDirectoryRow, CampRegistration } from '@/lib/types'
-import { FoldableCard } from '@/components/foldable-card'
 import { BirthdayNotifications } from '@/components/birthday-notifications'
 import type { ColumnDef } from '@tanstack/react-table'
 import { ContactRowActions } from '@/components/contacts/contact-row-actions'
 import { followUpBoardHref, summarizeFollowUpSla } from '@/lib/camp/follow-up-sla'
+import { cn } from '@/lib/utils'
 import {
-  AlertTriangle,
-  ArrowDownRight,
-  ArrowRight,
-  ArrowUpRight,
-  Calendar,
-  CheckCircle2,
-  ClipboardList,
-  MapPin,
-  Phone,
-  Users,
-} from 'lucide-react'
+  ArrowBottomRightIcon,
+  ArrowRightIcon,
+  ArrowTopRightIcon,
+} from '@radix-ui/react-icons'
 
 function DashboardContent() {
   const { user, loading: authLoading } = useAuth()
@@ -114,11 +105,10 @@ function DashboardContent() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Latest status" />,
         cell: ({ row }) => {
           const status = row.original.years[0]?.status ?? 'registered'
-          const variant = status === 'checked_in' ? 'default' : 'secondary'
           return (
-            <Badge variant={variant} className="capitalize">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
               {status.replace('_', ' ')}
-            </Badge>
+            </span>
           )
         },
       },
@@ -142,8 +132,17 @@ function DashboardContent() {
           let score = row.original.registration_count > 1 ? 2 : 1
           if (!row.original.user_id) score += 2
           if (latestStatus !== 'checked_in') score += 1
-          const tone = score >= 4 ? 'destructive' : score >= 3 ? 'secondary' : 'outline'
-          return <Badge variant={tone}>{score}/5</Badge>
+          const tone =
+            score >= 4
+              ? 'bg-slate-900 text-white'
+              : score >= 3
+                ? 'bg-slate-100 text-slate-800'
+                : 'bg-transparent text-slate-600 ring-1 ring-slate-200'
+          return (
+            <span className={cn('inline-flex min-w-[2.5rem] justify-center rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums', tone)}>
+              {score}/5
+            </span>
+          )
         },
       },
       {
@@ -301,97 +300,100 @@ function DashboardContent() {
 
   if (!user) return null
 
+  const greetingName = user.full_name?.split(' ')[0] || 'there'
+  const todayLabel = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-7xl space-y-6 rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm backdrop-blur-sm sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 space-y-1">
-            <div className="app-accent-bar" />
-            <h1 className="app-page-title">Member Tracking & Follow-up</h1>
-            <p className="app-page-description">
-              A workflow-first dashboard for contacts, registration history, and follow-up.
+      <div className="dashboard-shell">
+        <header className="flex flex-col gap-6 border-b border-slate-300/70 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 space-y-2">
+            <p className="app-stat-label text-amber-700/90">{todayLabel}</p>
+            <h1 className="app-page-title text-[1.75rem] leading-tight sm:text-[2.15rem]">
+              Good day, {greetingName}
+            </h1>
+            <p className="app-page-description max-w-xl">
+              Follow-ups, camp contacts, and today’s birthdays — one place to work from.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => router.push('/admin/camp-meeting/follow-up')}>
-              <ClipboardList className="mr-2 h-4 w-4" />
+            <Button
+              variant="outline"
+              className="min-h-11 cursor-pointer border-slate-300 bg-white"
+              onClick={() => router.push('/admin/camp-meeting/follow-up')}
+            >
               Follow-up board
             </Button>
-            <Button onClick={() => router.push('/admin/camp-meeting/registrations')}>
-              Registration queue
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button
+              className="min-h-11 cursor-pointer bg-slate-900 text-white hover:bg-slate-800"
+              onClick={() => router.push('/admin/camp-meeting/registrations')}
+            >
+              Registrations
+              <ArrowRightIcon className="ml-2 h-4 w-4" aria-hidden />
             </Button>
           </div>
-        </div>
+        </header>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-white">
-            <CardHeader className="pb-2">
-              <CardDescription>Total admins</CardDescription>
-              <p className="app-stat-value">{usersLoading ? '…' : totalAdmins}</p>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              <Users className="mr-1 inline h-4 w-4" />
-              Accounts with admin role
-            </CardContent>
-          </Card>
-          <Card className="border-violet-200 bg-gradient-to-br from-violet-50 to-white">
-            <CardHeader className="pb-2">
-              <CardDescription>Camp contacts</CardDescription>
-              <p className="app-stat-value">{campRows.length}</p>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              <Phone className="mr-1 inline h-4 w-4" />
-              Unique phone-based profiles
-            </CardContent>
-          </Card>
-          <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
-            <CardHeader className="pb-2">
-              <CardDescription>Linked contacts</CardDescription>
-              <p className="app-stat-value">{linkedContacts}</p>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Matched to member accounts
-            </CardContent>
-          </Card>
-          <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
-            <CardHeader className="pb-2">
-              <CardDescription>My pending follow-ups</CardDescription>
-              <p className="app-stat-value">{myFollowUpsLoading ? '…' : myPendingFollowUps}</p>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Assigned to you in active camp year
-            </CardContent>
-          </Card>
-        </div>
+        <section aria-label="Key metrics" className="dashboard-metric-strip">
+          <div className="dashboard-metric-cell">
+            <p className="app-stat-label">Admins</p>
+            <p className="app-stat-value">{usersLoading ? '…' : totalAdmins}</p>
+            <p className="text-sm text-slate-500">Accounts with admin access</p>
+          </div>
+          <div className="dashboard-metric-cell">
+            <p className="app-stat-label">Camp contacts</p>
+            <p className="app-stat-value">{campRows.length}</p>
+            <p className="text-sm text-slate-500">Unique phone profiles</p>
+          </div>
+          <div className="dashboard-metric-cell">
+            <p className="app-stat-label">Linked</p>
+            <p className="app-stat-value">{linkedContacts}</p>
+            <p className="text-sm text-slate-500">Matched to member accounts</p>
+          </div>
+          <div className="dashboard-metric-cell">
+            <p className="app-stat-label">My follow-ups</p>
+            <p className="app-stat-value">{myFollowUpsLoading ? '…' : myPendingFollowUps}</p>
+            <p className="text-sm text-slate-500">Pending, assigned to you</p>
+          </div>
+        </section>
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="border-rose-200 bg-gradient-to-br from-rose-50 to-white">
-            <CardHeader className="pb-2">
-              <CardDescription>Follow-up SLA</CardDescription>
-              <CardTitle>Queue health</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-rose-700">Overdue</span>
-                <div className="flex items-center gap-1">
-                  {followUpSla.overdue > 10 ? <AlertTriangle className="h-4 w-4 text-rose-600" /> : null}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      router.push(
-                        followUpBoardHref({ sla: 'overdue', yearId: activeCampYearId ?? undefined })
-                      )
-                    }
-                    className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
-                    aria-label="Open overdue follow-ups"
+        <section className="grid gap-4 lg:grid-cols-3">
+          <div className="dashboard-panel p-5 sm:p-6">
+            <div className="mb-4 flex items-baseline justify-between gap-2">
+              <h2 className="app-section-title text-base">Follow-up SLA</h2>
+              <span className="text-xs text-slate-500">Queue health</span>
+            </div>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <span className="text-slate-700">Overdue</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      followUpBoardHref({ sla: 'overdue', yearId: activeCampYearId ?? undefined })
+                    )
+                  }
+                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  aria-label="Open overdue follow-ups"
+                >
+                  <span
+                    className={cn(
+                      'inline-flex min-w-[2rem] justify-center rounded-md px-2 py-0.5 text-sm font-semibold tabular-nums',
+                      followUpSla.overdue > 10
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-800'
+                    )}
                   >
-                    <Badge variant={followUpSla.overdue > 10 ? 'destructive' : 'secondary'}>{followUpSla.overdue}</Badge>
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-amber-700">Due soon</span>
+                    {followUpSla.overdue}
+                  </span>
+                </button>
+              </li>
+              <li className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <span className="text-slate-700">Due soon</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -399,14 +401,16 @@ function DashboardContent() {
                       followUpBoardHref({ sla: 'due_soon', yearId: activeCampYearId ?? undefined })
                     )
                   }
-                  className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
-                  aria-label="Open in-progress follow-ups"
+                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  aria-label="Open due-soon follow-ups"
                 >
-                  <Badge variant={followUpSla.dueSoon > 15 ? 'destructive' : 'secondary'}>{followUpSla.dueSoon}</Badge>
+                  <span className="inline-flex min-w-[2rem] justify-center rounded-md bg-slate-100 px-2 py-0.5 text-sm font-semibold tabular-nums text-slate-800">
+                    {followUpSla.dueSoon}
+                  </span>
                 </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-emerald-700">Healthy</span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-700">Healthy</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -414,247 +418,194 @@ function DashboardContent() {
                       followUpBoardHref({ sla: 'healthy', yearId: activeCampYearId ?? undefined })
                     )
                   }
-                  className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-                  aria-label="Open completed follow-ups"
+                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  aria-label="Open healthy follow-ups"
                 >
-                  <Badge variant="outline">{followUpSla.healthy}</Badge>
+                  <span className="inline-flex min-w-[2rem] justify-center rounded-md bg-slate-100 px-2 py-0.5 text-sm font-semibold tabular-nums text-slate-800">
+                    {followUpSla.healthy}
+                  </span>
                 </button>
-              </div>
-            </CardContent>
-          </Card>
+              </li>
+            </ul>
+          </div>
 
-          <Card className="border-cyan-200 bg-gradient-to-br from-cyan-50 to-white">
-            <CardHeader className="pb-2">
-              <CardDescription>Assignment balance</CardDescription>
-              <CardTitle>Pending load by staff</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {assignmentBalance.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No pending assigned follow-ups yet.</p>
-              ) : (
-                assignmentBalance.map((item) => (
-                  <div key={item.userId} className="flex items-center justify-between text-sm">
-                    <span className="truncate pr-2">{item.name}</span>
-                    <Badge variant="secondary">{item.count}</Badge>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+          <div className="dashboard-panel p-5 sm:p-6">
+            <div className="mb-4 flex items-baseline justify-between gap-2">
+              <h2 className="app-section-title text-base">Staff load</h2>
+              <span className="text-xs text-slate-500">Pending by assignee</span>
+            </div>
+            {assignmentBalance.length === 0 ? (
+              <p className="text-sm text-slate-500">No pending assigned follow-ups yet.</p>
+            ) : (
+              <ul className="space-y-2.5">
+                {assignmentBalance.map((item) => (
+                  <li key={item.userId} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="truncate text-slate-800">{item.name}</span>
+                    <span className="shrink-0 tabular-nums font-semibold text-slate-900">{item.count}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-          <Card className="border-lime-200 bg-gradient-to-br from-lime-50 to-white">
-            <CardHeader className="pb-2">
-              <CardDescription>New vs returning trend</CardDescription>
-              <CardTitle>Registration mix</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span>Last 7 days (new)</span>
-                <div className="flex items-center gap-1">
+          <div className="dashboard-panel p-5 sm:p-6">
+            <div className="mb-4 flex items-baseline justify-between gap-2">
+              <h2 className="app-section-title text-base">Registration mix</h2>
+              <span className="text-xs text-slate-500">New vs returning</span>
+            </div>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-center justify-between">
+                <span className="text-slate-700">Last 7 days · new</span>
+                <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-slate-900">
                   {trendSignals.newDelta > 0.5 ? (
-                    <ArrowUpRight className="h-4 w-4 text-emerald-600" />
+                    <ArrowTopRightIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
                   ) : trendSignals.newDelta < -0.5 ? (
-                    <ArrowDownRight className="h-4 w-4 text-rose-600" />
+                    <ArrowBottomRightIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={() => router.push('/admin/camp-meeting/registrations')}
-                    className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-300"
-                    aria-label="Open registrations for new contacts"
-                  >
-                    <Badge variant="outline">{contactTrend.new7}</Badge>
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Last 7 days (returning)</span>
-                <div className="flex items-center gap-1">
+                  {contactTrend.new7}
+                </span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-700">Last 7 days · returning</span>
+                <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-slate-900">
                   {trendSignals.returningDelta > 0.5 ? (
-                    <ArrowUpRight className="h-4 w-4 text-emerald-600" />
+                    <ArrowTopRightIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
                   ) : trendSignals.returningDelta < -0.5 ? (
-                    <ArrowDownRight className="h-4 w-4 text-rose-600" />
+                    <ArrowBottomRightIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={() => router.push('/admin/camp-meeting/registrations')}
-                    className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-300"
-                    aria-label="Open registrations for returning contacts"
-                  >
-                    <Badge variant="outline">{contactTrend.returning7}</Badge>
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Last 30 days (new)</span>
-                <Badge variant="secondary">{contactTrend.new30}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Last 30 days (returning)</span>
-                <Badge variant="secondary">{contactTrend.returning30}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  {contactTrend.returning7}
+                </span>
+              </li>
+              <li className="flex items-center justify-between border-t border-slate-100 pt-3">
+                <span className="text-slate-700">Last 30 days · new</span>
+                <span className="font-semibold tabular-nums text-slate-900">{contactTrend.new30}</span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-700">Last 30 days · returning</span>
+                <span className="font-semibold tabular-nums text-slate-900">{contactTrend.returning30}</span>
+              </li>
+            </ul>
+          </div>
+        </section>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-white">
-            <CardHeader>
-              <CardTitle>My assigned follow-ups</CardTitle>
-              <CardDescription>
-                {myFollowUpsLoading
-                  ? 'Loading assignments...'
-                  : `${myFollowUps.length} assigned • ${myPendingFollowUps} pending`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {myFollowUpsLoading ? (
-                <p className="text-sm text-muted-foreground">Loading...</p>
-              ) : myFollowUps.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No follow-ups currently assigned to your admin account.
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="dashboard-panel p-5 sm:p-6">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="app-section-title text-base">My assigned follow-ups</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {myFollowUpsLoading
+                    ? 'Loading…'
+                    : `${myFollowUps.length} assigned · ${myPendingFollowUps} pending`}
                 </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {myFollowUpsLoading ? (
+                <p className="text-sm text-slate-500">Loading…</p>
+              ) : myFollowUps.length === 0 ? (
+                <p className="text-sm text-slate-500">Nothing assigned to you in the active camp year.</p>
               ) : (
                 myFollowUps.slice(0, 5).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between rounded-md border bg-white px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium">{item.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{item.phone}</p>
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-3 border-b border-slate-100 py-2.5 last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">{item.full_name}</p>
+                      <p className="text-xs text-slate-500">{item.phone}</p>
                     </div>
-                    <Badge variant={item.follow_up_status === 'completed' ? 'default' : 'secondary'}>
+                    <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-500">
                       {(item.follow_up_status ?? 'pending').replace('_', ' ')}
-                    </Badge>
+                    </span>
                   </div>
                 ))
               )}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() =>
-                  router.push(
-                    followUpBoardHref({ mine: true, yearId: activeCampYearId ?? undefined })
-                  )
-                }
-              >
-                Open my follow-ups
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-white">
-            <CardHeader>
-              <CardTitle>Admin access setup</CardTitle>
-              <CardDescription>Make a member an admin so they can log in and manage the system.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-700">
-              <p>
-                Go to <span className="font-medium">User Management</span>, edit the user, and set <span className="font-medium">Role = Admin</span>.
-              </p>
-              <p>
-                For quick admin provisioning, use <span className="font-medium">Admin Management</span> to create/edit admins directly.
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => router.push('/admin/users')}>
-                  Open User Management
-                </Button>
-                <Button onClick={() => router.push('/admin/admins')}>Open Admin Management</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="overflow-hidden border-slate-200 shadow-sm">
-          <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gradient-to-r from-slate-50 to-slate-50 p-3">
-              <div>
-                <CardTitle>Camp Contacts & Registrations</CardTitle>
-                <CardDescription>
-                  Expanded searchable table for member tracing, registration history, and follow-up triage.
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                onClick={() => void loadCampDirectory()}
-                disabled={campLoading}
-              >
-                {campLoading ? 'Refreshing...' : 'Refresh table'}
-              </Button>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4 bg-white">
-            {campError ? <p className="text-sm text-red-600">{campError}</p> : null}
+            <Button
+              variant="outline"
+              className="mt-4 min-h-10 w-full cursor-pointer border-slate-300"
+              onClick={() =>
+                router.push(followUpBoardHref({ mine: true, yearId: activeCampYearId ?? undefined }))
+              }
+            >
+              Open my follow-ups
+            </Button>
+          </div>
+
+          <div className="dashboard-panel p-5 sm:p-6">
+            <h2 className="app-section-title text-base">Shortcuts</h2>
+            <p className="mt-1 text-sm text-slate-500">Common admin paths</p>
+            <div className="mt-4 grid gap-2">
+              {[
+                { href: '/admin/camp-meeting/follow-up', label: 'Follow-up board' },
+                { href: '/admin/camp-meeting/directory', label: 'Camper directory' },
+                { href: '/admin/camp-meeting/communications', label: 'Camp SMS / email' },
+                { href: '/admin/birthdays', label: 'Birthday SMS' },
+                { href: '/admin/users', label: 'User management' },
+                { href: '/admin/admins', label: 'Admin management' },
+              ].map((item) => (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={() => router.push(item.href)}
+                  className="flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-[#fafaf8] px-3 text-left text-sm font-medium text-slate-800 transition-colors duration-150 hover:border-slate-300 hover:bg-white"
+                >
+                  {item.label}
+                  <ArrowRightIcon className="h-4 w-4 text-slate-400" aria-hidden />
+                </button>
+              ))}
+            </div>
+            <div className="mt-5 border-t border-slate-100 pt-4 text-sm text-slate-600">
+              <p className="font-medium text-slate-800">Campus Gem Ministries</p>
+              <p className="mt-1">Kokomlemle, Accra</p>
+              <p>Sundays 7:00 AM & 9:00 AM</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="dashboard-panel overflow-hidden">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
+            <div>
+              <h2 className="app-section-title text-base">Camp contacts</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Searchable directory · {followUpCandidates} multi-year contacts need attention
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-10 cursor-pointer border-slate-300"
+              onClick={() => void loadCampDirectory()}
+              disabled={campLoading}
+            >
+              {campLoading ? 'Refreshing…' : 'Refresh'}
+            </Button>
+          </div>
+          <div className="p-3 sm:p-4">
+            {campError ? <p className="mb-3 px-2 text-sm text-red-600">{campError}</p> : null}
             <DataTable
               columns={campColumns}
               data={campRows}
               searchKey="full_name"
-              searchPlaceholder="Search contact name..."
+              searchPlaceholder="Search contact name…"
             />
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <section className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <BirthdayNotifications todayBirthdays={todayBirthdays} upcomingBirthdays={upcomingBirthdays} />
+            <BirthdayNotifications
+              todayBirthdays={todayBirthdays}
+              upcomingBirthdays={upcomingBirthdays}
+            />
           </div>
-          <div className="space-y-6">
-            <FoldableCard
-              title="Follow-up Shortcuts"
-              description="Jump straight into outreach actions"
-              icon={<CheckCircle2 className="h-5 w-5 text-green-600" />}
-              badge={<Badge variant="secondary">Actions</Badge>}
-              defaultExpanded={true}
-            >
-              <div className="grid gap-2">
-                <Button variant="outline" className="justify-start" onClick={() => router.push('/admin/camp-meeting/follow-up')}>
-                  Open follow-up board
-                </Button>
-                <Button variant="outline" className="justify-start" onClick={() => router.push('/admin/camp-meeting/directory')}>
-                  Open full camper directory
-                </Button>
-                <Button variant="outline" className="justify-start" onClick={() => router.push('/admin/camp-meeting/communications')}>
-                  Send SMS / email follow-up
-                </Button>
-                <Button variant="outline" className="justify-start" onClick={() => router.push('/admin/camp-meeting/registrations')}>
-                  View all registrations
-                </Button>
-              </div>
-            </FoldableCard>
-
-            <FoldableCard
-              title="Campus Gem Ministries"
-              description="Church information"
-              icon={<MapPin className="h-5 w-5 text-primary" />}
-              badge={<Badge variant="secondary">Info</Badge>}
-              defaultExpanded={true}
-            >
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Location</p>
-                  <p className="text-sm text-slate-900">Kokomlemle, Accra</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Services</p>
-                  <p className="text-sm text-slate-900">Sundays 7:00 AM & 9:00 AM</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Contact</p>
-                  <p className="text-sm text-slate-900">+233 XX XXX XXXX</p>
-                </div>
-              </div>
-            </FoldableCard>
-
-            <FoldableCard
-              title="Operations"
-              description="System health and sync"
-              icon={<Calendar className="h-5 w-5 text-slate-600" />}
-              badge={<Badge variant="secondary">Status</Badge>}
-              defaultExpanded={false}
-            >
-              <OfflineSync />
-            </FoldableCard>
+          <div className="dashboard-panel p-5 sm:p-6">
+            <h2 className="app-section-title text-base">Operations</h2>
+            <p className="mt-1 mb-4 text-sm text-slate-500">Offline sync and system status</p>
+            <OfflineSync />
           </div>
-        </div>
+        </section>
       </div>
     </DashboardLayout>
   )

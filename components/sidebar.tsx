@@ -14,7 +14,13 @@ import {
   canSeeNavItem,
 } from '@/lib/navigation/sidebar'
 import type { UserRole } from '@/lib/types'
-import { LogOut, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Cross2Icon,
+  ExitIcon,
+  HamburgerMenuIcon,
+} from '@radix-ui/react-icons'
 
 interface SidebarProps {
   className?: string
@@ -90,15 +96,12 @@ function SidebarNavInner({
                       title={collapsed ? item.name : item.description ?? item.name}
                       data-active={isActive ? 'true' : 'false'}
                       className={cn(
-                        'sidebar-nav-item group flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
+                        'sidebar-nav-item group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm transition-colors',
                         collapsed && 'justify-center px-2'
                       )}
                     >
                       <Icon className="sidebar-nav-icon h-4 w-4 shrink-0" />
                       {!collapsed && <span className="truncate font-medium">{item.name}</span>}
-                      {isActive && !collapsed && (
-                        <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                      )}
                     </button>
                   </li>
                 )
@@ -111,7 +114,7 @@ function SidebarNavInner({
       {settingsItems.length > 0 ? (
         <div
           className={cn(
-            'shrink-0 border-t border-white/10 px-3 py-3',
+            'shrink-0 border-t border-slate-200 px-3 py-3',
             collapsed && 'flex flex-col items-center gap-1'
           )}
         >
@@ -128,7 +131,7 @@ function SidebarNavInner({
                     title={item.name}
                     data-active={isActive ? 'true' : 'false'}
                     className={cn(
-                      'sidebar-nav-item flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors',
+                      'sidebar-nav-item flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors',
                       collapsed && 'justify-center px-2'
                     )}
                   >
@@ -150,7 +153,7 @@ function SidebarNav(props: { collapsed: boolean; onNavigate?: () => void }) {
     <Suspense
       fallback={
         <div className="flex min-h-0 flex-1 flex-col px-3 py-4">
-          <div className="h-8 animate-pulse rounded-lg bg-white/10" />
+          <div className="h-8 animate-pulse rounded-md bg-slate-200/80" />
         </div>
       }
     >
@@ -180,12 +183,12 @@ function SidebarShell({
     <div className="sidebar-panel">
       <div
         className={cn(
-          'flex shrink-0 items-center gap-3 border-b border-white/10 px-4 py-4',
+          'flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-4',
           collapsed && 'justify-center px-2'
         )}
       >
         <BrandMark size="sm" />
-        {!collapsed && <BrandTitle className="flex-1" />}
+        {!collapsed && <BrandTitle className="flex-1" light />}
         {headerAction}
         {showCollapseToggle && onToggleCollapse ? (
           <Button
@@ -195,20 +198,20 @@ function SidebarShell({
             className="sidebar-sign-out h-8 w-8 shrink-0"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
           </Button>
         ) : null}
       </div>
 
       {!collapsed && user ? (
-        <div className="shrink-0 border-b border-white/10 px-4 py-3">
+        <div className="shrink-0 border-b border-slate-200 px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400/20 text-xs font-semibold text-amber-300">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-[11px] font-semibold text-slate-700">
               {userInitials(user.full_name)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">{user.full_name || 'User'}</p>
-              <p className="truncate text-xs text-slate-400">{formatRole(user.role)}</p>
+              <p className="truncate text-sm font-medium text-slate-900">{user.full_name || 'User'}</p>
+              <p className="truncate text-xs text-slate-500">{formatRole(user.role)}</p>
             </div>
           </div>
         </div>
@@ -216,11 +219,11 @@ function SidebarShell({
 
       <SidebarNav collapsed={collapsed} onNavigate={onNavigate} />
 
-      <div className={cn('shrink-0 border-t border-white/10 p-3', collapsed && 'flex justify-center')}>
+      <div className={cn('shrink-0 border-t border-slate-200 p-3', collapsed && 'flex justify-center')}>
         <button
           type="button"
           className={cn(
-            'sidebar-sign-out flex w-full items-center rounded-lg text-sm font-medium transition-colors',
+            'sidebar-sign-out flex w-full items-center rounded-md text-sm font-medium transition-colors',
             collapsed ? 'h-9 w-9 justify-center px-0' : 'gap-3 px-2.5 py-2'
           )}
           onClick={async () => {
@@ -229,7 +232,7 @@ function SidebarShell({
             onNavigate?.()
           }}
         >
-          <LogOut className="h-4 w-4 shrink-0" />
+          <ExitIcon className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Sign out</span>}
         </button>
       </div>
@@ -287,7 +290,7 @@ export function MobileSidebar() {
           aria-label="Dismiss menu overlay"
           onClick={() => setOpen(false)}
         />
-        <aside className="mobile-nav-panel relative z-10 flex h-full max-h-[100dvh] w-[min(85vw,18rem)] flex-col bg-slate-950 shadow-2xl">
+        <aside className="mobile-nav-panel relative z-10 flex h-full max-h-[100dvh] w-[min(85vw,18rem)] flex-col border-r border-slate-200 bg-[#f7f6f3] shadow-xl">
           <SidebarShell
             collapsed={false}
             onNavigate={() => setOpen(false)}
@@ -300,7 +303,7 @@ export function MobileSidebar() {
                 className="sidebar-sign-out ml-auto h-8 w-8 shrink-0"
                 aria-label="Close menu"
               >
-                <X className="h-4 w-4" />
+                <Cross2Icon className="h-4 w-4" />
               </Button>
             }
           />
@@ -317,7 +320,7 @@ export function MobileSidebar() {
         className="text-slate-700 lg:hidden"
         aria-label="Open menu"
       >
-        <Menu className="h-5 w-5" />
+        <HamburgerMenuIcon className="h-5 w-5" />
       </Button>
       {drawer ? createPortal(drawer, document.body) : null}
     </>

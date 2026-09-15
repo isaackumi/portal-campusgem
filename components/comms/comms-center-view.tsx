@@ -34,6 +34,14 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { isValidSmsPhone, normalizeSmsPhone } from '@/lib/comms/sms-client'
@@ -111,6 +119,7 @@ export function CommsCenterView() {
   const [manualRecipients, setManualRecipients] = useState('')
   const [searching, setSearching] = useState(false)
   const [resendingId, setResendingId] = useState<string | null>(null)
+  const [smsReviewOpen, setSmsReviewOpen] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -188,16 +197,44 @@ export function CommsCenterView() {
     ).length
   }, [selectedRecipients, channel])
 
-  async function handleSend() {
-    if (!user?.id) return
+  const smsRecipients = useMemo(
+    () => selectedRecipients.filter((r) => isValidSmsPhone(r.phone)),
+    [selectedRecipients]
+  )
+
+  const manualLineCount = useMemo(
+    () =>
+      manualRecipients
+        .split(/[\n,;]+/)
+        .map((line) => line.trim())
+        .filter(Boolean).length,
+    [manualRecipients]
+  )
+
+  function canStartSend(): boolean {
+    if (!user?.id) return false
     if (!messageBody.trim()) {
       toast({ variant: 'destructive', title: 'Message is required' })
-      return
+      return false
     }
     if (channel === 'email' && !subject.trim()) {
       toast({ variant: 'destructive', title: 'Subject is required for email' })
+      return false
+    }
+    return true
+  }
+
+  function requestSend() {
+    if (!canStartSend()) return
+    if (channel === 'sms') {
+      setSmsReviewOpen(true)
       return
     }
+    void handleSend()
+  }
+
+  async function handleSend() {
+    if (!canStartSend()) return
 
     setSending(true)
     const audience_type =
@@ -207,7 +244,7 @@ export function CommsCenterView() {
       module,
       channel,
       audience_type,
-      sender_id: user.id,
+      sender_id: user!.id,
       subject: channel === 'email' ? subject : undefined,
       message_body: messageBody,
       recipients: audienceMode === 'manual' ? [] : selectedRecipients,
@@ -233,6 +270,7 @@ export function CommsCenterView() {
       }.`,
     })
 
+    setSmsReviewOpen(false)
     setMessageBody('')
     setSubject('')
     setManualRecipients('')
@@ -559,13 +597,15 @@ export function CommsCenterView() {
               <Button
                 className="w-full sm:w-auto"
                 disabled={sending || (audienceMode !== 'manual' && deliverableCount === 0 && !manualRecipients.trim())}
-                onClick={() => void handleSend()}
+                onClick={requestSend}
               >
                 <Send className="mr-2 h-4 w-4" />
                 {sending
                   ? 'Sending…'
-                  : dryRun && channel === 'sms'
-                    ? `Dry-run ${COMMS_CHANNEL_LABELS[channel]}`
+                  : channel === 'sms'
+                    ? dryRun
+                      ? 'Review dry-run SMS'
+                      : 'Review & send SMS'
                     : `Send ${COMMS_CHANNEL_LABELS[channel]}`}
               </Button>
             </CardContent>
@@ -670,6 +710,109 @@ export function CommsCenterView() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog
+        open={smsReviewOpen}
+        onOpenChange={(open) => {
+          if (!sending) setSmsReviewOpen(open)
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Review SMS before sending</DialogTitle>
+            <DialogDescription>
+              Confirm the message and audience. Nothing is sent until you confirm.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 text-sm">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">
+                {audienceMode === 'manual'
+                  ? `${manualLineCount} manual line(s)`
+                  : `${deliverableCount} valid phone(s)`}
+              </Badge>
+              <Badge variant="outline">{COMMS_MODULE_LABELS[module]}</Badge>
+              {dryRun ? <Badge variant="outline">Dry run</Badge> : null}
+              {forceMock ? <Badge variant="outline">Force mock</Badge> : null}
+              {providers?.smsProvider ? (
+                <Badge variant="outline">Provider: {providers.smsProvider}</Badge>
+              ) : null}
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                Message to send
+              </p>
+              <p className="whitespace-pre-wrap leading-relaxed text-slate-900">{messageBody || '—'}</p>
+              <p className="mt-2 text-xs tabular-nums text-slate-500">
+                {messageBody.length} characters
+                {messageBody.length > 160 ? ' · may split into multiple SMS' : ''}
+              </p>
+            </div>
+
+            {audienceMode !== 'manual' ? (
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Recipients
+                </p>
+                {smsRecipients.length === 0 ? (
+                  <p className="text-slate-500">No valid phone numbers selected.</p>
+                ) : (
+                  <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3">
+                    {smsRecipients.slice(0, 12).map((r) => (
+                      <li
+                        key={`${r.entity_id}-${r.id}`}
+                        className="flex items-center justify-between gap-3 text-slate-700"
+                      >
+                        <span className="truncate font-medium">{r.name}</span>
+                        <span className="shrink-0 font-mono text-xs text-slate-500">
+                          {normalizeSmsPhone(r.phone!)}
+                        </span>
+                      </li>
+                    ))}
+                    {smsRecipients.length > 12 ? (
+                      <li className="pt-1 text-xs text-slate-500">
+                        +{smsRecipients.length - 12} more
+                      </li>
+                    ) : null}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Manual numbers
+                </p>
+                <p className="whitespace-pre-wrap font-mono text-xs text-slate-700">
+                  {manualRecipients.trim() || '—'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={sending}
+              onClick={() => setSmsReviewOpen(false)}
+            >
+              Back
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                sending ||
+                (audienceMode === 'manual' ? manualLineCount === 0 : deliverableCount === 0)
+              }
+              onClick={() => void handleSend()}
+            >
+              {sending ? 'Sending…' : dryRun ? 'Confirm dry run' : 'Confirm send'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   )
 }

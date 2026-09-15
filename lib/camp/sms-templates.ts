@@ -8,6 +8,7 @@ export type CampMessageTemplateId =
   | 'check_in_info'
   | 'welcome_general'
   | 'room_allocation'
+  | 'registration_invite'
 
 export type CampTemplateVars = {
   name?: string | null
@@ -28,6 +29,7 @@ export type CampTemplateVars = {
   building?: string | null
   roomLeader?: string | null
   roommates?: string | null
+  registrationLink?: string | null
 }
 
 export type CampMessageTemplate = {
@@ -78,6 +80,13 @@ export const CAMP_MESSAGE_TEMPLATES: CampMessageTemplate[] = [
     channel: 'sms',
     body: `Hi {{firstName}}! Your Camp Meeting {{campYear}} room is {{roomName}}{{buildingPart}}. Check-in code: {{checkInCode}}.{{leaderPart}} See you at camp!`,
   },
+  {
+    id: 'registration_invite',
+    label: 'Invite to register',
+    description: 'Encourage members who have not registered yet to join camp.',
+    channel: 'sms',
+    body: `Hi {{firstName}}! You're invited to Campus Gem Camp Meeting {{campYear}}. Come pray, network, and grow with us. Register here: {{registrationLink}}`,
+  },
 ]
 
 export function getCampMessageTemplate(id: CampMessageTemplateId): CampMessageTemplate | undefined {
@@ -85,7 +94,7 @@ export function getCampMessageTemplate(id: CampMessageTemplateId): CampMessageTe
 }
 
 export const CAMP_TEMPLATE_VARIABLE_HINT =
-  '{{name}}, {{firstName}}, {{checkInCode}}, {{campYear}}, {{roomName}}, {{building}}, {{roomLeader}}, {{roommates}}, {{venue}}, {{theme}}'
+  '{{name}}, {{firstName}}, {{checkInCode}}, {{campYear}}, {{roomName}}, {{building}}, {{roomLeader}}, {{roommates}}, {{venue}}, {{theme}}, {{registrationLink}}'
 
 /** Chips for the compose UI — insert {{key}} into the message body. */
 export const CAMP_TEMPLATE_VARIABLE_CHIPS: Array<{ key: string; label: string }> = [
@@ -100,6 +109,7 @@ export const CAMP_TEMPLATE_VARIABLE_CHIPS: Array<{ key: string; label: string }>
   { key: 'venue', label: 'Venue' },
   { key: 'theme', label: 'Theme' },
   { key: 'phone', label: 'Phone' },
+  { key: 'registrationLink', label: 'Register link' },
 ]
 
 function themePart(theme?: string | null): string {
@@ -166,6 +176,8 @@ export function personalizeCampMessage(template: string, vars: CampTemplateVars)
     room_leader: roomLeader,
     leaderPart: leaderPart(roomLeader),
     roommates,
+    registrationLink: vars.registrationLink?.trim() || '',
+    registration_link: vars.registrationLink?.trim() || '',
   }
 
   return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, key: string) => {

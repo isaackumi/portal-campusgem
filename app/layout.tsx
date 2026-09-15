@@ -110,12 +110,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link 
-          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap" 
+          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" 
           rel="stylesheet" 
         />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased" style={{ fontFamily: '"Source Sans 3", sans-serif' }}>
+      <body
+        className="min-h-screen bg-background text-foreground antialiased"
+        style={{ fontFamily: '"Source Sans 3", system-ui, sans-serif' }}
+      >
         <Providers>
           {children}
           <Toaster />

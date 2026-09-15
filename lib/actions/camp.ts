@@ -219,6 +219,121 @@ export async function getCamperDirectory(): Promise<{
   }
 }
 
+export type CampInviteAudienceRow = {
+  id: string
+  full_name: string
+  first_name?: string
+  last_name?: string
+  phone: string
+  email?: string
+  source: 'member' | 'past_camper'
+}
+
+/** Members + past campers who are not registered for the given camp year. */
+export async function getCampUnregisteredAudienceAction(campYearId: string): Promise<{
+  data: {
+    rows: CampInviteAudienceRow[]
+    registration_path: string
+    registered_count: number
+  } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  if (!campYearId) return { data: null, error: 'Camp year is required' }
+
+  try {
+    const { normalizeSmsPhone, isValidSmsPhone } = await import('@/lib/comms/sms-client')
+    const { getPublishedCampFormForYear } = await import('@/lib/actions/forms')
+    const { fetchUsersFromConvex } = await import('@/lib/convex/core-bridge')
+
+    const [regsResult, dirResult, usersResult, formResult] = await Promise.all([
+      getCampRegistrations(campYearId),
+      getCamperDirectory(),
+      fetchUsersFromConvex(),
+      getPublishedCampFormForYear(campYearId),
+    ])
+
+    if (regsResult.error) return { data: null, error: regsResult.error }
+    if (dirResult.error) return { data: null, error: dirResult.error }
+
+    const registrations = regsResult.data ?? []
+    const registeredPhones = new Set<string>()
+    const registeredUserIds = new Set<string>()
+
+    for (const reg of registrations) {
+      if (reg.status === 'cancelled') continue
+      if (reg.user_id) registeredUserIds.add(reg.user_id)
+      if (reg.phone && isValidSmsPhone(reg.phone)) {
+        registeredPhones.add(normalizeSmsPhone(reg.phone))
+      }
+    }
+
+    const byPhone = new Map<string, CampInviteAudienceRow>()
+
+    for (const user of usersResult) {
+      const phone = user.phone || user.whatsapp || user.secondary_phone
+      if (!phone || !isValidSmsPhone(phone)) continue
+      if (registeredUserIds.has(user.id)) continue
+      const key = normalizeSmsPhone(phone)
+      if (registeredPhones.has(key)) continue
+      if (byPhone.has(key)) continue
+
+      const nameParts = (user.full_name || '').trim().split(/\s+/)
+      byPhone.set(key, {
+        id: `user:${user.id}`,
+        full_name: user.full_name || 'Member',
+        first_name: user.first_name || nameParts[0],
+        last_name: user.last_name || nameParts.slice(1).join(' ') || undefined,
+        phone,
+        email: user.email,
+        source: 'member',
+      })
+    }
+
+    for (const row of dirResult.data ?? []) {
+      if (!row.phone || !isValidSmsPhone(row.phone)) continue
+      const key = normalizeSmsPhone(row.phone)
+      if (registeredPhones.has(key)) continue
+      if (row.user_id && registeredUserIds.has(row.user_id)) continue
+      const attendedThisYear = row.years.some((y) => y.year_id === campYearId)
+      if (attendedThisYear) continue
+      if (byPhone.has(key)) continue
+
+      byPhone.set(key, {
+        id: `camper:${row.phone_key || key}`,
+        full_name: row.full_name || 'Camper',
+        first_name: row.first_name,
+        last_name: row.last_name,
+        phone: row.phone,
+        email: row.email,
+        source: 'past_camper',
+      })
+    }
+
+    const rows = Array.from(byPhone.values()).sort((a, b) =>
+      a.full_name.localeCompare(b.full_name, undefined, { sensitivity: 'base' })
+    )
+
+    const registration_path = formResult.data?.slug
+      ? `/f/${formResult.data.slug}`
+      : '/camp-meeting/register'
+
+    return {
+      data: {
+        rows,
+        registration_path,
+        registered_count: registrations.filter((r) => r.status !== 'cancelled').length,
+      },
+      error: null,
+    }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load unregistered audience',
+    }
+  }
+}
+
 export async function mergeCampDirectoryContacts(args: {
   canonicalPhone: string
   registrationIds: string[]
@@ -457,13 +572,16 @@ type CampSmsRecipient = {
   building?: string | null
   room_leader?: string | null
   roommates?: string | null
+  /** When true, do not link the log row to a camp registration. */
+  invite_only?: boolean
+  source?: 'member' | 'past_camper' | 'registration'
 }
 
 function personalizeCampSms(
   template: string,
   registration: CampSmsRecipient,
   campYear?: number | null,
-  extras?: { theme?: string | null; venue?: string | null }
+  extras?: { theme?: string | null; venue?: string | null; registrationLink?: string | null }
 ): string {
   return personalizeCampMessage(template, {
     fullName: registration.full_name,
@@ -481,6 +599,7 @@ function personalizeCampSms(
     building: registration.building,
     roomLeader: registration.room_leader,
     roommates: registration.roommates,
+    registrationLink: extras?.registrationLink,
   })
 }
 
@@ -730,6 +849,7 @@ export async function sendCampBulkSmsAction(input: {
   dry_run?: boolean
   force_mock?: boolean
   filter_criteria?: Record<string, unknown>
+  registration_link?: string | null
 }): Promise<{
   data: {
     success_count: number
@@ -759,6 +879,7 @@ export async function sendCampBulkSmsAction(input: {
   const batch_id = randomUUID()
   const dryRun = Boolean(input.dry_run)
   const forceMock = Boolean(input.force_mock)
+  const registrationLink = input.registration_link?.trim() || null
 
   if (!dryRun && !forceMock && !isSmsConfigured()) {
     const missing = getMissingSmsEnvKeys()
@@ -818,6 +939,7 @@ export async function sendCampBulkSmsAction(input: {
     const message = personalizeCampSms(input.message_template, registration, input.camp_year, {
       theme,
       venue,
+      registrationLink,
     })
     const to = normalizeSmsPhone(registration.phone)
 
@@ -836,7 +958,7 @@ export async function sendCampBulkSmsAction(input: {
         communication_type: 'sms',
         sender_id: input.sender_id,
         recipient_type: input.recipients.length > 1 ? 'bulk' : 'individual',
-        recipient_registration_id: registration.id,
+        recipient_registration_id: registration.invite_only ? undefined : registration.id,
         recipient_phone: smsResult.normalizedPhone ?? to,
         message_body: message,
         status: smsResult.success ? 'sent' : 'failed',
@@ -850,6 +972,9 @@ export async function sendCampBulkSmsAction(input: {
           raw_phone: registration.phone,
           normalized_phone: smsResult.normalizedPhone ?? to,
           filters: input.filter_criteria,
+          invite_only: Boolean(registration.invite_only),
+          audience_source: registration.source ?? (registration.invite_only ? 'invite' : 'registration'),
+          registration_link: registrationLink,
         },
         sent_at: smsResult.success ? new Date().toISOString() : undefined,
       })
