@@ -263,9 +263,12 @@ export async function submitFormResponse(input: {
           last_name: data.camp_registration.last_name,
           phone: data.camp_registration.phone || input.respondent_phone || '',
           email: data.camp_registration.email || input.respondent_email || '',
-          role: data.camp_registration.role,
+          role: data.camp_registration.role || 'Participant',
           check_in_code: data.camp_registration.check_in_code,
-          qr_code: data.camp_registration.qr_code,
+          qr_code:
+            data.camp_registration.qr_code ||
+            data.camp_registration.check_in_code ||
+            '',
         })
       } catch (err) {
         console.error('Camp registration confirmation SMS failed:', err)
