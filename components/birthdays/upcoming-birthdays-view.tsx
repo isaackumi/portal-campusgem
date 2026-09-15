@@ -16,19 +16,27 @@ import {
   sortBirthdaysByCalendarDay,
   sortBirthdaysByUpcoming,
 } from '@/lib/birthdays/upcoming-birthdays'
+import { sendBirthdaySmsAction } from '@/lib/actions/birthdays'
+import type { CommsModule } from '@/lib/comms/types'
+import { isValidSmsPhone } from '@/lib/comms/sms-client'
+import { useAuth } from '@/components/providers'
+import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Tabs, ScrollableTabsList, TabsContent, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
-import { Cake, Download, Mail, Phone, Search } from 'lucide-react'
+import { Cake, Download, Mail, MessageSquare, Phone, Search } from 'lucide-react'
 
 type UpcomingBirthdaysViewProps = {
   title: string
   subtitle: string
   entries: BirthdayEntry[]
   accentClass?: string
+  /** Hubtel module for birthday SMS logging */
+  smsModule?: CommsModule
 }
 
 export function UpcomingBirthdaysView({
@@ -36,10 +44,15 @@ export function UpcomingBirthdaysView({
   subtitle,
   entries,
   accentClass = 'text-primary',
+  smsModule = 'church',
 }: UpcomingBirthdaysViewProps) {
+  const { user } = useAuth()
+  const { toast } = useToast()
   const [timeFilter, setTimeFilter] = useState<BirthdayTimeFilter>('next30')
   const [browseMonth, setBrowseMonth] = useState(() => new Date().getMonth() + 1)
   const [query, setQuery] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const [sending, setSending] = useState(false)
 
   const stats = useMemo(() => {
     const today = filterBirthdaysByTime(entries, 'today').length
@@ -48,6 +61,12 @@ export function UpcomingBirthdaysView({
     const currentMonth = countBirthdaysInMonth(entries, new Date().getMonth() + 1)
     return { today, week, next30, currentMonth, total: entries.length }
   }, [entries])
+
+  const todayEntries = useMemo(() => filterBirthdaysByTime(entries, 'today'), [entries])
+  const todaySmsReady = useMemo(
+    () => todayEntries.filter((e) => isValidSmsPhone(e.phone)),
+    [todayEntries]
+  )
 
   const visibleEntries = useMemo(() => {
     let rows = entries
@@ -71,6 +90,67 @@ export function UpcomingBirthdaysView({
     )
   }, [entries, timeFilter, browseMonth, query])
 
+  const entryKey = (entry: BirthdayEntry) => `${entry.kind}-${entry.id}`
+
+  function toggleSelected(entry: BirthdayEntry, checked: boolean) {
+    const key = entryKey(entry)
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(key)
+      else next.delete(key)
+      return next
+    })
+  }
+
+  function selectedEntriesFrom(list: BirthdayEntry[]) {
+    return list.filter((e) => selectedIds.has(entryKey(e)))
+  }
+
+  async function sendSms(targets: BirthdayEntry[], label: string) {
+    if (!user?.id) {
+      toast({ variant: 'destructive', title: 'Sign in required' })
+      return
+    }
+    const withPhone = targets.filter((e) => isValidSmsPhone(e.phone))
+    if (!withPhone.length) {
+      toast({
+        variant: 'destructive',
+        title: 'No valid phones',
+        description: 'Selected people need a Ghana mobile number (024… / 233…).',
+      })
+      return
+    }
+
+    setSending(true)
+    const { data, error } = await sendBirthdaySmsAction({
+      sender_id: user.id,
+      module: smsModule,
+      entries: withPhone,
+    })
+    setSending(false)
+
+    if (error || !data) {
+      toast({
+        variant: 'destructive',
+        title: 'Birthday SMS failed',
+        description: error ?? 'Unknown error',
+      })
+      return
+    }
+
+    toast({
+      title:
+        data.success_count > 0
+          ? `Sent ${data.success_count} birthday SMS`
+          : 'No messages delivered',
+      variant: data.success_count > 0 ? 'default' : 'destructive',
+      description: `${label}${data.error_count || data.skipped_count ? ` · ${data.error_count} failed, ${data.skipped_count} skipped` : ''}${
+        data.batch_id ? ` · batch ${data.batch_id.slice(0, 8)}` : ''
+      }`,
+    })
+    setSelectedIds(new Set())
+  }
+
   function handleDownloadCsv() {
     const stamp = timeFilter === 'browse_month' ? `month-${browseMonth}` : timeFilter
     const csv = birthdaysToCsv(visibleEntries, `${title} birthdays`)
@@ -81,7 +161,7 @@ export function UpcomingBirthdaysView({
     <div className="space-y-6">
       <div>
         <h1 className="app-page-title flex items-center gap-2">
-          <Cake className={cn('h-7 w-7', accentClass)} />
+          <Cake className={cn('h-7 w-7', accentClass)} aria-hidden />
           {title}
         </h1>
         <p className="app-page-description mt-1">{subtitle}</p>
@@ -120,6 +200,50 @@ export function UpcomingBirthdaysView({
         </Card>
       </div>
 
+      <Card className="border-pink-200/80 bg-gradient-to-br from-pink-50/80 to-white">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MessageSquare className="h-4 w-4 text-pink-700" aria-hidden />
+            Birthday SMS (Hubtel)
+          </CardTitle>
+          <CardDescription>
+            Auto-sends daily at 07:00 Ghana time via cron. You can also send today&apos;s list or
+            selected rows manually. Uses {`{{firstName}}`} personalization.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <Button
+            type="button"
+            className="min-h-11 cursor-pointer"
+            disabled={sending || todaySmsReady.length === 0}
+            onClick={() => void sendSms(todaySmsReady, 'Today')}
+            aria-label={`Send birthday SMS to ${todaySmsReady.length} people with birthdays today`}
+          >
+            <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
+            {sending ? 'Sending…' : `SMS today (${todaySmsReady.length})`}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11 cursor-pointer"
+            disabled={sending || selectedIds.size === 0}
+            onClick={() =>
+              void sendSms(selectedEntriesFrom(visibleEntries), `${selectedIds.size} selected`)
+            }
+            aria-label="Send birthday SMS to selected people"
+          >
+            SMS selected ({selectedIds.size})
+          </Button>
+          <p className="text-xs text-muted-foreground sm:ml-auto">
+            {todayEntries.length - todaySmsReady.length > 0
+              ? `${todayEntries.length - todaySmsReady.length} today missing/invalid phone`
+              : todayEntries.length === 0
+                ? 'No birthdays today'
+                : 'All of today’s birthdays have a valid phone'}
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <div>
@@ -131,8 +255,14 @@ export function UpcomingBirthdaysView({
                 : ''}
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={handleDownloadCsv} disabled={visibleEntries.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-10 cursor-pointer"
+            onClick={handleDownloadCsv}
+            disabled={visibleEntries.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" aria-hidden />
             Download CSV
           </Button>
         </CardHeader>
@@ -161,7 +291,7 @@ export function UpcomingBirthdaysView({
                       type="button"
                       onClick={() => setBrowseMonth(month)}
                       className={cn(
-                        'rounded-lg border px-2 py-2 text-left transition-colors',
+                        'min-h-14 cursor-pointer rounded-lg border px-2 py-2 text-left transition-colors duration-200',
                         isSelected
                           ? 'border-rose-400 bg-rose-50 ring-2 ring-rose-200'
                           : 'border-slate-200 bg-white hover:border-rose-200 hover:bg-rose-50/50'
@@ -177,12 +307,13 @@ export function UpcomingBirthdaysView({
           </Tabs>
 
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
             <Input
-              className="pl-9"
+              className="h-11 pl-9"
               placeholder="Search name, phone, membership ID…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search birthdays"
             />
           </div>
 
@@ -195,7 +326,16 @@ export function UpcomingBirthdaysView({
           ) : (
             <div className="space-y-2">
               {visibleEntries.map((entry) => (
-                <BirthdayRow key={`${entry.kind}-${entry.id}`} entry={entry} showUpcoming={timeFilter !== 'browse_month'} />
+                <BirthdayRow
+                  key={entryKey(entry)}
+                  entry={entry}
+                  showUpcoming={timeFilter !== 'browse_month'}
+                  selected={selectedIds.has(entryKey(entry))}
+                  onSelectedChange={(checked) => toggleSelected(entry, checked)}
+                  smsReady={isValidSmsPhone(entry.phone)}
+                  sending={sending}
+                  onSendOne={() => void sendSms([entry], entry.name)}
+                />
               ))}
             </div>
           )}
@@ -205,7 +345,23 @@ export function UpcomingBirthdaysView({
   )
 }
 
-function BirthdayRow({ entry, showUpcoming }: { entry: BirthdayEntry; showUpcoming: boolean }) {
+function BirthdayRow({
+  entry,
+  showUpcoming,
+  selected,
+  onSelectedChange,
+  smsReady,
+  sending,
+  onSendOne,
+}: {
+  entry: BirthdayEntry
+  showUpcoming: boolean
+  selected: boolean
+  onSelectedChange: (checked: boolean) => void
+  smsReady: boolean
+  sending: boolean
+  onSendOne: () => void
+}) {
   const isToday = entry.daysUntil === 0
 
   return (
@@ -215,42 +371,72 @@ function BirthdayRow({ entry, showUpcoming }: { entry: BirthdayEntry; showUpcomi
         isToday && showUpcoming ? 'border-pink-300 bg-pink-50/60' : 'bg-white'
       )}
     >
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="font-medium">{entry.name}</p>
-          {entry.kind === 'visitor' ? <Badge variant="outline">Visitor</Badge> : null}
-          {entry.congregation === 'both' ? <Badge variant="secondary">Campus Gem + RLC</Badge> : null}
-          {isToday && showUpcoming ? (
-            <Badge className="bg-pink-600 hover:bg-pink-600">Today</Badge>
-          ) : null}
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {formatBirthdayLabel(entry)}
-          {entry.ageTurning != null ? ` · turning ${entry.ageTurning}` : ''}
-          {showUpcoming ? ` · ${formatDaysUntilLabel(entry.daysUntil)}` : ''}
-          {entry.subtitle ? ` · ${entry.subtitle}` : ''}
-        </p>
-        <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
-          {entry.membershipId ? <span>{entry.membershipId}</span> : null}
-          {entry.phone ? (
-            <span className="inline-flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              {entry.phone}
-            </span>
-          ) : null}
-          {entry.email ? (
-            <span className="inline-flex items-center gap-1">
-              <Mail className="h-3 w-3" />
-              {entry.email}
-            </span>
-          ) : null}
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <Checkbox
+          checked={selected}
+          disabled={!smsReady}
+          onCheckedChange={(v) => onSelectedChange(v === true)}
+          className="mt-1"
+          aria-label={`Select ${entry.name} for birthday SMS`}
+        />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium">{entry.name}</p>
+            {entry.kind === 'visitor' ? <Badge variant="outline">Visitor</Badge> : null}
+            {entry.congregation === 'both' ? (
+              <Badge variant="secondary">Campus Gem + RLC</Badge>
+            ) : null}
+            {isToday && showUpcoming ? (
+              <Badge className="bg-pink-600 hover:bg-pink-600">Today</Badge>
+            ) : null}
+            {!smsReady ? (
+              <Badge variant="outline" className="text-amber-800">
+                No SMS phone
+              </Badge>
+            ) : null}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {formatBirthdayLabel(entry)}
+            {entry.ageTurning != null ? ` · turning ${entry.ageTurning}` : ''}
+            {showUpcoming ? ` · ${formatDaysUntilLabel(entry.daysUntil)}` : ''}
+            {entry.subtitle ? ` · ${entry.subtitle}` : ''}
+          </p>
+          <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+            {entry.membershipId ? <span>{entry.membershipId}</span> : null}
+            {entry.phone ? (
+              <span className="inline-flex items-center gap-1">
+                <Phone className="h-3 w-3" aria-hidden />
+                {entry.phone}
+              </span>
+            ) : null}
+            {entry.email ? (
+              <span className="inline-flex items-center gap-1">
+                <Mail className="h-3 w-3" aria-hidden />
+                {entry.email}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
-      {entry.href ? (
-        <Button size="sm" variant="outline" asChild className="shrink-0">
-          <Link href={entry.href}>Open profile</Link>
+      <div className="flex shrink-0 flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="min-h-10 cursor-pointer"
+          disabled={!smsReady || sending}
+          onClick={onSendOne}
+          aria-label={`Send birthday SMS to ${entry.name}`}
+        >
+          <MessageSquare className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+          SMS
         </Button>
-      ) : null}
+        {entry.href ? (
+          <Button size="sm" variant="outline" asChild className="min-h-10 cursor-pointer">
+            <Link href={entry.href}>Open profile</Link>
+          </Button>
+        ) : null}
+      </div>
     </div>
   )
 }

@@ -49,6 +49,7 @@ export default function CampusGemBirthdaysPage() {
         subtitle="Upcoming birthdays for Campus Gem members — filter by today, this week, next 30 days, or browse any calendar month."
         entries={entries}
         accentClass="text-primary"
+        smsModule="church"
       />
     </PageContainer>
   )

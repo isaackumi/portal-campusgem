@@ -50,6 +50,7 @@ export default function RlcBirthdaysPage() {
         subtitle="RLC members and active visitors with birthdays on file — includes today, weekly, 30-day upcoming, and month browse."
         entries={entries}
         accentClass="text-rose-700"
+        smsModule="rlc"
       />
     </PageContainer>
   )
