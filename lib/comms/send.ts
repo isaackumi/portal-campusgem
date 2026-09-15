@@ -8,7 +8,14 @@ import type {
   SendCommsResult,
 } from '@/lib/comms/types'
 import { personalizeMessage } from '@/lib/comms/recipients'
-import { isValidSmsPhone, normalizeSmsPhone, resolveSmsProvider, sendSms } from '@/lib/comms/sms-client'
+import {
+  getMissingSmsEnvKeys,
+  isSmsConfigured,
+  isValidSmsPhone,
+  normalizeSmsPhone,
+  resolveSmsProvider,
+  sendSms,
+} from '@/lib/comms/sms-client'
 import { EmailService } from '@/lib/services/email-service'
 
 const emailService = new EmailService()
@@ -19,6 +26,20 @@ function canDeliver(recipient: CommsRecipient, channel: CommsChannel): boolean {
 }
 
 export async function sendCommunications(request: SendCommsRequest): Promise<SendCommsResult> {
+  if (
+    request.channel === 'sms' &&
+    !request.dry_run &&
+    !request.force_mock &&
+    !isSmsConfigured()
+  ) {
+    const missing = getMissingSmsEnvKeys()
+    throw new Error(
+      `SMS is not configured (provider=${resolveSmsProvider()}). Missing: ${
+        missing.join(', ') || 'Hubtel credentials'
+      }. Add HUBTEL_CLIENT_ID and HUBTEL_CLIENT_SECRET in Vercel → Environment Variables (Production), then Redeploy.`
+    )
+  }
+
   const batch_id = request.batch_id ?? randomUUID()
   const errors: string[] = []
   let success_count = 0

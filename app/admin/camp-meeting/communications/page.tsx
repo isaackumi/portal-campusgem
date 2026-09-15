@@ -3,10 +3,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmailService } from '@/lib/services/email-service'
-import { getCampCommunications, sendCampBulkSmsAction } from '@/lib/actions/camp'
+import { getCampCommunications, resendCampCommunicationAction, sendCampBulkSmsAction } from '@/lib/actions/camp'
 import { getCommsProviderStatusAction } from '@/lib/actions/comms'
 import { CampRegistration, CampCommunication } from '@/lib/types'
-import { isValidSmsPhone, normalizeSmsPhone } from '@/lib/comms/sms-client'
+import { isValidSmsPhone } from '@/lib/comms/sms-client'
+import {
+  CAMP_MESSAGE_TEMPLATES,
+  CAMP_TEMPLATE_VARIABLE_CHIPS,
+  personalizeCampMessage,
+  type CampMessageTemplateId,
+} from '@/lib/camp/sms-templates'
 import {
   SmsProviderBanner,
   type SmsProviderStatus,
@@ -27,9 +33,8 @@ import { useToast } from '@/hooks/use-toast'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { useAuth } from '@/components/providers'
 import {
-    Send, ArrowLeft, Mail, MessageSquare, Users, Filter,
-    Search, CheckCircle2, XCircle, Clock, AlertCircle,
-    Phone, FileText, Eye, RefreshCw
+    Send, Mail, MessageSquare, Users, Filter,
+    Search, Clock, Phone, FileText, Eye, RefreshCw, AlertTriangle, LayoutTemplate
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -60,6 +65,8 @@ export default function BulkCommunicationsPage() {
     const [smsStatus, setSmsStatus] = useState<SmsProviderStatus | null>(null)
     const [dryRun, setDryRun] = useState(false)
     const [forceMock, setForceMock] = useState(false)
+    const [resendingId, setResendingId] = useState<string | null>(null)
+    const [templateId, setTemplateId] = useState<CampMessageTemplateId | 'custom'>('custom')
 
     // Redirect to auth if not logged in
     useEffect(() => {
@@ -87,10 +94,61 @@ export default function BulkCommunicationsPage() {
             }
             setCommunications(data ?? [])
         } catch (error) {
-            console.error('Error loading communications:', error)
+            console.error('Error loading communications', error)
         } finally {
             setLoading(false)
         }
+    }
+
+    async function handleResend(comm: CampCommunication) {
+        if (!user?.id || !campYear) return
+        const canResend =
+            comm.status === 'sent' ||
+            comm.status === 'delivered' ||
+            comm.status === 'failed' ||
+            comm.status === 'bounced'
+        if (!canResend) return
+        if (comm.communication_type === 'sms' && !comm.recipient_phone) return
+        if (comm.communication_type === 'email' && !comm.recipient_email) return
+
+        setResendingId(comm.id)
+        const { data, error } = await resendCampCommunicationAction({
+            sender_id: user.id,
+            camp_year_id: campYear.id,
+            camp_year: campYear.year,
+            communication: {
+                id: comm.id,
+                communication_type: comm.communication_type,
+                recipient_registration_id: comm.recipient_registration_id,
+                recipient_email: comm.recipient_email,
+                recipient_phone: comm.recipient_phone,
+                subject: comm.subject,
+                message_body: comm.message_body,
+                status: comm.status,
+                recipient_name:
+                    (comm.recipient_registration as { full_name?: string } | undefined)?.full_name ??
+                    null,
+            },
+        })
+        setResendingId(null)
+
+        if (error || !data?.success) {
+            toast({
+                variant: 'destructive',
+                title: 'Resend failed',
+                description: error ?? 'Could not deliver',
+            })
+            return
+        }
+
+        toast({
+            title: 'Message resent',
+            description:
+                data.provider != null
+                    ? `Sent via ${data.provider}`
+                    : 'A new message was logged in history',
+        })
+        await loadCommunications()
     }
 
     const filteredRegistrations = useMemo(() => registrations.filter(reg => {
@@ -140,15 +198,38 @@ export default function BulkCommunicationsPage() {
     }
 
     const replaceTemplateVariables = (template: string, registration: CampRegistration): string => {
-        return template
-            .replace(/{{name}}/g, registration.full_name || `${registration.first_name} ${registration.last_name}`)
-            .replace(/{{firstName}}/g, registration.first_name || '')
-            .replace(/{{lastName}}/g, registration.last_name || '')
-            .replace(/{{role}}/g, registration.role || 'Participant')
-            .replace(/{{campYear}}/g, campYear?.year?.toString() || new Date().getFullYear().toString())
-            .replace(/{{phone}}/g, registration.phone || '')
-            .replace(/{{email}}/g, registration.email || '')
-            .replace(/{{qrCode}}/g, registration.qr_code || '')
+        return personalizeCampMessage(template, {
+            fullName: registration.full_name,
+            firstName: registration.first_name,
+            lastName: registration.last_name,
+            role: registration.role,
+            campYear: campYear?.year,
+            phone: registration.phone,
+            email: registration.email,
+            checkInCode: registration.check_in_code,
+            qrCode: registration.check_in_code || registration.qr_code,
+            theme: campYear?.theme,
+            venue: campYear?.venue,
+        })
+    }
+
+    function applyTemplate(id: CampMessageTemplateId | 'custom') {
+        setTemplateId(id)
+        if (id === 'custom') return
+        const tpl = CAMP_MESSAGE_TEMPLATES.find((t) => t.id === id)
+        if (!tpl) return
+        if (tpl.channel === 'email' || tpl.channel === 'both') {
+            if (tpl.subject) setSubject(tpl.subject)
+        }
+        setMessageBody(tpl.body)
+        if (tpl.channel === 'sms') setCommunicationType('sms')
+        else if (tpl.channel === 'email') setCommunicationType('email')
+    }
+
+    function insertVariable(key: string) {
+        const token = `{{${key}}}`
+        setMessageBody((prev) => (prev ? `${prev}${prev.endsWith(' ') ? '' : ' '}${token}` : token))
+        setTemplateId('custom')
     }
 
     const handleSend = async () => {
@@ -357,94 +438,107 @@ export default function BulkCommunicationsPage() {
                     {/* Send Messages Tab */}
                     <TabsContent value="send" className="space-y-6">
                         {/* Filters */}
-                        <Card className="border-2">
+                        <Card className="border border-slate-200 shadow-sm">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Filter className="h-5 w-5" />
+                                    <Filter className="h-5 w-5 text-slate-600" aria-hidden />
                                     Filter Recipients
                                 </CardTitle>
                                 <CardDescription>
-                                    Select criteria to filter registrations
+                                    Narrow who appears in the list below
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                                     <div className="space-y-2">
-                                        <Label>Search</Label>
+                                        <Label htmlFor="camp-comms-search">Search</Label>
                                         <div className="relative">
-                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Search
+                                                className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                                                aria-hidden
+                                            />
                                             <Input
-                                                placeholder="Search name, email, phone..."
-                                                className="pl-8"
+                                                id="camp-comms-search"
+                                                placeholder="Name, email, or phone"
+                                                className="h-11 pl-8"
                                                 value={searchQuery}
                                                 onChange={e => setSearchQuery(e.target.value)}
+                                                aria-label="Search registrations"
                                             />
                                         </div>
                                     </div>
-                                    <Select value={roleFilter} onValueChange={setRoleFilter}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Role" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Roles</SelectItem>
-                                            {uniqueRoles.map(r => (
-                                                <SelectItem key={r} value={r}>{r}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Status</SelectItem>
-                                            <SelectItem value="registered">Registered</SelectItem>
-                                            <SelectItem value="checked_in">Checked In</SelectItem>
-                                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Payment" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Payments</SelectItem>
-                                            <SelectItem value="pending">Pending</SelectItem>
-                                            <SelectItem value="paid">Paid</SelectItem>
-                                            <SelectItem value="confirmed">Confirmed</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Types</SelectItem>
-                                            <SelectItem value="new">New</SelectItem>
-                                            <SelectItem value="returning">Returning</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="camp-comms-role">Role</Label>
+                                        <Select value={roleFilter} onValueChange={setRoleFilter}>
+                                            <SelectTrigger id="camp-comms-role" className="h-11">
+                                                <SelectValue placeholder="Role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Roles</SelectItem>
+                                                {uniqueRoles.map(r => (
+                                                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="camp-comms-status">Status</Label>
+                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                            <SelectTrigger id="camp-comms-status" className="h-11">
+                                                <SelectValue placeholder="Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Status</SelectItem>
+                                                <SelectItem value="registered">Registered</SelectItem>
+                                                <SelectItem value="checked_in">Checked In</SelectItem>
+                                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="camp-comms-payment">Payment</Label>
+                                        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                                            <SelectTrigger id="camp-comms-payment" className="h-11">
+                                                <SelectValue placeholder="Payment" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Payments</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                                <SelectItem value="paid">Paid</SelectItem>
+                                                <SelectItem value="confirmed">Confirmed</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="camp-comms-type">Type</Label>
+                                        <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                            <SelectTrigger id="camp-comms-type" className="h-11">
+                                                <SelectValue placeholder="Type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Types</SelectItem>
+                                                <SelectItem value="new">New</SelectItem>
+                                                <SelectItem value="returning">Returning</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
 
-                                <div className="mt-4 flex items-center justify-between pt-4 border-t">
+                                <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <p className="text-sm font-medium text-slate-700">
-                                            {filteredRegistrations.length} registration(s) match your filters
+                                        <p className="text-sm font-medium text-slate-800">
+                                            {filteredRegistrations.length} match
+                                            {selectedIds.size > 0 ? ` · ${selectedIds.size} selected` : ''}
                                         </p>
-                                        {selectedIds.size > 0 && (
-                                            <p className="text-sm text-slate-600 mt-1">
-                                                {selectedIds.size} selected
-                                            </p>
-                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex min-h-11 items-center gap-2">
                                         <Checkbox
                                             id="select-all"
                                             checked={selectAll}
                                             onCheckedChange={handleSelectAll}
                                         />
-                                        <Label htmlFor="select-all" className="text-sm cursor-pointer">
-                                            Select All
+                                        <Label htmlFor="select-all" className="cursor-pointer text-sm">
+                                            Select all matching
                                         </Label>
                                     </div>
                                 </div>
@@ -453,221 +547,365 @@ export default function BulkCommunicationsPage() {
 
                         {/* Recipients List */}
                         {filteredRegistrations.length > 0 && (
-                            <Card className="border-2">
+                            <Card className="border border-slate-200 shadow-sm">
                                 <CardHeader>
-                                    <CardTitle>Select Recipients</CardTitle>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Users className="h-5 w-5 text-slate-600" aria-hidden />
+                                        Select Recipients
+                                    </CardTitle>
                                     <CardDescription>
-                                        Check the boxes to select recipients. Selected: {selectedIds.size} / {filteredRegistrations.length}
+                                        Tap a row to select. {selectedIds.size} of {filteredRegistrations.length} selected.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="max-h-[300px] overflow-y-auto space-y-2">
-                                        {filteredRegistrations.map(reg => (
-                                            <div
+                                    <div
+                                        className="max-h-[320px] space-y-2 overflow-y-auto pr-1"
+                                        role="listbox"
+                                        aria-label="Camp registration recipients"
+                                        aria-multiselectable="true"
+                                    >
+                                        {filteredRegistrations.map(reg => {
+                                            const selected = selectedIds.has(reg.id)
+                                            const label =
+                                                reg.full_name ||
+                                                `${reg.first_name ?? ''} ${reg.last_name ?? ''}`.trim() ||
+                                                'Recipient'
+                                            return (
+                                            <button
                                                 key={reg.id}
+                                                type="button"
+                                                role="option"
+                                                aria-selected={selected}
+                                                onClick={() => handleSelectOne(reg.id, !selected)}
                                                 className={cn(
-                                                    "flex items-center gap-3 p-3 rounded-lg border-2 transition-colors",
-                                                    selectedIds.has(reg.id) ? "bg-slate-50 border-slate-300" : "bg-white border-slate-200"
+                                                    'flex min-h-14 w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
+                                                    selected
+                                                        ? 'border-emerald-300 bg-emerald-50/80'
+                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                                 )}
                                             >
                                                 <Checkbox
-                                                    checked={selectedIds.has(reg.id)}
-                                                    onCheckedChange={(checked) => handleSelectOne(reg.id, checked === true)}
+                                                    checked={selected}
+                                                    onCheckedChange={(checked) =>
+                                                        handleSelectOne(reg.id, checked === true)
+                                                    }
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    aria-label={`Select ${label}`}
+                                                    className="shrink-0"
                                                 />
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-slate-900">
-                                                        {reg.full_name || `${reg.first_name} ${reg.last_name}`}
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate font-medium text-slate-900">
+                                                        {label}
                                                     </p>
-                                                    <div className="flex items-center gap-3 text-sm text-slate-600 mt-1">
-                                                        {reg.email && (
-                                                            <div className="flex items-center gap-1">
-                                                                <Mail className="h-3 w-3" />
-                                                                <span>{reg.email}</span>
-                                                            </div>
-                                                        )}
-                                                        {reg.phone && (
-                                                            <div className="flex items-center gap-1">
-                                                                <Phone className="h-3 w-3" />
-                                                                <span>{reg.phone}</span>
-                                                            </div>
-                                                        )}
+                                                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                                                        {reg.email ? (
+                                                            <span className="inline-flex items-center gap-1 truncate">
+                                                                <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                                                {reg.email}
+                                                            </span>
+                                                        ) : null}
+                                                        {reg.phone ? (
+                                                            <span className="inline-flex items-center gap-1">
+                                                                <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                                                {reg.phone}
+                                                            </span>
+                                                        ) : null}
                                                         <Badge variant="outline" className="text-xs">
                                                             {reg.role}
                                                         </Badge>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            </button>
+                                            )
+                                        })}
                                     </div>
                                 </CardContent>
                             </Card>
                         )}
 
                         {/* Message Form */}
-                        <Card className="border-2">
+                        <Card className="border border-slate-200 shadow-sm">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     {communicationType === 'email' ? (
-                                        <Mail className="h-5 w-5" />
+                                        <Mail className="h-5 w-5 text-slate-600" aria-hidden />
                                     ) : (
-                                        <MessageSquare className="h-5 w-5" />
+                                        <MessageSquare className="h-5 w-5 text-emerald-600" aria-hidden />
                                     )}
                                     Compose Message
                                 </CardTitle>
                                 <CardDescription>
-                                    {selectedIds.size > 0 
-                                        ? `Sending to ${selectedIds.size} recipient(s)`
-                                        : 'Select recipients above to send messages'}
+                                    {selectedIds.size > 0
+                                        ? `Ready for ${selectedIds.size} recipient${selectedIds.size === 1 ? '' : 's'} — names and codes inject automatically.`
+                                        : 'Pick a template, then select recipients above.'}
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <Label>Communication Type</Label>
-                                    <div className="flex gap-2">
+                            <CardContent className="space-y-5">
+                                <div className="space-y-2">
+                                    <Label id="camp-comms-channel-label">Channel</Label>
+                                    <div
+                                        className="flex flex-wrap gap-2"
+                                        role="group"
+                                        aria-labelledby="camp-comms-channel-label"
+                                    >
                                         <Button
                                             type="button"
                                             variant={communicationType === 'email' ? 'default' : 'outline'}
+                                            className="min-h-11 cursor-pointer transition-colors duration-200"
+                                            aria-pressed={communicationType === 'email'}
                                             onClick={() => setCommunicationType('email')}
                                         >
-                                            <Mail className="mr-2 h-4 w-4" />
+                                            <Mail className="mr-2 h-4 w-4" aria-hidden />
                                             Email
-                                            {selectedIds.size > 0 && (
+                                            {selectedIds.size > 0 ? (
                                                 <Badge variant="secondary" className="ml-2">
                                                     {canSendEmail}
                                                 </Badge>
-                                            )}
+                                            ) : null}
                                         </Button>
                                         <Button
                                             type="button"
                                             variant={communicationType === 'sms' ? 'default' : 'outline'}
+                                            className="min-h-11 cursor-pointer transition-colors duration-200"
+                                            aria-pressed={communicationType === 'sms'}
                                             onClick={() => setCommunicationType('sms')}
                                         >
-                                            <MessageSquare className="mr-2 h-4 w-4" />
+                                            <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
                                             SMS
-                                            {selectedIds.size > 0 && (
+                                            {selectedIds.size > 0 ? (
                                                 <Badge variant="secondary" className="ml-2">
                                                     {canSendSMS}
                                                 </Badge>
-                                            )}
+                                            ) : null}
                                         </Button>
                                     </div>
                                 </div>
 
-                                {communicationType === 'email' && (
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <LayoutTemplate className="h-4 w-4 text-slate-500" aria-hidden />
+                                        Message template
+                                    </Label>
+                                    <div
+                                        className="grid gap-2 sm:grid-cols-2"
+                                        role="listbox"
+                                        aria-label="Message templates"
+                                    >
+                                        <button
+                                            type="button"
+                                            role="option"
+                                            aria-selected={templateId === 'custom'}
+                                            onClick={() => applyTemplate('custom')}
+                                            className={cn(
+                                                'min-h-14 cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
+                                                templateId === 'custom'
+                                                    ? 'border-slate-900 bg-slate-900 text-white'
+                                                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                            )}
+                                        >
+                                            <p className="text-sm font-medium">Custom message</p>
+                                            <p
+                                                className={cn(
+                                                    'mt-0.5 text-xs',
+                                                    templateId === 'custom' ? 'text-slate-300' : 'text-slate-500'
+                                                )}
+                                            >
+                                                Write freely or start from a preset
+                                            </p>
+                                        </button>
+                                        {CAMP_MESSAGE_TEMPLATES.filter(
+                                            (t) => t.channel === 'both' || t.channel === communicationType
+                                        ).map((t) => {
+                                            const active = templateId === t.id
+                                            return (
+                                                <button
+                                                    key={t.id}
+                                                    type="button"
+                                                    role="option"
+                                                    aria-selected={active}
+                                                    onClick={() => applyTemplate(t.id)}
+                                                    className={cn(
+                                                        'min-h-14 cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
+                                                        active
+                                                            ? 'border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600/30'
+                                                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                    )}
+                                                >
+                                                    <p className="text-sm font-medium text-slate-900">{t.label}</p>
+                                                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                                                        {t.description}
+                                                    </p>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {communicationType === 'email' ? (
                                     <div className="space-y-2">
-                                        <Label htmlFor="subject">Subject *</Label>
+                                        <Label htmlFor="subject">Subject</Label>
                                         <Input
                                             id="subject"
                                             required
+                                            className="h-11"
                                             value={subject}
-                                            onChange={e => setSubject(e.target.value)}
+                                            onChange={(e) => {
+                                                setSubject(e.target.value)
+                                                setTemplateId('custom')
+                                            }}
                                             placeholder="Email subject line"
                                         />
-                                        <p className="text-xs text-slate-500">
-                                            You can use template variables: {`{{name}}`}, {`{{role}}`}, {`{{campYear}}`}
-                                        </p>
                                     </div>
-                                )}
+                                ) : null}
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="message">Message Body *</Label>
+                                    <Label htmlFor="message">Message</Label>
                                     <Textarea
                                         id="message"
                                         required
                                         value={messageBody}
-                                        onChange={e => setMessageBody(e.target.value)}
+                                        onChange={(e) => {
+                                            setMessageBody(e.target.value)
+                                            setTemplateId('custom')
+                                        }}
                                         placeholder={
                                             communicationType === 'email'
-                                                ? 'Email message...'
-                                                : 'SMS message (160 characters recommended)...'
+                                                ? 'Write your email… Use Insert chips below for personalization.'
+                                                : 'Write your SMS… Keep it short; variables expand per person.'
                                         }
-                                        rows={8}
+                                        rows={7}
                                         maxLength={communicationType === 'sms' ? 1600 : undefined}
+                                        className="min-h-[140px] resize-y"
                                     />
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-xs text-slate-500">
-                                            Template variables: {`{{name}}`}, {`{{firstName}}`}, {`{{lastName}}`}, {`{{role}}`}, {`{{campYear}}`}, {`{{phone}}`}, {`{{email}}`}, {`{{qrCode}}`}
-                                        </p>
-                                        {communicationType === 'sms' && (
-                                            <p className="text-xs text-slate-500">
-                                                {messageBody.length} / 160 characters
-                                            </p>
-                                        )}
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-xs font-medium text-slate-600">Insert:</span>
+                                        {CAMP_TEMPLATE_VARIABLE_CHIPS.map((chip) => (
+                                            <button
+                                                key={chip.key}
+                                                type="button"
+                                                onClick={() => insertVariable(chip.key)}
+                                                className="inline-flex min-h-9 cursor-pointer items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                                aria-label={`Insert ${chip.label} variable`}
+                                            >
+                                                {chip.label}
+                                            </button>
+                                        ))}
+                                        {communicationType === 'sms' ? (
+                                            <span
+                                                className={cn(
+                                                    'ml-auto text-xs tabular-nums',
+                                                    messageBody.length > 160 ? 'font-medium text-amber-700' : 'text-slate-500'
+                                                )}
+                                            >
+                                                {messageBody.length} chars
+                                                {messageBody.length > 160 ? ' · may split' : ''}
+                                            </span>
+                                        ) : null}
                                     </div>
                                 </div>
 
-                                {selectedIds.size > 0 && (
-                                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                                        <p className="text-sm font-medium text-slate-900 mb-2">
-                                            Ready to send to {selectedIds.size} recipient(s)
+                                {messageBody.trim() && filteredRegistrations[0] ? (
+                                    <div
+                                        className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4"
+                                        aria-live="polite"
+                                    >
+                                        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900">
+                                            <Eye className="h-4 w-4 text-slate-500" aria-hidden />
+                                            Live preview
+                                            <span className="font-normal text-slate-500">
+                                                (
+                                                {(
+                                                    filteredRegistrations.find((r) => selectedIds.has(r.id)) ||
+                                                    filteredRegistrations[0]
+                                                ).full_name || 'sample'}
+                                                )
+                                            </span>
+                                        </div>
+                                        {communicationType === 'email' && subject.trim() ? (
+                                            <p className="mb-2 text-sm font-semibold text-slate-800">
+                                                {replaceTemplateVariables(
+                                                    subject,
+                                                    filteredRegistrations.find((r) => selectedIds.has(r.id)) ||
+                                                        filteredRegistrations[0]
+                                                )}
+                                            </p>
+                                        ) : null}
+                                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                                            {replaceTemplateVariables(
+                                                messageBody,
+                                                filteredRegistrations.find((r) => selectedIds.has(r.id)) ||
+                                                    filteredRegistrations[0]
+                                            )}
                                         </p>
-                                        <div className="text-xs text-slate-700 space-y-1">
-                                            {communicationType === 'email' && (
-                                                <p>• {canSendEmail} recipients have email addresses</p>
+                                    </div>
+                                ) : null}
+
+                                {selectedIds.size > 0 ? (
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
+                                        <p className="mb-2 text-sm font-medium text-slate-900">
+                                            Delivery check · {selectedIds.size} selected
+                                        </p>
+                                        <div className="space-y-1.5 text-sm text-slate-700">
+                                            {communicationType === 'email' ? (
+                                                <p>{canSendEmail} have an email address</p>
+                                            ) : (
+                                                <p>{canSendSMS} have a valid Ghana mobile number</p>
                                             )}
-                                            {communicationType === 'sms' && (
-                                                <>
-                                                    <p>
-                                                        • {canSendSMS} recipients have valid Ghana phones (Hubtel uses
-                                                        233XXXXXXXXX)
-                                                    </p>
-                                                    {missingSmsPhones > 0 ? (
-                                                        <p className="text-orange-600">
-                                                            ⚠️ {missingSmsPhones} selected have no phone and will be
-                                                            skipped
-                                                        </p>
-                                                    ) : null}
-                                                    {invalidSmsPhones > 0 ? (
-                                                        <p className="text-orange-600">
-                                                            ⚠️ {invalidSmsPhones} selected have invalid phone format
-                                                            and will be skipped
-                                                        </p>
-                                                    ) : null}
-                                                    {recipients
-                                                        .filter((r) => isValidSmsPhone(r.phone))
-                                                        .slice(0, 3)
-                                                        .map((r) => (
-                                                            <p key={r.id} className="text-xs text-muted-foreground">
-                                                                e.g. {r.phone} → {normalizeSmsPhone(r.phone!)}
-                                                            </p>
-                                                        ))}
-                                                </>
-                                            )}
-                                            {communicationType === 'email' && canSendEmail < selectedIds.size && (
-                                                <p className="text-orange-600">
-                                                    ⚠️ {selectedIds.size - canSendEmail} recipients will be skipped (no email)
+                                            {communicationType === 'sms' && missingSmsPhones > 0 ? (
+                                                <p className="flex items-start gap-2 text-amber-800">
+                                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                                                    {missingSmsPhones} missing phone — will be skipped
                                                 </p>
-                                            )}
-                                            {communicationType === 'sms' && canSendSMS < selectedIds.size && (
-                                                <p className="text-orange-600">
-                                                    ⚠️ {selectedIds.size - canSendSMS} recipients will be skipped
-                                                    (missing/invalid phone)
+                                            ) : null}
+                                            {communicationType === 'sms' && invalidSmsPhones > 0 ? (
+                                                <p className="flex items-start gap-2 text-amber-800">
+                                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                                                    {invalidSmsPhones} invalid phone format — will be skipped
                                                 </p>
-                                            )}
+                                            ) : null}
+                                            {communicationType === 'email' && canSendEmail < selectedIds.size ? (
+                                                <p className="flex items-start gap-2 text-amber-800">
+                                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                                                    {selectedIds.size - canSendEmail} without email — will be skipped
+                                                </p>
+                                            ) : null}
+                                            {communicationType === 'sms' && canSendSMS < selectedIds.size ? (
+                                                <p className="flex items-start gap-2 text-amber-800">
+                                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                                                    {selectedIds.size - canSendSMS} missing or invalid phone — will be
+                                                    skipped
+                                                </p>
+                                            ) : null}
                                         </div>
                                     </div>
-                                )}
+                                ) : null}
 
                                 <Button
                                     onClick={handleSend}
-                                    disabled={sending || selectedIds.size === 0 || !messageBody.trim() || (communicationType === 'email' && !subject.trim())}
-                                    className="w-full"
+                                    disabled={
+                                        sending ||
+                                        selectedIds.size === 0 ||
+                                        !messageBody.trim() ||
+                                        (communicationType === 'email' && !subject.trim())
+                                    }
+                                    className="min-h-12 w-full cursor-pointer transition-opacity duration-200"
                                     size="lg"
+                                    aria-busy={sending}
                                 >
                                     {sending ? (
                                         <>
                                             <LoadingSpinner size="sm" className="mr-2" />
-                                            Sending...
+                                            Sending…
                                         </>
                                     ) : (
                                         <>
-                                            <Send className="mr-2 h-4 w-4" />
-                                            Send {selectedIds.size}{' '}
+                                            <Send className="mr-2 h-4 w-4" aria-hidden />
+                                            Send {selectedIds.size || ''}{' '}
                                             {communicationType === 'email'
-                                              ? 'Email(s)'
-                                              : dryRun
-                                                ? 'SMS (dry run)'
-                                                : 'SMS'}
+                                                ? 'email(s)'
+                                                : dryRun
+                                                  ? 'SMS (dry run)'
+                                                  : 'SMS'}
                                         </>
                                     )}
                                 </Button>
@@ -677,19 +915,26 @@ export default function BulkCommunicationsPage() {
 
                     {/* Communication History Tab */}
                     <TabsContent value="history" className="space-y-6">
-                        <Card className="border-2">
-                            <CardHeader className="flex items-center justify-between">
+                        <Card className="border border-slate-200 shadow-sm">
+                            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
-                                        <FileText className="h-5 w-5" />
+                                        <FileText className="h-5 w-5 text-slate-600" aria-hidden />
                                         Communication History
                                     </CardTitle>
                                     <CardDescription>
-                                        Recent {communications.length} communications
+                                        {communications.length} recent message
+                                        {communications.length === 1 ? '' : 's'}
                                     </CardDescription>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={loadCommunications}>
-                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="min-h-10 cursor-pointer"
+                                    onClick={loadCommunications}
+                                    aria-label="Refresh communication history"
+                                >
+                                    <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
                                     Refresh
                                 </Button>
                             </CardHeader>
@@ -704,7 +949,7 @@ export default function BulkCommunicationsPage() {
                                         {communications.map(comm => (
                                             <div
                                                 key={comm.id}
-                                                className="p-4 border-2 rounded-lg bg-white hover:shadow-md transition-shadow"
+                                                className="rounded-lg border border-slate-200 bg-white p-4 transition-shadow duration-200 hover:shadow-sm"
                                             >
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="flex items-center gap-3">
@@ -791,11 +1036,42 @@ export default function BulkCommunicationsPage() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    {comm.recipient_type === 'bulk' && (
-                                                        <Badge variant="outline" className="text-xs">
-                                                            Bulk Send
-                                                        </Badge>
-                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        {(comm.status === 'sent' ||
+                                                            comm.status === 'delivered' ||
+                                                            comm.status === 'failed' ||
+                                                            comm.status === 'bounced') &&
+                                                        (comm.communication_type === 'sms'
+                                                            ? Boolean(comm.recipient_phone)
+                                                            : Boolean(comm.recipient_email)) ? (
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="min-h-10 cursor-pointer"
+                                                                disabled={resendingId === comm.id}
+                                                                aria-label={`Resend ${comm.communication_type} to ${
+                                                                    comm.recipient_phone ||
+                                                                    comm.recipient_email ||
+                                                                    'recipient'
+                                                                }`}
+                                                                onClick={() => void handleResend(comm)}
+                                                            >
+                                                                <RefreshCw
+                                                                    className={cn(
+                                                                        'mr-1.5 h-3.5 w-3.5',
+                                                                        resendingId === comm.id && 'animate-spin'
+                                                                    )}
+                                                                />
+                                                                {resendingId === comm.id ? 'Resending…' : 'Resend'}
+                                                            </Button>
+                                                        ) : null}
+                                                        {comm.recipient_type === 'bulk' && (
+                                                            <Badge variant="outline" className="text-xs">
+                                                                Bulk Send
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}

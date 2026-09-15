@@ -18,9 +18,12 @@ import {
 } from '@/lib/comms/recipients'
 import { sendCommunications } from '@/lib/comms/send'
 import {
+  getMissingSmsEnvKeys,
   getSmsProviderStatus,
+  isSmsConfigured,
   isValidSmsPhone,
   normalizeSmsPhone,
+  resolveSmsProvider,
   sendSms,
 } from '@/lib/comms/sms-client'
 
@@ -137,9 +140,22 @@ export async function sendTestSmsAction(input: {
     input.message?.trim() ||
     'Campus Gem SMS test — developer check. You can ignore this message.'
 
+  const dryRun = Boolean(input.dry_run)
+  const forceMock = Boolean(input.force_mock)
+  if (!dryRun && !forceMock && !isSmsConfigured()) {
+    const missing = getMissingSmsEnvKeys()
+    return {
+      data: null,
+      error: `SMS is not configured (provider=${resolveSmsProvider()}). Missing: ${
+        missing.join(', ') || 'Hubtel credentials'
+      }. Add keys in Vercel → Environment Variables for Production, then Redeploy.`,
+      loading: false,
+    }
+  }
+
   const result = await sendSms(phone, message, {
-    dryRun: input.dry_run,
-    forceMock: input.force_mock,
+    dryRun,
+    forceMock,
   })
 
   if (isConvexDataSource() && input.sender_id) {
@@ -353,6 +369,97 @@ export async function sendCommsAction(
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to send messages',
+      loading: false,
+    }
+  }
+}
+
+/** Resend a logged message (sent / failed / delivered / bounced) as a new outbound. */
+export async function resendCommunicationAction(input: {
+  sender_id: string
+  record: Pick<
+    CommunicationRecord,
+    | 'id'
+    | 'module'
+    | 'channel'
+    | 'audience_type'
+    | 'recipient_name'
+    | 'recipient_email'
+    | 'recipient_phone'
+    | 'recipient_entity_type'
+    | 'recipient_entity_id'
+    | 'subject'
+    | 'message_body'
+    | 'status'
+  >
+}): Promise<ApiResponse<SendCommsResult>> {
+  if (!isConvexDataSource()) {
+    return { data: null, error: convexUnavailable(), loading: false }
+  }
+  if (!input.sender_id) {
+    return { data: null, error: 'Sender is required', loading: false }
+  }
+
+  const { record } = input
+  const resendable = new Set(['sent', 'delivered', 'failed', 'bounced'])
+  if (!resendable.has(record.status)) {
+    return {
+      data: null,
+      error: `Cannot resend a message with status "${record.status}"`,
+      loading: false,
+    }
+  }
+  if (!record.message_body?.trim()) {
+    return { data: null, error: 'Original message body is empty', loading: false }
+  }
+  if (record.channel === 'email' && !record.recipient_email?.trim()) {
+    return { data: null, error: 'No recipient email on this message', loading: false }
+  }
+  if (record.channel === 'sms' && !record.recipient_phone?.trim()) {
+    return { data: null, error: 'No recipient phone on this message', loading: false }
+  }
+  if (record.channel === 'sms' && !isValidSmsPhone(record.recipient_phone)) {
+    return {
+      data: null,
+      error: `Invalid phone for resend: ${normalizeSmsPhone(record.recipient_phone || '') || 'empty'}`,
+      loading: false,
+    }
+  }
+  if (record.channel === 'email' && !record.subject?.trim()) {
+    return { data: null, error: 'Original email has no subject', loading: false }
+  }
+
+  const entityType = record.recipient_entity_type ?? 'manual'
+  const entityId = record.recipient_entity_id ?? `resend-${record.id}`
+  const recipient: CommsRecipient = {
+    id: entityId,
+    name: record.recipient_name?.trim() || 'Recipient',
+    email: record.recipient_email,
+    phone: record.recipient_phone,
+    entity_type: entityType,
+    entity_id: entityId,
+    module: record.module,
+  }
+
+  try {
+    const data = await sendCommunications({
+      module: record.module,
+      channel: record.channel,
+      audience_type: 'individual',
+      sender_id: input.sender_id,
+      subject: record.channel === 'email' ? record.subject : undefined,
+      message_body: record.message_body,
+      recipients: [recipient],
+      metadata: {
+        resend_of: record.id,
+        original_status: record.status,
+      },
+    })
+    return { data, error: null, loading: false }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to resend message',
       loading: false,
     }
   }

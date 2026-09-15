@@ -632,6 +632,11 @@ export const submitFormResponsePublic = mutation({
           ? {
               id: String(registration._id),
               full_name: registration.full_name,
+              first_name: registration.first_name,
+              last_name: registration.last_name,
+              phone: registration.phone,
+              email: registration.email,
+              camp_year_id: registration.camp_year_id,
               qr_code: registration.qr_code,
               check_in_code: registration.check_in_code,
               role: registration.role,

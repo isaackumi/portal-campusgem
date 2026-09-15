@@ -252,6 +252,26 @@ export async function submitFormResponse(input: {
       })
     }
 
+    if (data.camp_registration?.id && data.camp_registration.camp_year_id) {
+      try {
+        const { sendCampRegistrationConfirmationSms } = await import('@/lib/actions/camp')
+        await sendCampRegistrationConfirmationSms({
+          id: data.camp_registration.id,
+          camp_year_id: data.camp_registration.camp_year_id,
+          full_name: data.camp_registration.full_name,
+          first_name: data.camp_registration.first_name,
+          last_name: data.camp_registration.last_name,
+          phone: data.camp_registration.phone || input.respondent_phone || '',
+          email: data.camp_registration.email || input.respondent_email || '',
+          role: data.camp_registration.role,
+          check_in_code: data.camp_registration.check_in_code,
+          qr_code: data.camp_registration.qr_code,
+        })
+      } catch (err) {
+        console.error('Camp registration confirmation SMS failed:', err)
+      }
+    }
+
     return { data, error: null }
   } catch (error: unknown) {
     return {

@@ -306,6 +306,11 @@ export async function submitFormResponseInConvex(input: {
       ? {
           id: String(campReg.id ?? ''),
           full_name: String(campReg.full_name ?? ''),
+          first_name: campReg.first_name != null ? String(campReg.first_name) : undefined,
+          last_name: campReg.last_name != null ? String(campReg.last_name) : undefined,
+          phone: campReg.phone != null ? String(campReg.phone) : undefined,
+          email: campReg.email != null ? String(campReg.email) : undefined,
+          camp_year_id: campReg.camp_year_id != null ? String(campReg.camp_year_id) : undefined,
           qr_code: String(campReg.qr_code ?? ''),
           check_in_code:
             campReg.check_in_code != null ? String(campReg.check_in_code) : undefined,

@@ -77,11 +77,13 @@ export function SmsProviderBanner({
       })
       return
     }
+    const viaMock = result.data.provider === 'mock'
     toast({
-      title: dryRun ? 'Dry run OK' : 'Test SMS sent',
+      title: dryRun ? 'Dry run OK' : viaMock ? 'Mock SMS only (not delivered)' : 'Test SMS sent',
       description: `${result.data.normalizedPhone} via ${result.data.provider}${
         result.data.messageId ? ` · ${result.data.messageId}` : ''
-      }`,
+      }${viaMock && !dryRun ? ' — no real SMS was sent' : ''}`,
+      variant: viaMock && !dryRun ? 'destructive' : 'default',
     })
   }
 

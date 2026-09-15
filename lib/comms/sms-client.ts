@@ -405,8 +405,26 @@ export async function sendSms(
     }
   }
 
-  const provider =
-    options.forceMock || envFlag('SMS_FORCE_MOCK') ? 'mock' : resolveSmsProvider()
+  const forceMock = Boolean(options.forceMock || envFlag('SMS_FORCE_MOCK'))
+  const provider = forceMock ? 'mock' : resolveSmsProvider()
+
+  // Never pretend a live send succeeded when Hubtel/API isn't configured.
+  // Mock only when explicitly requested (force mock / SMS_FORCE_MOCK) or in non-production.
+  if (provider === 'mock' && !forceMock) {
+    const env = getAppEnvironment().toLowerCase()
+    const productionLike = env === 'production' || process.env.VERCEL_ENV === 'production'
+    if (productionLike) {
+      const missing = getMissingSmsEnvKeys()
+      return {
+        success: false,
+        error: `SMS is not configured on this deployment. Add HUBTEL_CLIENT_ID and HUBTEL_CLIENT_SECRET in Vercel → Environment Variables (Production), then Redeploy. Missing: ${
+          missing.join(', ') || 'Hubtel credentials'
+        }`,
+        provider: 'mock',
+        normalizedPhone,
+      }
+    }
+  }
 
   switch (provider) {
     case 'hubtel':

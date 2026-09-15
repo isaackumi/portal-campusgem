@@ -1179,6 +1179,11 @@ export type ChurchFormSubmitResult = {
   camp_registration?: {
     id: string
     full_name: string
+    first_name?: string
+    last_name?: string
+    phone?: string
+    email?: string
+    camp_year_id?: string
     qr_code: string
     check_in_code?: string
     role?: string

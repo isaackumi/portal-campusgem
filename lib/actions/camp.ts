@@ -9,6 +9,11 @@ import {
 } from '@/lib/types'
 import { isValidPhone } from '@/lib/phone'
 import { revalidatePath } from 'next/cache'
+import {
+  getRegistrationConfirmationSmsTemplate,
+  personalizeCampMessage,
+  shouldSendRegistrationConfirmationSms,
+} from '@/lib/camp/sms-templates'
 
 function requireConvexEnv(): void {
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
@@ -132,6 +137,13 @@ export async function registerCamper(formData: CampRegistrationForm): Promise<{
     const { registerCamperViaConvex } = await import('@/lib/convex/camp-bridge')
     const updatedReg = await registerCamperViaConvex(formData)
     revalidatePath('/admin/camp-meeting')
+
+    try {
+      await sendCampRegistrationConfirmationSms(updatedReg)
+    } catch (err) {
+      console.error('Camp registration confirmation SMS failed:', err)
+    }
+
     return { success: true, data: updatedReg }
   } catch (error: unknown) {
     console.error('Registration error (Convex):', error)
@@ -323,6 +335,111 @@ export async function recordCampCommunication(
   }
 }
 
+/** Resend a camp history row (SMS or email) as a new outbound. */
+export async function resendCampCommunicationAction(input: {
+  sender_id: string
+  camp_year_id: string
+  camp_year?: number | null
+  communication: Pick<
+    CampCommunication,
+    | 'id'
+    | 'communication_type'
+    | 'recipient_registration_id'
+    | 'recipient_email'
+    | 'recipient_phone'
+    | 'subject'
+    | 'message_body'
+    | 'status'
+  > & {
+    recipient_name?: string | null
+  }
+}): Promise<{
+  data: { success: boolean; provider?: string; messageId?: string } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  if (!input.sender_id) return { data: null, error: 'Sender is required' }
+
+  const comm = input.communication
+  const resendable = new Set(['sent', 'delivered', 'failed', 'bounced'])
+  if (!resendable.has(comm.status)) {
+    return { data: null, error: `Cannot resend a message with status "${comm.status}"` }
+  }
+  if (!comm.message_body?.trim()) {
+    return { data: null, error: 'Original message body is empty' }
+  }
+
+  if (comm.communication_type === 'sms') {
+    if (!comm.recipient_phone?.trim()) {
+      return { data: null, error: 'No recipient phone on this message' }
+    }
+    const reg = comm.recipient_registration_id
+      ? {
+          id: comm.recipient_registration_id,
+          full_name: comm.recipient_name,
+          phone: comm.recipient_phone,
+        }
+      : {
+          id: `resend-${comm.id}`,
+          full_name: comm.recipient_name || 'Recipient',
+          phone: comm.recipient_phone,
+        }
+
+    const bulk = await sendCampBulkSmsAction({
+      camp_year_id: input.camp_year_id,
+      sender_id: input.sender_id,
+      message_template: comm.message_body,
+      camp_year: input.camp_year,
+      recipients: [reg],
+      filter_criteria: { resend_of: comm.id, original_status: comm.status },
+    })
+    if (bulk.error || !bulk.data) {
+      return { data: null, error: bulk.error ?? 'Failed to resend SMS' }
+    }
+    if (bulk.data.error_count > 0 && bulk.data.success_count === 0) {
+      return { data: null, error: bulk.data.errors[0] ?? 'Failed to resend SMS' }
+    }
+    return {
+      data: {
+        success: bulk.data.success_count > 0,
+        provider: bulk.data.provider,
+      },
+      error: null,
+    }
+  }
+
+  if (!comm.recipient_email?.trim()) {
+    return { data: null, error: 'No recipient email on this message' }
+  }
+  if (!comm.subject?.trim()) {
+    return { data: null, error: 'Original email has no subject' }
+  }
+
+  const { EmailService } = await import('@/lib/services/email-service')
+  const emailService = new EmailService()
+  const result = await emailService.sendEmail({
+    to: comm.recipient_email,
+    subject: comm.subject,
+    text: comm.message_body,
+    html: `<p>${comm.message_body.replace(/\n/g, '<br>')}</p>`,
+    camp_year_id: input.camp_year_id,
+    sender_id: input.sender_id,
+    recipient_registration_id: comm.recipient_registration_id,
+  })
+
+  if (!result.success) {
+    return { data: null, error: result.error || 'Failed to resend email' }
+  }
+
+  return {
+    data: {
+      success: true,
+      messageId: result.communication?.provider_message_id,
+    },
+    error: null,
+  }
+}
+
 type CampSmsRecipient = {
   id: string
   full_name?: string | null
@@ -332,26 +449,108 @@ type CampSmsRecipient = {
   email?: string | null
   role?: string | null
   qr_code?: string | null
+  check_in_code?: string | null
 }
 
 function personalizeCampSms(
   template: string,
   registration: CampSmsRecipient,
-  campYear?: number | null
+  campYear?: number | null,
+  extras?: { theme?: string | null; venue?: string | null }
 ): string {
-  const fullName =
-    registration.full_name?.trim() ||
-    `${registration.first_name ?? ''} ${registration.last_name ?? ''}`.trim() ||
-    'Camper'
-  return template
-    .replace(/{{name}}/g, fullName)
-    .replace(/{{firstName}}/g, registration.first_name || '')
-    .replace(/{{lastName}}/g, registration.last_name || '')
-    .replace(/{{role}}/g, registration.role || 'Participant')
-    .replace(/{{campYear}}/g, campYear?.toString() || new Date().getFullYear().toString())
-    .replace(/{{phone}}/g, registration.phone || '')
-    .replace(/{{email}}/g, registration.email || '')
-    .replace(/{{qrCode}}/g, registration.qr_code || '')
+  return personalizeCampMessage(template, {
+    fullName: registration.full_name,
+    firstName: registration.first_name,
+    lastName: registration.last_name,
+    role: registration.role,
+    campYear,
+    phone: registration.phone,
+    email: registration.email,
+    checkInCode: registration.check_in_code,
+    qrCode: registration.qr_code,
+    theme: extras?.theme,
+    venue: extras?.venue,
+  })
+}
+
+/**
+ * Auto SMS after camp registration (2026+ by default). Soft-skips when SMS
+ * is not configured or the year is gated off. Never throws to callers that catch.
+ */
+export async function sendCampRegistrationConfirmationSms(
+  registration: Pick<
+    CampRegistration,
+    | 'id'
+    | 'camp_year_id'
+    | 'full_name'
+    | 'first_name'
+    | 'last_name'
+    | 'phone'
+    | 'email'
+    | 'role'
+    | 'check_in_code'
+    | 'qr_code'
+  >
+): Promise<{ sent: boolean; skipped?: string; error?: string }> {
+  if (!registration.phone?.trim()) {
+    return { sent: false, skipped: 'no_phone' }
+  }
+
+  let yearDoc: CampYear | null = null
+  try {
+    const { fetchCampYearByIdFromConvex } = await import('@/lib/convex/camp-bridge')
+    yearDoc = await fetchCampYearByIdFromConvex(registration.camp_year_id)
+  } catch {
+    // fall through — may still send with calendar year
+  }
+
+  const campYearNum = yearDoc?.year ?? new Date().getFullYear()
+  if (!shouldSendRegistrationConfirmationSms(campYearNum)) {
+    return { sent: false, skipped: `year_${campYearNum}_gated` }
+  }
+
+  const { isSmsConfigured } = await import('@/lib/comms/sms-client')
+  if (!isSmsConfigured()) {
+    return { sent: false, skipped: 'sms_not_configured' }
+  }
+
+  const template = getRegistrationConfirmationSmsTemplate()
+  const senderId =
+    process.env.CAMP_SYSTEM_SENDER_ID?.trim() || 'system-registration'
+
+  const result = await sendCampBulkSmsAction({
+    camp_year_id: registration.camp_year_id,
+    sender_id: senderId,
+    message_template: template,
+    camp_year: campYearNum,
+    recipients: [
+      {
+        id: registration.id,
+        full_name: registration.full_name,
+        first_name: registration.first_name,
+        last_name: registration.last_name,
+        phone: registration.phone,
+        email: registration.email,
+        role: registration.role,
+        check_in_code: registration.check_in_code,
+        qr_code: registration.qr_code,
+      },
+    ],
+    filter_criteria: {
+      auto: true,
+      type: 'registration_confirmation',
+      theme: yearDoc?.theme,
+      venue: yearDoc?.venue,
+    },
+  })
+
+  if (result.error || !result.data) {
+    return { sent: false, error: result.error ?? 'send_failed' }
+  }
+  if (result.data.success_count < 1) {
+    return { sent: false, error: result.data.errors[0] ?? 'send_failed' }
+  }
+  return { sent: true }
 }
 
 /** Server-side Hubtel bulk SMS for camp registrations (one-by-one with small gap). */
@@ -414,6 +613,21 @@ export async function sendCampBulkSmsAction(input: {
   const errors: string[] = []
   let lastProvider = dryRun ? 'dry_run' : resolveSmsProvider()
 
+  let theme: string | null =
+    typeof input.filter_criteria?.theme === 'string' ? input.filter_criteria.theme : null
+  let venue: string | null =
+    typeof input.filter_criteria?.venue === 'string' ? input.filter_criteria.venue : null
+  if (!theme || !venue) {
+    try {
+      const { fetchCampYearByIdFromConvex } = await import('@/lib/convex/camp-bridge')
+      const yearDoc = await fetchCampYearByIdFromConvex(input.camp_year_id)
+      theme = theme || yearDoc?.theme || null
+      venue = venue || yearDoc?.venue || null
+    } catch {
+      // optional enrichment
+    }
+  }
+
   for (let i = 0; i < input.recipients.length; i++) {
     const registration = input.recipients[i]
     const label =
@@ -434,7 +648,10 @@ export async function sendCampBulkSmsAction(input: {
       continue
     }
 
-    const message = personalizeCampSms(input.message_template, registration, input.camp_year)
+    const message = personalizeCampSms(input.message_template, registration, input.camp_year, {
+      theme,
+      venue,
+    })
     const to = normalizeSmsPhone(registration.phone)
 
     if (i > 0 && smsGapMs > 0 && !dryRun) {

@@ -9,6 +9,7 @@ import {
   listCommunicationsAction,
   loadCommsGroupsAction,
   resolveGroupRecipientsAction,
+  resendCommunicationAction,
   searchCommsRecipientsAction,
   sendCommsAction,
 } from '@/lib/actions/comms'
@@ -109,6 +110,7 @@ export function CommsCenterView() {
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [manualRecipients, setManualRecipients] = useState('')
   const [searching, setSearching] = useState(false)
+  const [resendingId, setResendingId] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -236,6 +238,57 @@ export function CommsCenterView() {
     setManualRecipients('')
     setSelectedRecipients([])
     setActiveTab('history')
+    await refresh()
+  }
+
+  async function handleResend(row: CommunicationRecord) {
+    if (!user?.id) return
+    const canResend =
+      row.status === 'sent' ||
+      row.status === 'delivered' ||
+      row.status === 'failed' ||
+      row.status === 'bounced'
+    if (!canResend) return
+
+    setResendingId(row.id)
+    const { data, error } = await resendCommunicationAction({
+      sender_id: user.id,
+      record: {
+        id: row.id,
+        module: row.module,
+        channel: row.channel,
+        audience_type: row.audience_type,
+        recipient_name: row.recipient_name,
+        recipient_email: row.recipient_email,
+        recipient_phone: row.recipient_phone,
+        recipient_entity_type: row.recipient_entity_type,
+        recipient_entity_id: row.recipient_entity_id,
+        subject: row.subject,
+        message_body: row.message_body,
+        status: row.status,
+      },
+    })
+    setResendingId(null)
+
+    if (error || !data) {
+      toast({
+        variant: 'destructive',
+        title: 'Resend failed',
+        description: error ?? 'Unknown error',
+      })
+      return
+    }
+
+    toast({
+      title: data.success_count > 0 ? 'Message resent' : 'Resend failed',
+      variant: data.success_count > 0 ? 'default' : 'destructive',
+      description:
+        data.success_count > 0
+          ? `New ${COMMS_CHANNEL_LABELS[row.channel]} logged${
+              data.batch_id ? ` · batch ${data.batch_id.slice(0, 8)}` : ''
+            }`
+          : data.errors[0] ?? 'Could not deliver',
+    })
     await refresh()
   }
 
@@ -574,11 +627,40 @@ export function CommsCenterView() {
                           <p className="text-xs text-red-600">{row.error_message}</p>
                         ) : null}
                       </div>
-                      {row.batch_id ? (
-                        <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
-                          batch {row.batch_id.slice(0, 8)}
-                        </Badge>
-                      ) : null}
+                      <div className="flex shrink-0 flex-col items-end gap-2">
+                        {(row.status === 'sent' ||
+                          row.status === 'delivered' ||
+                          row.status === 'failed' ||
+                          row.status === 'bounced') &&
+                        (row.channel === 'sms'
+                          ? Boolean(row.recipient_phone)
+                          : Boolean(row.recipient_email)) ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="min-h-10 cursor-pointer"
+                            disabled={resendingId === row.id}
+                            aria-label={`Resend ${row.channel} to ${
+                              row.recipient_phone ?? row.recipient_email ?? 'recipient'
+                            }`}
+                            onClick={() => void handleResend(row)}
+                          >
+                            <RefreshCw
+                              className={cn(
+                                'mr-1.5 h-3.5 w-3.5',
+                                resendingId === row.id && 'animate-spin'
+                              )}
+                            />
+                            {resendingId === row.id ? 'Resending…' : 'Resend'}
+                          </Button>
+                        ) : null}
+                        {row.batch_id ? (
+                          <Badge variant="outline" className="font-mono text-[10px]">
+                            batch {row.batch_id.slice(0, 8)}
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
                     )
                   })}
