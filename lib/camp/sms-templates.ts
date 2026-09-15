@@ -7,6 +7,7 @@ export type CampMessageTemplateId =
   | 'payment_reminder'
   | 'check_in_info'
   | 'welcome_general'
+  | 'room_allocation'
 
 export type CampTemplateVars = {
   name?: string | null
@@ -23,6 +24,10 @@ export type CampTemplateVars = {
   venue?: string | null
   startDate?: string | null
   endDate?: string | null
+  roomName?: string | null
+  building?: string | null
+  roomLeader?: string | null
+  roommates?: string | null
 }
 
 export type CampMessageTemplate = {
@@ -66,6 +71,13 @@ export const CAMP_MESSAGE_TEMPLATES: CampMessageTemplate[] = [
     subject: 'Campus Gem Camp Meeting {{campYear}}',
     body: `Hi {{name}}, greetings from Campus Gem Camp Meeting {{campYear}}! {{theme}}`,
   },
+  {
+    id: 'room_allocation',
+    label: 'Room allocation',
+    description: 'Tell campers their room name, building, and check-in code.',
+    channel: 'sms',
+    body: `Hi {{firstName}}! Your Camp Meeting {{campYear}} room is {{roomName}}{{buildingPart}}. Check-in code: {{checkInCode}}.{{leaderPart}} See you at camp!`,
+  },
 ]
 
 export function getCampMessageTemplate(id: CampMessageTemplateId): CampMessageTemplate | undefined {
@@ -73,15 +85,18 @@ export function getCampMessageTemplate(id: CampMessageTemplateId): CampMessageTe
 }
 
 export const CAMP_TEMPLATE_VARIABLE_HINT =
-  '{{name}}, {{firstName}}, {{lastName}}, {{role}}, {{campYear}}, {{checkInCode}}, {{phone}}, {{email}}, {{venue}}, {{theme}}'
+  '{{name}}, {{firstName}}, {{checkInCode}}, {{campYear}}, {{roomName}}, {{building}}, {{roomLeader}}, {{roommates}}, {{venue}}, {{theme}}'
 
 /** Chips for the compose UI — insert {{key}} into the message body. */
 export const CAMP_TEMPLATE_VARIABLE_CHIPS: Array<{ key: string; label: string }> = [
   { key: 'firstName', label: 'First name' },
   { key: 'name', label: 'Full name' },
   { key: 'checkInCode', label: 'Check-in code' },
+  { key: 'roomName', label: 'Room' },
+  { key: 'building', label: 'Building' },
+  { key: 'roomLeader', label: 'Room leader' },
+  { key: 'roommates', label: 'Roommates' },
   { key: 'campYear', label: 'Camp year' },
-  { key: 'role', label: 'Role' },
   { key: 'venue', label: 'Venue' },
   { key: 'theme', label: 'Theme' },
   { key: 'phone', label: 'Phone' },
@@ -90,6 +105,16 @@ export const CAMP_TEMPLATE_VARIABLE_CHIPS: Array<{ key: string; label: string }>
 function themePart(theme?: string | null): string {
   const t = theme?.trim()
   return t ? ` (${t})` : ''
+}
+
+function buildingPart(building?: string | null): string {
+  const b = building?.trim()
+  return b ? ` (${b})` : ''
+}
+
+function leaderPart(leader?: string | null): string {
+  const l = leader?.trim()
+  return l ? ` Room leader: ${l}.` : ''
 }
 
 /** Replace {{placeholders}} for camp SMS/email. Unknown keys stay as-is. */
@@ -106,6 +131,10 @@ export function personalizeCampMessage(template: string, vars: CampTemplateVars)
     vars.campYear != null && String(vars.campYear).trim() !== ''
       ? String(vars.campYear)
       : String(new Date().getFullYear())
+  const roomName = vars.roomName?.trim() || 'TBA'
+  const building = vars.building?.trim() || ''
+  const roomLeader = vars.roomLeader?.trim() || ''
+  const roommates = vars.roommates?.trim() || ''
 
   const map: Record<string, string> = {
     name: fullName,
@@ -129,12 +158,26 @@ export function personalizeCampMessage(template: string, vars: CampTemplateVars)
     startDate: vars.startDate?.trim() || '',
     endDate: vars.endDate?.trim() || '',
     themePart: themePart(vars.theme),
+    roomName,
+    room_name: roomName,
+    building,
+    buildingPart: buildingPart(building),
+    roomLeader,
+    room_leader: roomLeader,
+    leaderPart: leaderPart(roomLeader),
+    roommates,
   }
 
   return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, key: string) => {
     if (Object.prototype.hasOwnProperty.call(map, key)) return map[key]
     return match
   })
+}
+
+export function getRoomAllocationSmsTemplate(): string {
+  const fromEnv = process.env.CAMP_ROOM_SMS_TEMPLATE?.trim()
+  if (fromEnv) return fromEnv
+  return getCampMessageTemplate('room_allocation')!.body
 }
 
 /** Resolve registration confirmation body (env override or default template). */

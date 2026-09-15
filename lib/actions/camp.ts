@@ -11,8 +11,11 @@ import { isValidPhone } from '@/lib/phone'
 import { revalidatePath } from 'next/cache'
 import {
   getRegistrationConfirmationSmsTemplate,
+  getRoomAllocationSmsTemplate,
   personalizeCampMessage,
   shouldSendRegistrationConfirmationSms,
+  type CampMessageTemplateId,
+  getCampMessageTemplate,
 } from '@/lib/camp/sms-templates'
 
 function requireConvexEnv(): void {
@@ -450,6 +453,10 @@ type CampSmsRecipient = {
   role?: string | null
   qr_code?: string | null
   check_in_code?: string | null
+  room_name?: string | null
+  building?: string | null
+  room_leader?: string | null
+  roommates?: string | null
 }
 
 function personalizeCampSms(
@@ -470,12 +477,17 @@ function personalizeCampSms(
     qrCode: registration.qr_code,
     theme: extras?.theme,
     venue: extras?.venue,
+    roomName: registration.room_name,
+    building: registration.building,
+    roomLeader: registration.room_leader,
+    roommates: registration.roommates,
   })
 }
 
 /**
  * Auto SMS after camp registration (2026+ by default). Soft-skips when SMS
  * is not configured or the year is gated off. Never throws to callers that catch.
+ * Pass `{ force: true }` for manual admin resend (skips year gate).
  */
 export async function sendCampRegistrationConfirmationSms(
   registration: Pick<
@@ -490,7 +502,8 @@ export async function sendCampRegistrationConfirmationSms(
     | 'role'
     | 'check_in_code'
     | 'qr_code'
-  >
+  >,
+  options?: { force?: boolean; sender_id?: string }
 ): Promise<{ sent: boolean; skipped?: string; error?: string }> {
   if (!registration.phone?.trim()) {
     return { sent: false, skipped: 'no_phone' }
@@ -505,7 +518,7 @@ export async function sendCampRegistrationConfirmationSms(
   }
 
   const campYearNum = yearDoc?.year ?? new Date().getFullYear()
-  if (!shouldSendRegistrationConfirmationSms(campYearNum)) {
+  if (!options?.force && !shouldSendRegistrationConfirmationSms(campYearNum)) {
     return { sent: false, skipped: `year_${campYearNum}_gated` }
   }
 
@@ -516,7 +529,9 @@ export async function sendCampRegistrationConfirmationSms(
 
   const template = getRegistrationConfirmationSmsTemplate()
   const senderId =
-    process.env.CAMP_SYSTEM_SENDER_ID?.trim() || 'system-registration'
+    options?.sender_id?.trim() ||
+    process.env.CAMP_SYSTEM_SENDER_ID?.trim() ||
+    'system-registration'
 
   const result = await sendCampBulkSmsAction({
     camp_year_id: registration.camp_year_id,
@@ -537,7 +552,7 @@ export async function sendCampRegistrationConfirmationSms(
       },
     ],
     filter_criteria: {
-      auto: true,
+      auto: !options?.force,
       type: 'registration_confirmation',
       theme: yearDoc?.theme,
       venue: yearDoc?.venue,
@@ -551,6 +566,158 @@ export async function sendCampRegistrationConfirmationSms(
     return { sent: false, error: result.data.errors[0] ?? 'send_failed' }
   }
   return { sent: true }
+}
+
+/**
+ * Send camp SMS templates to one or many registrations (confirmation or room allocation).
+ * Enriches room fields when template needs them.
+ */
+export async function sendCampTemplateSmsToRegistrationsAction(input: {
+  camp_year_id: string
+  sender_id: string
+  registration_ids: string[]
+  template_id: Extract<CampMessageTemplateId, 'registration_confirmation' | 'room_allocation'>
+  dry_run?: boolean
+  force_mock?: boolean
+}): Promise<{
+  data: {
+    success_count: number
+    error_count: number
+    skipped_count: number
+    errors: string[]
+    batch_id: string
+    provider: string
+  } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  if (!input.sender_id) return { data: null, error: 'Sender is required' }
+  if (!input.registration_ids.length) return { data: null, error: 'Select at least one registration' }
+
+  const { fetchRegistrationsFromConvex, fetchCampRoomsFromConvex, fetchCampYearByIdFromConvex } =
+    await import('@/lib/convex/camp-bridge')
+  const { campRegistrationDisplayName } = await import('@/lib/camp/manual-check-in-search')
+
+  const [allRegs, rooms, yearDoc] = await Promise.all([
+    fetchRegistrationsFromConvex(input.camp_year_id),
+    fetchCampRoomsFromConvex(input.camp_year_id),
+    fetchCampYearByIdFromConvex(input.camp_year_id),
+  ])
+
+  const idSet = new Set(input.registration_ids)
+  const selected = allRegs.filter((r) => idSet.has(r.id) && r.status !== 'cancelled')
+  if (!selected.length) return { data: null, error: 'No matching registrations found' }
+
+  const roomById = new Map(rooms.map((r) => [r.id, r]))
+  const occupantsByRoom = new Map<string, CampRegistration[]>()
+  for (const reg of allRegs) {
+    if (!reg.room_id || reg.status === 'cancelled') continue
+    const list = occupantsByRoom.get(reg.room_id) ?? []
+    list.push(reg)
+    occupantsByRoom.set(reg.room_id, list)
+  }
+
+  const template =
+    input.template_id === 'room_allocation'
+      ? getRoomAllocationSmsTemplate()
+      : getCampMessageTemplate(input.template_id)?.body || getRegistrationConfirmationSmsTemplate()
+
+  const errors: string[] = []
+  let skipped_count = 0
+  const recipients: CampSmsRecipient[] = []
+
+  for (const reg of selected) {
+    if (!reg.phone?.trim()) {
+      skipped_count++
+      errors.push(`${campRegistrationDisplayName(reg)}: No phone`)
+      continue
+    }
+
+    let room_name: string | undefined
+    let building: string | undefined
+    let room_leader: string | undefined
+    let roommates: string | undefined
+
+    if (input.template_id === 'room_allocation') {
+      if (!reg.room_id) {
+        skipped_count++
+        errors.push(`${campRegistrationDisplayName(reg)}: No room assigned`)
+        continue
+      }
+      const room = roomById.get(reg.room_id)
+      if (!room) {
+        skipped_count++
+        errors.push(`${campRegistrationDisplayName(reg)}: Room not found`)
+        continue
+      }
+      const occupants = occupantsByRoom.get(reg.room_id) ?? []
+      const leader = room.room_leader_id
+        ? occupants.find((o) => o.id === room.room_leader_id)
+        : undefined
+      room_name = room.name
+      building = room.building
+      room_leader = leader ? campRegistrationDisplayName(leader) : undefined
+      roommates = occupants
+        .filter((o) => o.id !== reg.id)
+        .map((o) => campRegistrationDisplayName(o))
+        .join(', ')
+    }
+
+    recipients.push({
+      id: reg.id,
+      full_name: reg.full_name,
+      first_name: reg.first_name,
+      last_name: reg.last_name,
+      phone: reg.phone,
+      email: reg.email,
+      role: reg.role,
+      check_in_code: reg.check_in_code,
+      qr_code: reg.qr_code,
+      room_name,
+      building,
+      room_leader,
+      roommates,
+    })
+  }
+
+  if (!recipients.length) {
+    return {
+      data: null,
+      error: errors[0] || 'No recipients with valid phone/room',
+    }
+  }
+
+  const bulk = await sendCampBulkSmsAction({
+    camp_year_id: input.camp_year_id,
+    sender_id: input.sender_id,
+    message_template: template,
+    camp_year: yearDoc?.year,
+    recipients,
+    dry_run: input.dry_run,
+    force_mock: input.force_mock,
+    filter_criteria: {
+      type: input.template_id,
+      theme: yearDoc?.theme,
+      venue: yearDoc?.venue,
+      manual: true,
+    },
+  })
+
+  if (bulk.error || !bulk.data) {
+    return { data: null, error: bulk.error ?? 'Failed to send SMS' }
+  }
+
+  return {
+    data: {
+      success_count: bulk.data.success_count,
+      error_count: bulk.data.error_count,
+      skipped_count,
+      errors: [...errors, ...bulk.data.errors],
+      batch_id: bulk.data.batch_id,
+      provider: bulk.data.provider,
+    },
+    error: null,
+  }
 }
 
 /** Server-side Hubtel bulk SMS for camp registrations (one-by-one with small gap). */

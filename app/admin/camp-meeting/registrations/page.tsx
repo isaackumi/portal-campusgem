@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CampRegistration, CampYear } from '@/lib/types'
 import { campRegistrationsToGoogleFormCsv } from '@/lib/camp/google-form-import'
-import { backfillCampCheckInCodes } from '@/lib/actions/camp'
+import { backfillCampCheckInCodes, sendCampTemplateSmsToRegistrationsAction } from '@/lib/actions/camp'
 import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { useAuth } from '@/components/providers'
 import { Input } from '@/components/ui/input'
@@ -34,7 +34,9 @@ import {
     Phone,
     Mail,
     QrCode,
-    Printer
+    Printer,
+    MessageSquare,
+    BedDouble
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -68,6 +70,7 @@ function RegistrationsPageContent() {
     // Selection
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [backfillingCodes, setBackfillingCodes] = useState(false)
+    const [sendingBulkSms, setSendingBulkSms] = useState(false)
 
     // Redirect to auth if not logged in
     useEffect(() => {
@@ -278,6 +281,46 @@ function RegistrationsPageContent() {
         }
     }
 
+    async function handleBulkSms(template_id: 'registration_confirmation' | 'room_allocation') {
+        if (!campYear?.id || !user?.id) return
+        if (selectedIds.size === 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No selection',
+                description: 'Select registrations first',
+            })
+            return
+        }
+        setSendingBulkSms(true)
+        const { data, error } = await sendCampTemplateSmsToRegistrationsAction({
+            camp_year_id: campYear.id,
+            sender_id: user.id,
+            registration_ids: Array.from(selectedIds),
+            template_id,
+        })
+        setSendingBulkSms(false)
+        if (error || !data) {
+            toast({
+                variant: 'destructive',
+                title: 'SMS failed',
+                description: error ?? 'Could not send',
+            })
+            return
+        }
+        toast({
+            title:
+                data.success_count > 0
+                    ? `Sent ${data.success_count} SMS`
+                    : 'No SMS delivered',
+            variant: data.success_count > 0 ? 'default' : 'destructive',
+            description: `${template_id === 'room_allocation' ? 'Room' : 'Confirmation'}${
+                data.skipped_count || data.error_count
+                    ? ` · ${data.skipped_count} skipped, ${data.error_count} failed`
+                    : ''
+            }${data.errors[0] ? ` · ${data.errors[0]}` : ''}`,
+        })
+    }
+
     const missingCheckInCodes = registrations.filter((r) => !r.check_in_code?.trim()).length
 
     async function assignMissingCheckInCodes() {
@@ -466,22 +509,43 @@ function RegistrationsPageContent() {
                         </div>
                         
                         {selectedIds.size > 0 && (
-                            <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                            <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:flex-wrap sm:items-center">
                                 <span className="text-sm font-medium text-slate-700">
                                     {selectedIds.size} selected
                                 </span>
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2">
                                     <Button
                                         size="sm"
                                         variant="outline"
+                                        className="min-h-10 cursor-pointer"
                                         onClick={() => handleBulkStatusUpdate('checked_in')}
                                     >
-                                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                                        <CheckCircle2 className="mr-1 h-4 w-4" aria-hidden />
                                         Mark Checked In
                                     </Button>
                                     <Button
                                         size="sm"
+                                        className="min-h-10 cursor-pointer"
+                                        disabled={sendingBulkSms}
+                                        onClick={() => void handleBulkSms('registration_confirmation')}
+                                    >
+                                        <MessageSquare className="mr-1 h-4 w-4" aria-hidden />
+                                        {sendingBulkSms ? 'Sending…' : 'SMS confirmation'}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="min-h-10 cursor-pointer"
+                                        disabled={sendingBulkSms}
+                                        onClick={() => void handleBulkSms('room_allocation')}
+                                    >
+                                        <BedDouble className="mr-1 h-4 w-4" aria-hidden />
+                                        SMS room
+                                    </Button>
+                                    <Button
+                                        size="sm"
                                         variant="outline"
+                                        className="min-h-10 cursor-pointer"
                                         onClick={() => setSelectedIds(new Set())}
                                     >
                                         Clear Selection

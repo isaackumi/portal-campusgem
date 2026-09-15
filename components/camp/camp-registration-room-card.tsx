@@ -9,6 +9,7 @@ import {
   getCamperCheckInIdentity,
 } from '@/lib/camp/check-in-identity'
 import { campService } from '@/lib/services/camp-service'
+import { sendCampTemplateSmsToRegistrationsAction } from '@/lib/actions/camp'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,8 @@ import {
 } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
-import { BedDouble, Copy, Crown, Users } from 'lucide-react'
+import { useAuth } from '@/components/providers'
+import { BedDouble, Copy, Crown, MessageSquare, Users } from 'lucide-react'
 
 type Props = {
   registration: CampRegistration
@@ -59,7 +61,9 @@ export function CampRegistrationRoomCard({
   onUpdated,
 }: Props) {
   const { toast } = useToast()
+  const { user } = useAuth()
   const [savingLeader, setSavingLeader] = useState(false)
+  const [sendingSms, setSendingSms] = useState(false)
 
   const room = roomContext?.room ?? null
   const occupants = roomContext?.occupants ?? []
@@ -76,6 +80,34 @@ export function CampRegistrationRoomCard({
     } catch {
       toast({ variant: 'destructive', title: 'Copy failed' })
     }
+  }
+
+  async function sendRoomSms() {
+    if (!user?.id || !room) return
+    setSendingSms(true)
+    const { data, error } = await sendCampTemplateSmsToRegistrationsAction({
+      camp_year_id: registration.camp_year_id,
+      sender_id: user.id,
+      registration_ids: [registration.id],
+      template_id: 'room_allocation',
+    })
+    setSendingSms(false)
+    if (error || !data) {
+      toast({
+        variant: 'destructive',
+        title: 'Room SMS failed',
+        description: error ?? 'Could not send',
+      })
+      return
+    }
+    toast({
+      title: data.success_count > 0 ? 'Room SMS sent' : 'Room SMS not delivered',
+      variant: data.success_count > 0 ? 'default' : 'destructive',
+      description:
+        data.success_count > 0
+          ? `Sent via ${data.provider}`
+          : data.errors[0] ?? 'Check phone number',
+    })
   }
 
   async function handleLeaderChange(value: string) {
@@ -225,10 +257,31 @@ export function CampRegistrationRoomCard({
               )}
             </div>
 
-            <Button variant="outline" className="w-full min-h-10" onClick={() => void copyRoomDetails()}>
-              <Copy className="mr-2 h-4 w-4" />
-              Copy room details for camper
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 flex-1 cursor-pointer"
+                onClick={() => void copyRoomDetails()}
+              >
+                <Copy className="mr-2 h-4 w-4" aria-hidden />
+                Copy room details
+              </Button>
+              <Button
+                type="button"
+                className="min-h-11 flex-1 cursor-pointer"
+                disabled={sendingSms || !registration.phone?.trim()}
+                onClick={() => void sendRoomSms()}
+                aria-label="Send room allocation SMS to this camper"
+              >
+                {sendingSms ? (
+                  <LoadingSpinner className="mr-2 h-4 w-4" />
+                ) : (
+                  <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
+                )}
+                {sendingSms ? 'Sending…' : 'SMS room to camper'}
+              </Button>
+            </div>
           </>
         )}
       </CardContent>

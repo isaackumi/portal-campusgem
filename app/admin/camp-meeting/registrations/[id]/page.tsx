@@ -58,6 +58,7 @@ export default function RegistrationDetailPage() {
     const [promoting, setPromoting] = useState(false)
     const [savingBirth, setSavingBirth] = useState(false)
     const [syncingDob, setSyncingDob] = useState(false)
+    const [sendingConfirmSms, setSendingConfirmSms] = useState(false)
     
     // Payment form
     const [paymentForm, setPaymentForm] = useState({
@@ -372,6 +373,38 @@ export default function RegistrationDetailPage() {
             }
         } finally {
             setSyncingDob(false)
+        }
+    }
+
+    async function sendRegistrationConfirmSms() {
+        if (!data || !user?.id) return
+        setSendingConfirmSms(true)
+        try {
+            const { sendCampTemplateSmsToRegistrationsAction } = await import('@/lib/actions/camp')
+            const { data: result, error } = await sendCampTemplateSmsToRegistrationsAction({
+                camp_year_id: data.camp_year_id,
+                sender_id: user.id,
+                registration_ids: [data.id],
+                template_id: 'registration_confirmation',
+            })
+            if (error || !result) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Confirmation SMS failed',
+                    description: error ?? 'Could not send',
+                })
+                return
+            }
+            toast({
+                title: result.success_count > 0 ? 'Confirmation SMS sent' : 'SMS not delivered',
+                variant: result.success_count > 0 ? 'default' : 'destructive',
+                description:
+                    result.success_count > 0
+                        ? `Sent via ${result.provider}`
+                        : result.errors[0] ?? 'Check phone number',
+            })
+        } finally {
+            setSendingConfirmSms(false)
         }
     }
 
@@ -855,11 +888,25 @@ export default function RegistrationDetailPage() {
                                     </div>
                                     <Button
                                         variant="outline"
-                                        className="w-full"
+                                        className="w-full min-h-11 cursor-pointer"
                                         onClick={downloadQRCode}
                                     >
-                                        <Download className="mr-2 h-4 w-4" />
+                                        <Download className="mr-2 h-4 w-4" aria-hidden />
                                         Download QR Code
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        className="w-full min-h-11 cursor-pointer"
+                                        disabled={sendingConfirmSms || !data.phone?.trim()}
+                                        onClick={() => void sendRegistrationConfirmSms()}
+                                        aria-label="Send registration confirmation SMS"
+                                    >
+                                        {sendingConfirmSms ? (
+                                            <LoadingSpinner className="mr-2 h-4 w-4" />
+                                        ) : (
+                                            <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
+                                        )}
+                                        {sendingConfirmSms ? 'Sending…' : 'SMS registration confirmation'}
                                     </Button>
                                 </div>
                             </CardContent>

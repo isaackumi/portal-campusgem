@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { getActiveCampYear } from '@/lib/actions/camp'
+import { getActiveCampYear, sendCampTemplateSmsToRegistrationsAction } from '@/lib/actions/camp'
 import { campService } from '@/lib/services/camp-service'
 import type { CampRegistration, CampRoom, CampYear } from '@/lib/types'
 import { campRegistrationDisplayName } from '@/lib/camp/manual-check-in-search'
@@ -29,12 +29,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { BedDouble, Crown, Pencil, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
+import { useAuth } from '@/components/providers'
+import { BedDouble, Crown, MessageSquare, Pencil, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
 
 const GENDER_OPTIONS = ['Mixed', 'Male', 'Female'] as const
 
 export default function CampRoomsPage() {
   const { toast } = useToast()
+  const { user } = useAuth()
   const [campYear, setCampYear] = useState<CampYear | null>(null)
   const [rooms, setRooms] = useState<CampRoom[]>([])
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
@@ -43,6 +45,8 @@ export default function CampRoomsPage() {
   const [assigning, setAssigning] = useState(false)
   const [randomizing, setRandomizing] = useState(false)
   const [leaderSavingRoomId, setLeaderSavingRoomId] = useState<string | null>(null)
+  const [sendingRoomSmsId, setSendingRoomSmsId] = useState<string | null>(null)
+  const [sendingAllRoomSms, setSendingAllRoomSms] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState<CampRoom | null>(null)
   const [name, setName] = useState('')
@@ -246,6 +250,44 @@ export default function CampRoomsPage() {
     await loadData(campYear)
   }
 
+  async function sendRoomSms(registrationIds: string[], label: string, busyKey: string | null) {
+    if (!campYear?.id || !user?.id) {
+      toast({ variant: 'destructive', title: 'Sign in required' })
+      return
+    }
+    if (!registrationIds.length) {
+      toast({
+        variant: 'destructive',
+        title: 'No campers',
+        description: 'Assign campers to rooms first.',
+      })
+      return
+    }
+    if (busyKey === 'all') setSendingAllRoomSms(true)
+    else setSendingRoomSmsId(busyKey)
+    const { data, error } = await sendCampTemplateSmsToRegistrationsAction({
+      camp_year_id: campYear.id,
+      sender_id: user.id,
+      registration_ids: registrationIds,
+      template_id: 'room_allocation',
+    })
+    setSendingAllRoomSms(false)
+    setSendingRoomSmsId(null)
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Room SMS failed', description: error ?? 'Could not send' })
+      return
+    }
+    toast({
+      title: data.success_count > 0 ? `Sent ${data.success_count} room SMS` : 'No SMS delivered',
+      variant: data.success_count > 0 ? 'default' : 'destructive',
+      description: `${label}${
+        data.skipped_count || data.error_count
+          ? ` · ${data.skipped_count} skipped, ${data.error_count} failed`
+          : ''
+      }`,
+    })
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -413,6 +455,26 @@ export default function CampRoomsPage() {
             )}
             Random assign unassigned
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-10 cursor-pointer"
+            disabled={sendingAllRoomSms || stats.assigned === 0}
+            onClick={() =>
+              void sendRoomSms(
+                registrations.filter((r) => r.room_id && r.status !== 'cancelled').map((r) => r.id),
+                'All assigned campers',
+                'all'
+              )
+            }
+          >
+            {sendingAllRoomSms ? (
+              <LoadingSpinner className="mr-2 h-4 w-4" />
+            ) : (
+              <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
+            )}
+            SMS room to all assigned ({stats.assigned})
+          </Button>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -449,6 +511,28 @@ export default function CampRoomsPage() {
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="min-h-9 cursor-pointer"
+                            disabled={sendingRoomSmsId === room.id || occupants.length === 0}
+                            title="SMS room details to everyone in this room"
+                            onClick={() =>
+                              void sendRoomSms(
+                                occupants.map((o) => o.id),
+                                room.name,
+                                room.id
+                              )
+                            }
+                          >
+                            {sendingRoomSmsId === room.id ? (
+                              <LoadingSpinner className="mr-1 h-3.5 w-3.5" />
+                            ) : (
+                              <MessageSquare className="mr-1 h-3.5 w-3.5" aria-hidden />
+                            )}
+                            SMS room
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
