@@ -1,4 +1,5 @@
 import { whatsAppShareHref } from '@/lib/contact-links'
+import { formatPublicCampYearLabel } from '@/lib/forms/camp-year-label'
 
 /** Build a WhatsApp share link for a form (opens WhatsApp with pre-filled message). */
 export function buildFormWhatsAppShareUrl(input: {
@@ -7,7 +8,7 @@ export function buildFormWhatsAppShareUrl(input: {
   campYearLabel?: string
 }): string {
   const lines = [
-    input.campYearLabel ? `Camp Meeting ${input.campYearLabel}` : null,
+    formatPublicCampYearLabel(input.campYearLabel),
     input.formTitle,
     'Fill the form here:',
     input.publicUrl,

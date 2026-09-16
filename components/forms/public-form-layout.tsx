@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { cn } from '@/lib/utils'
+import { formatPublicCampYearLabel } from '@/lib/forms/camp-year-label'
 import { isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
 import {
   PublicFormThemeProvider,
@@ -70,6 +71,7 @@ function PublicFormTitleCard({
   const coverUrl = isValidCoverImageUrl(form.cover_image_url) ? form.cover_image_url!.trim() : null
   const title = step === 'review' ? 'Review your answers' : form.title
   const fillActive = step === 'fill'
+  const campMeta = formatPublicCampYearLabel(campYearLabel)
 
   return (
     <header className="mb-3 overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-sm">
@@ -81,12 +83,11 @@ function PublicFormTitleCard({
         </div>
       ) : null}
       <div className="px-5 py-6 sm:px-8 sm:py-8">
-        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+        <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-medium text-slate-500">
           <span className={cn('rounded-full px-2.5 py-0.5', theme.badge)}>
             {fillActive ? 'Step 1 of 2' : 'Step 2 of 2'}
           </span>
-          {campYearLabel ? <span>Camp Meeting {campYearLabel}</span> : null}
-          {groupName && !campYearLabel ? <span>{groupName}</span> : null}
+          {campMeta ? <span>{campMeta}</span> : groupName ? <span>{groupName}</span> : null}
         </div>
         <h1 className="text-2xl font-normal leading-snug tracking-tight text-slate-900 sm:text-3xl lg:text-[2rem]">
           {title}
@@ -292,7 +293,7 @@ export function PublicCampRegistrationClosed({
             <AlertTriangle className="h-8 w-8 text-slate-500" />
           </div>
           <CardTitle>
-            {campYearLabel ? `Camp Meeting ${campYearLabel}` : 'Camp Meeting registration'}
+            {formatPublicCampYearLabel(campYearLabel) ?? 'Camp Meeting registration'}
           </CardTitle>
           <CardDescription className="text-base">
             Registration is not open for this camp year yet. Check back later or contact the church

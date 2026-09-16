@@ -12,6 +12,7 @@ import {
 } from '@/components/forms/public-form-stepped-shell'
 import { PublicFormToolbar } from '@/components/forms/public-form-toolbar'
 import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-phone'
+import { formatPublicCampYearLabel } from '@/lib/forms/camp-year-label'
 import { buildSteppedScreens, type SteppedScreen } from '@/lib/forms/public-form-steps'
 import { applyWhatsappSameAsPhone } from '@/lib/forms/whatsapp-phone'
 import { isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
@@ -255,6 +256,7 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
     reviewPhone,
     controller.whatsappSameAsPhone
   )
+  const campMeta = formatPublicCampYearLabel(campYearLabel)
 
   return (
     <PublicFormSteppedShell form={form} progress={progress}>
@@ -301,8 +303,8 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
                 </div>
               ) : null}
               <div>
-                {campYearLabel ? (
-                  <p className="mb-2 text-sm font-semibold text-slate-500">Camp Meeting {campYearLabel}</p>
+                {campMeta ? (
+                  <p className="mb-2 text-sm font-semibold text-slate-500">{campMeta}</p>
                 ) : campusGroupName ? (
                   <p className="mb-2 text-sm font-semibold text-slate-500">{campusGroupName}</p>
                 ) : null}
