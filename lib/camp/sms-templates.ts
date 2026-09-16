@@ -85,7 +85,9 @@ export const CAMP_MESSAGE_TEMPLATES: CampMessageTemplate[] = [
     label: 'Invite to register',
     description: 'Encourage members who have not registered yet to join camp.',
     channel: 'sms',
-    body: `Hi {{firstName}}! You're invited to Campus Gem Camp Meeting {{campYear}}. Come pray, network, and grow with us. Register here: {{registrationLink}}`,
+    body: `Hi {{firstName}}! Join us for Eagles Camp Meeting {{campYear}}, a special time of prayer, worship, fellowship, and growing deeper in God's presence. We'd love to have you with us!
+
+Register: {{registrationLink}}`,
   },
 ]
 
