@@ -41,25 +41,27 @@ export function PublicFormQuestionBlock({
   const theme = usePublicFormTheme()
 
   return (
-    <section className="rounded-lg border border-slate-200/80 bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+    <section className="rounded-2xl border border-ink/8 bg-white/95 px-5 py-5 shadow-card sm:px-6 sm:py-6">
       <fieldset className="space-y-4">
         <legend className="mb-0 w-full">
           <div className="flex items-start gap-3">
             {questionNumber != null ? (
-              <span className="mt-0.5 text-sm font-normal text-slate-500">{questionNumber}.</span>
+              <span className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.18em] text-brand-700">
+                {String(questionNumber).padStart(2, '0')}
+              </span>
             ) : null}
             <div className="min-w-0 flex-1">
-              <span className="text-base font-medium leading-snug text-slate-900">
+              <span className="text-base font-medium leading-snug text-ink">
                 {field.label}
                 {field.required ? <span className="text-red-500"> *</span> : null}
               </span>
               {field.description ? (
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{field.description}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{field.description}</p>
               ) : null}
             </div>
           </div>
         </legend>
-        <div className={questionNumber != null ? 'pl-6 sm:pl-7' : undefined}>{children}</div>
+        <div className={questionNumber != null ? 'pl-6 sm:pl-8' : undefined}>{children}</div>
         <div className="h-0.5 w-12 rounded-full opacity-30" style={{ backgroundColor: theme.accentHex }} />
       </fieldset>
     </section>
