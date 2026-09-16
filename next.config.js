@@ -79,6 +79,12 @@ const nextConfig = {
         destination: '/sms',
         permanent: true,
       },
+      // Short camp registration link; keep old flyer URLs working
+      {
+        source: '/f/eagles-camp-meeting-registration-2026',
+        destination: '/f/camp2026',
+        permanent: true,
+      },
     ]
   },
 }
