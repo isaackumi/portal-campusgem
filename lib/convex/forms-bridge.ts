@@ -304,7 +304,7 @@ export async function submitFormResponseInConvex(input: {
     response: mapResponse(formResponseDoc),
     camp_registration: campReg
       ? {
-          id: String(campReg.id ?? ''),
+          id: String(campReg.id ?? campReg._id ?? ''),
           full_name: String(campReg.full_name ?? ''),
           first_name: campReg.first_name != null ? String(campReg.first_name) : undefined,
           last_name: campReg.last_name != null ? String(campReg.last_name) : undefined,

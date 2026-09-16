@@ -9,6 +9,7 @@ import {
 } from '@/lib/types'
 import { isValidPhone } from '@/lib/phone'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import {
   getRegistrationConfirmationSmsTemplate,
   getRoomAllocationSmsTemplate,
@@ -141,11 +142,16 @@ export async function registerCamper(formData: CampRegistrationForm): Promise<{
     const updatedReg = await registerCamperViaConvex(formData)
     revalidatePath('/admin/camp-meeting')
 
-    try {
-      await sendCampRegistrationConfirmationSms(updatedReg)
-    } catch (err) {
-      console.error('Camp registration confirmation SMS failed:', err)
-    }
+    after(() => {
+      void sendCampRegistrationConfirmationSms(updatedReg).then((result) => {
+        if (!result.sent) {
+          console.error('[camp-registration-sms] legacy register path', {
+            id: updatedReg.id,
+            ...result,
+          })
+        }
+      })
+    })
 
     return { success: true, data: updatedReg }
   } catch (error: unknown) {
@@ -624,26 +630,74 @@ export async function sendCampRegistrationConfirmationSms(
   >,
   options?: { force?: boolean; sender_id?: string }
 ): Promise<{ sent: boolean; skipped?: string; error?: string }> {
-  if (!registration.phone?.trim()) {
+  let payload = { ...registration }
+
+  // Prefer fresh Convex row — form/legacy responses can miss phone or check-in code.
+  if (payload.id) {
+    try {
+      const { fetchRegistrationFromConvex } = await import('@/lib/convex/camp-bridge')
+      const fresh = await fetchRegistrationFromConvex(payload.id)
+      if (fresh) {
+        payload = {
+          id: fresh.id,
+          camp_year_id: fresh.camp_year_id || payload.camp_year_id,
+          full_name: fresh.full_name || payload.full_name,
+          first_name: fresh.first_name || payload.first_name,
+          last_name: fresh.last_name || payload.last_name,
+          phone: fresh.phone || payload.phone,
+          email: fresh.email || payload.email,
+          role: fresh.role || payload.role,
+          check_in_code: fresh.check_in_code || payload.check_in_code,
+          qr_code: fresh.qr_code || payload.qr_code,
+        }
+      }
+    } catch (err) {
+      console.warn('[camp-registration-sms] re-fetch failed, using submit payload', err)
+    }
+  }
+
+  if (!payload.phone?.trim()) {
+    console.error('[camp-registration-sms] skipped: no_phone', { id: payload.id })
     return { sent: false, skipped: 'no_phone' }
   }
 
   let yearDoc: CampYear | null = null
   try {
     const { fetchCampYearByIdFromConvex } = await import('@/lib/convex/camp-bridge')
-    yearDoc = await fetchCampYearByIdFromConvex(registration.camp_year_id)
+    yearDoc = await fetchCampYearByIdFromConvex(payload.camp_year_id)
   } catch {
     // fall through — may still send with calendar year
   }
 
   const campYearNum = yearDoc?.year ?? new Date().getFullYear()
   if (!options?.force && !shouldSendRegistrationConfirmationSms(campYearNum)) {
+    console.error('[camp-registration-sms] skipped: year gated', {
+      id: payload.id,
+      campYearNum,
+    })
     return { sent: false, skipped: `year_${campYearNum}_gated` }
   }
 
-  const { isSmsConfigured } = await import('@/lib/comms/sms-client')
+  const { isSmsConfigured, getMissingSmsEnvKeys, resolveSmsProvider } = await import(
+    '@/lib/comms/sms-client'
+  )
   if (!isSmsConfigured()) {
+    console.error('[camp-registration-sms] skipped: sms_not_configured', {
+      id: payload.id,
+      provider: resolveSmsProvider(),
+      missing: getMissingSmsEnvKeys(),
+    })
     return { sent: false, skipped: 'sms_not_configured' }
+  }
+
+  let checkInCode = payload.check_in_code?.trim() || ''
+  if (!checkInCode && payload.qr_code?.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(payload.qr_code) as { check_in_code?: string; code?: string }
+      checkInCode = (parsed.check_in_code || parsed.code || '').trim()
+    } catch {
+      // leave empty
+    }
   }
 
   const template = getRegistrationConfirmationSmsTemplate()
@@ -653,21 +707,21 @@ export async function sendCampRegistrationConfirmationSms(
     'system-registration'
 
   const result = await sendCampBulkSmsAction({
-    camp_year_id: registration.camp_year_id,
+    camp_year_id: payload.camp_year_id,
     sender_id: senderId,
     message_template: template,
     camp_year: campYearNum,
     recipients: [
       {
-        id: registration.id,
-        full_name: registration.full_name,
-        first_name: registration.first_name,
-        last_name: registration.last_name,
-        phone: registration.phone,
-        email: registration.email,
-        role: registration.role,
-        check_in_code: registration.check_in_code,
-        qr_code: registration.qr_code,
+        id: payload.id,
+        full_name: payload.full_name,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
+        phone: payload.phone,
+        email: payload.email,
+        role: payload.role,
+        check_in_code: checkInCode || payload.check_in_code,
+        qr_code: checkInCode || payload.qr_code,
       },
     ],
     filter_criteria: {
@@ -679,11 +733,28 @@ export async function sendCampRegistrationConfirmationSms(
   })
 
   if (result.error || !result.data) {
+    console.error('[camp-registration-sms] send failed', {
+      id: payload.id,
+      phone: payload.phone,
+      error: result.error,
+    })
     return { sent: false, error: result.error ?? 'send_failed' }
   }
   if (result.data.success_count < 1) {
+    console.error('[camp-registration-sms] provider rejected', {
+      id: payload.id,
+      phone: payload.phone,
+      errors: result.data.errors,
+      provider: result.data.provider,
+    })
     return { sent: false, error: result.data.errors[0] ?? 'send_failed' }
   }
+
+  console.info('[camp-registration-sms] sent', {
+    id: payload.id,
+    provider: result.data.provider,
+    batch_id: result.data.batch_id,
+  })
   return { sent: true }
 }
 
@@ -990,8 +1061,12 @@ export async function sendCampBulkSmsAction(input: {
     }
   }
 
-  revalidatePath('/admin/camp-meeting/communications')
-  revalidatePath('/admin/communications')
+  try {
+    revalidatePath('/admin/camp-meeting/communications')
+    revalidatePath('/admin/communications')
+  } catch (err) {
+    console.warn('[camp-bulk-sms] revalidatePath skipped', err)
+  }
   return {
     data: {
       success_count,

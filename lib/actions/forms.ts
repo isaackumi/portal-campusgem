@@ -1,5 +1,6 @@
 'use server'
 
+import { after } from 'next/server'
 import type { ChurchForm, ChurchFormField, ChurchFormResponse, ChurchFormSubmitResult } from '@/lib/types'
 
 function requireConvexEnv(): void {
@@ -253,26 +254,41 @@ export async function submitFormResponse(input: {
     }
 
     if (data.camp_registration?.id && data.camp_registration.camp_year_id) {
-      try {
-        const { sendCampRegistrationConfirmationSms } = await import('@/lib/actions/camp')
-        await sendCampRegistrationConfirmationSms({
-          id: data.camp_registration.id,
-          camp_year_id: data.camp_registration.camp_year_id,
-          full_name: data.camp_registration.full_name,
-          first_name: data.camp_registration.first_name,
-          last_name: data.camp_registration.last_name,
-          phone: data.camp_registration.phone || input.respondent_phone || '',
-          email: data.camp_registration.email || input.respondent_email || '',
-          role: data.camp_registration.role || 'Participant',
-          check_in_code: data.camp_registration.check_in_code,
-          qr_code:
-            data.camp_registration.qr_code ||
-            data.camp_registration.check_in_code ||
-            '',
-        })
-      } catch (err) {
-        console.error('Camp registration confirmation SMS failed:', err)
+      const registrationPayload = {
+        id: data.camp_registration.id,
+        camp_year_id: data.camp_registration.camp_year_id,
+        full_name: data.camp_registration.full_name,
+        first_name: data.camp_registration.first_name,
+        last_name: data.camp_registration.last_name,
+        phone: data.camp_registration.phone || input.respondent_phone || '',
+        email: data.camp_registration.email || input.respondent_email || '',
+        role: data.camp_registration.role || 'Participant',
+        check_in_code: data.camp_registration.check_in_code,
+        qr_code:
+          data.camp_registration.qr_code ||
+          data.camp_registration.check_in_code ||
+          '',
       }
+
+      // Run after the form response returns so Hubtel latency cannot block success UX.
+      after(() => {
+        void import('@/lib/actions/camp')
+          .then(({ sendCampRegistrationConfirmationSms }) =>
+            sendCampRegistrationConfirmationSms(registrationPayload)
+          )
+          .then((result) => {
+            if (!result.sent) {
+              console.error('[camp-registration-sms] form path', {
+                id: registrationPayload.id,
+                phone: registrationPayload.phone,
+                ...result,
+              })
+            }
+          })
+          .catch((err) => {
+            console.error('[camp-registration-sms] form path failed', err)
+          })
+      })
     }
 
     return { data, error: null }
