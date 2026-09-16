@@ -266,8 +266,8 @@ export default function CampYearHubPage() {
         title: data.success_count > 0 ? `Sent ${data.success_count} SMS` : 'No SMS delivered',
         variant: data.success_count > 0 ? 'default' : 'destructive',
         description:
-          data.skipped_count || data.error_count
-            ? `${data.skipped_count} skipped, ${data.error_count} failed`
+          data.error_count > 0
+            ? `${data.error_count} failed${data.errors[0] ? ` · ${data.errors[0]}` : ''}`
             : undefined,
       })
       if (data.success_count > 0) {
