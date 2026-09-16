@@ -6,7 +6,12 @@ import { getActiveCampYear, sendCampTemplateSmsToRegistrationsAction } from '@/l
 import { campService } from '@/lib/services/camp-service'
 import type { CampRegistration, CampRoom, CampYear } from '@/lib/types'
 import { campRegistrationDisplayName } from '@/lib/camp/manual-check-in-search'
+import {
+  getCampMessageTemplate,
+  personalizeCampMessage,
+} from '@/lib/camp/sms-templates'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
+import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -47,6 +52,13 @@ export default function CampRoomsPage() {
   const [leaderSavingRoomId, setLeaderSavingRoomId] = useState<string | null>(null)
   const [sendingRoomSmsId, setSendingRoomSmsId] = useState<string | null>(null)
   const [sendingAllRoomSms, setSendingAllRoomSms] = useState(false)
+  const [roomSmsReview, setRoomSmsReview] = useState<{
+    registrationIds: string[]
+    label: string
+    busyKey: string | null
+    sampleNames: string[]
+    previewBody: string
+  } | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState<CampRoom | null>(null)
   const [name, setName] = useState('')
@@ -250,7 +262,7 @@ export default function CampRoomsPage() {
     await loadData(campYear)
   }
 
-  async function sendRoomSms(registrationIds: string[], label: string, busyKey: string | null) {
+  function openRoomSmsReview(registrationIds: string[], label: string, busyKey: string | null) {
     if (!campYear?.id || !user?.id) {
       toast({ variant: 'destructive', title: 'Sign in required' })
       return
@@ -263,6 +275,48 @@ export default function CampRoomsPage() {
       })
       return
     }
+    const targets = registrations.filter((r) => registrationIds.includes(r.id))
+    const sample = targets[0]
+    const room =
+      busyKey && busyKey !== 'all' ? rooms.find((r) => r.id === busyKey) : null
+    const occupants = room ? occupantsByRoom.get(room.id) ?? [] : []
+    const leader = room?.room_leader_id
+      ? occupants.find((o) => o.id === room.room_leader_id)
+      : undefined
+    const mates = sample
+      ? occupants
+          .filter((o) => o.id !== sample.id)
+          .map((o) => campRegistrationDisplayName(o))
+          .join(', ')
+      : ''
+    const previewBody = personalizeCampMessage(
+      getCampMessageTemplate('room_allocation')?.body ||
+        'Hi {{firstName}}! Your room is {{roomName}}. Code: {{checkInCode}}.',
+      {
+        fullName: sample?.full_name,
+        firstName: sample?.first_name,
+        lastName: sample?.last_name,
+        phone: sample?.phone,
+        checkInCode: sample?.check_in_code,
+        campYear: campYear.year,
+        roomName: room?.name || 'your room',
+        building: room?.building,
+        roomLeader: leader ? campRegistrationDisplayName(leader) : '',
+        roommates: mates,
+      }
+    )
+    setRoomSmsReview({
+      registrationIds,
+      label,
+      busyKey,
+      sampleNames: targets.slice(0, 8).map((r) => campRegistrationDisplayName(r)),
+      previewBody,
+    })
+  }
+
+  async function confirmRoomSms() {
+    if (!campYear?.id || !user?.id || !roomSmsReview) return
+    const { registrationIds, label, busyKey } = roomSmsReview
     if (busyKey === 'all') setSendingAllRoomSms(true)
     else setSendingRoomSmsId(busyKey)
     const { data, error } = await sendCampTemplateSmsToRegistrationsAction({
@@ -286,6 +340,7 @@ export default function CampRoomsPage() {
           : ''
       }`,
     })
+    if (data.success_count > 0) setRoomSmsReview(null)
   }
 
   if (loading) {
@@ -461,7 +516,7 @@ export default function CampRoomsPage() {
             className="min-h-10 cursor-pointer"
             disabled={sendingAllRoomSms || stats.assigned === 0}
             onClick={() =>
-              void sendRoomSms(
+              openRoomSmsReview(
                 registrations.filter((r) => r.room_id && r.status !== 'cancelled').map((r) => r.id),
                 'All assigned campers',
                 'all'
@@ -519,7 +574,7 @@ export default function CampRoomsPage() {
                             disabled={sendingRoomSmsId === room.id || occupants.length === 0}
                             title="SMS room details to everyone in this room"
                             onClick={() =>
-                              void sendRoomSms(
+                              openRoomSmsReview(
                                 occupants.map((o) => o.id),
                                 room.name,
                                 room.id
@@ -687,6 +742,27 @@ export default function CampRoomsPage() {
           </Card>
         </div>
       </div>
+
+      <CampSmsReviewDialog
+        open={Boolean(roomSmsReview)}
+        onOpenChange={(open) => {
+          if (!open && !sendingAllRoomSms && !sendingRoomSmsId) setRoomSmsReview(null)
+        }}
+        title="Review room SMS"
+        description="Nothing is sent until you confirm. Each camper gets a personalized room message."
+        recipientName={
+          roomSmsReview
+            ? `${roomSmsReview.label} · ${roomSmsReview.registrationIds.length} camper${
+                roomSmsReview.registrationIds.length === 1 ? '' : 's'
+              }`
+            : 'Recipients'
+        }
+        recipientCount={roomSmsReview?.registrationIds.length ?? 0}
+        sampleRecipientNames={roomSmsReview?.sampleNames ?? []}
+        previewBody={roomSmsReview?.previewBody ?? ''}
+        sending={sendingAllRoomSms || Boolean(sendingRoomSmsId)}
+        onConfirm={() => void confirmRoomSms()}
+      />
     </div>
   )
 }

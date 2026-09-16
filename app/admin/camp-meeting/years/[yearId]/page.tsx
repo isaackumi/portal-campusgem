@@ -8,11 +8,13 @@ import {
   deactivateCampYear,
   getCampRegistrations,
   getCampYearById,
-  recordCampCommunication,
+  sendCampBulkSmsAction,
   setActiveCampYear,
 } from '@/lib/actions/camp'
 import { loadAllUsers } from '@/lib/actions/core-data'
 import type { AppUser, CampRegistration, CampYear } from '@/lib/types'
+import { personalizeCampMessage } from '@/lib/camp/sms-templates'
+import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -78,6 +80,7 @@ export default function CampYearHubPage() {
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [smsBody, setSmsBody] = useState('')
+  const [smsReviewOpen, setSmsReviewOpen] = useState(false)
   const [assigneeId, setAssigneeId] = useState('')
   const [followUpStatus, setFollowUpStatus] = useState<'pending' | 'in_progress' | 'completed'>(
     'pending'
@@ -229,29 +232,48 @@ export default function CampYearHubPage() {
     }
   }
 
-  async function handleBulkSms() {
+  function openBulkSmsReview() {
+    if (!user || selectedRows.length === 0 || !smsBody.trim() || !campYear) return
+    setSmsReviewOpen(true)
+  }
+
+  async function confirmBulkSms() {
     if (!user || selectedRows.length === 0 || !smsBody.trim() || !campYear) return
     setWorking(true)
     try {
-      let sent = 0
-      for (const row of selectedRows) {
-        if (!row.phone?.trim()) continue
-        const message = smsBody.split('{{name}}').join(row.full_name)
-        await recordCampCommunication({
-          camp_year_id: campYear.id,
-          communication_type: 'sms',
-          sender_id: user.id,
-          recipient_type: 'individual',
-          recipient_registration_id: row.id,
-          recipient_phone: row.phone,
-          message_body: message,
-          status: 'sent',
-          filter_criteria: { role: segment === 'all' ? undefined : segment },
-        })
-        sent += 1
+      const { data, error } = await sendCampBulkSmsAction({
+        camp_year_id: campYear.id,
+        sender_id: user.id,
+        message_template: smsBody,
+        camp_year: campYear.year,
+        recipients: selectedRows.map((row) => ({
+          id: row.id,
+          full_name: row.full_name,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          phone: row.phone,
+          email: row.email,
+          role: row.role,
+          check_in_code: row.check_in_code,
+          qr_code: row.qr_code,
+        })),
+        filter_criteria: { role: segment === 'all' ? undefined : segment },
+      })
+      if (error || !data) {
+        throw new Error(error ?? 'Could not send SMS')
       }
-      toast({ title: 'SMS queued', description: `${sent} messages logged for delivery.` })
-      setSmsBody('')
+      toast({
+        title: data.success_count > 0 ? `Sent ${data.success_count} SMS` : 'No SMS delivered',
+        variant: data.success_count > 0 ? 'default' : 'destructive',
+        description:
+          data.skipped_count || data.error_count
+            ? `${data.skipped_count} skipped, ${data.error_count} failed`
+            : undefined,
+      })
+      if (data.success_count > 0) {
+        setSmsBody('')
+        setSmsReviewOpen(false)
+      }
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -390,8 +412,8 @@ export default function CampYearHubPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea value={smsBody} onChange={(event) => setSmsBody(event.target.value)} rows={5} placeholder="Hi {{name}}, thank you for joining Camp..." />
-              <Button onClick={handleBulkSms} disabled={working || selectedRows.length === 0 || !smsBody.trim()}>
-                Send SMS to {selectedRows.length} selected
+              <Button onClick={openBulkSmsReview} disabled={working || selectedRows.length === 0 || !smsBody.trim()}>
+                Review & send SMS to {selectedRows.length} selected
               </Button>
             </CardContent>
           </Card>
@@ -483,6 +505,31 @@ export default function CampYearHubPage() {
           </div>
         </CardContent>
       </Card>
+
+      <CampSmsReviewDialog
+        open={smsReviewOpen}
+        onOpenChange={(open) => {
+          if (!open && !working) setSmsReviewOpen(false)
+        }}
+        title="Review bulk SMS"
+        description="Nothing is sent until you confirm. Each selected camper gets a personalized message."
+        recipientName={`${selectedRows.length} selected`}
+        recipientCount={selectedRows.length}
+        sampleRecipientNames={selectedRows.slice(0, 8).map((r) => r.full_name || 'Camper')}
+        previewBody={
+          selectedRows[0]
+            ? personalizeCampMessage(smsBody, {
+                fullName: selectedRows[0].full_name,
+                firstName: selectedRows[0].first_name,
+                lastName: selectedRows[0].last_name,
+                phone: selectedRows[0].phone,
+                campYear: campYear?.year,
+              })
+            : smsBody
+        }
+        sending={working}
+        onConfirm={() => void confirmBulkSms()}
+      />
     </div>
   )
 }

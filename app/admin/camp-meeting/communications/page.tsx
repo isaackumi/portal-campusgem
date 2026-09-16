@@ -48,6 +48,27 @@ import { cn } from '@/lib/utils'
 
 const emailService = new EmailService()
 
+function formatCommunicationWhen(iso: string | undefined): { absolute: string; relative: string } {
+    if (!iso) return { absolute: '—', relative: '' }
+    const date = new Date(iso)
+    if (Number.isNaN(date.getTime())) return { absolute: iso, relative: '' }
+    const absolute = date.toLocaleString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+    const diffMs = Date.now() - date.getTime()
+    const mins = Math.floor(diffMs / 60000)
+    let relative = 'just now'
+    if (mins >= 1 && mins < 60) relative = `${mins}m ago`
+    else if (mins >= 60 && mins < 1440) relative = `${Math.floor(mins / 60)}h ago`
+    else if (mins >= 1440 && mins < 10080) relative = `${Math.floor(mins / 1440)}d ago`
+    else if (mins >= 10080) relative = absolute
+    return { absolute, relative }
+}
+
 export default function BulkCommunicationsPage() {
     const router = useRouter()
     const { toast } = useToast()
@@ -78,6 +99,10 @@ export default function BulkCommunicationsPage() {
     const [smsReviewOpen, setSmsReviewOpen] = useState(false)
     const [audienceMode, setAudienceMode] = useState<'registered' | 'unregistered'>('registered')
     const [inviteRows, setInviteRows] = useState<CampInviteAudienceRow[]>([])
+    const [historySearch, setHistorySearch] = useState('')
+    const [historyTypeFilter, setHistoryTypeFilter] = useState<'all' | 'sms' | 'email'>('all')
+    const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'sent' | 'delivered' | 'failed' | 'bounced' | 'pending'>('all')
+    const [historyTimeFilter, setHistoryTimeFilter] = useState<'all' | 'today' | '7d' | '30d'>('all')
     const [inviteLoading, setInviteLoading] = useState(false)
     const [registrationLink, setRegistrationLink] = useState('')
     const [registrationPath, setRegistrationPath] = useState('/camp-meeting/register')
@@ -229,6 +254,53 @@ export default function BulkCommunicationsPage() {
                 `${row.first_name || ''} ${row.last_name || ''}`.toLowerCase().includes(q)
         )
     }, [inviteRows, searchQuery])
+
+    const filteredCommunications = useMemo(() => {
+        const q = historySearch.trim().toLowerCase()
+        const now = Date.now()
+        return communications.filter((comm) => {
+            if (historyTypeFilter !== 'all' && comm.communication_type !== historyTypeFilter) {
+                return false
+            }
+            if (historyStatusFilter !== 'all' && comm.status !== historyStatusFilter) {
+                return false
+            }
+            const when = new Date(comm.sent_at || comm.created_at).getTime()
+            if (historyTimeFilter === 'today') {
+                const start = new Date()
+                start.setHours(0, 0, 0, 0)
+                if (when < start.getTime()) return false
+            } else if (historyTimeFilter === '7d') {
+                if (when < now - 7 * 24 * 60 * 60 * 1000) return false
+            } else if (historyTimeFilter === '30d') {
+                if (when < now - 30 * 24 * 60 * 60 * 1000) return false
+            }
+            if (!q) return true
+            const recipientName =
+                (comm.recipient_registration as { full_name?: string } | undefined)?.full_name ||
+                (typeof comm.metadata?.recipient_name === 'string' ? comm.metadata.recipient_name : '') ||
+                ''
+            const haystack = [
+                recipientName,
+                comm.recipient_phone,
+                comm.recipient_email,
+                comm.subject,
+                comm.message_body,
+                comm.sender?.full_name,
+                String(comm.metadata?.batch_id ?? ''),
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+            return haystack.includes(q)
+        })
+    }, [
+        communications,
+        historySearch,
+        historyTypeFilter,
+        historyStatusFilter,
+        historyTimeFilter,
+    ])
 
     const selectableRows = audienceMode === 'unregistered' ? filteredInviteRows : filteredRegistrations
     const selectableIds = useMemo(
@@ -1185,7 +1257,7 @@ export default function BulkCommunicationsPage() {
                                         Communication History
                                     </CardTitle>
                                     <CardDescription>
-                                        {communications.length} recent message
+                                        {filteredCommunications.length} of {communications.length} message
                                         {communications.length === 1 ? '' : 's'}
                                     </CardDescription>
                                 </div>
@@ -1200,39 +1272,130 @@ export default function BulkCommunicationsPage() {
                                     Refresh
                                 </Button>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="space-y-4">
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                    <div className="relative sm:col-span-2 lg:col-span-1">
+                                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <Input
+                                            className="min-h-10 pl-9"
+                                            placeholder="Filter by name, phone, message…"
+                                            value={historySearch}
+                                            onChange={(e) => setHistorySearch(e.target.value)}
+                                            aria-label="Search communication history"
+                                        />
+                                    </div>
+                                    <Select
+                                        value={historyTypeFilter}
+                                        onValueChange={(v) => setHistoryTypeFilter(v as typeof historyTypeFilter)}
+                                    >
+                                        <SelectTrigger className="min-h-10">
+                                            <SelectValue placeholder="Type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All types</SelectItem>
+                                            <SelectItem value="sms">SMS</SelectItem>
+                                            <SelectItem value="email">Email</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Select
+                                        value={historyStatusFilter}
+                                        onValueChange={(v) => setHistoryStatusFilter(v as typeof historyStatusFilter)}
+                                    >
+                                        <SelectTrigger className="min-h-10">
+                                            <SelectValue placeholder="Status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All statuses</SelectItem>
+                                            <SelectItem value="sent">Sent</SelectItem>
+                                            <SelectItem value="delivered">Delivered</SelectItem>
+                                            <SelectItem value="failed">Failed</SelectItem>
+                                            <SelectItem value="bounced">Bounced</SelectItem>
+                                            <SelectItem value="pending">Pending</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Select
+                                        value={historyTimeFilter}
+                                        onValueChange={(v) => setHistoryTimeFilter(v as typeof historyTimeFilter)}
+                                    >
+                                        <SelectTrigger className="min-h-10">
+                                            <SelectValue placeholder="Time" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All time</SelectItem>
+                                            <SelectItem value="today">Today</SelectItem>
+                                            <SelectItem value="7d">Last 7 days</SelectItem>
+                                            <SelectItem value="30d">Last 30 days</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 {communications.length === 0 ? (
                                     <div className="text-center py-12 text-slate-500">
                                         <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                                         <p>No communications sent yet</p>
                                     </div>
+                                ) : filteredCommunications.length === 0 ? (
+                                    <div className="rounded-lg border border-dashed border-slate-200 py-10 text-center text-slate-500">
+                                        <p>No messages match these filters</p>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="mt-2"
+                                            onClick={() => {
+                                                setHistorySearch('')
+                                                setHistoryTypeFilter('all')
+                                                setHistoryStatusFilter('all')
+                                                setHistoryTimeFilter('all')
+                                            }}
+                                        >
+                                            Clear filters
+                                        </Button>
+                                    </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {communications.map(comm => (
+                                        {filteredCommunications.map((comm) => {
+                                            const when = formatCommunicationWhen(comm.sent_at || comm.created_at)
+                                            const recipientName =
+                                                (comm.recipient_registration as { full_name?: string } | undefined)
+                                                    ?.full_name ||
+                                                (typeof comm.metadata?.recipient_name === 'string'
+                                                    ? comm.metadata.recipient_name
+                                                    : null)
+                                            return (
                                             <div
                                                 key={comm.id}
                                                 className="rounded-lg border border-slate-200 bg-white p-4 transition-shadow duration-200 hover:shadow-sm"
                                             >
-                                                <div className="flex items-start justify-between mb-3">
+                                                <div className="mb-3 flex items-start justify-between">
                                                     <div className="flex items-center gap-3">
                                                         {comm.communication_type === 'email' ? (
-                                                            <div className="p-2 bg-slate-100 rounded-lg">
+                                                            <div className="rounded-lg bg-slate-100 p-2">
                                                                 <Mail className="h-5 w-5 text-primary" />
                                                             </div>
                                                         ) : (
-                                                            <div className="p-2 bg-green-100 rounded-lg">
+                                                            <div className="rounded-lg bg-green-100 p-2">
                                                                 <MessageSquare className="h-5 w-5 text-green-600" />
                                                             </div>
                                                         )}
                                                         <div>
                                                             <p className="font-semibold text-slate-900">
-                                                                {comm.communication_type === 'email'
-                                                                    ? comm.recipient_email || 'Bulk Email'
-                                                                    : comm.recipient_phone || 'Bulk SMS'}
+                                                                {recipientName ||
+                                                                    (comm.communication_type === 'email'
+                                                                        ? comm.recipient_email || 'Bulk Email'
+                                                                        : comm.recipient_phone || 'Bulk SMS')}
                                                             </p>
-                                                            {comm.subject && (
-                                                                <p className="text-sm text-slate-600 mt-1">{comm.subject}</p>
+                                                            {(recipientName ||
+                                                                comm.recipient_phone ||
+                                                                comm.recipient_email) && (
+                                                                <p className="mt-0.5 font-mono text-xs text-slate-500">
+                                                                    {comm.communication_type === 'email'
+                                                                        ? comm.recipient_email
+                                                                        : comm.recipient_phone}
+                                                                </p>
                                                             )}
+                                                            {comm.subject ? (
+                                                                <p className="mt-1 text-sm text-slate-600">{comm.subject}</p>
+                                                            ) : null}
                                                             <div className="mt-1 flex flex-wrap gap-1">
                                                               {commsMetaBadge(comm.metadata).provider ? (
                                                                 <Badge variant="outline" className="font-mono text-[10px]">
@@ -1247,23 +1410,34 @@ export default function BulkCommunicationsPage() {
                                                                   batch {String(comm.metadata.batch_id).slice(0, 8)}
                                                                 </Badge>
                                                               ) : null}
+                                                              {comm.recipient_type === 'bulk' ? (
+                                                                <Badge variant="outline" className="text-xs">Bulk Send</Badge>
+                                                              ) : null}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <Badge
-                                                        variant={
-                                                            comm.status === 'sent' || comm.status === 'delivered'
-                                                                ? 'default'
-                                                                : comm.status === 'failed' || comm.status === 'bounced'
-                                                                ? 'destructive'
-                                                                : 'outline'
-                                                        }
-                                                    >
-                                                        {comm.status}
-                                                    </Badge>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                      <Badge
+                                                          variant={
+                                                              comm.status === 'sent' || comm.status === 'delivered'
+                                                                  ? 'default'
+                                                                  : comm.status === 'failed' || comm.status === 'bounced'
+                                                                  ? 'destructive'
+                                                                  : 'outline'
+                                                          }
+                                                      >
+                                                          {comm.status}
+                                                      </Badge>
+                                                      <div className="text-right text-[11px] text-slate-500" title={when.absolute}>
+                                                          <span className="font-medium text-slate-700">{when.relative}</span>
+                                                          {when.relative !== when.absolute ? (
+                                                              <span className="mt-0.5 block">{when.absolute}</span>
+                                                          ) : null}
+                                                      </div>
+                                                    </div>
                                                 </div>
 
-                                                <div className="text-sm text-slate-700 bg-slate-50 p-3 rounded-md mb-3">
+                                                <div className="mb-3 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-sm text-slate-700">
                                                     {comm.message_body}
                                                 </div>
                                                 {comm.provider_message_id ? (
@@ -1277,26 +1451,12 @@ export default function BulkCommunicationsPage() {
 
                                                 <div className="flex items-center justify-between text-xs text-slate-500">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="flex items-center gap-1">
-                                                            <Clock className="h-3 w-3" />
-                                                            <span>
-                                                                {new Date(comm.sent_at || comm.created_at).toLocaleString()}
-                                                            </span>
-                                                        </div>
-                                                        {comm.recipient_registration && (
-                                                            <div className="flex items-center gap-1">
-                                                                <Users className="h-3 w-3" />
-                                                                <span>
-                                                                    {(comm.recipient_registration as any).full_name || 'Recipient'}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {comm.sender && (
+                                                        {comm.sender ? (
                                                             <div className="flex items-center gap-1">
                                                                 <Eye className="h-3 w-3" />
                                                                 <span>By: {comm.sender.full_name}</span>
                                                             </div>
-                                                        )}
+                                                        ) : null}
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         {(comm.status === 'sent' ||
@@ -1328,15 +1488,11 @@ export default function BulkCommunicationsPage() {
                                                                 {resendingId === comm.id ? 'Resending…' : 'Resend'}
                                                             </Button>
                                                         ) : null}
-                                                        {comm.recipient_type === 'bulk' && (
-                                                            <Badge variant="outline" className="text-xs">
-                                                                Bulk Send
-                                                            </Badge>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                 )}
                             </CardContent>

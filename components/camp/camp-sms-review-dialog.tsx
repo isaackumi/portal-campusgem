@@ -17,9 +17,15 @@ type CampSmsReviewDialogProps = {
   onOpenChange: (open: boolean) => void
   title: string
   description?: string
+  /** Single recipient name, or a short bulk label e.g. "Room A — 8 campers" */
   recipientName: string
   recipientPhone?: string | null
+  /** When > 1, treats this as a bulk send review */
+  recipientCount?: number
+  /** Optional sample names shown under the count */
+  sampleRecipientNames?: string[]
   previewBody: string
+  previewLabel?: string
   sending?: boolean
   confirmLabel?: string
   onConfirm: () => void
@@ -32,11 +38,19 @@ export function CampSmsReviewDialog({
   description = 'Confirm the message before it is sent. Nothing goes out until you confirm.',
   recipientName,
   recipientPhone,
+  recipientCount = 1,
+  sampleRecipientNames = [],
   previewBody,
+  previewLabel,
   sending = false,
-  confirmLabel = 'Confirm send',
+  confirmLabel,
   onConfirm,
 }: CampSmsReviewDialogProps) {
+  const isBulk = recipientCount > 1
+  const resolvedConfirm =
+    confirmLabel ?? (isBulk ? `Confirm send to ${recipientCount}` : 'Confirm send')
+  const canSend = Boolean(previewBody.trim()) && (isBulk || Boolean(recipientPhone?.trim()))
+
   return (
     <Dialog
       open={open}
@@ -53,7 +67,9 @@ export function CampSmsReviewDialog({
         <div className="space-y-4 text-sm">
           <div className="flex flex-wrap gap-2">
             <Badge variant="secondary">{recipientName || 'Recipient'}</Badge>
-            {recipientPhone ? (
+            {isBulk ? (
+              <Badge variant="outline">{recipientCount} recipients</Badge>
+            ) : recipientPhone ? (
               <Badge variant="outline" className="font-mono">
                 {recipientPhone}
               </Badge>
@@ -64,9 +80,19 @@ export function CampSmsReviewDialog({
             )}
           </div>
 
+          {isBulk && sampleRecipientNames.length > 0 ? (
+            <p className="text-xs leading-relaxed text-slate-600">
+              Includes {sampleRecipientNames.slice(0, 6).join(', ')}
+              {sampleRecipientNames.length > 6
+                ? `, +${sampleRecipientNames.length - 6} more`
+                : ''}
+              .
+            </p>
+          ) : null}
+
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-              Message to send
+              {previewLabel ?? (isBulk ? 'Sample message (personalized per person)' : 'Message to send')}
             </p>
             <p className="whitespace-pre-wrap leading-relaxed text-slate-900">
               {previewBody || '—'}
@@ -91,7 +117,7 @@ export function CampSmsReviewDialog({
           <Button
             type="button"
             className="min-h-11 cursor-pointer"
-            disabled={sending || !recipientPhone?.trim() || !previewBody.trim()}
+            disabled={sending || !canSend}
             aria-busy={sending}
             onClick={onConfirm}
           >
@@ -101,7 +127,7 @@ export function CampSmsReviewDialog({
                 Sending…
               </>
             ) : (
-              confirmLabel
+              resolvedConfirm
             )}
           </Button>
         </DialogFooter>
