@@ -42,7 +42,8 @@ export const CAMP_MEETING_REGISTRATION_FIELDS: FormTemplateField[] = [
   },
   {
     label: 'Date of birth',
-    description: 'Optional — helps us celebrate your birthday and keep your profile up to date',
+    description:
+      'Optional — must be your real birth date (not today). Campers must be at least 10 years old.',
     field_type: 'date',
     required: false,
     prefill_key: 'date_of_birth',

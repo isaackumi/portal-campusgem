@@ -6,11 +6,26 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usePublicFormTheme } from '@/components/forms/public-form-theme-context'
+import {
+  isDateOfBirthField,
+  MAX_FORM_AGE_YEARS,
+  MIN_FORM_AGE_YEARS,
+} from '@/lib/forms/date-of-birth-validation'
 import type { ChurchFormField } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 const inputClass =
   'h-12 rounded-xl border-slate-200 bg-white text-base shadow-none focus-visible:ring-2 focus-visible:ring-offset-0'
+
+function toIsoDateOnly(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function dateOfBirthInputBounds(today = new Date()): { min: string; max: string } {
+  const max = new Date(today.getFullYear() - MIN_FORM_AGE_YEARS, today.getMonth(), today.getDate())
+  const min = new Date(today.getFullYear() - MAX_FORM_AGE_YEARS, today.getMonth(), today.getDate())
+  return { min: toIsoDateOnly(min), max: toIsoDateOnly(max) }
+}
 
 export function PublicFormQuestionBlock({
   field,
@@ -309,7 +324,9 @@ export function PublicFormFieldInput({
         </label>
       )
 
-    default:
+    default: {
+      const isDob = isDateOfBirthField(field)
+      const dobBounds = isDob ? dateOfBirthInputBounds() : null
       return (
         <Input
           className={textInputClass}
@@ -324,6 +341,8 @@ export function PublicFormFieldInput({
                   ? 'date'
                   : 'text'
           }
+          min={dobBounds?.min}
+          max={dobBounds?.max}
           value={String(value ?? '')}
           onChange={(event) => onChange(event.target.value)}
           placeholder={
@@ -339,5 +358,6 @@ export function PublicFormFieldInput({
           }
         />
       )
+    }
   }
 }

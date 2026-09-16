@@ -11,6 +11,7 @@ import {
   campRegistrationDuplicateStatus,
 } from './lib/campRegistrationDuplicate'
 import { mapFormValuesToCampRegistrationInput, resolveCampFormPrefillKey } from './lib/campFormSubmit'
+import { isDateOfBirthField, validateDateOfBirthValue } from './lib/dateOfBirthValidation'
 
 const formFieldType = v.union(
   v.literal('short_text'),
@@ -440,6 +441,38 @@ export const replaceFormFieldsWithSecret = mutation({
   },
 })
 
+export const patchFormFieldMetaWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    field_id: v.id('form_fields'),
+    description: v.optional(v.union(v.string(), v.null())),
+    required: v.optional(v.boolean()),
+    label: v.optional(v.string()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const field = await ctx.db.get('form_fields', args.field_id)
+    if (!field) throw new Error('Form field not found.')
+
+    const patch: Record<string, unknown> = { updated_at: Date.now() }
+    if (args.description !== undefined) {
+      patch.description =
+        args.description === null ? undefined : args.description.trim() || undefined
+    }
+    if (args.required !== undefined) patch.required = args.required
+    if (args.label != null) {
+      const label = args.label.trim()
+      if (!label) throw new Error('Field label is required.')
+      patch.label = label
+    }
+
+    await ctx.db.patch('form_fields', args.field_id, patch)
+    await ctx.db.patch('forms', field.form_id as Id<'forms'>, { updated_at: Date.now() })
+    return await ctx.db.get('form_fields', args.field_id)
+  },
+})
+
 export const submitFormResponsePublic = mutation({
   args: {
     slug: v.string(),
@@ -478,17 +511,22 @@ export const submitFormResponsePublic = mutation({
         errors.push(`${field.label} is required`)
       }
 
-      if (field.field_type === 'email' && value != null && String(value).trim()) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!isEmpty && field.field_type === 'email') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
         if (!emailRegex.test(String(value).trim())) {
           errors.push(`${field.label} must be a valid email`)
         }
       }
 
-      if (field.field_type === 'phone' && value != null && String(value).trim()) {
+      if (!isEmpty && field.field_type === 'phone') {
         if (!isValidGhanaPhone(String(value))) {
           errors.push(`${field.label} must be a valid Ghana phone number`)
         }
+      }
+
+      if (!isEmpty && isDateOfBirthField(field)) {
+        const dobError = validateDateOfBirthValue(value, { label: field.label })
+        if (dobError) errors.push(dobError)
       }
 
       if (
@@ -534,6 +572,14 @@ export const submitFormResponsePublic = mutation({
       }
       if (!campYear.registration_open) {
         throw new Error('Registration is closed for this Camp Meeting.')
+      }
+    }
+
+    if (isCampMeetingForm) {
+      if (!respondentPhone || !isValidGhanaPhone(respondentPhone)) {
+        throw new Error(
+          'A valid Ghana mobile number is required to register for Camp Meeting (used for SMS confirmation).'
+        )
       }
     }
 

@@ -2,11 +2,27 @@ import type { ChurchFormField } from '@/lib/types'
 import { isValidPhone } from '@/lib/phone'
 import { findWhatsappField } from '@/lib/forms/whatsapp-phone'
 import { applyWhatsappSameAsPhone } from '@/lib/forms/whatsapp-phone'
+import {
+  isDateOfBirthField,
+  validateDateOfBirthValue,
+} from '@/lib/forms/date-of-birth-validation'
 
 export type FormValidationContext = {
   phone?: string
   whatsappSameAsPhone?: boolean
   whatsappFieldId?: string
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
+
+function isPhoneLikeField(field: ChurchFormField): boolean {
+  if (field.field_type === 'phone') return true
+  const key = field.prefill_key?.trim()
+  return key === 'phone' || key === 'whatsapp' || key === 'parent_contact'
+}
+
+function isEmailLikeField(field: ChurchFormField): boolean {
+  return field.field_type === 'email' || field.prefill_key === 'email'
 }
 
 export function isFieldValueEmpty(field: ChurchFormField, value: unknown): boolean {
@@ -45,21 +61,23 @@ export function validateField(field: ChurchFormField, value: unknown): string | 
     return `${field.label} is required`
   }
 
-  if (
-    (field.field_type === 'phone' || field.prefill_key === 'phone') &&
-    field.required &&
-    value != null &&
-    String(value).trim() !== '' &&
-    !isValidPhone(String(value))
-  ) {
+  if (isFieldValueEmpty(field, value)) {
+    return null
+  }
+
+  if (isPhoneLikeField(field) && !isValidPhone(String(value))) {
     return `${field.label} must be a valid Ghana mobile number`
   }
 
-  if (field.field_type === 'email' && value != null && String(value).trim() !== '') {
+  if (isEmailLikeField(field)) {
     const email = String(value).trim()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!EMAIL_RE.test(email)) {
       return `${field.label} must be a valid email address`
     }
+  }
+
+  if (isDateOfBirthField(field)) {
+    return validateDateOfBirthValue(value, { label: field.label })
   }
 
   return null
@@ -83,7 +101,7 @@ export function validateAllFields(
   }
 ): string | null {
   if (options?.requirePhoneLookup && !isValidPhone(options.phone ?? '')) {
-    return 'Phone number is required (use a valid Ghana mobile number)'
+    return 'Phone number is required (use a valid Ghana mobile number) — needed for SMS confirmation'
   }
 
   for (const field of fields) {

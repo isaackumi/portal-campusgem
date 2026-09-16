@@ -203,10 +203,10 @@ export function usePublicForm({
       values,
       phone,
       whatsappSameAsPhone,
-      requirePhoneLookup: showPhoneStep && profileLookupEnabled,
+      requirePhoneLookup: profileLookupEnabled || isCampForm,
     })
     return error
-  }, [fields, getRespondentPhone, profileLookupEnabled, showPhoneStep, values, whatsappSameAsPhone])
+  }, [fields, getRespondentPhone, isCampForm, profileLookupEnabled, values, whatsappSameAsPhone])
 
   const validateSingleField = useCallback(
     (field: ChurchFormField): string | null =>
@@ -303,7 +303,7 @@ export function usePublicForm({
       values,
       phone,
       whatsappSameAsPhone,
-      requirePhoneLookup: profileLookupEnabled,
+      requirePhoneLookup: profileLookupEnabled || isCampForm,
     })
 
     if (validationError) {
