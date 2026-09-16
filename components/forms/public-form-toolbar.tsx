@@ -38,12 +38,12 @@ export function PublicFormToolbar({ form, campYearLabel, previewMode }: Props) {
   const authRedirect = `/auth?redirect=${encodeURIComponent(`/f/${form.slug}`)}`
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2 sm:mb-5">
+    <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-4">
       <a
         href={whatsappHref}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#25D366] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#20BD5A] active:bg-[#1DA851]"
+        className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#20BD5A] active:bg-[#1DA851]"
       >
         <WhatsappLogo className="h-5 w-5" variant="white" />
         Share on WhatsApp
@@ -52,7 +52,7 @@ export function PublicFormToolbar({ form, campYearLabel, previewMode }: Props) {
         type="button"
         variant="outline"
         size="sm"
-        className="h-10 rounded-lg border-brand-200 bg-white/90 text-brand-800 hover:bg-brand-50"
+        className="h-10 rounded-full bg-white/90"
         onClick={() => {
           void navigator.clipboard.writeText(publicUrl).then(() => {
             toast({ title: 'Link copied', description: publicUrl })
@@ -65,19 +65,14 @@ export function PublicFormToolbar({ form, campYearLabel, previewMode }: Props) {
 
       {!loading ? (
         canManageForms ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-10 rounded-lg border border-ink/10 bg-white/90 text-ink hover:bg-mist"
-            asChild
-          >
+          <Button variant="secondary" size="sm" className="h-10 rounded-full bg-white/90" asChild>
             <Link href={`/admin/forms/${form.id}/responses`}>
               <BarChart3 className="mr-1.5 h-4 w-4" />
               View responses
             </Link>
           </Button>
         ) : (
-          <Button variant="ghost" size="sm" className="h-10 rounded-lg text-ink-soft hover:bg-white/70" asChild>
+          <Button variant="ghost" size="sm" className="h-10 rounded-full text-slate-600" asChild>
             <Link href={authRedirect}>
               <LogIn className="mr-1.5 h-4 w-4" />
               Admin login
