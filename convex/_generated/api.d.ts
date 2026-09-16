@@ -20,6 +20,7 @@ import type * as lib_campCheckInCode from "../lib/campCheckInCode.js";
 import type * as lib_campFormSubmit from "../lib/campFormSubmit.js";
 import type * as lib_campRegistrationDuplicate from "../lib/campRegistrationDuplicate.js";
 import type * as lib_campRegistrationInsert from "../lib/campRegistrationInsert.js";
+import type * as lib_dateOfBirthValidation from "../lib/dateOfBirthValidation.js";
 import type * as lib_importContact from "../lib/importContact.js";
 import type * as lib_personIdentity from "../lib/personIdentity.js";
 import type * as lib_phone from "../lib/phone.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   "lib/campFormSubmit": typeof lib_campFormSubmit;
   "lib/campRegistrationDuplicate": typeof lib_campRegistrationDuplicate;
   "lib/campRegistrationInsert": typeof lib_campRegistrationInsert;
+  "lib/dateOfBirthValidation": typeof lib_dateOfBirthValidation;
   "lib/importContact": typeof lib_importContact;
   "lib/personIdentity": typeof lib_personIdentity;
   "lib/phone": typeof lib_phone;
