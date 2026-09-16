@@ -10,6 +10,10 @@ import {
 } from '@/lib/camp/check-in-identity'
 import { campService } from '@/lib/services/camp-service'
 import { sendCampTemplateSmsToRegistrationsAction } from '@/lib/actions/camp'
+import {
+  getCampMessageTemplate,
+  personalizeCampMessage,
+} from '@/lib/camp/sms-templates'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,6 +27,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
+import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
 import { BedDouble, Copy, Crown, MessageSquare, Users } from 'lucide-react'
 
 type Props = {
@@ -64,6 +69,7 @@ export function CampRegistrationRoomCard({
   const { user } = useAuth()
   const [savingLeader, setSavingLeader] = useState(false)
   const [sendingSms, setSendingSms] = useState(false)
+  const [smsReviewOpen, setSmsReviewOpen] = useState(false)
 
   const room = roomContext?.room ?? null
   const occupants = roomContext?.occupants ?? []
@@ -71,6 +77,31 @@ export function CampRegistrationRoomCard({
 
   const leaderSelectValue = useMemo(() => leaderId ?? '__none__', [leaderId])
   const checkInIdentity = useMemo(() => getCamperCheckInIdentity(registration), [registration])
+
+  const roomSmsPreview = useMemo(() => {
+    if (!room) return ''
+    const leader = occupants.find((o) => o.id === leaderId)
+    const mates = occupants
+      .filter((o) => o.id !== registration.id)
+      .map((o) => campRegistrationDisplayName(o))
+      .join(', ')
+    return personalizeCampMessage(
+      getCampMessageTemplate('room_allocation')?.body ||
+        'Hi {{firstName}}! Your room is {{roomName}}. Code: {{checkInCode}}.',
+      {
+        fullName: registration.full_name,
+        firstName: registration.first_name,
+        lastName: registration.last_name,
+        phone: registration.phone,
+        checkInCode: registration.check_in_code,
+        qrCode: registration.check_in_code || registration.qr_code,
+        roomName: room.name,
+        building: room.building,
+        roomLeader: leader ? campRegistrationDisplayName(leader) : '',
+        roommates: mates,
+      }
+    )
+  }, [registration, room, occupants, leaderId])
 
   async function copyRoomDetails() {
     if (!roomContext?.room) return
@@ -108,6 +139,7 @@ export function CampRegistrationRoomCard({
           ? `Sent via ${data.provider}`
           : data.errors[0] ?? 'Check phone number',
     })
+    if (data.success_count > 0) setSmsReviewOpen(false)
   }
 
   async function handleLeaderChange(value: string) {
@@ -271,17 +303,25 @@ export function CampRegistrationRoomCard({
                 type="button"
                 className="min-h-11 flex-1 cursor-pointer"
                 disabled={sendingSms || !registration.phone?.trim()}
-                onClick={() => void sendRoomSms()}
-                aria-label="Send room allocation SMS to this camper"
+                onClick={() => setSmsReviewOpen(true)}
+                aria-label="Review room allocation SMS"
               >
-                {sendingSms ? (
-                  <LoadingSpinner className="mr-2 h-4 w-4" />
-                ) : (
-                  <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
-                )}
-                {sendingSms ? 'Sending…' : 'SMS room to camper'}
+                <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
+                Review & SMS room
               </Button>
             </div>
+
+            <CampSmsReviewDialog
+              open={smsReviewOpen}
+              onOpenChange={setSmsReviewOpen}
+              title="Review room SMS"
+              recipientName={campRegistrationDisplayName(registration)}
+              recipientPhone={registration.phone}
+              previewBody={roomSmsPreview}
+              sending={sendingSms}
+              confirmLabel="Confirm send"
+              onConfirm={() => void sendRoomSms()}
+            />
           </>
         )}
       </CardContent>

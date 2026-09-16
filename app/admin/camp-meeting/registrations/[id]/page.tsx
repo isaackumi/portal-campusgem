@@ -25,10 +25,15 @@ import {
 import QRCode from 'react-qr-code'
 import { ImportContactWarningsBadge, ImportContactWarningsList } from '@/components/camp/import-contact-warnings'
 import { CampRegistrationRoomCard } from '@/components/camp/camp-registration-room-card'
+import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
 import {
     memberDobIsoFromCampRegistration,
     MEMBER_DOB_PLACEHOLDER_YEAR,
 } from '@/lib/camp/birthday'
+import {
+    getCampMessageTemplate,
+    personalizeCampMessage,
+} from '@/lib/camp/sms-templates'
 
 type DirectoryRole = 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
 
@@ -59,6 +64,7 @@ export default function RegistrationDetailPage() {
     const [savingBirth, setSavingBirth] = useState(false)
     const [syncingDob, setSyncingDob] = useState(false)
     const [sendingConfirmSms, setSendingConfirmSms] = useState(false)
+    const [confirmSmsReviewOpen, setConfirmSmsReviewOpen] = useState(false)
     
     // Payment form
     const [paymentForm, setPaymentForm] = useState({
@@ -403,10 +409,28 @@ export default function RegistrationDetailPage() {
                         ? `Sent via ${result.provider}`
                         : result.errors[0] ?? 'Check phone number',
             })
+            if (result.success_count > 0) setConfirmSmsReviewOpen(false)
         } finally {
             setSendingConfirmSms(false)
         }
     }
+
+    const confirmationSmsPreview = data
+        ? personalizeCampMessage(
+              getCampMessageTemplate('registration_confirmation')?.body ||
+                  'Hi {{firstName}}! You are registered. Code: {{checkInCode}}',
+              {
+                  fullName: data.full_name,
+                  firstName: data.first_name,
+                  lastName: data.last_name,
+                  phone: data.phone,
+                  email: data.email,
+                  role: data.role,
+                  checkInCode: data.check_in_code,
+                  qrCode: data.check_in_code || data.qr_code,
+              }
+          )
+        : ''
 
     const downloadQRCode = () => {
         if (!data) return
@@ -898,19 +922,27 @@ export default function RegistrationDetailPage() {
                                         type="button"
                                         className="w-full min-h-11 cursor-pointer"
                                         disabled={sendingConfirmSms || !data.phone?.trim()}
-                                        onClick={() => void sendRegistrationConfirmSms()}
-                                        aria-label="Send registration confirmation SMS"
+                                        onClick={() => setConfirmSmsReviewOpen(true)}
+                                        aria-label="Review registration confirmation SMS"
                                     >
-                                        {sendingConfirmSms ? (
-                                            <LoadingSpinner className="mr-2 h-4 w-4" />
-                                        ) : (
-                                            <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
-                                        )}
-                                        {sendingConfirmSms ? 'Sending…' : 'SMS registration confirmation'}
+                                        <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
+                                        Review & SMS confirmation
                                     </Button>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <CampSmsReviewDialog
+                            open={confirmSmsReviewOpen}
+                            onOpenChange={setConfirmSmsReviewOpen}
+                            title="Review confirmation SMS"
+                            recipientName={data.full_name || `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim()}
+                            recipientPhone={data.phone}
+                            previewBody={confirmationSmsPreview}
+                            sending={sendingConfirmSms}
+                            confirmLabel="Confirm send"
+                            onConfirm={() => void sendRegistrationConfirmSms()}
+                        />
 
                         <CampRegistrationRoomCard
                             registration={data}

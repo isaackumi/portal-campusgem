@@ -1,6 +1,5 @@
 'use server'
 
-import { after } from 'next/server'
 import type { ChurchForm, ChurchFormField, ChurchFormResponse, ChurchFormSubmitResult } from '@/lib/types'
 
 function requireConvexEnv(): void {
@@ -270,25 +269,21 @@ export async function submitFormResponse(input: {
           '',
       }
 
-      // Run after the form response returns so Hubtel latency cannot block success UX.
-      after(() => {
-        void import('@/lib/actions/camp')
-          .then(({ sendCampRegistrationConfirmationSms }) =>
-            sendCampRegistrationConfirmationSms(registrationPayload)
-          )
-          .then((result) => {
-            if (!result.sent) {
-              console.error('[camp-registration-sms] form path', {
-                id: registrationPayload.id,
-                phone: registrationPayload.phone,
-                ...result,
-              })
-            }
+      // Await delivery so Vercel does not freeze the function before Hubtel returns.
+      // Registration already succeeded in Convex — SMS failure must not fail the form.
+      try {
+        const { sendCampRegistrationConfirmationSms } = await import('@/lib/actions/camp')
+        const result = await sendCampRegistrationConfirmationSms(registrationPayload)
+        if (!result.sent) {
+          console.error('[camp-registration-sms] form path', {
+            id: registrationPayload.id,
+            phone: registrationPayload.phone,
+            ...result,
           })
-          .catch((err) => {
-            console.error('[camp-registration-sms] form path failed', err)
-          })
-      })
+        }
+      } catch (err) {
+        console.error('[camp-registration-sms] form path failed', err)
+      }
     }
 
     return { data, error: null }

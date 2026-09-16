@@ -9,7 +9,6 @@ import {
 } from '@/lib/types'
 import { isValidPhone } from '@/lib/phone'
 import { revalidatePath } from 'next/cache'
-import { after } from 'next/server'
 import {
   getRegistrationConfirmationSmsTemplate,
   getRoomAllocationSmsTemplate,
@@ -142,16 +141,17 @@ export async function registerCamper(formData: CampRegistrationForm): Promise<{
     const updatedReg = await registerCamperViaConvex(formData)
     revalidatePath('/admin/camp-meeting')
 
-    after(() => {
-      void sendCampRegistrationConfirmationSms(updatedReg).then((result) => {
-        if (!result.sent) {
-          console.error('[camp-registration-sms] legacy register path', {
-            id: updatedReg.id,
-            ...result,
-          })
-        }
-      })
-    })
+    try {
+      const result = await sendCampRegistrationConfirmationSms(updatedReg)
+      if (!result.sent) {
+        console.error('[camp-registration-sms] legacy register path', {
+          id: updatedReg.id,
+          ...result,
+        })
+      }
+    } catch (err) {
+      console.error('[camp-registration-sms] legacy register path failed', err)
+    }
 
     return { success: true, data: updatedReg }
   } catch (error: unknown) {
@@ -613,6 +613,9 @@ function personalizeCampSms(
  * Auto SMS after camp registration (2026+ by default). Soft-skips when SMS
  * is not configured or the year is gated off. Never throws to callers that catch.
  * Pass `{ force: true }` for manual admin resend (skips year gate).
+ *
+ * Sends via Hubtel directly (not the bulk helper) so public form submit cannot
+ * fail on revalidatePath / bulk bookkeeping.
  */
 export async function sendCampRegistrationConfirmationSms(
   registration: Pick<
@@ -656,6 +659,16 @@ export async function sendCampRegistrationConfirmationSms(
     }
   }
 
+  if (!payload.id?.trim()) {
+    console.error('[camp-registration-sms] skipped: no_registration_id')
+    return { sent: false, skipped: 'no_registration_id' }
+  }
+
+  if (!payload.camp_year_id?.trim()) {
+    console.error('[camp-registration-sms] skipped: no_camp_year_id', { id: payload.id })
+    return { sent: false, skipped: 'no_camp_year_id' }
+  }
+
   if (!payload.phone?.trim()) {
     console.error('[camp-registration-sms] skipped: no_phone', { id: payload.id })
     return { sent: false, skipped: 'no_phone' }
@@ -665,8 +678,8 @@ export async function sendCampRegistrationConfirmationSms(
   try {
     const { fetchCampYearByIdFromConvex } = await import('@/lib/convex/camp-bridge')
     yearDoc = await fetchCampYearByIdFromConvex(payload.camp_year_id)
-  } catch {
-    // fall through — may still send with calendar year
+  } catch (err) {
+    console.warn('[camp-registration-sms] year fetch failed', err)
   }
 
   const campYearNum = yearDoc?.year ?? new Date().getFullYear()
@@ -674,13 +687,20 @@ export async function sendCampRegistrationConfirmationSms(
     console.error('[camp-registration-sms] skipped: year gated', {
       id: payload.id,
       campYearNum,
+      yearId: payload.camp_year_id,
     })
     return { sent: false, skipped: `year_${campYearNum}_gated` }
   }
 
-  const { isSmsConfigured, getMissingSmsEnvKeys, resolveSmsProvider } = await import(
-    '@/lib/comms/sms-client'
-  )
+  const {
+    sendSms,
+    isSmsConfigured,
+    isValidSmsPhone,
+    normalizeSmsPhone,
+    getMissingSmsEnvKeys,
+    resolveSmsProvider,
+  } = await import('@/lib/comms/sms-client')
+
   if (!isSmsConfigured()) {
     console.error('[camp-registration-sms] skipped: sms_not_configured', {
       id: payload.id,
@@ -688,6 +708,15 @@ export async function sendCampRegistrationConfirmationSms(
       missing: getMissingSmsEnvKeys(),
     })
     return { sent: false, skipped: 'sms_not_configured' }
+  }
+
+  if (!isValidSmsPhone(payload.phone)) {
+    console.error('[camp-registration-sms] skipped: invalid_phone', {
+      id: payload.id,
+      phone: payload.phone,
+      normalized: normalizeSmsPhone(payload.phone),
+    })
+    return { sent: false, skipped: 'invalid_phone' }
   }
 
   let checkInCode = payload.check_in_code?.trim() || ''
@@ -701,61 +730,81 @@ export async function sendCampRegistrationConfirmationSms(
   }
 
   const template = getRegistrationConfirmationSmsTemplate()
+  const message = personalizeCampSms(
+    template,
+    {
+      id: payload.id,
+      full_name: payload.full_name,
+      first_name: payload.first_name,
+      last_name: payload.last_name,
+      phone: payload.phone,
+      email: payload.email,
+      role: payload.role,
+      check_in_code: checkInCode || payload.check_in_code,
+      qr_code: checkInCode || payload.qr_code,
+    },
+    campYearNum,
+    { theme: yearDoc?.theme, venue: yearDoc?.venue }
+  )
+
   const senderId =
     options?.sender_id?.trim() ||
     process.env.CAMP_SYSTEM_SENDER_ID?.trim() ||
     'system-registration'
 
-  const result = await sendCampBulkSmsAction({
-    camp_year_id: payload.camp_year_id,
-    sender_id: senderId,
-    message_template: template,
-    camp_year: campYearNum,
-    recipients: [
-      {
+  try {
+    const smsResult = await sendSms(payload.phone, message)
+    const to = smsResult.normalizedPhone ?? normalizeSmsPhone(payload.phone)
+
+    try {
+      const { logCampCommunicationInConvex } = await import('@/lib/convex/camp-bridge')
+      await logCampCommunicationInConvex({
+        camp_year_id: payload.camp_year_id,
+        communication_type: 'sms',
+        sender_id: senderId,
+        recipient_type: 'individual',
+        recipient_registration_id: payload.id,
+        recipient_phone: to,
+        message_body: message,
+        status: smsResult.success ? 'sent' : 'failed',
+        provider_message_id: smsResult.messageId,
+        error_message: smsResult.error,
+        metadata: {
+          auto: !options?.force,
+          type: 'registration_confirmation',
+          provider: smsResult.provider,
+          recipient_name: payload.full_name,
+          raw_phone: payload.phone,
+          normalized_phone: to,
+        },
+        sent_at: smsResult.success ? new Date().toISOString() : undefined,
+      })
+    } catch (logErr) {
+      // Delivery already happened (or failed) — do not hide the SMS outcome behind log errors.
+      console.error('[camp-registration-sms] log failed', logErr)
+    }
+
+    if (!smsResult.success) {
+      console.error('[camp-registration-sms] provider rejected', {
         id: payload.id,
-        full_name: payload.full_name,
-        first_name: payload.first_name,
-        last_name: payload.last_name,
         phone: payload.phone,
-        email: payload.email,
-        role: payload.role,
-        check_in_code: checkInCode || payload.check_in_code,
-        qr_code: checkInCode || payload.qr_code,
-      },
-    ],
-    filter_criteria: {
-      auto: !options?.force,
-      type: 'registration_confirmation',
-      theme: yearDoc?.theme,
-      venue: yearDoc?.venue,
-    },
-  })
+        provider: smsResult.provider,
+        error: smsResult.error,
+      })
+      return { sent: false, error: smsResult.error ?? 'send_failed' }
+    }
 
-  if (result.error || !result.data) {
-    console.error('[camp-registration-sms] send failed', {
+    console.info('[camp-registration-sms] sent', {
       id: payload.id,
-      phone: payload.phone,
-      error: result.error,
+      provider: smsResult.provider,
+      messageId: smsResult.messageId,
     })
-    return { sent: false, error: result.error ?? 'send_failed' }
+    return { sent: true }
+  } catch (err) {
+    const messageText = err instanceof Error ? err.message : 'send_failed'
+    console.error('[camp-registration-sms] threw', { id: payload.id, error: messageText })
+    return { sent: false, error: messageText }
   }
-  if (result.data.success_count < 1) {
-    console.error('[camp-registration-sms] provider rejected', {
-      id: payload.id,
-      phone: payload.phone,
-      errors: result.data.errors,
-      provider: result.data.provider,
-    })
-    return { sent: false, error: result.data.errors[0] ?? 'send_failed' }
-  }
-
-  console.info('[camp-registration-sms] sent', {
-    id: payload.id,
-    provider: result.data.provider,
-    batch_id: result.data.batch_id,
-  })
-  return { sent: true }
 }
 
 /**
