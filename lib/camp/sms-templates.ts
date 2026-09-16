@@ -46,9 +46,11 @@ export const CAMP_MESSAGE_TEMPLATES: CampMessageTemplate[] = [
   {
     id: 'registration_confirmation',
     label: 'Registration confirmation',
-    description: 'Sent after someone registers (name + check-in code).',
+    description: 'Sent after someone registers for Eagles Camp Meeting.',
     channel: 'sms',
-    body: `Hi {{firstName}}! You're registered for Campus Gem Camp Meeting {{campYear}}{{themePart}}. Your check-in code is {{checkInCode}}. Keep this SMS. See you there!`,
+    body: `Hi {{firstName}}! You're officially registered for Eagles Camp Meeting {{campYear}}! We can't wait to share this special time of prayer, worship, fellowship, and God's presence with you.
+
+See you at camp!`,
   },
   {
     id: 'payment_reminder',
