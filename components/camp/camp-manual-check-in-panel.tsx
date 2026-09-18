@@ -27,6 +27,9 @@ type CampManualCheckInPanelProps = {
   checkInMethod?: 'manual' | 'arrival'
   onCheckInComplete?: () => void
   className?: string
+  /** Compact mobile desk layout — big search, name/phone first. */
+  simple?: boolean
+  sessionLabel?: string
 }
 
 export function CampManualCheckInPanel({
@@ -38,6 +41,8 @@ export function CampManualCheckInPanel({
   checkInMethod = 'manual',
   onCheckInComplete,
   className,
+  simple = false,
+  sessionLabel,
 }: CampManualCheckInPanelProps) {
   const { toast } = useToast()
   const [query, setQuery] = useState('')
@@ -164,33 +169,54 @@ export function CampManualCheckInPanel({
   }
 
   return (
-    <Card className={cn('border-2', className)}>
-      <CardHeader className="border-b bg-slate-50">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <UserCheck className="h-5 w-5" />
-          {checkInMethod === 'arrival' ? 'Arrival desk' : 'Manual search'}
-        </CardTitle>
-        <CardDescription>
-          {checkInMethod === 'arrival'
-            ? 'Mark campers as arrived at camp — search by name, phone, guardian, or GEM code.'
-            : 'Check in by camp code (e.g. GEM-26-K7M3), name, phone, guardian phone, or QR text.'}
-          {activityId
-            ? ' Applies to the selected session.'
-            : checkInMethod === 'arrival'
-              ? ' Updates overall camp arrival status.'
-              : ' Each registrant has their own code — one guardian number may list several people.'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-4">
+    <Card className={cn('border-2', simple && 'border-slate-200 shadow-none', className)}>
+      {!simple ? (
+        <CardHeader className="border-b bg-slate-50">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <UserCheck className="h-5 w-5" />
+            {checkInMethod === 'arrival' ? 'Arrival desk' : 'Manual search'}
+          </CardTitle>
+          <CardDescription>
+            {checkInMethod === 'arrival'
+              ? 'Mark campers as arrived at camp — search by name, phone, guardian, or GEM code.'
+              : 'Check in by camp code (e.g. GEM-26-K7M3), name, phone, guardian phone, or QR text.'}
+            {activityId
+              ? ' Applies to the selected session.'
+              : checkInMethod === 'arrival'
+                ? ' Updates overall camp arrival status.'
+                : ' Each registrant has their own code — one guardian number may list several people.'}
+          </CardDescription>
+        </CardHeader>
+      ) : null}
+      <CardContent className={cn('space-y-4', simple ? 'pt-4' : 'pt-4')}>
+        {simple ? (
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-slate-900">Find camper</p>
+            <p className="text-sm text-slate-600">
+              Search by <strong>name</strong> or <strong>phone</strong>
+              {sessionLabel ? (
+                <>
+                  {' '}
+                  · checking into <strong>{sessionLabel}</strong>
+                </>
+              ) : null}
+            </p>
+          </div>
+        ) : null}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Camp code (GEM-26-XXXX), name, or phone…"
-            className="min-h-11 pl-9 text-base"
+            placeholder={
+              simple
+                ? 'Name or phone number…'
+                : 'Camp code (GEM-26-XXXX), name, or phone…'
+            }
+            className={cn('pl-10 text-base', simple ? 'min-h-14 text-lg' : 'min-h-11')}
             inputMode="search"
             autoComplete="off"
+            autoFocus={simple}
           />
         </div>
 
@@ -292,7 +318,7 @@ export function CampManualCheckInPanel({
                         </Button>
                         <Button
                           size="sm"
-                          className="min-h-9 min-w-[7rem]"
+                          className={cn('min-h-9 min-w-[7rem]', simple && 'min-h-12 min-w-[8.5rem] text-base')}
                           disabled={checkedIn || checkingId === reg.id || bulkChecking}
                           onClick={() => void checkInOne(reg)}
                         >

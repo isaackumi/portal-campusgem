@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { campService } from '@/lib/services/camp-service'
-import { getActiveCampYear, getCampYearById } from '@/lib/actions/camp'
+import { getActiveCampYear, getAllCampYears, getCampYearById } from '@/lib/actions/camp'
 import { dataService } from '@/lib/services/data-service'
 import { CampRegistration, CampYear, AppUser } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -15,8 +15,9 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import {
     ArrowLeft, Users, UserCheck, UserX, Clock, CheckCircle2,
-    AlertCircle, Filter, UserPlus, Eye, MessageSquare, Phone, Mail
+    AlertCircle, Filter, UserPlus, Eye, MessageSquare, Phone, Mail, BedDouble
 } from 'lucide-react'
+import Link from 'next/link'
 import { classifyFollowUpSla, type FollowUpSlaBucket } from '@/lib/camp/follow-up-sla'
 import { cn } from '@/lib/utils'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
@@ -35,6 +36,8 @@ function FollowUpManagementContent() {
     const statusParam = searchParams.get('status')
     const slaParam = searchParams.get('sla')
     const [campYear, setCampYear] = useState<CampYear | null>(null)
+    const [activeYear, setActiveYear] = useState<CampYear | null>(null)
+    const [availableYears, setAvailableYears] = useState<CampYear[]>([])
     const [registrations, setRegistrations] = useState<CampRegistration[]>([])
     const [staffMembers, setStaffMembers] = useState<AppUser[]>([])
     const [loading, setLoading] = useState(true)
@@ -70,13 +73,22 @@ function FollowUpManagementContent() {
 
     async function loadData() {
         setLoading(true)
+        const [{ data: years }, { data: active }] = await Promise.all([
+            getAllCampYears(),
+            getActiveCampYear(),
+        ])
+        const sorted = [...(years ?? [])].sort((a, b) => b.year - a.year)
+        setAvailableYears(sorted)
+        setActiveYear(active ?? null)
+
         const { data: year } = yearIdParam
             ? await getCampYearById(yearIdParam)
-            : await getActiveCampYear()
+            : { data: active ?? sorted.find((y) => y.is_active) ?? sorted[0] ?? null }
         if (year) {
             setCampYear(year)
             const { data } = await campService.getCampRegistrations(year.id)
             if (data) setRegistrations(data)
+            else setRegistrations([])
         } else {
             setCampYear(null)
             setRegistrations([])
@@ -198,7 +210,22 @@ function FollowUpManagementContent() {
                 <CampAdminPageHeader
                     title={mineOnly ? 'My follow-ups' : 'Follow-up Management'}
                     campYear={campYear}
+                    actions={
+                        campYear ? (
+                            <Button variant="outline" asChild>
+                                <Link href={`/admin/camp-meeting/rooms?year=${campYear.id}`}>
+                                    <BedDouble className="mr-2 h-4 w-4" />
+                                    Rooms
+                                </Link>
+                            </Button>
+                        ) : null
+                    }
                 >
+                    {campYear?.is_active || campYear?.id === activeYear?.id ? (
+                        <Badge className="bg-emerald-600 hover:bg-emerald-600">Active year</Badge>
+                    ) : campYear ? (
+                        <Badge variant="secondary">Historical year</Badge>
+                    ) : null}
                     {slaFilter !== 'all' ? (
                         <Badge variant="secondary" className="capitalize">
                             SLA: {slaFilter.replace('_', ' ')}
@@ -210,6 +237,55 @@ function FollowUpManagementContent() {
                         </Badge>
                     ) : null}
                 </CampAdminPageHeader>
+
+                {availableYears.length > 0 ? (
+                    <Card className="border-slate-200">
+                        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium text-slate-800">Camp year for assignments</p>
+                                <p className="text-xs text-slate-500">
+                                    Follow-up owners are assigned only for registrations in the selected season.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Select
+                                    value={campYear?.id}
+                                    onValueChange={(yearId) => {
+                                        const params = new URLSearchParams(searchParams.toString())
+                                        params.set('year', yearId)
+                                        router.push(`/admin/camp-meeting/follow-up?${params.toString()}`)
+                                    }}
+                                >
+                                    <SelectTrigger className="min-h-10 w-[11rem] bg-white">
+                                        <SelectValue placeholder="Select year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableYears.map((year) => (
+                                            <SelectItem key={year.id} value={year.id}>
+                                                {year.year}
+                                                {year.is_active || year.id === activeYear?.id ? ' (active)' : ''}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {campYear && activeYear && campYear.id !== activeYear.id ? (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="min-h-10"
+                                        onClick={() => {
+                                            const params = new URLSearchParams(searchParams.toString())
+                                            params.set('year', activeYear.id)
+                                            router.push(`/admin/camp-meeting/follow-up?${params.toString()}`)
+                                        }}
+                                    >
+                                        Jump to active
+                                    </Button>
+                                ) : null}
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : null}
 
                 {/* Stats Cards */}
                 <div className="grid gap-4 md:grid-cols-5">

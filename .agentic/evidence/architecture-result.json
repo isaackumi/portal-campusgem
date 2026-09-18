@@ -1,0 +1,48 @@
+{
+  "result_id": "RES-ARCH-camp-rooms-active-year",
+  "agent_id": "solution-architect",
+  "agent_version": "1.0.0",
+  "workflow_id": "WF-1",
+  "work_item_id": "WI-1",
+  "state_version": 4,
+  "task": "ARCHITECTURE.CREATE — scope rooms and assignments UI to active camp year",
+  "status": "COMPLETED",
+  "command": "ARCHITECTURE.CREATE",
+  "artifacts": [
+    {
+      "artifact_id": "ADR-001-camp-rooms-active-year",
+      "artifact_version": "0.1.0",
+      "type": "adr",
+      "created_by": "solution-architect",
+      "created_at": "2026-09-18T15:52:00Z",
+      "source_work_item": "WI-1",
+      "status": "READY_FOR_REVIEW",
+      "approval_status": "NOT_REQUESTED"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "architecture",
+      "grade": "OBSERVED",
+      "claim": "Architecture for active-year rooms/assignment scoping documented",
+      "produced_by": "solution-architect",
+      "exit_code": 0,
+      "artifact_path": ".agentic/evidence/architecture.md",
+      "timestamp": "2026-09-18T15:52:00Z"
+    },
+    {
+      "id": "adr",
+      "grade": "OBSERVED",
+      "claim": "ADR-001 records decision and rejected alternatives",
+      "produced_by": "solution-architect",
+      "exit_code": 0,
+      "artifact_path": ".agentic/decisions/ADR-001-camp-rooms-active-year.md",
+      "timestamp": "2026-09-18T15:52:00Z"
+    }
+  ],
+  "requested_next_action": {
+    "agent": "frontend-engineering",
+    "action": "CODE.MODIFY"
+  },
+  "timestamp": "2026-09-18T15:52:00Z"
+}

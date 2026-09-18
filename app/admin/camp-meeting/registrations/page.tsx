@@ -46,6 +46,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
+import { formatRelativeWhen } from '@/lib/camp/relative-time'
 
 type SortField = 'full_name' | 'email' | 'phone' | 'role' | 'status' | 'payment_status' | 'created_at' | 'is_new_registrant'
 type SortDirection = 'asc' | 'desc'
@@ -656,12 +657,12 @@ function RegistrationsPageContent() {
                                                     {getSortIcon('is_new_registrant')}
                                                 </button>
                                             </TableHead>
-                                            <TableHead>
+                                                    <TableHead>
                                                 <button
                                                     onClick={() => handleSort('created_at')}
                                                     className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
                                                 >
-                                                    Date
+                                                    Registered
                                                     {getSortIcon('created_at')}
                                                 </button>
                                             </TableHead>
@@ -754,11 +755,20 @@ function RegistrationsPageContent() {
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="text-sm text-slate-600">
-                                                        {new Date(reg.created_at).toLocaleDateString('en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            year: 'numeric'
-                                                        })}
+                                                        {(() => {
+                                                            const when = formatRelativeWhen(reg.created_at)
+                                                            return (
+                                                                <div title={when.absolute}>
+                                                                    <div className="font-medium text-slate-800">
+                                                                        {when.absoluteDate}
+                                                                    </div>
+                                                                    <div className="text-xs tabular-nums text-slate-500">
+                                                                        {when.absoluteTime}
+                                                                        {when.relative ? ` · ${when.relative}` : ''}
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })()}
                                                     </TableCell>
                                                     <TableCell onClick={(e) => e.stopPropagation()}>
                                                         <div className="flex items-center gap-1">

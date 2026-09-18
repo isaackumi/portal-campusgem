@@ -1,0 +1,6 @@
+# Live workflow position. Changes on every action; excluded so that two
+# branches doing different work do not conflict over it.
+state/
+
+# Everything else here is the project's record and SHOULD be committed:
+# audit/ evidence/ decisions/ approvals/ project.yaml

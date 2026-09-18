@@ -340,6 +340,12 @@ export default function CampYearHubPage() {
             <Link href={`/admin/camp-meeting/registrations?year=${campYear.id}`}>Registrations</Link>
           </Button>
           <Button variant="outline" asChild>
+            <Link href={`/admin/camp-meeting/rooms?year=${campYear.id}`}>Rooms</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/admin/camp-meeting/follow-up?year=${campYear.id}`}>Assignments</Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href={`/admin/camp-meeting/analytics?year=${campYear.id}`}>Analytics</Link>
           </Button>
           <Button variant="outline" asChild>
@@ -423,7 +429,12 @@ export default function CampYearHubPage() {
           <Card>
             <CardHeader>
               <CardTitle>Assign follow-up owners</CardTitle>
-              <CardDescription>Distribute selected campers to pastors, elders, or admins.</CardDescription>
+              <CardDescription>
+                Distribute selected campers from camp {campYear.year} to pastors, elders, or admins.
+                {!campYear.is_active
+                  ? ' This is a historical season — set it active if this is the current camp.'
+                  : ' Active season.'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
