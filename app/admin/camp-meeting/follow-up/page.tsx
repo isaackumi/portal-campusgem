@@ -14,7 +14,7 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import {
-    ArrowLeft, Users, UserCheck, UserX, Clock, CheckCircle2,
+    Users, UserCheck, UserX, Clock, CheckCircle2,
     AlertCircle, Filter, UserPlus, Eye, MessageSquare, Phone, Mail, BedDouble
 } from 'lucide-react'
 import Link from 'next/link'
