@@ -52,10 +52,15 @@ function yearReportSections(report: CampYearAnalyticsReport): string[] {
     ...breakdownSection('Education band', report.demographics.educationBand),
     ...breakdownSection('Education level', report.demographics.educationLevel),
     ...breakdownSection('Residence', report.demographics.residence),
+    ...breakdownSection('Role', report.demographics.role),
     ...breakdownSection('Birth month', report.demographics.birthMonth),
+    ...breakdownSection('Registration status', report.operations.registrationStatus),
+    ...breakdownSection('Room assignment', report.operations.roomAssignment),
+    ...breakdownSection('Previous attendance', report.operations.attendanceHistory),
     ...breakdownSection('Parent contact', report.operations.parentContact),
     ...breakdownSection('NHIS', report.operations.nhis),
     ...breakdownSection('Health', report.operations.health),
+    ...breakdownSection('Health conditions', report.operations.healthConditions),
     ...breakdownSection('Follow-up', report.operations.followUp),
     ...breakdownSection('Payment status', report.operations.paymentStatus)
   )

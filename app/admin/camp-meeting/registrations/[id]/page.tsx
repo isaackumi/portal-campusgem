@@ -34,6 +34,8 @@ import {
     getCampMessageTemplate,
     personalizeCampMessage,
 } from '@/lib/camp/sms-templates'
+import { formatRelativeWhen } from '@/lib/camp/relative-time'
+import { campRegistrationRoleOptions } from '@/lib/camp/registration-roles'
 
 type DirectoryRole = 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
 
@@ -54,6 +56,8 @@ export default function RegistrationDetailPage() {
     const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false)
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
     const [statusDialogOpen, setStatusDialogOpen] = useState(false)
+    const [roleDialogOpen, setRoleDialogOpen] = useState(false)
+    const [selectedRole, setSelectedRole] = useState('Participant')
 
     const [bMonth, setBMonth] = useState('')
     const [bDay, setBDay] = useState('')
@@ -85,7 +89,8 @@ export default function RegistrationDetailPage() {
         setBDay(data.birth_day != null ? String(data.birth_day) : '')
         const iso = data.date_of_birth?.trim()
         setBYear(iso && /^\d{4}-\d{1,2}-\d{1,2}$/.test(iso) ? iso.slice(0, 4) : '')
-    }, [data?.id, data?.birth_month, data?.birth_day, data?.date_of_birth])
+        setSelectedRole(data.role?.trim() || 'Participant')
+    }, [data?.id, data?.birth_month, data?.birth_day, data?.date_of_birth, data?.role])
 
     useEffect(() => {
         if (!data?.user_id) {
@@ -220,6 +225,58 @@ export default function RegistrationDetailPage() {
                 variant: 'destructive',
                 title: 'Error',
                 description: error.message || 'Failed to update status'
+            })
+        } finally {
+            setUpdating(false)
+        }
+    }
+
+    const handleUpdateRole = async (newRole: string) => {
+        if (!data) return
+        const role = newRole.trim()
+        if (!role) {
+            toast({
+                variant: 'destructive',
+                title: 'Role required',
+                description: 'Pick a camp role such as Protocol, Music, or Cook.',
+            })
+            return
+        }
+        if (role === data.role) {
+            setRoleDialogOpen(false)
+            return
+        }
+
+        setUpdating(true)
+        try {
+            const res = await campService.updateRegistration(data.id, { role })
+            if (res.error) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: res.error,
+                })
+            } else {
+                if (user?.id) {
+                    await campService.addInteraction({
+                        registration_id: data.id,
+                        performed_by: user.id,
+                        interaction_type: 'status_change',
+                        notes: `Camp role changed to ${role}`,
+                    })
+                }
+                toast({
+                    title: 'Role updated',
+                    description: `${data.full_name || `${data.first_name} ${data.last_name}`.trim()} is now ${role}.`,
+                })
+                setRoleDialogOpen(false)
+                loadData()
+            }
+        } catch (error: unknown) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Failed to update role',
             })
         } finally {
             setUpdating(false)
@@ -520,7 +577,60 @@ export default function RegistrationDetailPage() {
                             <p className="text-muted-foreground mt-1">{fullName}</p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                        <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline">
+                                    <User className="mr-2 h-4 w-4" /> Change role
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Camp role</DialogTitle>
+                                    <DialogDescription>
+                                        Assign Protocol, Music, Cook, and other service roles for this camper.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-2">
+                                    <div className="space-y-2">
+                                        <Label>Role</Label>
+                                        <Select value={selectedRole} onValueChange={setSelectedRole}>
+                                            <SelectTrigger className="min-h-11">
+                                                <SelectValue placeholder="Select role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {campRegistrationRoleOptions(data.role).map((role) => (
+                                                    <SelectItem key={role} value={role}>
+                                                        {role}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <Input
+                                        value={selectedRole}
+                                        onChange={(e) => setSelectedRole(e.target.value)}
+                                        placeholder="Or type a custom role"
+                                        className="min-h-11"
+                                    />
+                                </div>
+                                <DialogFooter>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setRoleDialogOpen(false)}
+                                        disabled={updating}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={() => void handleUpdateRole(selectedRole)}
+                                        disabled={updating || !selectedRole.trim()}
+                                    >
+                                        {updating ? 'Saving…' : 'Save role'}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                         <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="outline">
@@ -616,7 +726,11 @@ export default function RegistrationDetailPage() {
                                                     Payment: {data.payment_status}
                                                 </Badge>
                                             )}
-                                            <Badge className="border border-slate-200 bg-slate-50 text-slate-950 shadow-none">
+                                            <Badge
+                                                className="cursor-pointer border border-slate-200 bg-slate-50 text-slate-950 shadow-none"
+                                                onClick={() => setRoleDialogOpen(true)}
+                                                title="Change camp role"
+                                            >
                                                 {data.role}
                                             </Badge>
                                             <ImportContactWarningsBadge warnings={data.import_warnings} />
@@ -661,13 +775,19 @@ export default function RegistrationDetailPage() {
                                         <div>
                                             <Label className="text-xs text-slate-500 uppercase">Registration</Label>
                                             <div className="space-y-2 mt-2">
-                                                <div className="flex items-center text-sm">
-                                                    <Calendar className="h-4 w-4 mr-3 text-gray-400" />
-                                                    <span>Registered: {new Date(data.created_at).toLocaleDateString('en-US', {
-                                                        month: 'long',
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    })}</span>
+                                                <div className="flex items-start text-sm">
+                                                    <Calendar className="h-4 w-4 mr-3 mt-0.5 text-gray-400" />
+                                                    {(() => {
+                                                        const when = formatRelativeWhen(data.created_at)
+                                                        return (
+                                                            <span title={when.absolute}>
+                                                                Registered: {when.absolute}
+                                                                {when.relative ? (
+                                                                    <span className="text-slate-500"> · {when.relative}</span>
+                                                                ) : null}
+                                                            </span>
+                                                        )
+                                                    })()}
                                                 </div>
                                                 {data.times_attended !== undefined && (
                                                     <div className="flex items-center text-sm">
@@ -1057,6 +1177,10 @@ export default function RegistrationDetailPage() {
                                 <CardTitle className="flex items-center gap-2">
                                     <UserPlus className="h-5 w-5" /> Follow-Up Assignment
                                 </CardTitle>
+                                <CardDescription>
+                                    Assign a staff owner for this registration
+                                    {data.camp_year_id ? ' in its camp year' : ''}.
+                                </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {data.assigned_user ? (

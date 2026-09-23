@@ -1,8 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { getActiveCampYear, sendCampTemplateSmsToRegistrationsAction } from '@/lib/actions/camp'
+import { useRouter, useSearchParams } from 'next/navigation'
+import {
+  getActiveCampYear,
+  getAllCampYears,
+  getCampYearById,
+  sendCampTemplateSmsToRegistrationsAction,
+} from '@/lib/actions/camp'
 import { campService } from '@/lib/services/camp-service'
 import type { CampRegistration, CampRoom, CampYear } from '@/lib/types'
 import { campRegistrationDisplayName } from '@/lib/camp/manual-check-in-search'
@@ -39,10 +45,16 @@ import { BedDouble, Crown, MessageSquare, Pencil, Plus, RefreshCw, Shuffle, Tras
 
 const GENDER_OPTIONS = ['Mixed', 'Male', 'Female'] as const
 
-export default function CampRoomsPage() {
+function CampRoomsPageContent() {
   const { toast } = useToast()
   const { user } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const yearIdParam = searchParams.get('year')
+
   const [campYear, setCampYear] = useState<CampYear | null>(null)
+  const [activeYear, setActiveYear] = useState<CampYear | null>(null)
+  const [availableYears, setAvailableYears] = useState<CampYear[]>([])
   const [rooms, setRooms] = useState<CampRoom[]>([])
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,12 +90,39 @@ export default function CampRoomsPage() {
 
   useEffect(() => {
     void (async () => {
-      const { data } = await getActiveCampYear()
-      setCampYear(data ?? null)
-      if (data) await loadData(data)
+      setLoading(true)
+      const [{ data: years }, { data: active }] = await Promise.all([
+        getAllCampYears(),
+        getActiveCampYear(),
+      ])
+      const sorted = [...(years ?? [])].sort((a, b) => b.year - a.year)
+      setAvailableYears(sorted)
+      setActiveYear(active ?? null)
+
+      let selected: CampYear | null = null
+      if (yearIdParam) {
+        const { data: byId } = await getCampYearById(yearIdParam)
+        selected = byId ?? null
+      }
+      if (!selected) {
+        selected = active ?? sorted.find((y) => y.is_active) ?? sorted[0] ?? null
+      }
+
+      setCampYear(selected)
+      if (selected) await loadData(selected)
+      else {
+        setRooms([])
+        setRegistrations([])
+      }
       setLoading(false)
     })()
-  }, [loadData])
+  }, [yearIdParam, loadData])
+
+  function switchYear(yearId: string) {
+    router.push(`/admin/camp-meeting/rooms?year=${yearId}`)
+  }
+
+  const viewingActiveYear = Boolean(campYear && activeYear && campYear.id === activeYear.id)
 
   const occupantsByRoom = useMemo(() => {
     const map = new Map<string, CampRegistration[]>()
@@ -356,7 +395,10 @@ export default function CampRoomsPage() {
       <div className="mx-auto max-w-4xl p-6">
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No active camp year.</p>
+            <p className="text-muted-foreground">No camp year available for rooms.</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Set an active camp year, then create rooms for that season.
+            </p>
             <Button className="mt-4" asChild>
               <Link href="/admin/camp-meeting/years">Manage camp years</Link>
             </Button>
@@ -375,6 +417,11 @@ export default function CampRoomsPage() {
           actions={
             <>
               <Button variant="outline" asChild>
+                <Link href={`/admin/camp-meeting/follow-up?year=${campYear.id}`}>
+                  Assignments
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
                 <Link href="/admin/camp-meeting/scan">Check-in hub</Link>
               </Button>
               <Button variant="outline" onClick={() => void loadData(campYear)}>
@@ -384,6 +431,47 @@ export default function CampRoomsPage() {
             </>
           }
         />
+
+        <Card className="border-slate-200">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-slate-800">Camp year for rooms</p>
+              <p className="text-xs text-slate-500">
+                Rooms and lodging assignments are scoped to one season. Defaults to the active year.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {viewingActiveYear ? (
+                <Badge className="bg-emerald-600 hover:bg-emerald-600">Active year</Badge>
+              ) : (
+                <Badge variant="secondary">Historical year</Badge>
+              )}
+              <Select value={campYear.id} onValueChange={switchYear}>
+                <SelectTrigger className="min-h-10 w-[11rem] bg-white">
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year.id} value={year.id}>
+                      {year.year}
+                      {year.is_active || year.id === activeYear?.id ? ' (active)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!viewingActiveYear && activeYear ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-10"
+                  onClick={() => switchYear(activeYear.id)}
+                >
+                  Jump to active
+                </Button>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -764,5 +852,19 @@ export default function CampRoomsPage() {
         onConfirm={() => void confirmRoomSms()}
       />
     </div>
+  )
+}
+
+export default function CampRoomsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[400px] items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      }
+    >
+      <CampRoomsPageContent />
+    </Suspense>
   )
 }

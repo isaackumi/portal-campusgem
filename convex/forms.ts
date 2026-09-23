@@ -535,8 +535,16 @@ export const submitFormResponsePublic = mutation({
         String(value).trim()
       ) {
         const options = field.options ?? []
-        if (options.length > 0 && !options.includes(String(value))) {
-          errors.push(`${field.label} has an invalid option`)
+        const raw = String(value).trim()
+        if (options.length > 0) {
+          const otherAllowed =
+            field.field_type === 'dropdown' &&
+            options.some((opt) => opt.trim().toLowerCase() === 'other')
+          if (raw.toLowerCase() === 'other') {
+            errors.push(`${field.label}: please specify your area when choosing Other`)
+          } else if (!options.includes(raw) && !otherAllowed) {
+            errors.push(`${field.label} has an invalid option`)
+          }
         }
       }
     }
@@ -729,18 +737,23 @@ export const deleteFormWithSecret = mutation({
   },
 })
 
-/** Patch live camp registration form fields so WhatsApp / Location / Comments map correctly. */
+/** Patch live camp registration form fields so WhatsApp / Location / Comments map correctly,
+ * and Residence / area is a curated dropdown for analytics. */
 export const syncCampMeetingFormPrefillKeysWithSecret = mutation({
-  args: { secret: v.string() },
+  args: {
+    secret: v.string(),
+    residence_options: v.optional(v.array(v.string())),
+  },
   returns: v.object({
     forms_scanned: v.number(),
     fields_updated: v.number(),
   }),
-  handler: async (ctx, { secret }) => {
+  handler: async (ctx, { secret, residence_options }) => {
     assertServerSecret(secret)
     const forms = await ctx.db.query('forms').collect()
     const campForms = forms.filter((row) => row.category === CAMP_MEETING_REGISTRATION_CATEGORY)
     let fieldsUpdated = 0
+    const residenceOptions = (residence_options ?? []).map((o) => o.trim()).filter(Boolean)
 
     for (const form of campForms) {
       const fields = await ctx.db
@@ -748,11 +761,38 @@ export const syncCampMeetingFormPrefillKeysWithSecret = mutation({
         .withIndex('by_form', (q) => q.eq('form_id', String(form._id)))
         .collect()
       for (const field of fields) {
+        const patch: Record<string, unknown> = {}
         const resolved = resolveCampFormPrefillKey(field)
-        if (!resolved) continue
-        if ((field.prefill_key ?? '').trim() === resolved) continue
+        if (resolved && (field.prefill_key ?? '').trim() !== resolved) {
+          patch.prefill_key = resolved
+        }
+
+        const prefill = String(resolved ?? field.prefill_key ?? '').trim()
+        const isResidence =
+          prefill === 'residence' ||
+          /residence/i.test(field.label) ||
+          /^area of residence$/i.test(field.label.trim())
+
+        if (isResidence && residenceOptions.length > 0) {
+          const sameOptions =
+            Array.isArray(field.options) &&
+            field.options.length === residenceOptions.length &&
+            field.options.every((opt, i) => opt === residenceOptions[i])
+          if (field.field_type !== 'dropdown' || !sameOptions || field.required !== true) {
+            patch.field_type = 'dropdown'
+            patch.options = residenceOptions
+            patch.required = true
+            if (!field.description?.trim()) {
+              patch.description =
+                'Choose the standard town or area — use Other if yours is not listed'
+            }
+          }
+          if (prefill !== 'residence') patch.prefill_key = 'residence'
+        }
+
+        if (Object.keys(patch).length === 0) continue
         await ctx.db.patch('form_fields', field._id, {
-          prefill_key: resolved,
+          ...patch,
           updated_at: Date.now(),
         })
         fieldsUpdated += 1

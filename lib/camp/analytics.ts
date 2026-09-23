@@ -1,4 +1,7 @@
 import type { CampRegistration, CampYear } from '@/lib/types'
+import { normalizeResidenceLabel } from '@/lib/camp/residence-locations'
+
+export { normalizeResidenceLabel }
 
 export type AnalyticsSlice = {
   label: string
@@ -236,12 +239,15 @@ export type CampYearAnalyticsReport = {
     followUp: AnalyticsSlice[]
     paymentStatus: AnalyticsSlice[]
     healthConditions: AnalyticsSlice[]
+    registrationStatus: AnalyticsSlice[]
+    roomAssignment: AnalyticsSlice[]
   }
   livePulse: LiveRegistrationPulse
   contactCoverage: ContactCoverage
   crossTabs: {
     ageByGender: CrossTabMatrix
     educationByAge: CrossTabMatrix
+    residenceByGender: CrossTabMatrix
   }
   timeline: TimelinePoint[]
   dataQuality: DataQualityRow[]
@@ -282,31 +288,6 @@ export type CampAnalyticsReport = CampYearAnalyticsReport | CampMultiYearAnalyti
 
 const AGE_ORDER = ['1-12', '13-19', '20-29', '30-39', '40-49', '50+', 'Unknown']
 
-const GHANA_REGION_ALIASES: Record<string, string> = {
-  accra: 'Greater Accra',
-  'greater accra': 'Greater Accra',
-  'greater-accra': 'Greater Accra',
-  tema: 'Greater Accra',
-  kumasi: 'Ashanti',
-  ashanti: 'Ashanti',
-  'cape coast': 'Central',
-  central: 'Central',
-  tamale: 'Northern',
-  northern: 'Northern',
-  ho: 'Volta',
-  volta: 'Volta',
-  koforidua: 'Eastern',
-  eastern: 'Eastern',
-  takoradi: 'Western',
-  western: 'Western',
-  sunyani: 'Bono',
-  bono: 'Bono',
-  bolgatanga: 'Upper East',
-  'upper east': 'Upper East',
-  wa: 'Upper West',
-  'upper west': 'Upper West',
-}
-
 function titleCase(value: string): string {
   return value
     .toLowerCase()
@@ -320,20 +301,6 @@ export function normalizePhoneKey(phone: string | undefined | null): string {
   const digits = String(phone ?? '').replace(/\D/g, '')
   if (digits.length >= 9) return digits.slice(-9)
   return digits
-}
-
-export function normalizeResidenceLabel(residence: string | undefined | null): string {
-  const raw = String(residence ?? '').trim()
-  if (!raw) return 'Not recorded'
-
-  const parts = raw.split(/[,;/|]+/).map((part) => part.trim()).filter(Boolean)
-  const candidate = parts.length > 1 ? parts[parts.length - 1] : parts[0]
-  const normalized = candidate.toLowerCase().replace(/\./g, '').trim()
-  const mapped = GHANA_REGION_ALIASES[normalized]
-  if (mapped) return mapped
-
-  if (normalized.length <= 3) return titleCase(raw)
-  return titleCase(candidate)
 }
 
 export function normalizeEducationBand(
@@ -1188,9 +1155,28 @@ function buildYearInsights(
     insights.push(`${topEdu.label} is the most common education level (${topEdu.percent}%).`)
   }
 
-  const topRegion = demographics.residence.find((s) => s.label !== 'Not recorded')
-  if (topRegion && topRegion.percent >= 20) {
-    insights.push(`${topRegion.label} is the most common residence area (${topRegion.percent}%).`)
+  const topResidences = demographics.residence.filter((s) => s.label !== 'Not recorded').slice(0, 3)
+  if (topResidences.length > 0) {
+    const share = topResidences.reduce((sum, s) => sum + s.percent, 0)
+    if (share >= 40) {
+      insights.push(
+        `Top ${topResidences.length} residence areas (${topResidences.map((s) => s.label).join(', ')}) cover ${share}% of registrants — useful for travel and room clusters.`
+      )
+    } else if (topResidences[0] && topResidences[0].percent >= 15) {
+      insights.push(
+        `${topResidences[0].label} is the most common residence (${topResidences[0].percent}%).`
+      )
+    }
+  }
+
+  const topRole = demographics.role.find((s) => s.label !== 'Participant' && s.label !== 'Not recorded')
+  if (topRole && topRole.count >= 2) {
+    insights.push(`${topRole.count} assigned as ${topRole.label} (${topRole.percent}%).`)
+  }
+
+  const noRoom = report.operations.roomAssignment.find((s) => s.label === 'No room yet')
+  if (noRoom && noRoom.percent >= 30 && total >= 5) {
+    insights.push(`${noRoom.percent}% still need a room assignment (${noRoom.count} people).`)
   }
 
   const ageGenderTop = crossTabs.ageByGender.cells.sort((a, b) => b.count - a.count)[0]
@@ -1241,7 +1227,7 @@ function buildYearInsights(
     insights.push(`${incompleteParent.percent}% lack complete parent/guardian contact — prioritize follow-up for minors.`)
   }
 
-  return insights.slice(0, 8)
+  return insights.slice(0, 10)
 }
 
 function buildOperationsSlices(registrations: CampRegistration[], total: number) {
@@ -1317,6 +1303,20 @@ function buildOperationsSlices(registrations: CampRegistration[], total: number)
       total,
       { maxItems: 8 }
     ),
+    registrationStatus: toSlices(
+      countBy(registrations, (r) => {
+        if (r.status === 'checked_in') return 'Checked in'
+        if (r.status === 'cancelled') return 'Cancelled'
+        return 'Registered'
+      }),
+      total,
+      { sortOrder: ['Registered', 'Checked in', 'Cancelled'] }
+    ),
+    roomAssignment: toSlices(
+      countBy(registrations, (r) => (r.room_id?.trim() ? 'Room assigned' : 'No room yet')),
+      total,
+      { sortOrder: ['Room assigned', 'No room yet'] }
+    ),
   }
 }
 
@@ -1354,9 +1354,9 @@ function buildDemographicsSlices(registrations: CampRegistration[], total: numbe
       { maxItems: 10 }
     ),
     residence: toSlices(countBy(registrations, (r) => normalizeResidenceLabel(r.residence)), total, {
-      maxItems: 12,
+      maxItems: 15,
     }),
-    role: toSlices(countBy(registrations, (r) => normalizeRole(r.role)), total, { maxItems: 8 }),
+    role: toSlices(countBy(registrations, (r) => normalizeRole(r.role)), total, { maxItems: 10 }),
     birthMonth: toSlices(countBy(registrations, birthMonthLabel), total, { sortOrder: monthOrder, maxItems: 13 }),
   }
 }
@@ -1417,6 +1417,16 @@ export function buildCampYearAnalyticsReport(
       getColumn: (r) => r.age_bracket ?? 'Unknown',
       rowOrder: ['JHS', 'SHS', 'University / Tertiary', 'Other', 'Not recorded'],
       columnOrder: AGE_ORDER,
+    }),
+    residenceByGender: buildCrossTabMatrix({
+      title: 'Residence × Gender',
+      rowLabel: 'Residence',
+      columnLabel: 'Gender',
+      registrations,
+      getRow: (r) => normalizeResidenceLabel(r.residence),
+      getColumn: (r) => normalizeGender(r.sex),
+      columnOrder: ['Male', 'Female', 'Not recorded'],
+      maxRows: 10,
     }),
   }
 

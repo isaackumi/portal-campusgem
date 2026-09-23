@@ -1188,6 +1188,91 @@ export async function createCampActivityRecord(activity: Record<string, unknown>
   }
 }
 
+/**
+ * Ensure Morning / Afternoon / Evening check-in sessions exist for a camp day.
+ * Used as attendance evidence for who was present each period.
+ */
+export async function ensureDailyCampSessionsAction(input: {
+  camp_year_id: string
+  date?: string
+}): Promise<{
+  data: {
+    date: string
+    created: number
+    sessions: Array<{ id: string; period: string; title: string }>
+  } | null
+  error: string | null
+}> {
+  requireConvexEnv()
+  try {
+    const {
+      CAMP_DAILY_SESSION_META,
+      CAMP_DAILY_SESSION_PERIODS,
+      matchDailySessionPeriod,
+      todayIsoDate,
+    } = await import('@/lib/camp/daily-sessions')
+    const { mapRawCampActivity } = await import('@/lib/camp/activity-display')
+    const date = input.date?.trim() || todayIsoDate()
+    const { data: existing, error: listError } = await loadCampActivitiesForYear(input.camp_year_id)
+    if (listError) return { data: null, error: listError }
+
+    const dayActivities = (existing ?? [])
+      .map((row) => mapRawCampActivity(row as Record<string, unknown>))
+      .filter((a): a is NonNullable<typeof a> => a != null && a.date === date)
+
+    const byPeriod = new Map<string, NonNullable<(typeof dayActivities)[number]>>()
+    for (const activity of dayActivities) {
+      const period = matchDailySessionPeriod(activity)
+      if (period && !byPeriod.has(period)) byPeriod.set(period, activity)
+    }
+
+    let created = 0
+    for (const period of CAMP_DAILY_SESSION_PERIODS) {
+      if (byPeriod.has(period)) continue
+      const meta = CAMP_DAILY_SESSION_META[period]
+      const { data, error } = await createCampActivityRecord({
+        camp_year_id: input.camp_year_id,
+        title: meta.title,
+        description:
+          'Daily camp presence check. Record who is on site for this session as attendance evidence.',
+        activity_type: 'session',
+        date,
+        start_time: meta.start_time,
+        end_time: meta.end_time,
+        status: 'scheduled',
+        attendance_count: 0,
+        metadata: { daily_period: period, evidence: true },
+      })
+      if (error || !data) {
+        return { data: null, error: error ?? `Failed to create ${meta.title}` }
+      }
+      const mapped = mapRawCampActivity(data as Record<string, unknown>)
+      if (mapped) byPeriod.set(period, mapped)
+      created += 1
+    }
+
+    revalidatePath('/admin/camp-meeting/scan')
+    revalidatePath('/admin/camp-meeting/activities')
+
+    return {
+      data: {
+        date,
+        created,
+        sessions: CAMP_DAILY_SESSION_PERIODS.map((period) => {
+          const activity = byPeriod.get(period)!
+          return { id: activity.id, period, title: activity.title }
+        }),
+      },
+      error: null,
+    }
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to ensure daily sessions',
+    }
+  }
+}
+
 export async function updateCampActivityRecord(
   id: string,
   patch: Record<string, unknown>

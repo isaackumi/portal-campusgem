@@ -440,12 +440,21 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
         />
         <AnalyticsBreakdownCard
           title="Residence areas"
-          description="Normalized regions (top areas + Other)"
+          description="Standardized towns/areas (aliases remapped for charts — DB values unchanged)"
           icon={MapPin}
           iconClassName="text-red-600"
           slices={demographics.residence}
           total={report.total}
           barClassName="bg-gradient-to-r from-red-500 to-red-600"
+        />
+        <AnalyticsBreakdownCard
+          title="Camp roles"
+          description="Participant, Protocol, Music, Cook, and other assigned roles"
+          icon={Users}
+          iconClassName="text-cyan-600"
+          slices={demographics.role}
+          total={report.total}
+          barClassName="bg-gradient-to-r from-cyan-500 to-cyan-600"
         />
         {birthMonths.length > 0 ? (
           <AnalyticsBreakdownCard
@@ -467,6 +476,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <CrossTabCard matrix={crossTabs.ageByGender} />
         <CrossTabCard matrix={crossTabs.educationByAge} />
+        <CrossTabCard matrix={crossTabs.residenceByGender} />
       </div>
 
       <Card className="border-2 lg:col-span-2">
@@ -484,9 +494,36 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
 
       <div>
         <h2 className="text-lg font-semibold text-slate-900">Operations & planning</h2>
-        <p className="text-sm text-muted-foreground">Guardian contacts, medical, follow-up, and payment signals</p>
+        <p className="text-sm text-muted-foreground">Status, rooms, guardian contacts, medical, follow-up, and payment</p>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
+        <AnalyticsBreakdownCard
+          title="Registration status"
+          description="Registered vs checked in vs cancelled"
+          icon={Activity}
+          iconClassName="text-lime-600"
+          slices={operations.registrationStatus}
+          total={report.total}
+          barClassName="bg-gradient-to-r from-lime-500 to-lime-600"
+        />
+        <AnalyticsBreakdownCard
+          title="Room assignment"
+          description="Lodging progress for this camp year"
+          icon={MapPin}
+          iconClassName="text-fuchsia-600"
+          slices={operations.roomAssignment}
+          total={report.total}
+          barClassName="bg-gradient-to-r from-fuchsia-500 to-fuchsia-600"
+        />
+        <AnalyticsBreakdownCard
+          title="Previous camp attendance"
+          description="How many camps people have attended before"
+          icon={Calendar}
+          iconClassName="text-blue-600"
+          slices={operations.attendanceHistory}
+          total={report.total}
+          barClassName="bg-gradient-to-r from-blue-500 to-blue-600"
+        />
         <AnalyticsBreakdownCard
           title="Parent / guardian contact"
           description="Completeness of guardian fields from the form"
@@ -514,6 +551,17 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
           total={report.total}
           barClassName="bg-gradient-to-r from-rose-500 to-rose-600"
         />
+        {operations.healthConditions.length > 0 ? (
+          <AnalyticsBreakdownCard
+            title="Health conditions (detail)"
+            description="Named conditions when a challenge was reported"
+            icon={Heart}
+            iconClassName="text-rose-700"
+            slices={operations.healthConditions}
+            total={report.total}
+            barClassName="bg-gradient-to-r from-rose-600 to-rose-700"
+          />
+        ) : null}
         <AnalyticsBreakdownCard
           title="Follow-up status"
           description="Outreach pipeline"
@@ -734,12 +782,21 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
         />
         <AnalyticsBreakdownCard
           title="Combined residence"
-          description="Normalized regions from unique camper profiles"
+          description="Standardized towns/areas from unique camper profiles"
           icon={MapPin}
           iconClassName="text-red-600"
           slices={combined.demographics.residence}
           total={combined.uniqueCampers}
           barClassName="bg-gradient-to-r from-red-500 to-red-600"
+        />
+        <AnalyticsBreakdownCard
+          title="Combined roles"
+          description="Roles across unique campers"
+          icon={Users}
+          iconClassName="text-cyan-600"
+          slices={combined.demographics.role}
+          total={combined.uniqueCampers}
+          barClassName="bg-gradient-to-r from-cyan-500 to-cyan-600"
         />
       </div>
 

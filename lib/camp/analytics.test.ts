@@ -55,9 +55,13 @@ describe('camp analytics normalization', () => {
     expect(normalizePhoneKey('0244123456')).toBe('244123456')
   })
 
-  it('maps common residence aliases to regions', () => {
-    expect(normalizeResidenceLabel('Tema, Greater Accra')).toBe('Greater Accra')
-    expect(normalizeResidenceLabel('kumasi')).toBe('Ashanti')
+  it('maps residence aliases to canonical towns and regions', () => {
+    expect(normalizeResidenceLabel('Tema, Greater Accra')).toBe('Tema')
+    expect(normalizeResidenceLabel('Mumford C/R')).toBe('Mumford')
+    expect(normalizeResidenceLabel('KASOA,CENTRAL')).toBe('Kasoa')
+    expect(normalizeResidenceLabel('Central/Mumford')).toBe('Mumford')
+    expect(normalizeResidenceLabel('Methods School Park')).toBe('Methodist School Park')
+    expect(normalizeResidenceLabel('kumasi')).toBe('Kumasi')
   })
 
   it('bands education levels', () => {

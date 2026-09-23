@@ -5,51 +5,57 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Html5QrcodeScanner } from 'html5-qrcode'
 import { campService } from '@/lib/services/camp-service'
-import { getActiveCampYear } from '@/lib/actions/camp'
+import { ensureDailyCampSessionsAction, getActiveCampYear } from '@/lib/actions/camp'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   CheckCircle,
   XCircle,
   Users,
-  TrendingUp,
   Clock,
   RefreshCw,
   QrCode as QrCodeIcon,
-  Calendar,
   Hash,
-  UserCheck,
+  AlertTriangle,
+  Sunrise,
+  Sun,
+  Moon,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CampActivity, CampRegistration, CampSessionAttendance, CampYear } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import { cn } from '@/lib/utils'
-import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { CampManualCheckInPanel } from '@/components/camp/camp-manual-check-in-panel'
 import { CampQuickCodeCheckIn } from '@/components/camp/camp-quick-code-check-in'
 import { findCampRegistrationFromScan } from '@/lib/camp/resolve-registration-from-scan'
+import { mapRawCampActivity, sortCampActivities } from '@/lib/camp/activity-display'
 import {
-  formatCampActivityLabel,
-  mapRawCampActivity,
-  sortCampActivities,
-  suggestCampActivityId,
-} from '@/lib/camp/activity-display'
+  CAMP_DAILY_SESSION_META,
+  CAMP_DAILY_SESSION_PERIODS,
+  type CampDailySessionPeriod,
+  isSuggestedDailySessionPeriod,
+  matchDailySessionPeriod,
+  suggestDailySessionPeriod,
+  todayIsoDate,
+} from '@/lib/camp/daily-sessions'
+import { formatRelativeWhen } from '@/lib/camp/relative-time'
 
 interface RecentCheckIn {
   id: string
   full_name: string
   role: string
   checked_in_at: string
+}
+
+const PERIOD_ICONS: Record<CampDailySessionPeriod, typeof Sunrise> = {
+  morning: Sunrise,
+  afternoon: Sun,
+  evening: Moon,
 }
 
 export default function CampScannerPage() {
@@ -59,6 +65,14 @@ export default function CampScannerPage() {
   const [campYear, setCampYear] = useState<CampYear | null>(null)
   const [activities, setActivities] = useState<CampActivity[]>([])
   const [selectedActivityId, setSelectedActivityId] = useState<string>('')
+  const [sessionDate, setSessionDate] = useState(todayIsoDate)
+  const [ensuringSessions, setEnsuringSessions] = useState(false)
+  const [periodOverride, setPeriodOverride] = useState(false)
+  const [showMoreTools, setShowMoreTools] = useState(false)
+  const [moreTool, setMoreTool] = useState<'code' | 'qr' | 'arrival'>('code')
+  const [suggestedPeriod, setSuggestedPeriod] = useState<CampDailySessionPeriod>(() =>
+    suggestDailySessionPeriod()
+  )
   const [scanResult, setScanResult] = useState<{
     success: boolean
     message: string
@@ -67,7 +81,6 @@ export default function CampScannerPage() {
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
   const [sessionAttendances, setSessionAttendances] = useState<CampSessionAttendance[]>([])
   const [loading, setLoading] = useState(true)
-  const [checkInTab, setCheckInTab] = useState<'qr' | 'manual' | 'code' | 'arrival'>('manual')
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const lastScannedRef = useRef<string | null>(null)
 
@@ -76,21 +89,53 @@ export default function CampScannerPage() {
     [activities, selectedActivityId]
   )
 
+  const dailySessionsForDate = useMemo(() => {
+    const byPeriod = new Map<CampDailySessionPeriod, CampActivity>()
+    for (const activity of activities) {
+      if (activity.date !== sessionDate) continue
+      const period = matchDailySessionPeriod(activity)
+      if (period && !byPeriod.has(period)) byPeriod.set(period, activity)
+    }
+    return byPeriod
+  }, [activities, sessionDate])
+
+  const selectedPeriod = useMemo(
+    () => (selectedActivity ? matchDailySessionPeriod(selectedActivity) : null),
+    [selectedActivity]
+  )
+
   const sessionCheckedInIds = useMemo(
     () => new Set(sessionAttendances.map((row) => row.registration_id)),
     [sessionAttendances]
   )
 
+  const activeCampers = useMemo(
+    () => registrations.filter((r) => r.status !== 'cancelled'),
+    [registrations]
+  )
+
   const sessionStats = useMemo(() => {
-    const total = registrations.length
-    const checkedInSession = sessionCheckedInIds.size
+    const total = activeCampers.length
+    const checkedInSession = activeCampers.filter((r) => sessionCheckedInIds.has(r.id)).length
     return {
       totalRegistrations: total,
       checkedInSession,
       remaining: Math.max(0, total - checkedInSession),
       percentage: total > 0 ? Math.round((checkedInSession / total) * 100) : 0,
     }
-  }, [registrations.length, sessionCheckedInIds])
+  }, [activeCampers, sessionCheckedInIds])
+
+  const missingCampers = useMemo(
+    () =>
+      activeCampers
+        .filter((r) => !sessionCheckedInIds.has(r.id))
+        .sort((a, b) =>
+          (a.full_name || `${a.first_name} ${a.last_name}`).localeCompare(
+            b.full_name || `${b.first_name} ${b.last_name}`
+          )
+        ),
+    [activeCampers, sessionCheckedInIds]
+  )
 
   const loadSessionAttendances = useCallback(async (activityId: string) => {
     const { data } = await campService.getSessionAttendancesForActivity(activityId)
@@ -102,18 +147,73 @@ export default function CampScannerPage() {
     if (campRegs) setRegistrations(campRegs)
   }, [])
 
-  const loadActivities = useCallback(async (yearId: string) => {
-    const { data } = await campService.getCampActivities(yearId)
-    const mapped = (data ?? [])
-      .map((row) => mapRawCampActivity(row as Record<string, unknown>))
-      .filter((a): a is CampActivity => a != null)
-    const sorted = sortCampActivities(mapped)
-    setActivities(sorted)
-    setSelectedActivityId((prev) => {
-      if (prev && sorted.some((a) => a.id === prev)) return prev
-      return suggestCampActivityId(sorted) ?? ''
-    })
-  }, [])
+  const applySuggestedPeriod = useCallback(
+    (list: CampActivity[], date: string, suggested: CampDailySessionPeriod) => {
+      const byPeriod = new Map<CampDailySessionPeriod, CampActivity>()
+      for (const activity of list) {
+        if (activity.date !== date) continue
+        const period = matchDailySessionPeriod(activity)
+        if (period && !byPeriod.has(period)) byPeriod.set(period, activity)
+      }
+      const pick =
+        byPeriod.get(suggested) ??
+        CAMP_DAILY_SESSION_PERIODS.map((p) => byPeriod.get(p)).find(Boolean) ??
+        list.find((a) => a.date === date) ??
+        list[0]
+      return pick?.id ?? ''
+    },
+    []
+  )
+
+  const loadActivities = useCallback(
+    async (yearId: string, date: string, opts?: { keepOverride?: boolean }) => {
+      const { data } = await campService.getCampActivities(yearId)
+      const mapped = (data ?? [])
+        .map((row) => mapRawCampActivity(row as Record<string, unknown>))
+        .filter((a): a is CampActivity => a != null)
+      const sorted = sortCampActivities(mapped)
+      setActivities(sorted)
+      const suggested = suggestDailySessionPeriod()
+      setSuggestedPeriod(suggested)
+      setSelectedActivityId((prev) => {
+        if (opts?.keepOverride && periodOverride && prev && sorted.some((a) => a.id === prev)) {
+          return prev
+        }
+        return applySuggestedPeriod(sorted, date, suggested)
+      })
+    },
+    [applySuggestedPeriod, periodOverride]
+  )
+
+  const ensureDailySessions = useCallback(
+    async (yearId: string, date: string, notify = false) => {
+      setEnsuringSessions(true)
+      try {
+        const { data, error } = await ensureDailyCampSessionsAction({
+          camp_year_id: yearId,
+          date,
+        })
+        if (notify) {
+          if (error) {
+            toast({
+              variant: 'destructive',
+              title: 'Could not prepare daily sessions',
+              description: error,
+            })
+          } else if (data && data.created > 0) {
+            toast({
+              title: 'Daily sessions ready',
+              description: `Created ${data.created} session${data.created === 1 ? '' : 's'} for ${date}.`,
+            })
+          }
+        }
+        await loadActivities(yearId, date)
+      } finally {
+        setEnsuringSessions(false)
+      }
+    },
+    [loadActivities, toast]
+  )
 
   const refreshCheckInData = useCallback(async () => {
     if (!campYear) return
@@ -122,6 +222,21 @@ export default function CampScannerPage() {
       await loadSessionAttendances(selectedActivityId)
     }
   }, [campYear, loadRegistrations, loadSessionAttendances, selectedActivityId])
+
+  function selectPeriod(period: CampDailySessionPeriod) {
+    const activity = dailySessionsForDate.get(period)
+    if (!activity) return
+    const suggested = suggestDailySessionPeriod()
+    setSuggestedPeriod(suggested)
+    setPeriodOverride(period !== suggested)
+    setSelectedActivityId(activity.id)
+    if (period !== suggested) {
+      toast({
+        title: `Switched to ${CAMP_DAILY_SESSION_META[period].label}`,
+        description: `Clock suggests ${CAMP_DAILY_SESSION_META[suggested].label} right now. Double-check before marking people present.`,
+      })
+    }
+  }
 
   useEffect(() => {
     async function loadCampYear() {
@@ -139,9 +254,27 @@ export default function CampScannerPage() {
 
   useEffect(() => {
     if (!campYear) return
+    setPeriodOverride(false)
     void loadRegistrations(campYear.id)
-    void loadActivities(campYear.id)
-  }, [campYear, loadRegistrations, loadActivities])
+    void ensureDailySessions(campYear.id, sessionDate)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campYear, sessionDate])
+
+  // Re-align to clock when user has not manually overridden
+  useEffect(() => {
+    if (!campYear || periodOverride) return
+    const tick = () => {
+      const next = suggestDailySessionPeriod()
+      setSuggestedPeriod(next)
+      const activity = dailySessionsForDate.get(next)
+      if (activity && selectedActivityId !== activity.id) {
+        setSelectedActivityId(activity.id)
+      }
+    }
+    tick()
+    const id = window.setInterval(tick, 60_000)
+    return () => window.clearInterval(id)
+  }, [campYear, periodOverride, dailySessionsForDate, selectedActivityId])
 
   useEffect(() => {
     if (!selectedActivityId) {
@@ -152,7 +285,7 @@ export default function CampScannerPage() {
   }, [selectedActivityId, loadSessionAttendances])
 
   useEffect(() => {
-    if (!campYear || !selectedActivityId || checkInTab !== 'qr') return
+    if (!campYear || !selectedActivityId || moreTool !== 'qr' || !showMoreTools) return
 
     const element = document.getElementById('reader')
     if (!element) return
@@ -179,9 +312,8 @@ export default function CampScannerPage() {
       }
       void cancelled
     }
-    // onScanSuccess/onScanFailure intentionally omitted — scanner keeps first handlers; pause/resume handles flow
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campYear, selectedActivityId, checkInTab])
+  }, [campYear, selectedActivityId, moreTool, showMoreTools])
 
   function playBeep(type: 'success' | 'error' | 'warning' = 'success') {
     try {
@@ -215,11 +347,6 @@ export default function CampScannerPage() {
         message: 'Select a camp session before scanning.',
       })
       playBeep('error')
-      toast({
-        variant: 'destructive',
-        title: 'No session selected',
-        description: 'Choose the session you are checking people into.',
-      })
     } else if (!user?.id) {
       setScanResult({ success: false, message: 'Sign in required to record check-ins.' })
       playBeep('error')
@@ -233,11 +360,6 @@ export default function CampScannerPage() {
             message: 'Invalid QR code. Participant not found for this camp year.',
           })
           playBeep('error')
-          toast({
-            variant: 'destructive',
-            title: 'Not found',
-            description: 'This QR code is not registered.',
-          })
         } else if (sessionCheckedInIds.has(registration.id)) {
           setScanResult({
             success: true,
@@ -245,10 +367,6 @@ export default function CampScannerPage() {
             data: registration,
           })
           playBeep('warning')
-          toast({
-            title: 'Already in session',
-            description: `${registration.full_name || `${registration.first_name} ${registration.last_name}`} was already scanned for ${selectedActivity?.title ?? 'this session'}.`,
-          })
         } else {
           const { data, error } = await campService.recordSessionCheckIn({
             activity_id: selectedActivityId,
@@ -260,7 +378,10 @@ export default function CampScannerPage() {
 
           const updatedRegistration = (data.registration ?? registration) as CampRegistration
           if (data.attendance) {
-            setSessionAttendances((prev) => [data.attendance!, ...prev.filter((row) => row.registration_id !== registration.id)])
+            setSessionAttendances((prev) => [
+              data.attendance!,
+              ...prev.filter((row) => row.registration_id !== registration.id),
+            ])
           }
           setScanResult({
             success: true,
@@ -270,10 +391,6 @@ export default function CampScannerPage() {
             data: updatedRegistration,
           })
           playBeep(data.already_checked_in ? 'warning' : 'success')
-          toast({
-            title: data.already_checked_in ? 'Already in session' : 'Checked in',
-            description: updatedRegistration.full_name || `${updatedRegistration.first_name} ${updatedRegistration.last_name}`,
-          })
         }
       } catch (err: unknown) {
         setScanResult({
@@ -281,11 +398,6 @@ export default function CampScannerPage() {
           message: err instanceof Error ? err.message : 'System error during check-in.',
         })
         playBeep('error')
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to process check-in. Please try again.',
-        })
       }
     }
 
@@ -327,6 +439,12 @@ export default function CampScannerPage() {
       .slice(0, 12)
   }, [sessionAttendances, registrations])
 
+  const sessionLabel = selectedPeriod
+    ? CAMP_DAILY_SESSION_META[selectedPeriod].label
+    : selectedActivity?.title ?? 'Session'
+  const outsideUsualHours =
+    selectedPeriod != null && !isSuggestedDailySessionPeriod(selectedPeriod)
+
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -337,7 +455,7 @@ export default function CampScannerPage() {
 
   if (!campYear) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-lg p-4">
         <Card>
           <CardContent className="py-12 text-center">
             <p className="mb-4 text-muted-foreground">No active camp year found.</p>
@@ -351,288 +469,306 @@ export default function CampScannerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
-        <CampAdminPageHeader
-          title="Camp check-in hub"
-          campYear={campYear}
-          actions={
-            <>
-              <Button variant="outline" asChild>
-                <Link href="/admin/camp-meeting/rooms">Rooms</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/admin/camp-meeting/activities">Manage sessions</Link>
-              </Button>
-              <Button variant="outline" onClick={() => void refreshCheckInData()}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
-            </>
-          }
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-lg space-y-4 p-4 pb-16 sm:max-w-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Camp check-in</h1>
+            <p className="text-sm text-slate-600">{campYear.year} · presence by session</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-10 shrink-0"
+            disabled={ensuringSessions}
+            onClick={() => {
+              setPeriodOverride(false)
+              void ensureDailySessions(campYear.id, sessionDate, true)
+              void refreshCheckInData()
+            }}
+          >
+            <RefreshCw className={cn('h-4 w-4', ensuringSessions && 'animate-spin')} />
+          </Button>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <label htmlFor="session-date" className="text-sm font-medium text-slate-700">
+              Camp day
+            </label>
+            <Input
+              id="session-date"
+              type="date"
+              value={sessionDate}
+              onChange={(e) => {
+                setPeriodOverride(false)
+                setSessionDate(e.target.value || todayIsoDate())
+              }}
+              className="h-10 w-[10.5rem] bg-white"
+            />
+          </div>
+
+          <p className="mb-2 text-xs text-slate-500">
+            Auto: Morning until 12:00 · Afternoon until 17:00 · Evening after 17:00
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {CAMP_DAILY_SESSION_PERIODS.map((period) => {
+              const meta = CAMP_DAILY_SESSION_META[period]
+              const activity = dailySessionsForDate.get(period)
+              const Icon = PERIOD_ICONS[period]
+              const isSelected = selectedActivityId === activity?.id
+              const isSuggested = period === suggestedPeriod
+              return (
+                <button
+                  key={period}
+                  type="button"
+                  disabled={!activity || ensuringSessions}
+                  onClick={() => selectPeriod(period)}
+                  className={cn(
+                    'rounded-xl border-2 p-3 text-left transition-colors',
+                    isSelected
+                      ? 'border-slate-900 bg-slate-900 text-white'
+                      : isSuggested
+                        ? 'border-emerald-400 bg-emerald-50'
+                        : 'border-slate-200 bg-white',
+                    (!activity || ensuringSessions) && 'opacity-50'
+                  )}
+                >
+                  <Icon className={cn('mb-1 h-4 w-4', isSelected ? 'text-white' : 'text-slate-700')} />
+                  <div className={cn('text-sm font-semibold', isSelected ? 'text-white' : 'text-slate-900')}>
+                    {meta.label}
+                  </div>
+                  <div className={cn('text-[11px]', isSelected ? 'text-slate-300' : 'text-slate-500')}>
+                    {meta.hint}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {outsideUsualHours ? (
+            <div className="mt-3 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Clock suggests <strong>{CAMP_DAILY_SESSION_META[suggestedPeriod].label}</strong> now.
+                You overrode to <strong>{sessionLabel}</strong>.
+              </span>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-emerald-800">
+              Checking into <strong>{sessionLabel}</strong> (auto-selected for now).
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-xl border bg-white p-3 text-center">
+            <div className="text-2xl font-bold text-slate-900">{sessionStats.totalRegistrations}</div>
+            <div className="text-xs text-slate-500">At camp</div>
+          </div>
+          <div className="rounded-xl border bg-white p-3 text-center">
+            <div className="text-2xl font-bold text-green-600">{sessionStats.checkedInSession}</div>
+            <div className="text-xs text-slate-500">Present</div>
+          </div>
+          <div className="rounded-xl border bg-white p-3 text-center">
+            <div className="text-2xl font-bold text-rose-600">{sessionStats.remaining}</div>
+            <div className="text-xs text-slate-500">Missing</div>
+          </div>
+        </div>
+
+        <CampManualCheckInPanel
+          simple
+          campYearId={campYear.id}
+          registrations={registrations}
+          activityId={selectedActivityId || undefined}
+          sessionCheckedInIds={sessionCheckedInIds}
+          performedByUserId={user?.id}
+          checkInMethod="manual"
+          sessionLabel={sessionLabel}
+          onCheckInComplete={() => void refreshCheckInData()}
         />
 
-        <Card className="border-2 border-amber-200 bg-amber-50/40">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Calendar className="h-5 w-5 text-amber-700" />
-              Active session
-            </CardTitle>
-            <CardDescription>
-              Pick the session you are checking people into. Use QR scan, manual search, or quick
-              code entry — switch tabs if the camera is slow or unavailable.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {activities.length === 0 ? (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-700">
-                  No camp sessions yet. Create worship, teaching, and meal sessions first.
-                </p>
-                <Button asChild>
-                  <Link href="/admin/camp-meeting/activities">Add sessions</Link>
-                </Button>
-              </div>
-            ) : (
-              <Select
-                // Avoid value="" — Radix controlled Select loops and throws React #185
-                value={selectedActivityId || undefined}
-                onValueChange={setSelectedActivityId}
-              >
-                <SelectTrigger className="min-h-11 bg-white text-base">
-                  <SelectValue placeholder="Select session…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activities.map((activity) => (
-                    <SelectItem key={activity.id} value={activity.id}>
-                      {formatCampActivityLabel(activity)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </CardContent>
-        </Card>
+        <button
+          type="button"
+          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700"
+          onClick={() => setShowMoreTools((v) => !v)}
+        >
+          <span>More tools (code, QR, arrival)</span>
+          {showMoreTools ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
 
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <Users className="h-4 w-4" />
-                Registered
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{sessionStats.totalRegistrations}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                In this session
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">{sessionStats.checkedInSession}</div>
-              <p className="mt-1 text-xs text-slate-500">{sessionStats.percentage}% of campers</p>
-            </CardContent>
-          </Card>
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <Clock className="h-4 w-4 text-primary" />
-                Session
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="line-clamp-2 text-sm font-semibold text-slate-900">
-                {selectedActivity?.title ?? '—'}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {selectedActivity?.date ?? 'Select a session'}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <TrendingUp className="h-4 w-4 text-purple-600" />
-                Not yet in session
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{sessionStats.remaining}</div>
-            </CardContent>
-          </Card>
-        </div>
+        {showMoreTools ? (
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { id: 'code' as const, label: 'Code', icon: Hash },
+                  { id: 'qr' as const, label: 'QR', icon: QrCodeIcon },
+                  { id: 'arrival' as const, label: 'Arrival', icon: Users },
+                ] as const
+              ).map((tool) => (
+                <button
+                  key={tool.id}
+                  type="button"
+                  onClick={() => setMoreTool(tool.id)}
+                  className={cn(
+                    'flex min-h-11 items-center justify-center gap-1.5 rounded-lg border text-sm font-medium',
+                    moreTool === tool.id
+                      ? 'border-slate-900 bg-slate-900 text-white'
+                      : 'border-slate-200 bg-slate-50 text-slate-700'
+                  )}
+                >
+                  <tool.icon className="h-4 w-4" />
+                  {tool.label}
+                </button>
+              ))}
+            </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <Tabs value={checkInTab} onValueChange={(v) => setCheckInTab(v as typeof checkInTab)}>
-              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
-                <TabsTrigger value="manual" className="min-h-10">
-                  <UserCheck className="mr-1.5 h-4 w-4" />
-                  Manual
-                </TabsTrigger>
-                <TabsTrigger value="code" className="min-h-10">
-                  <Hash className="mr-1.5 h-4 w-4" />
-                  Code
-                </TabsTrigger>
-                <TabsTrigger value="qr" className="min-h-10">
-                  <QrCodeIcon className="mr-1.5 h-4 w-4" />
-                  QR scan
-                </TabsTrigger>
-                <TabsTrigger value="arrival" className="min-h-10">
-                  <Users className="mr-1.5 h-4 w-4" />
-                  Arrival
-                </TabsTrigger>
-              </TabsList>
+            {moreTool === 'code' ? (
+              <CampQuickCodeCheckIn
+                registrations={registrations}
+                activityId={selectedActivityId || undefined}
+                sessionCheckedInIds={sessionCheckedInIds}
+                performedByUserId={user?.id}
+                onCheckInComplete={() => void refreshCheckInData()}
+              />
+            ) : null}
 
-              <TabsContent value="manual" className="mt-4 space-y-4">
-                <CampManualCheckInPanel
-                  campYearId={campYear.id}
-                  registrations={registrations}
-                  activityId={selectedActivityId || undefined}
-                  sessionCheckedInIds={sessionCheckedInIds}
-                  performedByUserId={user?.id}
-                  checkInMethod="manual"
-                  onCheckInComplete={() => void refreshCheckInData()}
-                />
-              </TabsContent>
-
-              <TabsContent value="code" className="mt-4 space-y-4">
-                <CampQuickCodeCheckIn
-                  registrations={registrations}
-                  activityId={selectedActivityId || undefined}
-                  sessionCheckedInIds={sessionCheckedInIds}
-                  performedByUserId={user?.id}
-                  onCheckInComplete={() => void refreshCheckInData()}
-                />
-              </TabsContent>
-
-              <TabsContent value="qr" className="mt-4 space-y-4">
-                <Card className="border-2">
-                  <CardHeader className="border-b bg-slate-50">
-                    <CardTitle className="flex items-center gap-2">
-                      <QrCodeIcon className="h-5 w-5" />
-                      QR scanner
-                    </CardTitle>
-                    <CardDescription>
-                      {selectedActivityId
-                        ? `Scanning for ${selectedActivity?.title ?? 'selected session'}`
-                        : 'Select a session above to enable scanning'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    {!selectedActivityId ? (
-                      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-16 text-center text-sm text-slate-600">
-                        Choose a camp session to start scanning printed QR codes.
-                      </div>
-                    ) : (
-                      <div id="reader" className="w-full" />
-                    )}
-
-                    {scanResult ? (
-                      <div
-                        className={cn(
-                          'mt-6 rounded-lg border-2 p-4 transition-all',
-                          scanResult.success
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-red-500 bg-red-50'
+            {moreTool === 'qr' ? (
+              <Card className="border">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">QR scanner</CardTitle>
+                  <CardDescription>
+                    {selectedActivityId
+                      ? `Scanning for ${sessionLabel}`
+                      : 'Select a session first'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!selectedActivityId ? (
+                    <p className="py-8 text-center text-sm text-slate-500">Select a session first.</p>
+                  ) : (
+                    <div id="reader" className="w-full" />
+                  )}
+                  {scanResult ? (
+                    <div
+                      className={cn(
+                        'mt-4 rounded-lg border-2 p-3',
+                        scanResult.success
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-red-500 bg-red-50'
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        {scanResult.success ? (
+                          <CheckCircle className="mt-0.5 h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircle className="mt-0.5 h-5 w-5 text-red-600" />
                         )}
-                      >
-                        <div className="flex items-start gap-3">
-                          {scanResult.success ? (
-                            <CheckCircle className="mt-0.5 h-6 w-6 text-green-600" />
-                          ) : (
-                            <XCircle className="mt-0.5 h-6 w-6 text-red-600" />
-                          )}
-                          <div className="flex-1">
-                            <p
-                              className={cn(
-                                'mb-2 text-lg font-bold',
-                                scanResult.success ? 'text-green-800' : 'text-red-800'
-                              )}
-                            >
-                              {scanResult.message}
+                        <div>
+                          <p className="font-semibold">{scanResult.message}</p>
+                          {scanResult.data ? (
+                            <p className="text-sm">
+                              {scanResult.data.full_name ||
+                                `${scanResult.data.first_name} ${scanResult.data.last_name}`}
                             </p>
-                            {scanResult.data ? (
-                              <div className="space-y-1 text-sm">
-                                <p className="font-semibold text-slate-900">
-                                  {scanResult.data.full_name ||
-                                    `${scanResult.data.first_name} ${scanResult.data.last_name}`}
-                                </p>
-                                <Badge variant="outline" className="text-xs">
-                                  {scanResult.data.role}
-                                </Badge>
-                              </div>
-                            ) : null}
-                          </div>
+                          ) : null}
                         </div>
                       </div>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
 
-              <TabsContent value="arrival" className="mt-4 space-y-4">
-                <CampManualCheckInPanel
-                  campYearId={campYear.id}
-                  registrations={registrations}
-                  performedByUserId={user?.id}
-                  checkInMethod="arrival"
-                  onCheckInComplete={() => void refreshCheckInData()}
-                />
-              </TabsContent>
-            </Tabs>
+            {moreTool === 'arrival' ? (
+              <CampManualCheckInPanel
+                campYearId={campYear.id}
+                registrations={registrations}
+                performedByUserId={user?.id}
+                checkInMethod="arrival"
+                onCheckInComplete={() => void refreshCheckInData()}
+              />
+            ) : null}
           </div>
+        ) : null}
 
-          <div className="space-y-6">
-            <Card className="border-2">
-              <CardHeader className="border-b bg-slate-50">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Session check-ins
-                </CardTitle>
-                <CardDescription>
-                  {sessionStats.checkedInSession} checked in to this session
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {recentCheckIns.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-slate-500">No check-ins yet</div>
-                ) : (
-                  <div className="max-h-[600px] space-y-3 overflow-y-auto">
-                    {recentCheckIns.map((checkIn) => (
-                      <div
-                        key={checkIn.id}
-                        className="rounded-lg border border-slate-200 bg-slate-50 p-3 transition-colors hover:bg-gray-100"
-                      >
-                        <div className="mb-1 flex items-start justify-between">
-                          <p className="truncate text-sm font-semibold text-slate-900">
-                            {checkIn.full_name}
-                          </p>
-                          <Badge variant="default" className="ml-2 text-xs">
-                            <CheckCircle className="mr-1 h-3 w-3" />
-                            In
-                          </Badge>
-                        </div>
-                        <p className="truncate text-xs text-slate-600">{checkIn.role}</p>
-                        <p className="text-xs text-slate-500">
-                          {new Date(checkIn.checked_in_at).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Card className="border">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="h-4 w-4" /> Present
+              </CardTitle>
+              <CardDescription>{sessionStats.checkedInSession} this session</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {recentCheckIns.length === 0 ? (
+                <p className="py-4 text-center text-sm text-slate-500">No check-ins yet</p>
+              ) : (
+                <ul className="max-h-64 space-y-2 overflow-y-auto">
+                  {recentCheckIns.map((checkIn) => {
+                    const when = formatRelativeWhen(checkIn.checked_in_at)
+                    return (
+                      <li key={checkIn.id} className="rounded-lg border bg-slate-50 px-3 py-2">
+                        <p className="truncate text-sm font-semibold">{checkIn.full_name}</p>
+                        <p className="text-xs text-slate-500" title={when.absolute}>
+                          {when.absoluteTime}
+                          {when.relative ? ` · ${when.relative}` : ''}
                         </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border border-rose-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base text-rose-900">
+                <AlertTriangle className="h-4 w-4" /> Missing
+              </CardTitle>
+              <CardDescription>Not yet marked for {sessionLabel}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!selectedActivityId ? (
+                <p className="py-4 text-center text-sm text-slate-500">Select a session</p>
+              ) : missingCampers.length === 0 ? (
+                <p className="py-4 text-center text-sm text-green-700">Everyone present</p>
+              ) : (
+                <ul className="max-h-64 space-y-2 overflow-y-auto">
+                  {missingCampers.slice(0, 40).map((reg) => (
+                    <li key={reg.id} className="rounded-lg border border-rose-100 px-3 py-2">
+                      <p className="truncate text-sm font-medium">
+                        {reg.full_name || `${reg.first_name} ${reg.last_name}`}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">
+                        {reg.role}
+                        {reg.phone ? ` · ${reg.phone}` : ''}
+                      </p>
+                    </li>
+                  ))}
+                  {missingCampers.length > 40 ? (
+                    <li className="text-center text-xs text-slate-500">
+                      +{missingCampers.length - 40} more
+                    </li>
+                  ) : null}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        <p className="text-center text-xs text-slate-500">
+          <Link href="/admin/camp-meeting/activities" className="underline">
+            Manage sessions
+          </Link>
+          {' · '}
+          <Link href="/admin/camp-meeting/rooms" className="underline">
+            Rooms
+          </Link>
+        </p>
       </div>
     </div>
   )
