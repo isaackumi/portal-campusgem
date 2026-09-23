@@ -1,3 +1,4 @@
+import { CAMP_RESIDENCE_OPTIONS } from '@/lib/camp/residence-locations'
 import type { FormTemplateField } from '@/lib/forms/templates'
 
 /** Public camp meeting sign-up form (Forms Hub template). Phone is early for profile lookup. */
@@ -51,9 +52,11 @@ export const CAMP_MEETING_REGISTRATION_FIELDS: FormTemplateField[] = [
   },
   {
     label: 'Residence / area',
-    field_type: 'short_text',
+    description: 'Choose the standard town or area — use Other if yours is not listed',
+    field_type: 'dropdown',
     required: true,
     prefill_key: 'residence',
+    options: [...CAMP_RESIDENCE_OPTIONS],
     sort_order: 6,
   },
   {

@@ -6,6 +6,7 @@ import {
   isDateOfBirthField,
   validateDateOfBirthValue,
 } from '@/lib/forms/date-of-birth-validation'
+import { isIncompleteOtherValue, optionsIncludeOther } from '@/lib/forms/dropdown-other'
 
 export type FormValidationContext = {
   phone?: string
@@ -58,7 +59,24 @@ export function validateField(field: ChurchFormField, value: unknown): string | 
   }
 
   if (field.required && isFieldValueEmpty(field, value)) {
+    if (field.field_type === 'dropdown' && optionsIncludeOther(field.options)) {
+      return `${field.label} is required — search and choose, or pick Other and specify`
+    }
     return `${field.label} is required`
+  }
+
+  if (field.field_type === 'dropdown' && isIncompleteOtherValue(value, field.options)) {
+    return `${field.label}: please specify your area when choosing Other`
+  }
+
+  if (
+    field.field_type === 'dropdown' &&
+    field.required &&
+    String(value ?? '').trim() === ''
+  ) {
+    return optionsIncludeOther(field.options)
+      ? `${field.label}: please specify your area when choosing Other`
+      : `${field.label} is required`
   }
 
   if (isFieldValueEmpty(field, value)) {

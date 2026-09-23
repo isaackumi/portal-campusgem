@@ -349,9 +349,11 @@ export async function syncCampMeetingFormPrefillKeysInConvex(): Promise<{
   forms_scanned: number
   fields_updated: number
 }> {
+  const { CAMP_RESIDENCE_OPTIONS } = await import('@/lib/camp/residence-locations')
   const client = getConvexHttpClient()
   return (await client.mutation(api.forms.syncCampMeetingFormPrefillKeysWithSecret, {
     secret: requireCampAdminSecret(),
+    residence_options: [...CAMP_RESIDENCE_OPTIONS],
   })) as { forms_scanned: number; fields_updated: number }
 }
 

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableFormSelect } from '@/components/forms/searchable-form-select'
 import { usePublicFormTheme } from '@/components/forms/public-form-theme-context'
 import {
   isDateOfBirthField,
@@ -192,41 +192,16 @@ export function PublicFormFieldInput({
           />
         )
       }
-      if (isStepped) {
-        return (
-          <select
-            className={cn(
-              steppedInputClass,
-              'w-full appearance-none bg-transparent pr-8 text-lg outline-none'
-            )}
-            value={String(value ?? '')}
-            onChange={(event) => onChange(event.target.value)}
-            autoFocus={autoFocus}
-          >
-            <option value="" className="text-slate-900">
-              Choose an option
-            </option>
-            {(field.options ?? []).map((option) => (
-              <option key={option} value={option} className="text-slate-900">
-                {option}
-              </option>
-            ))}
-          </select>
-        )
-      }
       return (
-        <Select value={String(value ?? '')} onValueChange={onChange}>
-          <SelectTrigger className={inputClass}>
-            <SelectValue placeholder="Choose an option" />
-          </SelectTrigger>
-          <SelectContent>
-            {(field.options ?? []).map((option) => (
-              <SelectItem key={option} value={option} className="text-base">
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableFormSelect
+          options={field.options ?? []}
+          value={String(value ?? '')}
+          onChange={onChange}
+          placeholder="Search or choose…"
+          autoFocus={autoFocus}
+          variant={variant}
+          id={`field-${field.id}`}
+        />
       )
 
     case 'radio':
