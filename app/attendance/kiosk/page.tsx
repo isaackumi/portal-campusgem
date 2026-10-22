@@ -145,8 +145,7 @@ export default function KioskPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center">
-                <Monitor className="h-8 w-8 mr-3 text-primary" />
+              <h1 className="app-page-title mb-2">
                 Kiosk Mode
               </h1>
               <p className="text-slate-600">Self-service attendance check-in for members</p>

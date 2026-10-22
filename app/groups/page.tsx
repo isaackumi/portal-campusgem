@@ -90,17 +90,6 @@ function GroupsContent() {
     return null
   }
 
-  const getGroupTypeColor = (type: string) => {
-    switch (type) {
-      case 'ministry': return 'bg-purple-100 text-purple-800'
-      case 'fellowship': return 'bg-slate-100 text-slate-700'
-      case 'age_group': return 'bg-green-100 text-green-800'
-      case 'special_interest': return 'bg-yellow-100 text-yellow-800'
-      case 'leadership': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   const getGroupTypeIcon = (type: string) => {
     switch (type) {
       case 'ministry': return <Settings className="h-4 w-4" />
@@ -140,7 +129,7 @@ function GroupsContent() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </button>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            <h1 className="app-page-title">
               Groups & Ministries
             </h1>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
@@ -212,7 +201,7 @@ function GroupsContent() {
                       <div className="p-2 bg-gray-100 rounded-lg">
                         {getGroupTypeIcon(group.group_type)}
                       </div>
-                      <Badge className={getGroupTypeColor(group.group_type)}>
+                      <Badge variant="secondary" className="capitalize">
                         {group.group_type.replace('_', ' ')}
                       </Badge>
                     </div>

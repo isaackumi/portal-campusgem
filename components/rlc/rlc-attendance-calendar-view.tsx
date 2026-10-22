@@ -178,7 +178,7 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="grid grid-cols-7 gap-1 text-center app-overline">
             {WEEKDAY_LABELS.map((label) => (
               <div key={label} className="py-1">
                 {label}

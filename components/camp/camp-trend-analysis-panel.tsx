@@ -86,7 +86,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
       <div className="rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50/80 via-white to-slate-100/50 p-4 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Cross-year analysis</p>
+            <p className="app-overline text-brand-700">Cross-year analysis</p>
             <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Camp meeting trends</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
               Track registration growth, operational health, and demographic shifts across {yearCount} camp years.

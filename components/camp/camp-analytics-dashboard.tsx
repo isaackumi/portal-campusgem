@@ -215,26 +215,26 @@ function LivePulsePanel({
       <CardContent className="space-y-4 pt-5">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-indigo-100 bg-white p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Today</p>
+            <p className="app-overline">Today</p>
             <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.today}</p>
             <p className="text-xs text-slate-500">
               {pulse.todayNew} new · {pulse.todayReturning} returning
             </p>
           </div>
           <div className="rounded-xl border border-indigo-100 bg-white p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Last 7 days</p>
+            <p className="app-overline">Last 7 days</p>
             <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.last7Days}</p>
             <p className="text-xs text-slate-500">
               {pulse.last7New} new · {pulse.last7Returning} returning
             </p>
           </div>
           <div className="rounded-xl border border-indigo-100 bg-white p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Avg / day</p>
+            <p className="app-overline">Avg / day</p>
             <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.avgPerDay}</p>
             <p className="text-xs text-slate-500">{pulse.activeDays} active days</p>
           </div>
           <div className="rounded-xl border border-indigo-100 bg-white p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Peak day</p>
+            <p className="app-overline">Peak day</p>
             <p className="mt-1 text-2xl font-bold text-indigo-900">{pulse.peakDayCount}</p>
             <p className="text-xs text-slate-500">{pulse.peakDay ?? '—'} · window {pulse.daysSinceFirst ?? 0}d</p>
           </div>
@@ -273,13 +273,13 @@ function CrossTabCard({ matrix }: { matrix: CrossTabMatrix }) {
         <table className="w-full min-w-[420px] border-collapse text-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 bg-white px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <th className="sticky left-0 bg-white px-2 py-2 text-left app-overline">
                 {matrix.rowLabel}
               </th>
               {matrix.columns.map((column) => (
                 <th
                   key={column}
-                  className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  className="px-2 py-2 text-center app-overline"
                 >
                   {column}
                 </th>

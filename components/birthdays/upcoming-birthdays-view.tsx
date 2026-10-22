@@ -160,7 +160,7 @@ export function UpcomingBirthdaysView({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="app-page-title flex items-center gap-2">
+        <h1 className="app-page-title">
           <Cake className={cn('h-7 w-7', accentClass)} aria-hidden />
           {title}
         </h1>

@@ -65,23 +65,3 @@ export function getGroupTypeLabel(type: string | undefined): string {
   return GROUP_TYPE_LABELS[type as GroupTypeValue] ?? type.replace(/_/g, ' ')
 }
 
-export function getGroupTypeBadgeClass(type: string | undefined): string {
-  switch (type) {
-    case 'campus':
-      return 'bg-indigo-100 text-indigo-800'
-    case 'corporate_gem':
-      return 'bg-violet-100 text-violet-900'
-    case 'activity':
-      return 'bg-amber-100 text-amber-900'
-    case 'rlc':
-      return 'bg-rose-100 text-rose-900'
-    case 'ministry':
-      return 'bg-slate-100 text-slate-800'
-    case 'fellowship':
-      return 'bg-emerald-100 text-emerald-800'
-    case 'leadership':
-      return 'bg-purple-100 text-purple-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
-  }
-}

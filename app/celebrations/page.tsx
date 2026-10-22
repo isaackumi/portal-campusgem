@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { StatCard } from '@/components/ui/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -293,8 +294,7 @@ export default function CelebrationsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center">
-            <Cake className="h-8 w-8 mr-3 text-pink-600" />
+          <h1 className="app-page-title mb-2">
             Birthdays & Anniversaries
           </h1>
           <p className="text-slate-600">Manage birthday and anniversary celebrations with SMS notifications</p>
@@ -311,53 +311,11 @@ export default function CelebrationsPage() {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Today's Birthdays</p>
-                    <p className="text-2xl font-bold text-pink-600">{stats.today_birthdays}</p>
-                  </div>
-                  <Cake className="h-8 w-8 text-pink-600" />
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard label="Today’s birthdays" value={stats.today_birthdays} />
+            <StatCard label="Today’s anniversaries" value={stats.today_anniversaries} />
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Today's Anniversaries</p>
-                    <p className="text-2xl font-bold text-red-600">{stats.today_anniversaries}</p>
-                  </div>
-                  <Heart className="h-8 w-8 text-red-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">This Week</p>
-                    <p className="text-2xl font-bold text-primary">{stats.this_week_birthdays + stats.this_week_anniversaries}</p>
-                  </div>
-                  <Calendar className="h-8 w-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">This Month</p>
-                    <p className="text-2xl font-bold text-purple-600">{stats.this_month_birthdays + stats.this_month_anniversaries}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-purple-600" />
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard label="This week" value={stats.this_week_birthdays + stats.this_week_anniversaries} />
+            <StatCard label="This month" value={stats.this_month_birthdays + stats.this_month_anniversaries} />
           </div>
         )}
 

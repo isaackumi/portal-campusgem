@@ -4,8 +4,18 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { StatCard } from '@/components/ui/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { chipLabel, roleTone } from '@/lib/ui/chip-tones'
+import { PersonAvatar, displayName } from '@/components/ui/person'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -346,26 +356,6 @@ export default function UsersManagementPage() {
     setShowEditDialog(true)
   }
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin': return <Crown className="h-4 w-4" />
-      case 'pastor': return <Shield className="h-4 w-4" />
-      case 'elder': return <UserCheck className="h-4 w-4" />
-      default: return <User className="h-4 w-4" />
-    }
-  }
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800'
-      case 'pastor': return 'bg-purple-100 text-purple-800'
-      case 'elder': return 'bg-amber-100 text-amber-900 border border-amber-200'
-      case 'finance_officer': return 'bg-cyan-100 text-cyan-900 border border-cyan-200'
-      case 'member': return 'bg-slate-100 text-slate-700 border border-slate-200'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -400,7 +390,7 @@ export default function UsersManagementPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">User Management</h1>
+              <h1 className="app-page-title">User Management</h1>
               <p className="text-slate-600 mt-2">Manage church members and their roles</p>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -534,66 +524,14 @@ export default function UsersManagementPage() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-primary" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Total Users</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
+          <StatCard label="Total users" value={stats.total} />
+          <StatCard label="Admins" value={stats.admins} />
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Crown className="h-8 w-8 text-red-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Admins</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.admins}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard label="Pastors" value={stats.pastors} />
+          <StatCard label="Elders" value={stats.elders} />
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Shield className="h-8 w-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Pastors</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.pastors}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <UserCheck className="h-8 w-8 text-yellow-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Elders</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.elders}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <User className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Members</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.members}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard label="Members" value={stats.members} />
         </div>
 
         {/* Search and Filters */}
@@ -658,21 +596,21 @@ export default function UsersManagementPage() {
                 <p className="text-slate-600">Try adjusting your search or filters.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="divide-y divide-neutral-100 overflow-hidden rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
                 {filteredUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/70 dark:hover:bg-neutral-800/40 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div className="flex min-w-0 items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
-                        {getRoleIcon(user.role)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-medium text-slate-900">{user.full_name}</h3>
-                          <Badge className={getRoleColor(user.role)}>
-                            {user.role}
+                    <div className="flex min-w-0 items-center gap-3">
+                      <PersonAvatar name={user.full_name} seed={user.id} />
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-0.5 flex items-center gap-2">
+                          <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {displayName(user.full_name)}
+                          </h3>
+                          <Badge variant={roleTone(user.role)} className="capitalize">
+                            {chipLabel(user.role)}
                           </Badge>
                         </div>
                         <div className="flex items-center space-x-4 text-sm text-slate-500">
@@ -689,61 +627,50 @@ export default function UsersManagementPage() {
                             </span>
                           )}
                           {user.membership_id && (
-                            <span className="flex items-center">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              {user.membership_id}
-                            </span>
+                            <span className="font-mono text-[13px]">{user.membership_id}</span>
                           )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 sm:flex-none"
-                        onClick={() => void handleViewUser(user)}
-                      >
-                        <Eye className="mr-1 h-4 w-4" />
+                    {/* One visible action; everything else lives in the row menu. */}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void handleViewUser(user)}>
+                        <Eye className="h-3.5 w-3.5" aria-hidden />
                         View
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 border-rose-200 text-rose-900 hover:bg-rose-50 sm:flex-none"
-                        onClick={() => openAddToRlc(user)}
-                      >
-                        RLC
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 border-violet-200 text-violet-900 hover:bg-violet-50 sm:flex-none"
-                        disabled={promotingUserId === user.id}
-                        onClick={() => void handlePromoteToCorporateGem(user)}
-                      >
-                        {promotingUserId === user.id ? '…' : 'Corp Gem'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 sm:flex-none"
-                        onClick={() => {
-                          void openEditDialog(user)
-                        }}
-                      >
-                        <Edit className="mr-1 h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteUser(user.id, user.full_name || 'User')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 px-0" aria-label={`More actions for ${displayName(user.full_name)}`}>
+                            <MoreHorizontal className="h-4 w-4" aria-hidden />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={() => void openEditDialog(user)}>
+                            <Edit className="mr-2 h-4 w-4" aria-hidden />
+                            Edit details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openAddToRlc(user)}>
+                            <UserPlus className="mr-2 h-4 w-4" aria-hidden />
+                            Add to RLC
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={promotingUserId === user.id}
+                            onClick={() => void handlePromoteToCorporateGem(user)}
+                          >
+                            <UserPlus className="mr-2 h-4 w-4" aria-hidden />
+                            {promotingUserId === user.id ? 'Adding to Corporate Gem…' : 'Add to Corporate Gem'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-red-600 focus:text-red-700 dark:text-red-400"
+                            onClick={() => handleDeleteUser(user.id, user.full_name || 'User')}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" aria-hidden />
+                            Delete user
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 ))}

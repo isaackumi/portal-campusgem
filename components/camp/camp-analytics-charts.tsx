@@ -66,7 +66,7 @@ export function CampFunnelSteps({ steps }: { steps: FunnelStep[] }) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((step, index) => (
           <div key={step.label} className="rounded-lg border bg-slate-50 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{step.label}</p>
+            <p className="app-overline">{step.label}</p>
             <p className="mt-1 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{step.count.toLocaleString()}</p>
             <p className="text-sm text-slate-600">{step.percent}% of registered</p>
             {step.dropOffPercent != null && step.dropOffPercent > 0 ? (

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
+import { memberStatusTone, roleTone } from '@/lib/ui/chip-tones'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay } from '@/components/ui/error-display'
 import { 
@@ -188,25 +189,6 @@ export default function ManualCheckInPage() {
     setError(null)
   }
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800'
-      case 'pastor': return 'bg-purple-100 text-purple-800'
-      case 'elder': return 'bg-yellow-100 text-yellow-800'
-      case 'member': return 'bg-slate-100 text-slate-700'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'inactive': return 'bg-red-100 text-red-800'
-      case 'visitor': return 'bg-slate-100 text-slate-700'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   if (authLoading) {
     return (
       <DashboardLayout>
@@ -242,7 +224,7 @@ export default function ManualCheckInPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
             <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Manual Check-in</h1>
+            <h1 className="app-page-title">Manual Check-in</h1>
             <p className="text-slate-600 mt-2">Search and check in members manually</p>
             </div>
           <div className="flex items-center space-x-2">
@@ -389,10 +371,10 @@ export default function ManualCheckInPage() {
                               <h3 className="font-medium text-slate-900">
                               {member.user?.full_name || 'Unknown'}
                               </h3>
-                            <Badge className={getRoleColor(member.user?.role || '')}>
+                            <Badge variant={roleTone(member.user?.role || '')} className="capitalize">
                               {member.user?.role}
                             </Badge>
-                            <Badge className={getStatusColor(member.status)}>
+                            <Badge variant={memberStatusTone(member.status)} className="capitalize">
                               {member.status}
                             </Badge>
                           </div>

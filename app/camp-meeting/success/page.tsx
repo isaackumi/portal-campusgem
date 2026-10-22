@@ -116,7 +116,7 @@ function SuccessContent() {
 
         {checkInCode ? (
           <div className="rounded-xl border-2 border-slate-200 bg-slate-50/80 p-4 text-center">
-            <p className="text-xs font-medium uppercase tracking-wide text-brand-800">
+            <p className="app-overline text-brand-800">
               Your camp check-in code
             </p>
             <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-slate-950">

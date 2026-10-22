@@ -10,7 +10,7 @@ import {
   type CampusActivityBoardGroup,
   type CampusActivityBoardData,
 } from '@/lib/actions/campus-activity-board'
-import { getGroupTypeBadgeClass, getGroupTypeLabel } from '@/lib/constants/groups'
+import { getGroupTypeLabel } from '@/lib/constants/groups'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -78,7 +78,7 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-2">
             <CardTitle className="text-lg leading-tight">{group.name}</CardTitle>
-            <Badge className={getGroupTypeBadgeClass(group.group_type)}>
+            <Badge variant="secondary" className="capitalize">
               {getGroupTypeLabel(group.group_type)}
             </Badge>
           </div>
@@ -269,7 +269,7 @@ export default function CampusActivitiesAdminPage() {
               Back to Admin
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Campus & Activities</h1>
+              <h1 className="app-page-title">Campus & Activities</h1>
               <p className="mt-1 max-w-2xl text-muted-foreground">
                 University fellowships and church-wide events in one place — members, leaders, executives, and scoped
                 forms.

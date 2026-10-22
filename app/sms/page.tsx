@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { StatCard } from '@/components/ui/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -183,8 +184,7 @@ export default function SMSPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center">
-            <MessageSquare className="h-8 w-8 mr-3 text-primary" />
+          <h1 className="app-page-title mb-2">
             SMS Management
           </h1>
           <p className="text-slate-600">Manage SMS communications for birthdays, anniversaries, groups, and events</p>
@@ -201,53 +201,11 @@ export default function SMSPage() {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Total Sent</p>
-                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total_sent}</p>
-                  </div>
-                  <Send className="h-8 w-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard label="Total sent" value={stats.total_sent} />
+            <StatCard label="Delivered" value={stats.delivered} />
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Delivered</p>
-                    <p className="text-2xl font-bold text-green-600">{stats.delivered}</p>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Pending</p>
-                    <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-                  </div>
-                  <Clock className="h-8 w-8 text-yellow-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">This Month</p>
-                    <p className="text-2xl font-bold text-purple-600">{stats.this_month}</p>
-                  </div>
-                  <BarChart3 className="h-8 w-8 text-purple-600" />
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard label="Pending" value={stats.pending} />
+            <StatCard label="This month" value={stats.this_month} />
           </div>
         )}
 

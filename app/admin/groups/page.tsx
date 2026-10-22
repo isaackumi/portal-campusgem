@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { StatCard } from '@/components/ui/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -34,7 +35,7 @@ import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Group, AppUser } from '@/lib/types'
-import { GROUP_MEMBERSHIP_ROLES, GROUP_TYPES, getGroupTypeBadgeClass, getGroupTypeLabel } from '@/lib/constants/groups'
+import { GROUP_MEMBERSHIP_ROLES, GROUP_TYPES, getGroupTypeLabel } from '@/lib/constants/groups'
 
 export default function GroupsManagementPage() {
   const { user: currentUser, loading: authLoading, can } = useAuth()
@@ -321,7 +322,7 @@ export default function GroupsManagementPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Group Management</h1>
+              <h1 className="app-page-title">Group Management</h1>
               <p className="text-slate-600 mt-2">Manage campus fellowships, event activities, and ministry groups</p>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -436,66 +437,14 @@ export default function GroupsManagementPage() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-primary" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Total Groups</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
+          <StatCard label="Total groups" value={stats.total} />
+          <StatCard label="Campuses" value={stats.campuses} />
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-primary" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Campuses</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.campuses}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard label="Activities" value={stats.activities} />
+          <StatCard label="Fellowships" value={stats.fellowships} />
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Activities</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.activities}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Fellowships</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.fellowships}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-slate-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Other</p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.other}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard label="Other" value={stats.other} />
         </div>
 
         {/* Search and Filters */}
@@ -560,7 +509,7 @@ export default function GroupsManagementPage() {
                           </div>
                           <div>
                             <CardTitle className="text-lg">{group.name}</CardTitle>
-                            <Badge className={getGroupTypeBadgeClass(group.group_type || '')}>
+                            <Badge variant="secondary" className="capitalize">
                               {getGroupTypeLabel(group.group_type)}
                             </Badge>
                           </div>

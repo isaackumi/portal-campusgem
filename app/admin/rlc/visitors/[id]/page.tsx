@@ -211,7 +211,7 @@ export default function RlcVisitorDetailPage() {
                 </Button>
               </>
             ) : (
-              <Badge className="bg-emerald-100 text-emerald-800">
+              <Badge variant="success">
                 <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
                 Converted
               </Badge>

@@ -480,7 +480,7 @@ function FormsAdminContent() {
               {activeModule ? `Back to ${moduleLabel}` : 'Back to Admin'}
             </Button>
             <div>
-              <p className="text-sm font-medium uppercase tracking-wide text-brand-600">
+              <p className="app-overline text-brand-600">
                 {activeModule ? `${moduleLabel} forms` : 'Forms & Outreach'}
               </p>
               <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -794,7 +794,7 @@ function FormsAdminContent() {
 
         <div className="flex flex-col gap-4 rounded-xl border bg-white/90 p-4 shadow-sm sm:flex-row sm:items-center">
           <div className="flex-1 space-y-2">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Filter by group</Label>
+            <Label className="app-overline">Filter by group</Label>
             <FormGroupSelect
               groups={groups}
               value={filterGroupId}
@@ -804,7 +804,7 @@ function FormsAdminContent() {
             />
           </div>
           <div className="flex-1 space-y-2">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Search</Label>
+            <Label className="app-overline">Search</Label>
             <Input
               placeholder="Search by title, slug, or group..."
               value={search}
@@ -874,7 +874,7 @@ function FormsAdminContent() {
                         </Badge>
                       ) : null}
                       {isRegistration ? (
-                        <Badge className="bg-amber-100 font-normal text-amber-900 hover:bg-amber-100">
+                        <Badge variant="warning">
                           Member registration
                         </Badge>
                       ) : isCampMeeting ? (

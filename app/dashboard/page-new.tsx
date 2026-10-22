@@ -134,7 +134,7 @@ function DashboardContent() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+            <h1 className="app-page-title mb-2">
               Dashboard
             </h1>
             <p className="text-slate-600">Welcome back, {user?.full_name || 'User'}!</p>
