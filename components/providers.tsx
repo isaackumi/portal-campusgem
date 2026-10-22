@@ -5,6 +5,7 @@ import { ConvexClientProvider } from './convex-client-provider'
 import { PWAProvider } from './pwa-provider'
 import { ThemeProvider } from './theme-provider'
 import { ReactQueryDevtoolsLoader } from './react-query-devtools-loader'
+import { BackgroundJobsProvider } from './background-jobs'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 
@@ -33,8 +34,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ConvexClientProvider>
           <AuthProvider>
             <PWAProvider>
-              {children}
-              <ReactQueryDevtoolsLoader />
+              <BackgroundJobsProvider>
+                {children}
+                <ReactQueryDevtoolsLoader />
+              </BackgroundJobsProvider>
             </PWAProvider>
           </AuthProvider>
         </ConvexClientProvider>

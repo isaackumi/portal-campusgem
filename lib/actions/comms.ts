@@ -371,6 +371,7 @@ export async function sendCommsAction(
       metadata: request.metadata,
       dry_run: request.dry_run,
       force_mock: request.force_mock,
+      batch_id: request.batch_id,
     })
     return { data, error: null, loading: false }
   } catch (error: unknown) {

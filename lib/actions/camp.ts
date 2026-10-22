@@ -983,9 +983,14 @@ export async function sendCampTemplateSmsToRegistrationsAction(input: {
   }
 }
 
-/** Server-side Hubtel bulk SMS for camp registrations (one-by-one with small gap). */
+/**
+ * Server-side Hubtel bulk SMS for camp registrations (one-by-one with small gap).
+ * Large sends are split into chunks by the client; pass the same `batch_id` to each
+ * chunk so the history shows one batch.
+ */
 export async function sendCampBulkSmsAction(input: {
   camp_year_id: string
+  batch_id?: string
   sender_id: string
   message_template: string
   camp_year?: number | null
@@ -1021,7 +1026,7 @@ export async function sendCampBulkSmsAction(input: {
     getSmsEnvPresence,
   } = await import('@/lib/comms/sms-client')
   const { randomUUID } = await import('crypto')
-  const batch_id = randomUUID()
+  const batch_id = input.batch_id || randomUUID()
   const dryRun = Boolean(input.dry_run)
   const forceMock = Boolean(input.force_mock)
   const registrationLink = input.registration_link?.trim() || null
@@ -1102,7 +1107,7 @@ export async function sendCampBulkSmsAction(input: {
         camp_year_id: input.camp_year_id,
         communication_type: 'sms',
         sender_id: input.sender_id,
-        recipient_type: input.recipients.length > 1 ? 'bulk' : 'individual',
+        recipient_type: input.batch_id || input.recipients.length > 1 ? 'bulk' : 'individual',
         recipient_registration_id: registration.invite_only ? undefined : registration.id,
         recipient_phone: smsResult.normalizedPhone ?? to,
         message_body: message,

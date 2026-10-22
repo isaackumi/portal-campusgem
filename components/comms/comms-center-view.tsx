@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/providers'
+import { useBackgroundJobs } from '@/components/background-jobs'
+import { parseManualRecipients } from '@/lib/comms/recipients'
 import {
   getCommsProviderStatusAction,
   getCommsStatsAction,
@@ -101,7 +103,8 @@ export function CommsCenterView() {
   const [stats, setStats] = useState<CommsStats | null>(null)
   const [providers, setProviders] = useState<SmsProviderStatus | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
+  // Sends run as a background job; the page stays usable and shows progress.
+  const { start: startJob, isRunning: sending } = useBackgroundJobs()
   const [dryRun, setDryRun] = useState(false)
   const [forceMock, setForceMock] = useState(false)
 
@@ -236,47 +239,61 @@ export function CommsCenterView() {
   async function handleSend() {
     if (!canStartSend()) return
 
-    setSending(true)
     const audience_type =
       audienceMode === 'group' ? 'group' : selectedRecipients.length > 1 ? 'bulk' : 'individual'
 
-    const { data, error } = await sendCommsAction({
+    // Build the full list here (same de-duplication as the server) so it can be sent in chunks.
+    const unique = new Map<string, CommsRecipient>()
+    const all = [
+      ...(audienceMode === 'manual' ? [] : selectedRecipients),
+      ...(audienceMode === 'manual' && manualRecipients.trim()
+        ? parseManualRecipients(manualRecipients, channel, module)
+        : []),
+    ]
+    for (const r of all) {
+      const key = `${r.entity_type}:${r.entity_id}:${r.email ?? ''}:${r.phone ?? ''}`
+      if (!unique.has(key)) unique.set(key, r)
+    }
+    const recipients = Array.from(unique.values())
+    if (recipients.length === 0) {
+      toast({ variant: 'destructive', title: 'Send failed', description: 'Select at least one recipient' })
+      return
+    }
+
+    const request = {
       module,
       channel,
       audience_type,
       sender_id: user!.id,
       subject: channel === 'email' ? subject : undefined,
       message_body: messageBody,
-      recipients: audienceMode === 'manual' ? [] : selectedRecipients,
-      manual_recipients: audienceMode === 'manual' ? manualRecipients : undefined,
       dry_run: channel === 'sms' ? dryRun : undefined,
       force_mock: channel === 'sms' ? forceMock : undefined,
+      batch_id: crypto.randomUUID(),
       metadata:
         audienceMode === 'group' && selectedGroupId
           ? { group_id: selectedGroupId, group_name: groups.find((g) => g.id === selectedGroupId)?.name }
           : undefined,
+    } as const
+    const isDryRun = dryRun && channel === 'sms'
+
+    startJob({
+      title: `${isDryRun ? 'Dry run: ' : ''}${channel === 'sms' ? 'SMS' : 'Email'} to ${recipients.length}`,
+      verb: isDryRun ? 'checked' : 'sent',
+      items: recipients,
+      runChunk: async (chunk) => {
+        const { data, error } = await sendCommsAction({ ...request, recipients: chunk })
+        if (error || !data) throw new Error(error ?? 'Unknown error')
+        return { ok: data.success_count, failed: data.error_count, errors: data.errors }
+      },
+      onComplete: () => void refresh(),
     })
-    setSending(false)
-
-    if (error || !data) {
-      toast({ variant: 'destructive', title: 'Send failed', description: error ?? 'Unknown error' })
-      return
-    }
-
-    toast({
-      title: dryRun && channel === 'sms' ? 'Dry run complete' : 'Messages sent',
-      description: `${data.success_count} sent${data.error_count ? `, ${data.error_count} failed` : ''}${
-        data.batch_id ? ` · batch ${data.batch_id.slice(0, 8)}` : ''
-      }.`,
-    })
-
     setSmsReviewOpen(false)
     setMessageBody('')
     setSubject('')
     setManualRecipients('')
     setSelectedRecipients([])
     setActiveTab('history')
-    await refresh()
   }
 
   async function handleResend(row: CommunicationRecord) {
@@ -741,7 +758,7 @@ export function CommsCenterView() {
             </div>
 
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <p className="mb-1 app-overline">
                 Message to send
               </p>
               <p className="whitespace-pre-wrap leading-relaxed text-slate-900">{messageBody || '—'}</p>
@@ -753,7 +770,7 @@ export function CommsCenterView() {
 
             {audienceMode !== 'manual' ? (
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <p className="mb-2 app-overline">
                   Recipients
                 </p>
                 {smsRecipients.length === 0 ? (
@@ -781,7 +798,7 @@ export function CommsCenterView() {
               </div>
             ) : (
               <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <p className="mb-1 app-overline">
                   Manual numbers
                 </p>
                 <p className="whitespace-pre-wrap font-mono text-xs text-slate-700">
