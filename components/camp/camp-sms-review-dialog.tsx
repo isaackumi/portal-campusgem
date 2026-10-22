@@ -91,7 +91,7 @@ export function CampSmsReviewDialog({
           ) : null}
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+            <p className="mb-1 app-overline">
               {previewLabel ?? (isBulk ? 'Sample message (personalized per person)' : 'Message to send')}
             </p>
             <p className="whitespace-pre-wrap leading-relaxed text-slate-900">

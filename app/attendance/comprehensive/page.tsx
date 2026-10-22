@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { StatCard } from '@/components/ui/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -372,8 +373,7 @@ export default function ComprehensiveAttendancePage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center">
-            <BarChart3 className="h-8 w-8 mr-3 text-primary" />
+          <h1 className="app-page-title mb-2">
             Comprehensive Attendance Management
           </h1>
           <p className="text-slate-600">Advanced attendance tracking with departments, duplicate prevention, and absentee management</p>
@@ -389,58 +389,18 @@ export default function ComprehensiveAttendancePage() {
 
         {/* Quick Stats */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Total Attendance</p>
-                    <p className="text-2xl font-bold text-primary">{stats.total_attendance}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard label="Total attendance" value={stats.total_attendance} />
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Male/Female</p>
-                    <p className="text-lg font-bold text-slate-900">
-                      {stats.male_attendance}/{stats.female_attendance}
-                    </p>
-                  </div>
-                  <UserCheck className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Adults/Children</p>
-                    <p className="text-lg font-bold text-slate-900">
-                      {stats.adult_attendance}/{stats.children_attendance}
-                    </p>
-                  </div>
-                  <Target className="h-8 w-8 text-purple-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Absentees</p>
-                    <p className="text-2xl font-bold text-red-600">{absentees.length}</p>
-                  </div>
-                  <UserX className="h-8 w-8 text-red-600" />
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              label="Male / female"
+              value={`${stats.male_attendance} / ${stats.female_attendance}`}
+            />
+            <StatCard
+              label="Adults / children"
+              value={`${stats.adult_attendance} / ${stats.children_attendance}`}
+            />
+            <StatCard label="Absentees" value={absentees.length} />
           </div>
         )}
 

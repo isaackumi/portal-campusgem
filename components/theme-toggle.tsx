@@ -39,11 +39,11 @@ export function ThemeToggle({ className }: { className?: string }) {
           size="icon"
           aria-label="Theme"
           className={cn(
-            'h-9 w-9 shrink-0 rounded-full bg-neutral-200 text-neutral-800 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600',
+            'h-9 w-9 shrink-0 rounded-lg text-neutral-600 hover:bg-neutral-200/70 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white',
             className
           )}
         >
-          <TriggerIcon className="h-5 w-5" />
+          <TriggerIcon className="h-[18px] w-[18px]" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

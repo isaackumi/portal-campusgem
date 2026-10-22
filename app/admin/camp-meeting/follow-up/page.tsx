@@ -222,7 +222,7 @@ function FollowUpManagementContent() {
                     }
                 >
                     {campYear?.is_active || campYear?.id === activeYear?.id ? (
-                        <Badge className="bg-emerald-600 hover:bg-emerald-600">Active year</Badge>
+                        <Badge variant="success">Active year</Badge>
                     ) : campYear ? (
                         <Badge variant="secondary">Historical year</Badge>
                     ) : null}

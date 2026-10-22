@@ -161,7 +161,7 @@ function MembersContent() {
                 Back to Dashboard
               </Button>
             </div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+            <h1 className="app-page-title mb-2">
               Members Management
             </h1>
             <p className="text-slate-600">

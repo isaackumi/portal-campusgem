@@ -499,7 +499,7 @@ function StepQuestionHeader({
   return (
     <div className="mb-6">
       {stepLabel ? (
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{stepLabel}</p>
+        <p className="mb-2 app-overline">{stepLabel}</p>
       ) : null}
       <h2 className="text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
         {label}

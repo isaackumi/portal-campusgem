@@ -269,7 +269,7 @@ export function CampRegistrationRoomCard({
             ) : (
               <>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-600">
+                  <p className="app-overline">
                     Check-in at desk
                   </p>
                   <p className="mt-1 text-lg font-bold text-slate-900">{checkInIdentity.name}</p>
@@ -291,7 +291,7 @@ export function CampRegistrationRoomCard({
                 <div className="rounded-lg border border-brand-200 bg-white p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-brand-700">
+                      <p className="app-overline text-brand-700">
                         Your room
                       </p>
                       <p className="mt-1 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{room.name}</p>

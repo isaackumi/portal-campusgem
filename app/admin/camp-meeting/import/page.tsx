@@ -356,7 +356,7 @@ function CampImportPageContent() {
                             Back
                         </Button>
                         <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+                            <h1 className="app-page-title">
                                 Import Historical Camp Data
                             </h1>
                             <p className="text-muted-foreground mt-1">
@@ -549,7 +549,7 @@ function CampImportPageContent() {
                                                                 {row._errors?.length} error(s)
                                                             </Badge>
                                                         ) : hasWarnings ? (
-                                                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-900">
+                                                            <Badge variant="warning">
                                                                 <AlertCircle className="h-3 w-3 mr-1" />
                                                                 {row._warnings?.length} warning(s)
                                                             </Badge>

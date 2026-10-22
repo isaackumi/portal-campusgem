@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { groupRoleTone } from '@/lib/ui/chip-tones'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -217,17 +218,6 @@ export default function GroupDetailsPage() {
     }
   }
 
-  const getRoleColor = (role: GroupMembership['role']) => {
-    switch (role) {
-      case 'leader': return 'bg-yellow-100 text-yellow-800'
-      case 'co_leader': return 'bg-slate-100 text-slate-700'
-      case 'executive': return 'bg-purple-100 text-purple-800'
-      case 'volunteer': return 'bg-orange-100 text-orange-800'
-      case 'member': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   const getRoleIcon = (role: GroupMembership['role']) => {
     switch (role) {
       case 'leader': return <Crown className="h-3 w-3" />
@@ -312,11 +302,11 @@ export default function GroupDetailsPage() {
                 Back to Groups
               </Button>
             </div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+            <h1 className="app-page-title mb-2">
               {group.name}
             </h1>
             <div className="flex items-center space-x-4">
-              <Badge className="bg-slate-100 text-slate-700 capitalize">
+              <Badge variant="secondary" className="capitalize">
                 {group.group_type.replace('_', ' ')}
               </Badge>
               <span className="text-slate-600">
@@ -421,7 +411,7 @@ export default function GroupDetailsPage() {
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                            <Badge className={`${getRoleColor(groupMember.role)} flex items-center gap-1 capitalize`}>
+                            <Badge variant={groupRoleTone(groupMember.role)} className="capitalize">
                               {getRoleIcon(groupMember.role)}
                               {GROUP_MEMBERSHIP_ROLE_LABELS[groupMember.role]}
                             </Badge>

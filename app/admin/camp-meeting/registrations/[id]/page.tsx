@@ -571,7 +571,7 @@ export default function RegistrationDetailPage() {
                             Back to Registrations
                         </Button>
                         <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+                            <h1 className="app-page-title">
                                 Registration Details
                             </h1>
                             <p className="text-muted-foreground mt-1">{fullName}</p>

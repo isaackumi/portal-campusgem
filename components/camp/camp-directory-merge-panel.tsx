@@ -88,7 +88,7 @@ export function CampDirectoryMergePanel({ rows, onMerged }: CampDirectoryMergePa
       description="Same name with different phone numbers — pick the correct phone and merge"
       icon={<GitMerge className="h-5 w-5 text-amber-800" />}
       badge={
-        <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+        <Badge variant="warning">
           {groups.length} group{groups.length === 1 ? '' : 's'}
         </Badge>
       }
@@ -126,7 +126,7 @@ export function CampDirectoryMergePanel({ rows, onMerged }: CampDirectoryMergePa
               </div>
 
               <div className="mt-4 space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="app-overline">
                   Canonical phone (keep this one)
                 </p>
                 {group.rows.map((row) => {

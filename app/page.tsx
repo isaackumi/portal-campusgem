@@ -25,7 +25,7 @@ export default function HomePage() {
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <BrandMark size="sm" />
             <div className="min-w-0">
-              <p className="truncate text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+              <p className="truncate app-overliner text-neutral-400">
                 Campus Gem
               </p>
               <p className="truncate text-sm font-bold tracking-tight text-neutral-900 dark:text-white">
@@ -62,7 +62,7 @@ export default function HomePage() {
         <div className="pointer-events-none absolute -bottom-32 right-10 h-96 w-96 rounded-full bg-white/5" />
 
         <div className="relative mx-auto max-w-6xl">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-white/60">
+          <p className="app-overliner text-white/60">
             Campus Gem portal
           </p>
           <h1 className="mt-3 max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
@@ -142,7 +142,7 @@ export default function HomePage() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{destination.title}</h3>
                           {destination.public ? (
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
+                            <span className="inline-flex items-center rounded-[6px] bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
                               Open
                             </span>
                           ) : null}

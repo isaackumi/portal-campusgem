@@ -67,7 +67,7 @@ function DirectoryField({
     <div className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-rose-700/70" aria-hidden />
       <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="app-overline">{label}</p>
         <p className={cn('truncate text-sm font-medium text-slate-900', mono && 'font-mono text-xs')}>
           {value}
         </p>
@@ -138,7 +138,7 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
           <CardHeader className="space-y-3 border-b border-rose-100/80 bg-rose-50/30 pb-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="bg-rose-700 hover:bg-rose-700">Step 1</Badge>
-              <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-800">
+              <Badge variant="success">
                 You can edit this
               </Badge>
             </div>
@@ -199,7 +199,7 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
           <CardHeader className="space-y-3 border-b border-rose-100/80 bg-rose-50/30 pb-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="bg-rose-700 hover:bg-rose-700">Step 2</Badge>
-              <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-800">
+              <Badge variant="success">
                 You can edit this
               </Badge>
               <Badge variant="secondary">{selectedRoleCount} selected</Badge>

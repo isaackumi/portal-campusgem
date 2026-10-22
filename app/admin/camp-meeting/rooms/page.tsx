@@ -442,7 +442,7 @@ function CampRoomsPageContent() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {viewingActiveYear ? (
-                <Badge className="bg-emerald-600 hover:bg-emerald-600">Active year</Badge>
+                <Badge variant="success">Active year</Badge>
               ) : (
                 <Badge variant="secondary">Historical year</Badge>
               )}

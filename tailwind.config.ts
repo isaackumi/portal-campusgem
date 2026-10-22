@@ -19,8 +19,9 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
-        hand: ['var(--font-hand)', 'cursive'],
+        display: ['var(--font-display)', ...defaultTheme.fontFamily.serif],
+        sans: ['var(--font-sans)', ...defaultTheme.fontFamily.sans],
+        mono: ['var(--font-mono)', ...defaultTheme.fontFamily.mono],
       },
       colors: {
         /* True gray, matching Trovesuite Accounting's neutral scale. */

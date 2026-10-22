@@ -71,7 +71,7 @@ export default function AdminPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Administration</h1>
+        <h1 className="app-page-title">Administration</h1>
         <p className="mt-1 text-muted-foreground">
           Choose an area to manage church operations and camp meeting data.
         </p>

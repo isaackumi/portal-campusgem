@@ -40,6 +40,8 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { useAuth } from '@/components/providers'
+import { useBackgroundJobs } from '@/components/background-jobs'
+import { Check as CheckIcon } from 'lucide-react'
 import {
     Send, Mail, MessageSquare, Users, Filter,
     Search, Clock, Phone, FileText, Eye, RefreshCw, AlertTriangle, LayoutTemplate
@@ -76,7 +78,8 @@ export default function BulkCommunicationsPage() {
     const { registrations, campYear, loading: registrationsLoading, refresh: refreshRegistrations } = useCampRegistrations()
     const [communications, setCommunications] = useState<CampCommunication[]>([])
     const [loading, setLoading] = useState(true)
-    const [sending, setSending] = useState(false)
+    // A bulk send runs as a background job; the page stays usable and shows its progress.
+    const { start: startJob, isRunning: sending } = useBackgroundJobs()
 
     // Filters
     const [roleFilter, setRoleFilter] = useState('all')
@@ -450,136 +453,113 @@ export default function BulkCommunicationsPage() {
     const handleSend = async () => {
         if (!canStartSend()) return
 
-        setSending(true)
         const selectedRegistrations = filteredRegistrations.filter((r) => selectedIds.has(r.id))
         const selectedInvites = filteredInviteRows.filter((r) => selectedIds.has(r.id))
-        let successCount = 0
-        let errorCount = 0
-        const errors: string[] = []
-
-        try {
-            if (communicationType === 'sms') {
-                const recipients =
-                    audienceMode === 'unregistered'
-                        ? selectedInvites.map((r) => ({
-                              id: r.id,
-                              full_name: r.full_name,
-                              first_name: r.first_name,
-                              last_name: r.last_name,
-                              phone: r.phone,
-                              email: r.email,
-                              invite_only: true as const,
-                              source: r.source,
-                          }))
-                        : selectedRegistrations.map((r) => ({
-                              id: r.id,
-                              full_name: r.full_name,
-                              first_name: r.first_name,
-                              last_name: r.last_name,
-                              phone: r.phone,
-                              email: r.email,
-                              role: r.role,
-                              qr_code: r.qr_code,
-                              check_in_code: r.check_in_code,
-                              source: 'registration' as const,
-                          }))
-
-                const bulk = await sendCampBulkSmsAction({
-                    camp_year_id: campYear!.id,
-                    sender_id: user!.id,
-                    message_template: messageBody,
-                    camp_year: campYear!.year,
-                    dry_run: dryRun,
-                    force_mock: forceMock,
-                    registration_link: registrationLink || undefined,
-                    filter_criteria: {
-                        audience: audienceMode,
-                        role: roleFilter,
-                        status: statusFilter,
-                        payment: paymentFilter,
-                        type: typeFilter,
-                        search: searchQuery || undefined,
-                    },
-                    recipients,
-                })
-                if (bulk.error || !bulk.data) {
-                    throw new Error(bulk.error ?? 'Failed to send SMS')
-                }
-                successCount = bulk.data.success_count
-                errorCount = bulk.data.error_count
-                errors.push(...bulk.data.errors)
-            } else {
-                for (const registration of selectedRegistrations) {
-                    try {
-                        const personalizedMessage = replaceTemplateVariables(messageBody, registration)
-                        const personalizedSubject = subject
-                            ? replaceTemplateVariables(subject, registration)
-                            : ''
-
-                        if (!registration.email) {
-                            errors.push(`${registration.full_name}: No email address`)
-                            errorCount++
-                            continue
-                        }
-
-                        const result = await emailService.sendEmail({
-                            to: registration.email,
-                            subject: personalizedSubject,
-                            text: personalizedMessage,
-                            html: `<p>${personalizedMessage.replace(/\n/g, '<br>')}</p>`,
-                            camp_year_id: campYear!.id,
-                            sender_id: user!.id,
-                            recipient_registration_id: registration.id,
-                        })
-
-                        if (result.success) {
-                            successCount++
-                        } else {
-                            errors.push(`${registration.full_name}: ${result.error || 'Failed to send'}`)
-                            errorCount++
-                        }
-                    } catch (error: unknown) {
-                        const message = error instanceof Error ? error.message : 'Failed to send'
-                        errors.push(`${registration.full_name}: ${message}`)
-                        errorCount++
-                    }
-                }
-            }
-
-            toast({
-                title:
-                    errorCount > 0 && successCount === 0
-                        ? 'Send failed'
-                        : dryRun && communicationType === 'sms'
-                          ? 'Dry run complete'
-                          : 'Messages Sent',
-                variant: errorCount > 0 && successCount === 0 ? 'destructive' : 'default',
-                description: `Successfully sent to ${successCount} recipient(s). ${errorCount > 0 ? `${errorCount} failed.` : ''}${
-                    errors.length ? ` ${errors.slice(0, 3).join(' · ')}` : ''
-                }`,
-            })
-
-            setSmsReviewOpen(false)
-            setSelectedIds(new Set())
-            setSelectAll(false)
-            if (audienceMode === 'registered') {
-                setMessageBody('')
-                setSubject('')
-            }
-
+        const sentAudience = audienceMode
+        const refreshAfterSend = async () => {
             await loadCommunications()
             await refreshRegistrations()
-            if (audienceMode === 'unregistered') {
-                await loadUnregisteredAudience()
+            if (sentAudience === 'unregistered') await loadUnregisteredAudience()
+        }
+
+        if (communicationType === 'sms') {
+            const recipients: Parameters<typeof sendCampBulkSmsAction>[0]['recipients'] =
+                audienceMode === 'unregistered'
+                    ? selectedInvites.map((r) => ({
+                          id: r.id,
+                          full_name: r.full_name,
+                          first_name: r.first_name,
+                          last_name: r.last_name,
+                          phone: r.phone,
+                          email: r.email,
+                          invite_only: true as const,
+                          source: r.source,
+                      }))
+                    : selectedRegistrations.map((r) => ({
+                          id: r.id,
+                          full_name: r.full_name,
+                          first_name: r.first_name,
+                          last_name: r.last_name,
+                          phone: r.phone,
+                          email: r.email,
+                          role: r.role,
+                          qr_code: r.qr_code,
+                          check_in_code: r.check_in_code,
+                          source: 'registration' as const,
+                      }))
+            const batchId = crypto.randomUUID()
+            const request = {
+                camp_year_id: campYear!.id,
+                sender_id: user!.id,
+                message_template: messageBody,
+                camp_year: campYear!.year,
+                dry_run: dryRun,
+                force_mock: forceMock,
+                registration_link: registrationLink || undefined,
+                filter_criteria: {
+                    audience: audienceMode,
+                    role: roleFilter,
+                    status: statusFilter,
+                    payment: paymentFilter,
+                    type: typeFilter,
+                    search: searchQuery || undefined,
+                },
+                batch_id: batchId,
             }
-        } catch (error: unknown) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: error instanceof Error ? error.message : 'Failed to send messages',
+            startJob({
+                title: `${dryRun ? 'Dry run: ' : ''}Camp SMS to ${recipients.length}`,
+                verb: dryRun ? 'checked' : 'sent',
+                items: recipients,
+                runChunk: async (chunk) => {
+                    const bulk = await sendCampBulkSmsAction({ ...request, recipients: chunk })
+                    if (bulk.error || !bulk.data) throw new Error(bulk.error ?? 'Failed to send SMS')
+                    return { ok: bulk.data.success_count, failed: bulk.data.error_count, errors: bulk.data.errors }
+                },
+                onComplete: () => void refreshAfterSend(),
             })
-        } finally {
-            setSending(false)
+        } else {
+            const emailSubject = subject
+            const emailBody = messageBody
+            startJob({
+                title: `Camp email to ${selectedRegistrations.length}`,
+                items: selectedRegistrations,
+                chunkSize: 5,
+                runChunk: async (chunk) => {
+                    let ok = 0
+                    const errors: string[] = []
+                    for (const registration of chunk) {
+                        if (!registration.email) {
+                            errors.push(`${registration.full_name}: No email address`)
+                            continue
+                        }
+                        try {
+                            const personalizedMessage = replaceTemplateVariables(emailBody, registration)
+                            const result = await emailService.sendEmail({
+                                to: registration.email,
+                                subject: emailSubject ? replaceTemplateVariables(emailSubject, registration) : '',
+                                text: personalizedMessage,
+                                html: `<p>${personalizedMessage.replace(/\n/g, '<br>')}</p>`,
+                                camp_year_id: campYear!.id,
+                                sender_id: user!.id,
+                                recipient_registration_id: registration.id,
+                            })
+                            if (result.success) ok++
+                            else errors.push(`${registration.full_name}: ${result.error || 'Failed to send'}`)
+                        } catch (error: unknown) {
+                            errors.push(`${registration.full_name}: ${error instanceof Error ? error.message : 'Failed to send'}`)
+                        }
+                    }
+                    return { ok, failed: errors.length, errors }
+                },
+                onComplete: () => void refreshAfterSend(),
+            })
+        }
+        setSmsReviewOpen(false)
+        setSelectedIds(new Set())
+        setSelectAll(false)
+        if (audienceMode === 'registered') {
+            setMessageBody('')
+            setSubject('')
         }
     }
 
@@ -866,15 +846,16 @@ export default function BulkCommunicationsPage() {
                                                                   : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                                           )}
                                                       >
-                                                          <Checkbox
-                                                              checked={selected}
-                                                              onCheckedChange={(checked) =>
-                                                                  handleSelectOne(row.id, checked === true)
-                                                              }
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              aria-label={`Select ${label}`}
-                                                              className="shrink-0"
-                                                          />
+                                                          {/* The row is the control (role=option); a real checkbox here would nest a button in a button. */}
+                                                          <span
+                                                              aria-hidden
+                                                              className={cn(
+                                                                  'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-primary',
+                                                                  selected && 'bg-primary text-primary-foreground'
+                                                              )}
+                                                          >
+                                                              {selected ? <CheckIcon className="h-3 w-3" /> : null}
+                                                          </span>
                                                           <div className="min-w-0 flex-1">
                                                               <p className="truncate font-medium text-slate-900">
                                                                   {label}
@@ -910,15 +891,15 @@ export default function BulkCommunicationsPage() {
                                                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                                 )}
                                             >
-                                                <Checkbox
-                                                    checked={selected}
-                                                    onCheckedChange={(checked) =>
-                                                        handleSelectOne(reg.id, checked === true)
-                                                    }
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    aria-label={`Select ${label}`}
-                                                    className="shrink-0"
-                                                />
+                                                <span
+                                                    aria-hidden
+                                                    className={cn(
+                                                        'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-primary',
+                                                        selected && 'bg-primary text-primary-foreground'
+                                                    )}
+                                                >
+                                                    {selected ? <CheckIcon className="h-3 w-3" /> : null}
+                                                </span>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="truncate font-medium text-slate-900">
                                                         {label}
@@ -1540,7 +1521,7 @@ export default function BulkCommunicationsPage() {
                         )}
 
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                            <p className="mb-1 app-overline">
                                 Sample message
                                 {smsPreviewRecipient?.full_name
                                     ? ` · ${smsPreviewRecipient.full_name}`
@@ -1556,7 +1537,7 @@ export default function BulkCommunicationsPage() {
                         </div>
 
                         <div>
-                            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                            <p className="mb-2 app-overline">
                                 Recipients
                             </p>
                             {smsRecipientPreview.length === 0 ? (

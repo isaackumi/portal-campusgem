@@ -80,7 +80,7 @@ export default function PublicRlcVisitPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-800">
             <Church className="h-7 w-7" />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-rose-700/80">{RLC_NAME}</p>
+          <p className="app-overline text-rose-700/80">{RLC_NAME}</p>
           <h1 className="mt-1 text-2xl font-semibold text-slate-900 sm:text-3xl">Welcome — first time here?</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Register as a visitor so our team can follow up with you. Takes about 2 minutes.

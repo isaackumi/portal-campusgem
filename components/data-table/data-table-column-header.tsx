@@ -4,19 +4,13 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import type { Column } from '@tanstack/react-table'
 
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>
   title: string
 }
 
+/** Click to sort: ascending → descending → off. The arrow shows only when sorted or hovered. */
 export function DataTableColumnHeader<TData, TValue>({
   column,
   title,
@@ -26,32 +20,26 @@ export function DataTableColumnHeader<TData, TValue>({
     return <div className={cn(className)}>{title}</div>
   }
 
+  const sorted = column.getIsSorted()
+  const Icon = sorted === 'desc' ? ArrowDown : sorted === 'asc' ? ArrowUp : ChevronsUpDown
+  const next = sorted === 'asc' ? 'descending' : sorted === 'desc' ? 'unsorted' : 'ascending'
+
   return (
-    <div className={cn('flex items-center space-x-2', className)}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent">
-            <span>{title}</span>
-            {column.getIsSorted() === 'desc' ? (
-              <ArrowDown className="ml-2 h-4 w-4" />
-            ) : column.getIsSorted() === 'asc' ? (
-              <ArrowUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="ml-2 h-4 w-4" />
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-            <ArrowUp className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-            Asc
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-            <ArrowDown className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-            Desc
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <button
+      type="button"
+      onClick={() => (sorted === 'desc' ? column.clearSorting() : column.toggleSorting(sorted === 'asc'))}
+      className={cn(
+        'group -mx-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-1 uppercase tracking-[inherit] transition-colors hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:hover:text-neutral-100',
+        sorted && 'text-neutral-900 dark:text-neutral-100',
+        className
+      )}
+      aria-label={`${title}: sort ${next}`}
+    >
+      {title}
+      <Icon
+        className={cn('h-3 w-3 transition-opacity', sorted ? 'opacity-100' : 'opacity-0 group-hover:opacity-60')}
+        aria-hidden
+      />
+    </button>
   )
 }

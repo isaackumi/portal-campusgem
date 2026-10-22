@@ -91,13 +91,12 @@ export function isValidEmail(email: string): boolean {
 
 export { isValidPhone } from '@/lib/phone'
 
+/** First and last initials ("Ama Kofi Mensah" → "AM"); a single name gives two letters. */
 export function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(word => word.charAt(0))
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return ''
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
 export function calculateAge(birthDate: string | Date): number {

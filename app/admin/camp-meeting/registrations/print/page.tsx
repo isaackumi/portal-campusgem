@@ -134,7 +134,7 @@ function PrintQRCodesContent() {
                   key={reg.id}
                   className="slip-card qr-card mx-auto flex w-[56mm] flex-col items-center border border-gray-300 px-2 py-3 text-center"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="app-overline">
                     Campus GEM {campYear?.year}
                   </p>
                   <p className="mt-1 line-clamp-2 text-sm font-bold leading-tight text-slate-900">

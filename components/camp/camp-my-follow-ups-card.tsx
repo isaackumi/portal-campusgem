@@ -60,7 +60,7 @@ export function CampMyFollowUpsCard({
         </Button>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+        <Badge variant="warning">
           {pending.length} pending
         </Badge>
         <Badge variant="outline" className="border-neutral-200 text-neutral-700 dark:border-neutral-600 dark:text-neutral-200">

@@ -3,47 +3,132 @@
 import { Suspense, useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useAuth } from '@/components/providers'
 import { BrandMark, BrandTitle } from '@/components/brand-mark'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import {
-  filterSidebarSections,
-  isSidebarItemActive,
-  navHrefPath,
-  sidebarSettingsNavigation,
-  canSeeNavItem,
-} from '@/lib/navigation/sidebar'
-import type { UserRole } from '@/lib/types'
-import { Cross2Icon } from '@radix-ui/react-icons'
+import { activeNavHref, type SidebarNavItem, type SidebarNavSection } from '@/lib/navigation/sidebar'
+import { useVisibleNav } from '@/lib/navigation/use-visible-nav'
+import { ChevronRightIcon, Cross2Icon } from '@radix-ui/react-icons'
 
 interface SidebarProps {
   className?: string
   collapsed?: boolean
 }
 
-function useSidebarNav() {
-  const { user } = useAuth()
-  const [mounted, setMounted] = useState(false)
+const OPEN_GROUPS_KEY = 'cg-sidebar-groups-v1'
+
+/** Which groups are expanded, remembered per browser. */
+function useOpenGroups(activeSection: string | null) {
+  const [open, setOpen] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    setMounted(true)
+    try {
+      const saved = JSON.parse(localStorage.getItem(OPEN_GROUPS_KEY) ?? '{}')
+      if (saved && typeof saved === 'object') setOpen(saved)
+    } catch {
+      // Storage unavailable: every group starts closed except the current one.
+    }
   }, [])
 
-  const role = user?.role as UserRole | undefined
-  const extra = user?.permissions
+  // Navigating into a closed group opens it, so the active page is never hidden.
+  useEffect(() => {
+    if (activeSection) setOpen((prev) => (prev[activeSection] ? prev : { ...prev, [activeSection]: true }))
+  }, [activeSection])
 
-  const sections = useMemo(() => {
-    if (!mounted) return []
-    return filterSidebarSections(role, undefined, extra)
-  }, [mounted, role, extra])
+  function toggle(title: string) {
+    setOpen((prev) => {
+      const next = { ...prev, [title]: !prev[title] }
+      try {
+        localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify(next))
+      } catch {
+        // Not persisted; the toggle still applies for this visit.
+      }
+      return next
+    })
+  }
 
-  const settingsItems = useMemo(() => {
-    if (!mounted) return []
-    return sidebarSettingsNavigation.filter((item) => canSeeNavItem(role, item, extra))
-  }, [mounted, role, extra])
+  return { isOpen: (title: string) => Boolean(open[title]), toggle }
+}
 
-  return { user, role, sections, settingsItems, mounted }
+function NavItem({
+  item,
+  active,
+  collapsed,
+  onSelect,
+}: {
+  item: SidebarNavItem
+  active: boolean
+  collapsed: boolean
+  onSelect: (href: string) => void
+}) {
+  const Icon = item.icon
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(item.href)}
+        title={collapsed ? item.name : item.description}
+        aria-current={active ? 'page' : undefined}
+        data-active={active ? 'true' : 'false'}
+        className={cn('sidebar-nav-item group', collapsed && 'justify-center px-0')}
+      >
+        <Icon className="sidebar-nav-icon h-4 w-4 shrink-0" />
+        {!collapsed && <span className="truncate">{item.name}</span>}
+      </button>
+    </li>
+  )
+}
+
+function NavGroup({
+  section,
+  collapsible,
+  open,
+  onToggle,
+  children,
+}: {
+  section: SidebarNavSection
+  collapsible: boolean
+  open: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  if (!collapsible) return <ul className="flex flex-col gap-px">{children}</ul>
+  const id = `nav-group-${section.title.toLowerCase().replace(/\W+/g, '-')}`
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={id}
+        className="sidebar-group-toggle group"
+      >
+        <span className="truncate">{section.title}</span>
+        <ChevronRightIcon
+          className={cn('h-3.5 w-3.5 shrink-0 transition-transform duration-200', open && 'rotate-90')}
+          aria-hidden
+        />
+      </button>
+      {/* grid-rows 0fr → 1fr animates the height without measuring it. */}
+      <div
+        id={id}
+        className={cn(
+          'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        )}
+      >
+        {/* invisible (not just clipped) so closed links drop out of the tab order. */}
+        <ul
+          className={cn(
+            'flex min-h-0 flex-col gap-px overflow-hidden transition-[visibility] duration-200',
+            !open && 'invisible'
+          )}
+        >
+          {children}
+        </ul>
+      </div>
+    </div>
+  )
 }
 
 function SidebarNavInner({
@@ -56,96 +141,64 @@ function SidebarNavInner({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { sections, settingsItems } = useSidebarNav()
+  const { sections, settings, pages } = useVisibleNav()
 
-  // Several items can match (e.g. /admin/camp-meeting and /admin/camp-meeting/registrations);
-  // highlight only the most specific one.
-  const activeHref = useMemo(() => {
-    let best: string | null = null
-    for (const item of [...sections.flatMap((section) => section.items), ...settingsItems]) {
-      if (!isSidebarItemActive(pathname, item.href, searchParams)) continue
-      if (!best || navHrefPath(item.href).length > navHrefPath(best).length) best = item.href
-    }
-    return best
-  }, [sections, settingsItems, pathname, searchParams])
+  const activeHref = useMemo(
+    () => activeNavHref(pages, pathname, searchParams),
+    [pages, pathname, searchParams]
+  )
+  const activeSection = pages.find((page) => page.href === activeHref)?.section ?? null
+  const groups = useOpenGroups(activeSection)
 
   function go(href: string) {
     router.push(href)
     onNavigate?.()
   }
 
+  const renderItems = (items: SidebarNavItem[]) =>
+    items.map((item) => (
+      <NavItem
+        key={item.href}
+        item={item}
+        active={item.href === activeHref}
+        collapsed={collapsed}
+        onSelect={go}
+      />
+    ))
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <nav
+        aria-label="Main"
         className={cn(
-          'sidebar-scroll mt-3 flex min-h-0 flex-1 flex-col gap-y-1 overflow-y-auto pb-4',
-          collapsed ? 'px-2' : 'px-4'
+          'sidebar-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4 pt-2',
+          'px-3'
         )}
       >
-        {sections.map((section, sectionIndex) => (
-          <div key={section.title} className={sectionIndex > 0 ? 'mt-5' : undefined}>
-            {!collapsed && (
-              <p className="sidebar-section-label mb-1 px-2">{section.title}</p>
-            )}
-            <ul className="flex flex-col gap-y-0.5">
-              {section.items.map((item) => {
-                const Icon = item.icon
-                const isActive = item.href === activeHref
-                return (
-                  <li key={`${section.title}-${item.name}`}>
-                    <button
-                      type="button"
-                      onClick={() => go(item.href)}
-                      title={collapsed ? item.name : item.description ?? item.name}
-                      data-active={isActive ? 'true' : 'false'}
-                      className={cn(
-                        'sidebar-nav-item group flex w-full items-center gap-x-2.5 rounded-lg px-2 py-1.5 text-left text-[13.5px] transition-colors',
-                        collapsed && 'justify-center px-2.5'
-                      )}
-                    >
-                      <Icon className="sidebar-nav-icon h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.name}</span>}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
+        {sections.map((section, index) =>
+          collapsed ? (
+            <div key={section.title}>
+              {index > 0 && <div className="mx-2 mb-3 h-px bg-neutral-200 dark:bg-neutral-800" aria-hidden />}
+              <ul className="flex flex-col gap-px">{renderItems(section.items)}</ul>
+            </div>
+          ) : (
+            <NavGroup
+              key={section.title}
+              section={section}
+              // The first group (Dashboard, Members…) is always visible.
+              collapsible={index > 0}
+              open={groups.isOpen(section.title)}
+              onToggle={() => groups.toggle(section.title)}
+            >
+              {renderItems(section.items)}
+            </NavGroup>
+          )
+        )}
       </nav>
 
-      {settingsItems.length > 0 ? (
-        <div
-          className={cn(
-            'mt-auto shrink-0 border-t border-neutral-200/80 py-3 dark:border-neutral-800',
-            collapsed ? 'px-2' : 'px-4',
-            collapsed && 'flex flex-col items-center gap-1'
-          )}
-        >
-          {!collapsed && <p className="sidebar-section-label mb-1.5 px-2">Settings</p>}
-          <ul className="flex w-full flex-col gap-y-0.5">
-            {settingsItems.map((item) => {
-              const Icon = item.icon
-              const isActive = item.href === activeHref
-              return (
-                <li key={item.name}>
-                  <button
-                    type="button"
-                    onClick={() => go(item.href)}
-                    title={item.name}
-                    data-active={isActive ? 'true' : 'false'}
-                    className={cn(
-                      'sidebar-nav-item group flex w-full items-center gap-x-2.5 rounded-lg px-2 py-1.5 text-[13.5px] transition-colors',
-                      collapsed && 'justify-center px-2'
-                    )}
-                  >
-                    <Icon className="sidebar-nav-icon h-4 w-4 shrink-0" />
-                    {!collapsed && <span className="truncate">{item.name}</span>}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+      {settings.length > 0 ? (
+        <div className="shrink-0 border-t border-neutral-200 px-3 py-3 dark:border-neutral-800">
+          <ul className="flex flex-col gap-px">{renderItems(settings)}</ul>
         </div>
       ) : null}
     </div>
@@ -157,7 +210,7 @@ function SidebarNav(props: { collapsed: boolean; onNavigate?: () => void }) {
     <Suspense
       fallback={
         <div className="flex min-h-0 flex-1 flex-col px-3 py-4">
-          <div className="h-8 animate-pulse rounded-md bg-slate-200/80" />
+          <div className="h-8 animate-pulse rounded-lg bg-neutral-200/80 dark:bg-neutral-800" />
         </div>
       }
     >
@@ -180,7 +233,7 @@ function SidebarShell({
       <div
         className={cn(
           'flex h-14 shrink-0 items-center',
-          collapsed ? 'justify-center px-2' : 'gap-x-2.5 px-5'
+          collapsed ? 'justify-center px-3' : 'gap-x-2.5 px-5'
         )}
       >
         <BrandMark size={collapsed ? 'sm' : 'md'} />

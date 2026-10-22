@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { PersonAvatar, displayName } from '@/components/ui/person'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -184,25 +185,6 @@ export default function MembersPage() {
     })
   }
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800'
-      case 'elder': return 'bg-purple-100 text-purple-800'
-      case 'deacon': return 'bg-slate-100 text-slate-700'
-      case 'member': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'inactive': return 'bg-gray-100 text-gray-800'
-      case 'transferred': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   // Loading state
   if (authLoading || loading) {
     return (
@@ -265,7 +247,7 @@ export default function MembersPage() {
         {/* Header */}
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Members</h1>
+            <h1 className="app-page-title">Members</h1>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
               Manage church members and their information
             </p>
@@ -464,29 +446,27 @@ export default function MembersPage() {
                     className="flex flex-col gap-3 border-b border-neutral-100 py-4 last:border-0 dark:border-neutral-700 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-                        <User className="h-5 w-5" />
-                      </div>
+                      <PersonAvatar name={member.user?.full_name} seed={member.id} size="lg" />
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-medium text-neutral-900 dark:text-neutral-100">
-                            {member.user?.full_name || 'Unknown'}
+                          <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {displayName(member.user?.full_name)}
                           </h3>
-                          <Badge className={getRoleColor(member.user?.role || '')}>
-                            {member.user?.role || 'member'}
+                          <Badge variant="secondary" className="capitalize">
+                            {(member.user?.role || 'member').replace(/_/g, ' ')}
                           </Badge>
-                          <Badge className={getStatusColor(member.status)}>
+                          <Badge variant={member.status === 'active' ? 'success' : 'secondary'} className="capitalize">
                             {member.status}
                           </Badge>
                           {member.user?.marital_status && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="capitalize">
                               {member.user.marital_status}
                             </Badge>
                           )}
                         </div>
                         <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                          <span className="flex items-center">
-                            <Copy className="h-3 w-3 mr-1" />
+                          <span className="flex items-center font-mono text-[13px]">
+                            <Copy className="mr-1 h-3 w-3" />
                             {formatMembershipIdForDisplay(member.user?.membership_id || '')}
                           </span>
                           <ContactActions

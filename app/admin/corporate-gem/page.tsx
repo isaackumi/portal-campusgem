@@ -11,7 +11,7 @@ import {
 } from '@/lib/actions/corporate-gem'
 import { loadCorporateGemBoardAction, type CorporateGemBoardGroup } from '@/lib/actions/corporate-gem-board'
 import { publishCampusMemberRegistrationForm } from '@/lib/actions/campus-registration-form'
-import { getGroupTypeBadgeClass, getGroupTypeLabel } from '@/lib/constants/groups'
+import { getGroupTypeLabel } from '@/lib/constants/groups'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -52,7 +52,7 @@ function BoardGroupCard({ group }: { group: CorporateGemBoardGroup }) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-2">
             <CardTitle className="text-lg leading-tight">{group.name}</CardTitle>
-            <Badge className={getGroupTypeBadgeClass(group.group_type)}>
+            <Badge variant="secondary" className="capitalize">
               {getGroupTypeLabel(group.group_type)}
             </Badge>
           </div>
@@ -181,7 +181,7 @@ export default function CorporateGemAdminPage() {
               Back to Admin
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Corporate Gem</h1>
+              <h1 className="app-page-title">Corporate Gem</h1>
               <p className="mt-1 max-w-2xl text-muted-foreground">
                 Graduates and working professionals — executives, leaders, members, activities, and forms. Promote
                 students here when they finish campus.

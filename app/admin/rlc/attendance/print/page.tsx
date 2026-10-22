@@ -62,7 +62,7 @@ function StatCell({
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-center print:bg-white">
       <p className={`text-2xl font-bold tabular-nums ${accentClass}`}>{value}</p>
-      <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-0.5 app-overline">{label}</p>
     </div>
   )
 }
@@ -70,7 +70,7 @@ function StatCell({
 function AttendanceSummaryGrid({ summary }: { summary: AttendanceSummaryStats }) {
   return (
     <section className="mt-5 rounded-xl border border-slate-200 bg-white p-4 print:break-inside-avoid">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Attendance summary</h2>
+      <h2 className="app-overline">Attendance summary</h2>
       <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-3">
         <StatCell label="Total present" value={summary.present} accent="rose" />
         <StatCell label="Members" value={summary.members} accent="emerald" />
@@ -120,7 +120,7 @@ function PresentTable({
       <h2 className={`mt-8 text-base font-semibold text-slate-900 ${titleClass}`}>{title}</h2>
       <table className="mt-3 w-full border-collapse text-sm print:break-inside-auto">
         <thead>
-          <tr className="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
+          <tr className="border-b border-slate-300 text-left app-overline">
             <th className="w-10 py-2 pr-2">#</th>
             <th className="py-2 pr-2">Name</th>
             <th className="w-24 py-2 pr-2">Type</th>
@@ -234,7 +234,7 @@ function PrintContent() {
 
       <div className="mx-auto max-w-3xl bg-white px-6 py-8 text-slate-900">
         <header className="border-b border-slate-300 pb-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">{RLC_NAME}</p>
+          <p className="app-overline text-rose-800">{RLC_NAME}</p>
           <h1 className="mt-1 text-2xl font-semibold">Service attendance record</h1>
           <p className="mt-3 text-xl font-semibold text-slate-900">{serviceLabel}</p>
           <p className="mt-1 text-sm text-slate-600">{formatPrintDate(serviceDate)}</p>
@@ -271,7 +271,7 @@ function PrintContent() {
                 </h2>
                 <table className="mt-3 w-full border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <tr className="border-b border-slate-300 text-left app-overline">
                       <th className="w-10 py-2 pr-2">#</th>
                       <th className="py-2 pr-2">Name</th>
                       <th className="w-24 py-2 pr-2">Type</th>
@@ -304,12 +304,12 @@ function PrintContent() {
 
         <footer className="mt-10 grid gap-6 border-t border-slate-300 pt-6 text-sm sm:grid-cols-2 print:break-inside-avoid">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Verified by</p>
+            <p className="app-overline">Verified by</p>
             <div className="mt-8 border-b border-slate-400" />
             <p className="mt-1 text-xs text-slate-500">Name / signature</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Date</p>
+            <p className="app-overline">Date</p>
             <div className="mt-8 border-b border-slate-400" />
             <p className="mt-1 text-xs text-slate-500">Day / month / year</p>
           </div>

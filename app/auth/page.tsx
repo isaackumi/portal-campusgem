@@ -103,12 +103,12 @@ function AuthPageContent() {
         <div className="flex items-center gap-3">
           <BrandMark size="lg" className="bg-white/15 from-transparent to-transparent shadow-none" />
           <span className="leading-tight">
-            <span className="block text-[11px] font-medium uppercase tracking-wider text-white/60">Campus Gem</span>
+            <span className="block app-overliner text-white/60">Campus Gem</span>
             <span className="block text-lg font-bold">Ministries</span>
           </span>
         </div>
         <div>
-          <p className="text-3xl font-semibold leading-snug">Ministry management, without the spreadsheet chase.</p>
+          <p className="max-w-md font-display text-[44px] leading-[1.05] tracking-[-0.01em]">Ministry management, without the <em className="text-brand-200">spreadsheet chase.</em></p>
           <ul className="mt-8 space-y-3 text-sm text-white/80">
             <li className="flex items-start gap-3">
               <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-[10px]">1</span>
@@ -135,7 +135,7 @@ function AuthPageContent() {
             <BrandTitle />
           </div>
           <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 sm:p-8">
-            <h1 className="text-xl font-bold text-neutral-900 dark:text-white">Sign in</h1>
+            <h1 className="app-page-title">Welcome <span className="app-display-accent">back</span></h1>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
               Phone number or membership ID (e.g. CG-2024-XXXX)
             </p>

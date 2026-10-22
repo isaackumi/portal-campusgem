@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import { HeroArt } from '@/components/dashboard/hero-art'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
@@ -10,7 +10,7 @@ export type StickyNoteTone = 'rose' | 'sage' | 'apricot' | 'sky' | 'lemon' | 'li
 
 export interface StickyNoteAction {
   href: string
-  /** Two short lines read best in handwriting, e.g. ['Welcome', 'a visitor']. */
+  /** Two short lines, e.g. ['Welcome a', 'visitor']. */
   lines: [string, string?]
   icon: LucideIcon
   tone: StickyNoteTone
@@ -51,30 +51,20 @@ export function DashboardHero({
 
   return (
     <section className="relative isolate z-10 rounded-xl border border-neutral-200/80 dark:border-neutral-800">
-      {/* Painting sits in its own clipped layer so popovers (Customise) can overflow the hero. */}
-      <div className="absolute inset-0 -z-10 overflow-hidden rounded-xl bg-white dark:bg-neutral-900" aria-hidden>
-        <div className="absolute inset-y-0 right-0 w-full md:w-[72%]">
-          <Image
-            src="/art/the-sower.jpg"
-            alt=""
-            fill
-            priority
-            sizes="(min-width: 1024px) 60vw, 100vw"
-            className="object-cover object-[60%_18%]"
-          />
-          {/* Fade the painting into the page so the greeting and notes stay legible. */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/70 to-white/0 dark:from-neutral-900 dark:via-neutral-900/75 dark:to-neutral-900/10" />
-        </div>
-        <div className="absolute inset-0 bg-white/55 dark:bg-neutral-900/60 md:hidden" />
+      {/* Artwork sits in its own clipped layer so popovers (Customise) can overflow the hero. */}
+      <div className="absolute inset-0 -z-10 overflow-hidden rounded-xl" aria-hidden>
+        <HeroArt className="absolute inset-0 h-full w-full" />
+        {/* Fade towards the greeting so text and notes stay crisp. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#fbf6f1] via-[#fbf6f1]/70 to-transparent dark:from-[#1b1216] dark:via-[#1b1216]/70 md:via-[#fbf6f1]/40 md:dark:via-[#1b1216]/40" />
       </div>
 
       <div className="flex min-h-[300px] flex-col gap-6 p-5 sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white sm:text-[28px]">
-              {greetingFor(now)}, {firstName}
+            <h1 className="app-page-title">
+              {greetingFor(now)}, <span className="app-display-accent">{firstName}</span>
             </h1>
-            <p className="mt-1.5 text-sm text-neutral-600 dark:text-neutral-300">
+            <p className="app-page-description mt-2 dark:text-neutral-300">
               Here&apos;s how Campus Gem Ministries is doing, as at {asAt}.
             </p>
           </div>
@@ -103,7 +93,7 @@ export function DashboardHero({
                 >
                   <span className="sticky-note-tape" aria-hidden />
                   <Icon className={cn('absolute right-3 top-3 h-4 w-4 opacity-70', tone.ink)} aria-hidden />
-                  <span className={cn('font-hand text-[23px] font-semibold leading-[1.05]', tone.ink)}>
+                  <span className={cn('text-[15px] font-semibold leading-tight tracking-tight', tone.ink)}>
                     {note.lines[0]}
                     {note.lines[1] ? (
                       <>
@@ -119,9 +109,6 @@ export function DashboardHero({
         )}
       </div>
 
-      <p className="absolute bottom-3 right-3 hidden rounded-md bg-black/55 px-2 py-1 text-[11px] text-white/90 backdrop-blur-sm sm:block">
-        Vincent van Gogh, <i>The Sower</i>, 1888
-      </p>
     </section>
   )
 }

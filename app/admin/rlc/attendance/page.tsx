@@ -623,7 +623,7 @@ export default function RlcAttendancePage() {
                   <>
                     {presentVisitors.length > 0 ? (
                       <div className="space-y-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">
+                        <p className="app-overline text-sky-800">
                           Visitors ({presentVisitors.length})
                         </p>
                         {presentVisitors.map((row) => (
@@ -644,7 +644,7 @@ export default function RlcAttendancePage() {
                     ) : null}
                     {presentMemberGroups.map((group) => (
                       <div key={group.type} className="space-y-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">
+                        <p className="app-overline text-rose-800">
                           {presentMemberSectionLabel(group.type)} ({group.rows.length})
                         </p>
                         {group.rows.map((row) => (

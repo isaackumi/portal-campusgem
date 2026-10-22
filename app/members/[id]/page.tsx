@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { memberStatusTone, roleTone } from '@/lib/ui/chip-tones'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -213,28 +214,6 @@ export default function MemberProfilePage() {
   // Calculate profile completion using frontend logic
   const profileCompletion = member ? calculateProfileCompletion(member.user!, member) : null
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'visitor': return 'bg-slate-100 text-slate-700'
-      case 'inactive': return 'bg-gray-100 text-gray-800'
-      case 'transferred': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-purple-100 text-purple-800'
-      case 'pastor': return 'bg-red-100 text-red-800'
-      case 'elder': return 'bg-slate-100 text-slate-700'
-      case 'finance_officer': return 'bg-green-100 text-green-800'
-      case 'member': return 'bg-gray-100 text-gray-800'
-      case 'visitor': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   if (authLoading || memberQuery.isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
@@ -281,7 +260,7 @@ export default function MemberProfilePage() {
               Back to Members
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+              <h1 className="app-page-title">
                 Member Profile
               </h1>
               <p className="text-slate-600">{member.user?.full_name}</p>
@@ -341,10 +320,10 @@ export default function MemberProfilePage() {
                     {member.user?.full_name}
                   </h2>
                   <div className="flex items-center justify-center space-x-2 mb-3">
-                    <Badge className={getRoleColor(member.user?.role || 'member')}>
+                    <Badge variant={roleTone(member.user?.role || 'member')} className="capitalize">
                       {member.user?.role}
                     </Badge>
-                    <Badge className={getStatusColor(member.status || 'active')}>
+                    <Badge variant={memberStatusTone(member.status || 'active')} className="capitalize">
                       {member.status}
                     </Badge>
                   </div>

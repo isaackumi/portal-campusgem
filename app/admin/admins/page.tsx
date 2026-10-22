@@ -217,7 +217,7 @@ export default function AccessManagementPage() {
                       {person.secondary_phone && (
                         <span className="inline-flex items-center gap-1" title="Secondary phone — also works for sign-in">
                           <Phone className="h-3 w-3" />{person.secondary_phone}
-                          <span className="text-[10px] uppercase tracking-wide">2nd</span>
+                          <span className="app-overline">2nd</span>
                         </span>
                       )}
                       {person.membership_id && <span className="font-mono">{person.membership_id}</span>}
@@ -559,7 +559,7 @@ function AccessEditor({
           <div className="grid gap-4 sm:grid-cols-2">
             {PERMISSION_GROUPS.map((group) => (
               <fieldset key={group.label} className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-700">
-                <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{group.label}</legend>
+                <legend className="px-1 app-overline">{group.label}</legend>
                 <div className="space-y-2">
                   {group.permissions.map((permission) => {
                     const inherited = fromRole.has(permission)

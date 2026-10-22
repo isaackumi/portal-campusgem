@@ -70,7 +70,7 @@ function PrintSlipsContent() {
             const qrValue = visitor.qr_code || visitor.check_in_code || visitor.id
             return (
               <div key={visitor.id} className="slip mx-auto w-[56mm] border px-2 py-3 text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{RLC_NAME}</p>
+                <p className="app-overline">{RLC_NAME}</p>
                 <p className="mt-1 text-sm font-bold leading-tight">{name}</p>
                 {visitor.check_in_code ? (
                   <p className="mt-1 font-mono text-sm font-bold">{visitor.check_in_code}</p>
