@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import defaultTheme from 'tailwindcss/defaultTheme'
 
 const config: Config = {
   darkMode: ["class"],
@@ -17,7 +18,24 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
+      },
       colors: {
+        /* True gray, matching Trovesuite Accounting's neutral scale. */
+        slate: {
+          50: '#fafafa',
+          100: '#f5f5f5',
+          200: '#e5e5e5',
+          300: '#d4d4d4',
+          400: '#a3a3a3',
+          500: '#737373',
+          600: '#525252',
+          700: '#404040',
+          800: '#262626',
+          900: '#171717',
+          950: '#0a0a0a',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -44,6 +62,17 @@ const config: Config = {
           foreground: "hsl(var(--accent-foreground))",
         },
         brand: {
+          50: '#fff1f3',
+          100: '#ffe0e6',
+          200: '#ffc6d1',
+          300: '#ff9cb0',
+          400: '#fb6485',
+          500: '#ec3560',
+          600: '#ce1440',
+          700: '#ad0e36',
+          800: '#8f1033',
+          900: '#7a1231',
+          950: '#440416',
           accent: "hsl(var(--brand-accent))",
           surface: "hsl(var(--brand-surface))",
           muted: "hsl(var(--brand-muted))",

@@ -145,7 +145,7 @@ function GroupsContent() {
                 Back to Dashboard
               </Button>
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
               Groups & Ministries
             </h1>
             <p className="text-slate-600">
@@ -174,7 +174,7 @@ function GroupsContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">Total Groups</p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {groupStats.total}
                   </p>
                 </div>
@@ -190,7 +190,7 @@ function GroupsContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">Ministries</p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {groupStats.ministries}
                   </p>
                 </div>
@@ -206,7 +206,7 @@ function GroupsContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">Fellowships</p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {groupStats.fellowships}
                   </p>
                 </div>
@@ -222,7 +222,7 @@ function GroupsContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">Age Groups</p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {groupStats.ageGroups}
                   </p>
                 </div>

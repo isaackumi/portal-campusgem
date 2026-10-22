@@ -1049,7 +1049,7 @@ export default function BulkCommunicationsPage() {
                                             className={cn(
                                                 'min-h-14 cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
                                                 templateId === 'custom'
-                                                    ? 'border-slate-900 bg-slate-900 text-white'
+                                                    ? 'border-brand-700 bg-brand-600 text-white'
                                                     : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                             )}
                                         >

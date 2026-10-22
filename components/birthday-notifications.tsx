@@ -147,7 +147,7 @@ export function BirthdayNotifications({
               <div className="mb-2 flex justify-end">
                 <Button
                   size="sm"
-                  className="min-h-9 cursor-pointer bg-slate-900 text-white hover:bg-slate-800"
+                  className="min-h-9 cursor-pointer bg-brand-600 text-white hover:bg-brand-700"
                   onClick={() => handleSendBulkMessage(todayBirthdays)}
                 >
                   Message all

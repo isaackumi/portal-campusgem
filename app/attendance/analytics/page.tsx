@@ -113,7 +113,7 @@ export default function AttendanceAnalyticsPage() {
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Authentication Required</h2>
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">Authentication Required</h2>
             <p className="text-slate-600 mb-4">Please log in to view attendance analytics.</p>
             <Button onClick={() => router.push('/auth')}>
               Go to Login
@@ -151,7 +151,7 @@ export default function AttendanceAnalyticsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-            <h1 className="text-3xl font-bold text-slate-900">Attendance Analytics</h1>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Attendance Analytics</h1>
             <p className="text-slate-600 mt-1">
               Comprehensive insights into church attendance patterns and trends
             </p>

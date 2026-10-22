@@ -24,9 +24,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="light"
+      defaultTheme="system"
       enableSystem
       disableTransitionOnChange
+      storageKey="theme"
     >
       <QueryClientProvider client={queryClient}>
         <ConvexClientProvider>

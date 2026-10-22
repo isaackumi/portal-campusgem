@@ -272,7 +272,7 @@ export default function CreateGroupPage() {
                 Back to Groups
               </Button>
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
               Create New Group
             </h1>
             <p className="text-slate-600">Set up a new church group, ministry, or fellowship</p>

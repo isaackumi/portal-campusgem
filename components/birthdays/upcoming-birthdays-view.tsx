@@ -188,7 +188,7 @@ export function UpcomingBirthdaysView({
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-blue-600">{stats.currentMonth}</p>
+            <p className="text-2xl font-bold text-brand-600">{stats.currentMonth}</p>
             <p className="text-sm text-muted-foreground">Born this calendar month</p>
           </CardContent>
         </Card>

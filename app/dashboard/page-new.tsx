@@ -134,7 +134,7 @@ function DashboardContent() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
               Dashboard
             </h1>
             <p className="text-slate-600">Welcome back, {user?.full_name || 'User'}!</p>
@@ -158,7 +158,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500 mb-1">Total Members</p>
-                  <p className="text-3xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {stats?.total_members || 0}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">Active members</p>
@@ -175,7 +175,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500 mb-1">Groups & Ministries</p>
-                  <p className="text-3xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {stats?.groups_count || 0}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">Active groups</p>
@@ -192,7 +192,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500 mb-1">Recent Attendance</p>
-                  <p className="text-3xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {stats?.attendance_rate || 0}%
                   </p>
                   <p className="text-xs text-slate-500 mt-1">Last 30 days</p>
@@ -209,7 +209,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500 mb-1">Recent Visitors</p>
-                  <p className="text-3xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {stats?.recent_visitors || 0}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">Last 30 days</p>

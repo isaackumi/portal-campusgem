@@ -161,7 +161,7 @@ function MembersContent() {
                 Back to Dashboard
               </Button>
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
               Members Management
             </h1>
             <p className="text-slate-600">
@@ -190,7 +190,7 @@ function MembersContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">Total Members</p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {total}
                   </p>
                 </div>
@@ -206,7 +206,7 @@ function MembersContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">Active Members</p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {members?.filter(m => m.user?.role === 'member').length || 0}
                   </p>
                 </div>
@@ -222,7 +222,7 @@ function MembersContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">Leadership</p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {members?.filter(m => ['admin', 'pastor', 'elder'].includes(m.user?.role || '')).length || 0}
                   </p>
                 </div>
@@ -238,7 +238,7 @@ function MembersContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">New This Month</p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                     {members?.filter(m => {
                       const created = new Date(m.created_at)
                       const now = new Date()

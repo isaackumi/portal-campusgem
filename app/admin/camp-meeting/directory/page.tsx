@@ -69,7 +69,7 @@ export default function CampDirectoryPage() {
               Back to Camp Admin
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Camper Directory</h1>
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Camper Directory</h1>
               <p className="mt-1 max-w-3xl text-muted-foreground">
                 One row per person (matched by phone, or by name when phone is missing). Year chips
                 open that year&apos;s registration. Duplicate import rows with the same name and no

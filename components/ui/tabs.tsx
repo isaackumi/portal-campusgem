@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 const Tabs = TabsPrimitive.Root
 
 const tabsListBaseClass =
-  'inline-flex items-center justify-center rounded-md bg-muted p-1 text-muted-foreground'
+  'inline-flex items-center justify-center rounded-lg bg-neutral-100 p-1 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400'
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
@@ -29,11 +29,11 @@ const ScrollableTabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div className="relative -mx-1">
     <div
-      className="pointer-events-none absolute inset-y-0 left-0 z-10 w-4 rounded-l-md bg-gradient-to-r from-muted to-transparent"
+      className="pointer-events-none absolute inset-y-0 left-0 z-10 w-4 rounded-l-md bg-gradient-to-r from-neutral-100 to-transparent dark:from-neutral-700"
       aria-hidden
     />
     <div
-      className="pointer-events-none absolute inset-y-0 right-0 z-10 w-4 rounded-r-md bg-gradient-to-l from-muted to-transparent"
+      className="pointer-events-none absolute inset-y-0 right-0 z-10 w-4 rounded-r-md bg-gradient-to-l from-neutral-100 to-transparent dark:from-neutral-700"
       aria-hidden
     />
     <div className="overflow-x-auto overscroll-x-contain px-1 pb-0.5 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -52,7 +52,7 @@ const ScrollableTabsList = React.forwardRef<
 ScrollableTabsList.displayName = 'ScrollableTabsList'
 
 const tabsTriggerBaseClass =
-  'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-2 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm shrink-0 snap-start min-h-10 touch-manipulation'
+  'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-neutral-800 data-[state=active]:shadow-sm dark:data-[state=active]:bg-neutral-800 dark:data-[state=active]:text-neutral-100 shrink-0 snap-start min-h-10 touch-manipulation'
 
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,

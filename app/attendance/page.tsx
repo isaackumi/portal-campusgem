@@ -137,7 +137,7 @@ export default function AttendancePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 flex items-center">
+              <h1 className="text-2xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center">
                 <Calendar className="h-8 w-8 mr-3 text-primary" />
                 Attendance Management
               </h1>
@@ -170,7 +170,7 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-600">Today</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.today_attendance}</p>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.today_attendance}</p>
                   </div>
                   <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
                     <Users className="h-6 w-6 text-primary" />
@@ -184,7 +184,7 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-600">This Week</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.weekly_attendance}</p>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.weekly_attendance}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <BarChart3 className="h-6 w-6 text-green-600" />
@@ -198,7 +198,7 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-600">This Month</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.monthly_attendance}</p>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.monthly_attendance}</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <TrendingUp className="h-6 w-6 text-purple-600" />
@@ -212,7 +212,7 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-600">Total</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.total_attendance}</p>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total_attendance}</p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <Calendar className="h-6 w-6 text-orange-600" />

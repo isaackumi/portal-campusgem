@@ -608,7 +608,7 @@ export default function CampActivitiesPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-slate-900">{activities.length}</div>
+                            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{activities.length}</div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">

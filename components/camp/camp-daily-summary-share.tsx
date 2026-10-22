@@ -90,17 +90,17 @@ export function CampDailySummaryShare({ input, yearId, variant = 'compact', clas
   if (variant === 'compact') return actions
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Daily summary for WhatsApp</p>
-          <p className="text-xs text-slate-500">
-            Includes today’s new / returning counts plus a registration link
+          <p className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Daily summary</p>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            Today’s new and returning counts, plus the registration link.
           </p>
         </div>
         {actions}
       </div>
-      <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
+      <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
         {text}
       </pre>
     </div>

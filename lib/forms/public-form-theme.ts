@@ -8,8 +8,8 @@ export type PublicFormAccentId =
   | 'slate'
 
 export const PUBLIC_FORM_ACCENT_OPTIONS: Array<{ id: PublicFormAccentId; label: string }> = [
-  { id: 'auto', label: 'Blue (auto — recommended)' },
-  { id: 'indigo', label: 'Blue' },
+  { id: 'auto', label: 'Crimson (auto — recommended)' },
+  { id: 'indigo', label: 'Crimson' },
   { id: 'sky', label: 'Light blue' },
   { id: 'black', label: 'Black' },
   { id: 'slate', label: 'Neutral gray' },
@@ -37,18 +37,18 @@ export type PublicFormTheme = {
 const THEMES: Record<Exclude<PublicFormAccentId, 'auto'>, PublicFormTheme> = {
   indigo: {
     id: 'indigo',
-    pageGradient: 'from-indigo-50 via-slate-50 to-white',
-    heroGradient: 'from-indigo-600 via-indigo-700 to-indigo-950',
-    accentHex: '#4338ca',
-    accentSoft: 'bg-indigo-50',
-    accentBorder: 'border-indigo-200',
-    accentText: 'text-indigo-950',
-    button: 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white',
-    progressActive: 'bg-indigo-600',
-    progressDone: 'bg-indigo-200',
-    choiceSelected: 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200',
-    descriptionBox: 'bg-indigo-50 border-indigo-100 text-indigo-950',
-    badge: 'bg-indigo-100 text-indigo-900',
+    pageGradient: 'from-brand-50 via-neutral-50 to-white',
+    heroGradient: 'from-brand-700 via-brand-800 to-neutral-900',
+    accentHex: '#ce1440',
+    accentSoft: 'bg-brand-50',
+    accentBorder: 'border-brand-200',
+    accentText: 'text-brand-950',
+    button: 'bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white',
+    progressActive: 'bg-brand-600',
+    progressDone: 'bg-brand-200',
+    choiceSelected: 'border-brand-500 bg-brand-50 ring-2 ring-brand-200',
+    descriptionBox: 'bg-brand-50 border-brand-100 text-brand-950',
+    badge: 'bg-brand-100 text-brand-900',
     steppedPatternOpacity: 0.35,
   },
   sky: {

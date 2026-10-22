@@ -2,14 +2,14 @@ import type { ChurchFormField, ChurchFormResponse } from '@/lib/types'
 import type { FormPrefillKey } from '@/lib/forms/prefill'
 
 export const CHART_COLORS = [
-  '#3b82f6',
-  '#8b5cf6',
+  '#ce1440',
+  '#ec3560',
   '#10b981',
   '#f59e0b',
-  '#ef4444',
-  '#06b6d4',
-  '#ec4899',
-  '#64748b',
+  '#7a1231',
+  '#737373',
+  '#fb6485',
+  '#404040',
 ]
 
 export type AnalyticsSlice = { label: string; count: number; percent: number; color: string }

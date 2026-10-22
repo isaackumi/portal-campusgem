@@ -299,7 +299,7 @@ export function CampManualCheckInPanel({
                         </div>
                         <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
                           {campCode ? (
-                            <span className="font-mono font-semibold text-indigo-800">
+                            <span className="font-mono font-semibold text-brand-800">
                               Code: {campCode}
                             </span>
                           ) : null}

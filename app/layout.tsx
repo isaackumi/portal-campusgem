@@ -1,7 +1,14 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/toaster'
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: 'Campus Gem Ministries - Church Management System',
@@ -35,7 +42,10 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#020617',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f5f5f5' },
+    { media: '(prefers-color-scheme: dark)', color: '#171717' },
+  ],
 }
 
 /** App-wide: skip broken static path generation for Convex-backed dynamic routes */
@@ -104,21 +114,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <DevAssetRecoveryScript />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" 
-          rel="stylesheet" 
-        />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body
-        className="min-h-screen bg-background text-foreground antialiased"
-        style={{ fontFamily: '"Source Sans 3", system-ui, sans-serif' }}
-      >
+      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
         <Providers>
           {children}
           <Toaster />

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Badge } from '@/components/ui/badge'
-import { CampRegistration, CampYear } from '@/lib/types'
+import { StatCard } from '@/components/ui/stat-card'
+import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { useAuth } from '@/components/providers'
 import { CampActiveYearEmpty } from '@/components/camp/camp-active-year-empty'
@@ -14,26 +14,17 @@ import { CampMyFollowUpsCard } from '@/components/camp/camp-my-follow-ups-card'
 import { CampDailySummaryShare } from '@/components/camp/camp-daily-summary-share'
 import { buildLiveRegistrationPulse } from '@/lib/camp/analytics'
 import { getPublishedCampFormForYear } from '@/lib/actions/forms'
-import { 
-  Users, 
-  QrCode, 
-  ClipboardList, 
-  TrendingUp, 
-  ArrowLeft, 
-  Calendar, 
-  MapPin,
-  Clock,
+import {
+  QrCode,
+  ClipboardList,
   ChevronUp,
   ChevronDown,
   ArrowUpDown,
-  Sparkles,
   MessageSquare,
-  Link as LinkIcon,
   Copy,
   Check,
   RefreshCw,
-  AlertCircle,
-  Upload
+  Upload,
 } from 'lucide-react'
 
 type SortField = 'name' | 'role' | 'status' | 'date' | 'type'
@@ -45,10 +36,10 @@ export default function CampAdminDashboard() {
     const { registrations, campYear, loading, error, refresh } = useCampRegistrations()
     const [sortField, setSortField] = useState<SortField>('date')
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
-    const [showRecentRegistrations, setShowRecentRegistrations] = useState(true)
     const [registrationLinkCopied, setRegistrationLinkCopied] = useState(false)
     const [refreshing, setRefreshing] = useState(false)
     const [registrationFormPath, setRegistrationFormPath] = useState('/camp-meeting/register')
+    const [registrationUrl, setRegistrationUrl] = useState('/camp-meeting/register')
 
     useEffect(() => {
         if (!campYear?.id) return
@@ -60,6 +51,10 @@ export default function CampAdminDashboard() {
             }
         })
     }, [campYear?.id])
+
+    useEffect(() => {
+        setRegistrationUrl(`${window.location.origin}${registrationFormPath}`)
+    }, [registrationFormPath])
 
     // Redirect to auth if not logged in
     useEffect(() => {
@@ -142,9 +137,6 @@ export default function CampAdminDashboard() {
             : <ChevronDown className="h-4 w-4 ml-1" />
     }
 
-    const registrationUrl =
-        typeof window !== 'undefined' ? `${window.location.origin}${registrationFormPath}` : registrationFormPath
-
     const copyRegistrationLink = async () => {
         try {
             await navigator.clipboard.writeText(registrationUrl)
@@ -183,585 +175,339 @@ export default function CampAdminDashboard() {
         return acc
     }, {} as Record<string, number>)
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 relative">
-            {/* Sticky Back Navigation Button - Always Visible */}
-            <div className="fixed bottom-6 right-6 z-50">
-                <Button
-                    variant="default"
-                    size="lg"
-                    onClick={() => router.push('/admin')}
-                    className="rounded-full shadow-lg hover:shadow-xl transition-all duration-200 h-14 w-14 p-0"
-                    title="Back to Admin Dashboard"
-                >
-                    <ArrowLeft className="h-6 w-6" />
-                </Button>
-            </div>
+    const checkInRate = total > 0 ? Math.round((checkedIn / total) * 100) : 0
+    const newRate = total > 0 ? Math.round((newRegistrants / total) * 100) : 0
 
-            {/* Sticky Header with Back Button */}
-            <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
+    return (
+        <div className="mx-auto max-w-7xl space-y-6">
+            <CampAdminPageHeader
+                title="Camp meeting"
+                campYear={campYear}
+                backHref="/admin"
+                actions={
+                    <>
                         <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/admin')}
-                                className="hidden sm:flex items-center gap-2 hover:bg-gray-100"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                <span className="text-sm font-medium">Back to Admin</span>
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => router.push('/admin')}
-                                className="sm:hidden"
-                                title="Back"
-                            >
-                                <ArrowLeft className="h-5 w-5" />
+                            variant="outline"
+                            onClick={() => void handleRefresh()}
+                            disabled={refreshing || loading}
+                        >
+                            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                            Refresh
                         </Button>
-                            <div className="flex items-center gap-2">
-                                <div className="p-2 bg-slate-100 rounded-lg">
-                                    <Sparkles className="h-5 w-5 text-primary" />
-                                </div>
-                                <div>
-                                    <h1 className="app-page-title">
-                                    Camp Meeting {campYear.year}
-                                </h1>
-                                    <p className="app-page-description mt-0.5">
-                                        {campYear.theme}
-                                    </p>
-                                </div>
-                            </div>
+                        <Button
+                            variant="outline"
+                            onClick={() => router.push('/admin/camp-meeting/registrations')}
+                        >
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            Registrations
+                        </Button>
+                        <Button onClick={() => router.push('/admin/camp-meeting/scan')}>
+                            <QrCode className="mr-2 h-4 w-4" />
+                            Scanner
+                        </Button>
+                    </>
+                }
+            />
+
+            <section aria-label="Camp totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <button
+                    type="button"
+                    onClick={() => router.push('/admin/camp-meeting/registrations')}
+                    className="rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                >
+                    <StatCard label="Registrations" value={total} sub="All participants" className="h-full" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => router.push('/admin/camp-meeting/scan')}
+                    className="rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                >
+                    <StatCard
+                        label="Checked in"
+                        value={checkedIn}
+                        sub={`${checkInRate}% of registrations`}
+                        tone={checkedIn > 0 ? 'success' : 'default'}
+                        className="h-full"
+                    />
+                </button>
+                <StatCard
+                    label="New"
+                    value={newRegistrants}
+                    sub={`${newRate}% first-time`}
+                />
+                <StatCard label="Returning" value={returning} sub="Registered in a previous year" />
+            </section>
+
+            <section className="grid gap-6 lg:grid-cols-3">
+                <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800 lg:col-span-2">
+                    <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Registration link</h2>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                        Share this for public registration.
+                    </p>
+                    <div className="mt-4 flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-900/40">
+                        <input
+                            type="text"
+                            readOnly
+                            value={registrationUrl}
+                            aria-label="Registration link"
+                            className="min-w-0 flex-1 truncate bg-transparent text-sm text-neutral-700 outline-none dark:text-neutral-200"
+                        />
+                        <Button size="sm" variant="outline" onClick={() => void copyRegistrationLink()}>
+                            {registrationLinkCopied ? (
+                                <>
+                                    <Check className="mr-1 h-4 w-4 text-emerald-600" />
+                                    Copied
+                                </>
+                            ) : (
+                                <>
+                                    <Copy className="mr-1 h-4 w-4" />
+                                    Copy
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    <button
+                        type="button"
+                        onClick={() => router.push('/admin/camp-meeting/communications')}
+                        className="flex flex-1 items-center justify-between rounded-xl border border-neutral-200 bg-white px-5 py-4 text-left transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                    >
+                        <span>
+                            <span className="block text-sm font-semibold text-neutral-900 dark:text-neutral-100">Communications</span>
+                            <span className="mt-1 block text-xs text-neutral-500 dark:text-neutral-400">SMS, email, and delivery</span>
+                        </span>
+                        <MessageSquare className="h-5 w-5 text-neutral-400" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => router.push('/admin/camp-meeting/import')}
+                        className="flex flex-1 items-center justify-between rounded-xl border border-neutral-200 bg-white px-5 py-4 text-left transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                    >
+                        <span>
+                            <span className="block text-sm font-semibold text-neutral-900 dark:text-neutral-100">Import history</span>
+                            <span className="mt-1 block text-xs text-neutral-500 dark:text-neutral-400">Past years from Excel</span>
+                        </span>
+                        <Upload className="h-5 w-5 text-neutral-400" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => router.push('/admin/camp-meeting/notifications')}
+                        className="flex flex-1 items-center justify-between rounded-xl border border-neutral-200 bg-white px-5 py-4 text-left transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                    >
+                        <span>
+                            <span className="block text-sm font-semibold text-neutral-900 dark:text-neutral-100">Notification settings</span>
+                            <span className="mt-1 block text-xs text-neutral-500 dark:text-neutral-400">Templates for new registrations</span>
+                        </span>
+                        <ClipboardList className="h-5 w-5 text-neutral-400" />
+                    </button>
+                </div>
+            </section>
+
+            <CampMyFollowUpsCard
+                userId={user.id}
+                registrations={registrations}
+                onOpenQueue={() => router.push('/admin/camp-meeting/follow-up?mine=1')}
+                onOpenRegistration={(registrationId) =>
+                    router.push(`/admin/camp-meeting/registrations/${registrationId}`)
+                }
+            />
+
+            {total > 0 ? (
+                <CampDailySummaryShare
+                    variant="card"
+                    yearId={campYear.id}
+                    input={{
+                        year: campYear.year,
+                        theme: campYear.theme,
+                        total,
+                        newRegistrants,
+                        returning,
+                        pulse: livePulse,
+                        registrationUrl,
+                    }}
+                />
+            ) : null}
+
+            <section className="grid gap-6 lg:grid-cols-3">
+                <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800 lg:col-span-2">
+                    <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Role distribution</h2>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Participants by role</p>
+                    {Object.keys(byRole).length === 0 ? (
+                        <p className="mt-6 text-sm text-neutral-500 dark:text-neutral-400">No role data yet.</p>
+                    ) : (
+                        <div className="mt-5 space-y-4">
+                            {Object.entries(byRole)
+                                .sort((a, b) => b[1] - a[1])
+                                .map(([role, count]) => {
+                                    const percentage = total > 0 ? (count / total) * 100 : 0
+                                    return (
+                                        <div key={role}>
+                                            <div className="flex items-center justify-between gap-3 text-sm">
+                                                <span className="font-medium text-neutral-800 dark:text-neutral-100">{role}</span>
+                                                <span className="shrink-0 tabular-nums text-neutral-500 dark:text-neutral-400">
+                                                    {count}
+                                                    <span className="ml-2">{Math.round(percentage)}%</span>
+                                                </span>
+                                            </div>
+                                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-700">
+                                                <div
+                                                    className="h-full rounded-full bg-brand-600"
+                                                    style={{ width: `${percentage}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                         </div>
-                        <div className="flex gap-2 flex-shrink-0">
-                            <Button 
-                                variant="outline"
-                                size="sm"
-                                onClick={handleRefresh}
-                                disabled={refreshing || loading}
-                                className="shadow-sm"
-                                title="Refresh data"
-                            >
-                                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                            </Button>
-                            <Button 
-                                variant="outline"
-                                size="sm"
-                                onClick={() => router.push('/admin/camp-meeting/registrations')}
-                                className="hidden md:flex shadow-sm"
-                            >
-                                <ClipboardList className="mr-2 h-4 w-4" /> 
-                                <span className="hidden lg:inline">Manage</span>
-                            </Button>
-                            <Button 
-                                size="sm"
-                                onClick={() => router.push('/admin/camp-meeting/scan')}
-                                className="shadow-sm"
-                            >
-                                <QrCode className="mr-2 h-4 w-4" /> 
-                                <span className="hidden sm:inline">Scanner</span>
-                            </Button>
-                        </div>
-                                </div>
-                    {/* Camp Year Details */}
-                    <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-600 mt-3 pt-3 border-t border-slate-100">
-                        <div className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5" />
-                                    <span>
-                                        {new Date(campYear.start_date).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric'
-                                        })}
-                                    </span>
-                                </div>
-                                {campYear.venue && (
-                            <div className="flex items-center gap-1.5">
-                                <MapPin className="h-3.5 w-3.5" />
-                                        <span>{campYear.venue}</span>
-                                    </div>
-                                )}
-                            </div>
+                    )}
+                </div>
+
+                <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Recent</h2>
+                            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                                Latest {recentRegistrations.length}
+                            </p>
                         </div>
                     </div>
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-24">
-
-                {/* Quick Actions - Registration Link & SMS Management */}
-                <div className="grid gap-4 md:grid-cols-3">
-                    <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push('/admin/camp-meeting/import')}>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-purple-900">
-                                <Upload className="h-5 w-5" />
-                                Import Historical Data
-                            </CardTitle>
-                            <CardDescription className="text-purple-700 text-sm">
-                                Import past camp registrations from Excel
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xs text-purple-600 leading-relaxed">
-                                Upload Excel files for previous camp years to enable historical analytics
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-md transition-shadow">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-slate-900">
-                                <LinkIcon className="h-5 w-5" />
-                                Registration Form Link
-                            </CardTitle>
-                            <CardDescription className="text-slate-700 text-sm">
-                                Share this link for public registration
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="flex items-center gap-2 p-3 bg-white rounded-lg border-2 border-slate-200 shadow-sm">
-                                <input
-                                    type="text"
-                                    readOnly
-                                    value={registrationUrl}
-                                    className="flex-1 text-xs sm:text-sm font-mono bg-transparent border-none outline-none text-slate-700 truncate"
-                                />
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={copyRegistrationLink}
-                                    className="flex-shrink-0 border-slate-300 hover:bg-slate-50"
+                    {recentRegistrations.length === 0 ? (
+                        <p className="mt-6 text-sm text-neutral-500 dark:text-neutral-400">No registrations yet.</p>
+                    ) : (
+                        <div className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-700">
+                            {recentRegistrations.map((reg) => (
+                                <button
+                                    key={reg.id}
+                                    type="button"
+                                    onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
+                                    className="flex w-full flex-col gap-1 py-3 text-left"
                                 >
-                                    {registrationLinkCopied ? (
-                                        <>
-                                            <Check className="h-4 w-4 mr-1 text-green-600" />
-                                            <span className="hidden sm:inline">Copied!</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy className="h-4 w-4 sm:mr-1" />
-                                            <span className="hidden sm:inline">Copy</span>
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                            <p className="text-xs text-primary leading-relaxed">
-                                Click copy to share this link via SMS, Email, or WhatsApp
-                            </p>
-                        </CardContent>
-                    </Card>
+                                    <span className="flex items-center justify-between gap-2">
+                                        <span className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                                            {reg.full_name}
+                                        </span>
+                                        {reg.is_new_registrant ? (
+                                            <Badge variant="secondary" className="shrink-0">New</Badge>
+                                        ) : null}
+                                    </span>
+                                    <span className="flex items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                        <span className="truncate">{reg.role}</span>
+                                        <span className="shrink-0">
+                                            {reg.status === 'checked_in' ? 'Checked in' : 'Registered'}
+                                        </span>
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <Button
+                        variant="outline"
+                        className="mt-4 w-full"
+                        onClick={() => router.push('/admin/camp-meeting/registrations')}
+                    >
+                        View all registrations
+                    </Button>
+                </div>
+            </section>
 
-                    <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-white hover:shadow-md transition-shadow">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-green-900">
-                                <MessageSquare className="h-5 w-5" />
-                                Communications
-                            </CardTitle>
-                            <CardDescription className="text-green-700 text-sm">
-                                Send bulk SMS and manage notifications
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <p className="text-sm text-green-800 leading-relaxed">
-                                Send SMS messages to filtered groups of registrations. Configure templates and track delivery status.
+            {registrations.length > 0 ? (
+                <section className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+                    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-neutral-200 px-5 py-4 dark:border-neutral-700">
+                        <div>
+                            <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Registrations</h2>
+                            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                                {registrations.length} total
                             </p>
-                            <div className="space-y-2">
-                            <Button
-                                onClick={() => router.push('/admin/camp-meeting/communications')}
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                            >
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                    <span className="hidden sm:inline">Manage SMS</span>
-                                    <span className="sm:hidden">SMS</span>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push('/admin/camp-meeting/registrations')}
+                        >
+                            Open full list
+                        </Button>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-neutral-200 text-left dark:border-neutral-700">
+                                    <th className="px-5 py-3 font-medium text-neutral-500 dark:text-neutral-400">
+                                        <button type="button" onClick={() => handleSort('name')} className="inline-flex items-center">
+                                            Name
+                                            {getSortIcon('name')}
+                                        </button>
+                                    </th>
+                                    <th className="hidden px-3 py-3 font-medium text-neutral-500 dark:text-neutral-400 sm:table-cell">
+                                        <button type="button" onClick={() => handleSort('role')} className="inline-flex items-center">
+                                            Role
+                                            {getSortIcon('role')}
+                                        </button>
+                                    </th>
+                                    <th className="hidden px-3 py-3 font-medium text-neutral-500 dark:text-neutral-400 md:table-cell">
+                                        <button type="button" onClick={() => handleSort('type')} className="inline-flex items-center">
+                                            Type
+                                            {getSortIcon('type')}
+                                        </button>
+                                    </th>
+                                    <th className="px-3 py-3 font-medium text-neutral-500 dark:text-neutral-400">
+                                        <button type="button" onClick={() => handleSort('status')} className="inline-flex items-center">
+                                            Status
+                                            {getSortIcon('status')}
+                                        </button>
+                                    </th>
+                                    <th className="hidden px-5 py-3 font-medium text-neutral-500 dark:text-neutral-400 lg:table-cell">
+                                        <button type="button" onClick={() => handleSort('date')} className="inline-flex items-center">
+                                            Date
+                                            {getSortIcon('date')}
+                                        </button>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sortedRegistrations.slice(0, 15).map((reg) => (
+                                    <tr
+                                        key={reg.id}
+                                        onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
+                                        className="cursor-pointer border-b border-neutral-100 last:border-0 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700/50"
+                                    >
+                                        <td className="px-5 py-3">
+                                            <div className="font-medium text-neutral-900 dark:text-neutral-100">{reg.full_name}</div>
+                                            {reg.email ? (
+                                                <div className="max-w-[16rem] truncate text-xs text-neutral-500 dark:text-neutral-400">{reg.email}</div>
+                                            ) : null}
+                                        </td>
+                                        <td className="hidden px-3 py-3 text-neutral-700 dark:text-neutral-300 sm:table-cell">{reg.role}</td>
+                                        <td className="hidden px-3 py-3 text-neutral-600 dark:text-neutral-400 md:table-cell">
+                                            {reg.is_new_registrant ? 'New' : 'Returning'}
+                                        </td>
+                                        <td className="px-3 py-3">
+                                            <Badge variant={reg.status === 'checked_in' ? 'default' : 'outline'}>
+                                                {reg.status === 'checked_in' ? 'Checked in' : 'Registered'}
+                                            </Badge>
+                                        </td>
+                                        <td className="hidden px-5 py-3 text-neutral-600 dark:text-neutral-400 lg:table-cell">
+                                            {new Date(reg.created_at).toLocaleDateString('en-GB', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                            })}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {sortedRegistrations.length > 15 ? (
+                        <div className="border-t border-neutral-200 px-5 py-4 text-center dark:border-neutral-700">
+                            <Button variant="outline" onClick={() => router.push('/admin/camp-meeting/registrations')}>
+                                View all {registrations.length}
                             </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => router.push('/admin/camp-meeting/notifications')}
-                                    className="w-full border-green-300 text-green-700 hover:bg-green-50"
-                            >
-                                <Calendar className="mr-2 h-4 w-4" />
-                                    <span className="hidden sm:inline">Notification Settings</span>
-                                    <span className="sm:hidden">Settings</span>
-                            </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {user ? (
-                    <CampMyFollowUpsCard
-                        userId={user.id}
-                        registrations={registrations}
-                        onOpenQueue={() => router.push('/admin/camp-meeting/follow-up?mine=1')}
-                        onOpenRegistration={(registrationId) =>
-                            router.push(`/admin/camp-meeting/registrations/${registrationId}`)
-                        }
-                    />
-                ) : null}
-
-                {/* Stats Cards */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="border-2 border-slate-200 hover:shadow-lg transition-all duration-200 hover:border-slate-300 cursor-pointer" onClick={() => router.push('/admin/camp-meeting/registrations')}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardDescription className="text-sm font-medium text-slate-700">
-                                Total Registrations
-                            </CardDescription>
-                            <div className="p-2 bg-slate-100 rounded-lg">
-                                <Users className="h-5 w-5 text-primary" />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="app-stat-value mb-1">{total}</div>
-                            <p className="app-meta">
-                                All registered participants
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-2 border-green-200 hover:shadow-lg transition-all duration-200 hover:border-green-300 cursor-pointer" onClick={() => router.push('/admin/camp-meeting/scan')}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardDescription className="text-sm font-medium text-slate-700">
-                                Checked In
-                            </CardDescription>
-                            <div className="p-2 bg-green-100 rounded-lg">
-                                <TrendingUp className="h-5 w-5 text-green-600" />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="app-stat-value mb-1 text-green-600">{checkedIn}</div>
-                            <p className="app-meta">
-                                {total > 0 ? Math.round((checkedIn / total) * 100) : 0}% Attendance Rate
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-2 border-purple-200 hover:shadow-lg transition-all duration-200 hover:border-purple-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardDescription className="text-sm font-medium text-slate-700">
-                                New First Timers
-                            </CardDescription>
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <Users className="h-5 w-5 text-purple-600" />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="app-stat-value mb-1 text-purple-600">{newRegistrants}</div>
-                            <p className="app-meta">
-                                {total > 0 ? Math.round((newRegistrants / total) * 100) : 0}% of total registrations
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-2 border-orange-200 hover:shadow-lg transition-all duration-200 hover:border-orange-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                            <CardDescription className="text-sm font-medium text-slate-700">
-                                Top Role
-                            </CardDescription>
-                            <div className="p-2 bg-orange-100 rounded-lg">
-                                <Users className="h-5 w-5 text-orange-600" />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="app-stat-value mb-1 truncate text-orange-600">
-                                {Object.entries(byRole).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'}
-                            </div>
-                            <p className="app-meta">
-                                {Object.entries(byRole).sort((a, b) => b[1] - a[1])[0]?.[1] || 0} participants
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {total > 0 ? (
-                    <CampDailySummaryShare
-                        variant="card"
-                        yearId={campYear.id}
-                        input={{
-                            year: campYear.year,
-                            theme: campYear.theme,
-                            total,
-                            newRegistrants,
-                            returning,
-                            pulse: livePulse,
-                            registrationUrl,
-                        }}
-                    />
-                ) : null}
-
-                {/* Content Grid */}
-                <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Role Distribution */}
-                    <Card className="lg:col-span-2 border-2 hover:shadow-md transition-shadow">
-                        <CardHeader className="border-b bg-slate-50/50">
-                            <CardTitle className="flex items-center gap-2">
-                                <Users className="h-5 w-5 text-primary" />
-                                Role Distribution
-                            </CardTitle>
-                            <CardDescription className="text-sm">
-                                Breakdown of participants by role
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            {Object.keys(byRole).length === 0 ? (
-                                <div className="text-center py-12 text-slate-500">
-                                    <Users className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                                    <p className="text-sm">No role data available</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                {Object.entries(byRole)
-                                    .sort((a, b) => b[1] - a[1])
-                                    .map(([role, count]) => {
-                                        const percentage = total > 0 ? (count / total) * 100 : 0
-                                        return (
-                                            <div key={role} className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-semibold text-slate-700">{role}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-bold text-slate-900">{count}</span>
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {Math.round(percentage)}%
-                                                        </Badge>
-                                                    </div>
-                                                </div>
-                                                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
-                                                    <div
-                                                            className="h-full rounded-full bg-gradient-to-r from-slate-800 to-slate-950 transition-all duration-500 shadow-sm"
-                                                        style={{ width: `${percentage}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                            </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Recent Registrations */}
-                    <Card className="border-2 hover:shadow-md transition-shadow">
-                        <CardHeader className="border-b bg-slate-50/50">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Clock className="h-5 w-5 text-primary" />
-                                        Recent Registrations
-                                    </CardTitle>
-                                    <CardDescription className="text-sm">
-                                        Latest {recentRegistrations.length} registrations
-                                    </CardDescription>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowRecentRegistrations(!showRecentRegistrations)}
-                                    className="text-xs"
-                                >
-                                    {showRecentRegistrations ? 'Hide' : 'Show'}
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        {showRecentRegistrations && (
-                            <CardContent className="pt-4">
-                                {recentRegistrations.length === 0 ? (
-                                    <div className="text-center py-8 text-slate-500">
-                                        <Users className="h-10 w-10 mx-auto mb-2 text-gray-400" />
-                                        <p className="text-sm">No registrations yet</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2.5">
-                                        {recentRegistrations.map((reg) => (
-                                            <div
-                                                key={reg.id}
-                                                className="p-3 bg-slate-50 rounded-lg hover:bg-gray-100 transition-all duration-150 cursor-pointer border border-slate-200 hover:border-gray-300 hover:shadow-sm"
-                                                onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
-                                            >
-                                                <div className="flex items-start justify-between mb-1.5">
-                                                    <span className="font-semibold text-sm text-slate-900 truncate flex-1">
-                                                        {reg.full_name}
-                                                    </span>
-                                                    {reg.is_new_registrant && (
-                                                        <Badge variant="secondary" className="text-xs ml-2 flex-shrink-0">
-                                                            New
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
-                                                    <span className="truncate">{reg.role}</span>
-                                                    <span className="ml-2 flex-shrink-0">{new Date(reg.created_at).toLocaleDateString()}</span>
-                                                </div>
-                                                <div>
-                                                    <Badge
-                                                        variant={reg.status === 'checked_in' ? 'default' : 'outline'}
-                                                        className="text-xs"
-                                                    >
-                                                        {reg.status === 'checked_in' ? 'Checked In' : 'Registered'}
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <Button
-                                            variant="outline"
-                                            className="w-full mt-4 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                                            onClick={() => router.push('/admin/camp-meeting/registrations')}
-                                        >
-                                            View All Registrations
-                                        </Button>
-                                    </div>
-                                )}
-                            </CardContent>
-                        )}
-                    </Card>
-                </div>
-
-                {/* Registrations Table with Sorting */}
-                {registrations.length > 0 && (
-                    <Card className="border-2 hover:shadow-md transition-shadow">
-                        <CardHeader className="border-b bg-slate-50/50">
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                                <div>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <ClipboardList className="h-5 w-5 text-primary" />
-                                        All Registrations
-                                    </CardTitle>
-                                    <CardDescription className="text-sm">
-                                        {registrations.length} total registration{registrations.length !== 1 ? 's' : ''}
-                                    </CardDescription>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => router.push('/admin/camp-meeting/registrations')}
-                                    className="shadow-sm"
-                                >
-                                    View Full Page
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                            <div className="overflow-x-auto -mx-6 px-6">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-slate-200">
-                                            <th className="text-left py-3 px-3 sm:px-4">
-                                                <button
-                                                    onClick={() => handleSort('name')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
-                                                >
-                                                    Name
-                                                    {getSortIcon('name')}
-                                                </button>
-                                            </th>
-                                            <th className="text-left py-3 px-3 sm:px-4 hidden sm:table-cell">
-                                                <button
-                                                    onClick={() => handleSort('role')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
-                                                >
-                                                    Role
-                                                    {getSortIcon('role')}
-                                                </button>
-                                            </th>
-                                            <th className="text-left py-3 px-3 sm:px-4 hidden md:table-cell">
-                                                <button
-                                                    onClick={() => handleSort('type')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
-                                                >
-                                                    Type
-                                                    {getSortIcon('type')}
-                                                </button>
-                                            </th>
-                                            <th className="text-left py-3 px-3 sm:px-4">
-                                                <button
-                                                    onClick={() => handleSort('status')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
-                                                >
-                                                    Status
-                                                    {getSortIcon('status')}
-                                                </button>
-                                            </th>
-                                            <th className="text-left py-3 px-3 sm:px-4 hidden lg:table-cell">
-                                                <button
-                                                    onClick={() => handleSort('date')}
-                                                    className="flex items-center font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 transition-colors"
-                                                >
-                                                    Date
-                                                    {getSortIcon('date')}
-                                                </button>
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {sortedRegistrations.slice(0, 15).map((reg) => (
-                                            <tr
-                                                key={reg.id}
-                                                className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                                                onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
-                                            >
-                                                <td className="py-3 px-3 sm:px-4">
-                                                    <div className="font-medium text-sm text-slate-900">{reg.full_name}</div>
-                                                    {reg.email && (
-                                                        <div className="text-xs text-slate-500 truncate max-w-[200px]">{reg.email}</div>
-                                                    )}
-                                                    <div className="sm:hidden mt-1">
-                                                        <Badge variant="outline" className="text-xs mr-2">
-                                                            {reg.role}
-                                                        </Badge>
-                                                        {reg.is_new_registrant && (
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                New
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-3 sm:px-4 hidden sm:table-cell">
-                                                    <Badge variant="outline" className="text-xs">
-                                                        {reg.role}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-3 px-3 sm:px-4 hidden md:table-cell">
-                                                    {reg.is_new_registrant ? (
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            New
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-xs text-slate-600">Returning</span>
-                                                    )}
-                                                </td>
-                                                <td className="py-3 px-3 sm:px-4">
-                                                    <Badge
-                                                        variant={reg.status === 'checked_in' ? 'default' : 'outline'}
-                                                        className="text-xs"
-                                                    >
-                                                        {reg.status === 'checked_in' ? 'Checked In' : reg.status}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-600 hidden lg:table-cell">
-                                                    {new Date(reg.created_at).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    })}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                {sortedRegistrations.length > 15 && (
-                                    <div className="p-4 text-center border-t">
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => router.push('/admin/camp-meeting/registrations')}
-                                            className="shadow-sm"
-                                        >
-                                            View All {registrations.length} Registrations
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
+                        </div>
+                    ) : null}
+                </section>
+            ) : null}
         </div>
     )
 }

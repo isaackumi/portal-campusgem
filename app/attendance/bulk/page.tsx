@@ -399,7 +399,7 @@ export default function BulkAttendancePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 flex items-center">
+              <h1 className="text-2xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center">
                 <Users className="h-8 w-8 mr-3 text-primary" />
                 Bulk Attendance
               </h1>

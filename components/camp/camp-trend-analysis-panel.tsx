@@ -86,7 +86,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
       <div className="rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50/80 via-white to-slate-100/50 p-4 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Cross-year analysis</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Cross-year analysis</p>
             <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Camp meeting trends</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
               Track registration growth, operational health, and demographic shifts across {yearCount} camp years.
@@ -95,7 +95,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             {latest ? (
-              <Badge variant="outline" className="w-fit shrink-0 border-indigo-300 bg-white">
+              <Badge variant="outline" className="w-fit shrink-0 border-brand-300 bg-white">
                 Latest: Camp {latest.year}
                 {latest.theme ? ` · ${latest.theme}` : ''}
               </Badge>
@@ -182,7 +182,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
             <Card className="border-2">
               <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp className="h-5 w-5 text-indigo-600" />
+                  <TrendingUp className="h-5 w-5 text-brand-600" />
                   Registration growth
                 </CardTitle>
                 <CardDescription>Total sign-ups per year with year-on-year % change</CardDescription>

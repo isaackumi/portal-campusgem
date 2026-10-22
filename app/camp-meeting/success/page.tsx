@@ -116,7 +116,7 @@ function SuccessContent() {
 
         {checkInCode ? (
           <div className="rounded-xl border-2 border-slate-200 bg-slate-50/80 p-4 text-center">
-            <p className="text-xs font-medium uppercase tracking-wide text-indigo-800">
+            <p className="text-xs font-medium uppercase tracking-wide text-brand-800">
               Your camp check-in code
             </p>
             <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-slate-950">
@@ -129,7 +129,7 @@ function SuccessContent() {
               type="button"
               variant="outline"
               size="sm"
-              className="mt-3 min-h-9 gap-1.5 border-indigo-300 bg-white"
+              className="mt-3 min-h-9 gap-1.5 border-brand-300 bg-white"
               onClick={() => void copyCheckInCode()}
             >
               <Copy className="h-3.5 w-3.5" />
