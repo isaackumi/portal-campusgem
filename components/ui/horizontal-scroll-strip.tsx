@@ -23,8 +23,8 @@ export function HorizontalScrollStrip({
     <div
       className={cn(
         'relative',
-        'before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:z-10 before:w-4 before:bg-gradient-to-r before:from-white before:to-transparent',
-        'after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-4 after:bg-gradient-to-r after:from-transparent after:to-white',
+        'before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:z-10 before:w-4 before:bg-gradient-to-r before:from-white before:to-transparent dark:before:from-neutral-800',
+        'after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-4 after:bg-gradient-to-r after:from-transparent after:to-white dark:after:to-neutral-800',
         className
       )}
     >

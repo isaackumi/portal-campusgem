@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,16 +17,17 @@ function AuthPageContent() {
   const [phoneOrId, setPhoneOrId] = useState('')
   const [loading, setLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const redirectTo = safeRedirectPath(searchParams.get('redirect'))
 
-  // Warm the destination route while the user types, so the post-login jump is instant.
+  // If navigation somehow doesn't happen, don't leave the button spinning forever.
   useEffect(() => {
-    router.prefetch(redirectTo)
-  }, [router, redirectTo])
+    if (!redirecting) return
+    const timer = window.setTimeout(() => setRedirecting(false), 10_000)
+    return () => window.clearTimeout(timer)
+  }, [redirecting])
 
   const handleDirectLogin = async () => {
     const identifier = phoneOrId.trim().replace(/\s/g, '')
@@ -69,7 +70,9 @@ function AuthPageContent() {
         setTestUser(data.user)
         // Keep the button busy until the next page takes over (no "dead" Continue state).
         setRedirecting(true)
-        router.replace(redirectTo)
+        // Full navigation, not router.replace: the client router may hold a cached
+        // signed-out redirect (/dashboard -> /auth) from before the session cookie existed.
+        window.location.replace(redirectTo)
         toast({
           title: 'Welcome back',
           description: `Signed in as ${data.user.full_name}`,

@@ -20,6 +20,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
+        hand: ['var(--font-hand)', 'cursive'],
       },
       colors: {
         /* True gray, matching Trovesuite Accounting's neutral scale. */
