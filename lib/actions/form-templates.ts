@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { createForm, saveFormFields } from '@/lib/actions/forms'
 import type { ChurchForm } from '@/lib/types'
 import { getFormTemplate, type FormTemplateId } from '@/lib/forms/templates'
@@ -16,6 +17,7 @@ export async function createFormFromTemplate(input: {
   publish?: boolean
   module?: ChurchForm['module']
 }): Promise<{ data: ChurchForm | null; error: string | null }> {
+  await guard('forms.manage')
   const template = getFormTemplate(input.templateId)
   const groupName = input.group_name?.trim()
 

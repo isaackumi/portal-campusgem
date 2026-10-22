@@ -12,6 +12,7 @@ import { LoadingGrid, LoadingStats, LoadingPage } from '@/components/ui/loading'
 import { ErrorDisplay, EmptyState } from '@/components/ui/error-display'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { StatCard } from '@/components/ui/stat-card'
 import { 
   Users, 
   Search, 
@@ -73,15 +74,13 @@ function GroupsContent() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="mx-auto max-w-7xl">
           <ErrorDisplay
             error={error}
             onRetry={refetch}
             variant="page"
             title="Failed to load groups"
           />
-        </div>
       </div>
     )
   }
@@ -130,110 +129,42 @@ function GroupsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center mb-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => router.push('/dashboard')}
-                className="mr-3 text-slate-600 hover:text-slate-900"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Dashboard
-              </Button>
-            </div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+    <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard')}
+              className="mb-4 inline-flex items-center gap-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               Groups & Ministries
             </h1>
-            <p className="text-slate-600">
-              {groupStats.total} total groups • Manage church groups, ministries, and fellowships
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              {groupStats.total} total groups. Manage church groups, ministries, and fellowships.
             </p>
           </div>
-          <div className="flex items-center space-x-3">
-            <Button variant="outline" className="flex items-center">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline">
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button 
-              className=""
-              onClick={() => router.push('/groups/add')}
-            >
+            <Button onClick={() => router.push('/groups/add')}>
               <Plus className="h-4 w-4 mr-2" />
               Create Group
             </Button>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-white shadow-sm border border-slate-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Total Groups</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {groupStats.total}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white shadow-sm border border-slate-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Ministries</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {groupStats.ministries}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-                  <Settings className="h-5 w-5 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white shadow-sm border border-slate-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Fellowships</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {groupStats.fellowships}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                  <Users className="h-5 w-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white shadow-sm border border-slate-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Age Groups</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {groupStats.ageGroups}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
-                  <User className="h-5 w-5 text-yellow-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <section aria-label="Group totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Total groups" value={groupStats.total} />
+          <StatCard label="Ministries" value={groupStats.ministries} />
+          <StatCard label="Fellowships" value={groupStats.fellowships} />
+          <StatCard label="Age groups" value={groupStats.ageGroups} />
+        </section>
 
         {/* Search and Filters */}
         <Card className="mb-6">
@@ -254,7 +185,7 @@ function GroupsContent() {
                 <select
                   value={filterType}
                   onChange={(e) => handleFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
                 >
                   <option value="all">All Types</option>
                   <option value="ministry">Ministry</option>
@@ -274,7 +205,7 @@ function GroupsContent() {
         ) : groups && groups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {groups.map((group) => (
-              <Card key={group.id} className="bg-white shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <Card key={group.id} className="transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -396,7 +327,6 @@ function GroupsContent() {
             }
           />
         )}
-      </div>
     </div>
   )
 }

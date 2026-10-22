@@ -402,7 +402,7 @@ export default function CampYearHubPage() {
               <CardHeader><CardTitle>Reachability</CardTitle></CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl bg-slate-50 p-4"><Phone className="mb-2 h-5 w-5 text-primary" /><p className="text-2xl font-bold">{insights.withPhone}</p><p className="text-sm text-muted-foreground">With phone</p></div>
-                <div className="rounded-xl bg-slate-50 p-4"><Mail className="mb-2 h-5 w-5 text-indigo-600" /><p className="text-2xl font-bold">{insights.withEmail}</p><p className="text-sm text-muted-foreground">With email</p></div>
+                <div className="rounded-xl bg-slate-50 p-4"><Mail className="mb-2 h-5 w-5 text-brand-600" /><p className="text-2xl font-bold">{insights.withEmail}</p><p className="text-sm text-muted-foreground">With email</p></div>
                 <div className="rounded-xl bg-emerald-50 p-4"><Users className="mb-2 h-5 w-5 text-emerald-600" /><p className="text-2xl font-bold">{insights.newRegistrants}</p><p className="text-sm text-muted-foreground">First-time campers</p></div>
                 <div className="rounded-xl bg-amber-50 p-4"><Users className="mb-2 h-5 w-5 text-amber-600" /><p className="text-2xl font-bold">{insights.returning}</p><p className="text-sm text-muted-foreground">Returning campers</p></div>
               </CardContent>

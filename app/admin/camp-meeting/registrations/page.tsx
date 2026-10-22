@@ -437,7 +437,7 @@ function RegistrationsPageContent() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-slate-900">{stats.total}</div>
+                            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total}</div>
                         </CardContent>
                     </Card>
                     <Card className="border-2">

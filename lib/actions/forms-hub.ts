@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import type { ChurchForm, Group } from '@/lib/types'
 
 export type FormsHubData = {
@@ -13,6 +14,7 @@ export async function getFormsHubData(groupId?: string): Promise<{
   data: FormsHubData | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
     return { data: null, error: 'Forms are not configured (missing NEXT_PUBLIC_CONVEX_URL)' }
   }

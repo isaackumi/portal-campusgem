@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { CampRegistrationForm } from '@/lib/types'
 
 export interface ParseExcelResult {
@@ -21,6 +22,7 @@ export interface ImportRegistrationResult {
 }
 
 export async function parseExcelFile(formData: FormData): Promise<ParseExcelResult> {
+  await guard('camp.manage')
   try {
     const file = formData.get('file')
     if (!(file instanceof Blob)) {
@@ -62,6 +64,7 @@ export async function importCampRegistrations(
   campYearId: string,
   registrations: Partial<CampRegistrationForm>[]
 ): Promise<ImportRegistrationResult> {
+  await guard('camp.manage')
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
     return {
       success: false,

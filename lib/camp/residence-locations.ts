@@ -256,7 +256,7 @@ export function remapResidenceLabels(
     cur.count += 1
     counts.set(key, cur)
   }
-  return [...counts.values()].sort(
+  return Array.from(counts.values()).sort(
     (a, b) => b.count - a.count || a.raw.localeCompare(b.raw) || a.mapped.localeCompare(b.mapped)
   )
 }

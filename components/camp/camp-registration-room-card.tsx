@@ -203,10 +203,10 @@ export function CampRegistrationRoomCard({
   }
 
   return (
-    <Card className="border-2 border-indigo-200">
-      <CardHeader className="border-b bg-indigo-50/60">
+    <Card className="border-2 border-brand-200">
+      <CardHeader className="border-b bg-brand-50/60">
         <CardTitle className="flex items-center gap-2">
-          <BedDouble className="h-5 w-5 text-indigo-700" />
+          <BedDouble className="h-5 w-5 text-brand-700" />
           Room assignment
         </CardTitle>
         <CardDescription>
@@ -229,7 +229,7 @@ export function CampRegistrationRoomCard({
               ) : yearRooms.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-muted-foreground">
                   No rooms for this camp year yet.{' '}
-                  <Link href={roomsHref} className="font-medium text-indigo-700 underline">
+                  <Link href={roomsHref} className="font-medium text-brand-700 underline">
                     Create rooms
                   </Link>
                   .
@@ -261,7 +261,7 @@ export function CampRegistrationRoomCard({
             {!room ? (
               <p className="text-sm text-muted-foreground">
                 Pick a room above, or manage lodging on the{' '}
-                <Link href={roomsHref} className="font-medium text-indigo-700 underline">
+                <Link href={roomsHref} className="font-medium text-brand-700 underline">
                   rooms page
                 </Link>
                 .
@@ -277,7 +277,7 @@ export function CampRegistrationRoomCard({
                     <p className="text-base font-medium text-slate-800">{checkInIdentity.phone}</p>
                   ) : null}
                   {checkInIdentity.code ? (
-                    <p className="mt-2 font-mono text-xl font-bold tracking-wide text-indigo-900">
+                    <p className="mt-2 font-mono text-xl font-bold tracking-wide text-brand-900">
                       {checkInIdentity.code}
                     </p>
                   ) : (
@@ -288,13 +288,13 @@ export function CampRegistrationRoomCard({
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-indigo-200 bg-white p-4">
+                <div className="rounded-lg border border-brand-200 bg-white p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">
+                      <p className="text-xs font-medium uppercase tracking-wide text-brand-700">
                         Your room
                       </p>
-                      <p className="mt-1 text-2xl font-bold text-slate-900">{room.name}</p>
+                      <p className="mt-1 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{room.name}</p>
                       {room.building ? (
                         <p className="text-sm text-muted-foreground">{room.building}</p>
                       ) : null}

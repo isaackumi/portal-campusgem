@@ -519,7 +519,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
           title="Previous camp attendance"
           description="How many camps people have attended before"
           icon={Calendar}
-          iconClassName="text-blue-600"
+          iconClassName="text-brand-600"
           slices={operations.attendanceHistory}
           total={report.total}
           barClassName="bg-gradient-to-r from-blue-500 to-blue-600"

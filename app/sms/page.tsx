@@ -183,7 +183,7 @@ export default function SMSPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center">
             <MessageSquare className="h-8 w-8 mr-3 text-primary" />
             SMS Management
           </h1>
@@ -206,7 +206,7 @@ export default function SMSPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-600">Total Sent</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.total_sent}</p>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total_sent}</p>
                   </div>
                   <Send className="h-8 w-8 text-primary" />
                 </div>

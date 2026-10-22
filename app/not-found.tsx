@@ -19,15 +19,15 @@ export default function NotFound() {
   const router = useRouter()
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-100 p-4 dark:bg-neutral-900">
       <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900">
-            <AlertTriangle className="h-8 w-8 text-amber-400" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800">
+            <AlertTriangle className="h-8 w-8 text-white" />
           </div>
-          <h1 className="mb-2 text-6xl font-semibold tracking-tight text-slate-900">404</h1>
-          <h2 className="mb-2 text-2xl font-semibold text-slate-700">Page not found</h2>
-          <p className="text-slate-600">The page you&apos;re looking for doesn&apos;t exist or was moved.</p>
+          <h1 className="mb-2 text-6xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">404</h1>
+          <h2 className="mb-2 text-2xl font-semibold text-neutral-700 dark:text-neutral-300">Page not found</h2>
+          <p className="text-neutral-600 dark:text-neutral-400">The page you&apos;re looking for doesn&apos;t exist or was moved.</p>
         </div>
 
         <Card className="border-slate-200/80 shadow-sm">

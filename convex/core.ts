@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
-import { query, mutation } from './_generated/server'
-import type { Id } from './_generated/dataModel'
+import { query, mutation, type QueryCtx } from './_generated/server'
+import type { Doc, Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
 import { isValidGhanaPhone, normalizeGhanaPhone, phoneLookupVariants } from './lib/phone'
 import { sealMemberCheckIn, sealVisitorCheckIn } from './lib/rlcCheckInCode'
@@ -58,7 +58,7 @@ export const findUserByMembershipIdWithSecret = query({
       .query('users')
       .withIndex('by_membership_id', (q) => q.eq('membership_id', normalized))
       .first()
-    if (indexed) return indexed
+    if (indexed) return await resolveMerged(ctx, indexed)
 
     const trimmed = membership_id.trim()
     if (trimmed !== normalized) {
@@ -66,38 +66,179 @@ export const findUserByMembershipIdWithSecret = query({
         .query('users')
         .withIndex('by_membership_id', (q) => q.eq('membership_id', trimmed))
         .first()
-      if (byRaw) return byRaw
+      if (byRaw) return await resolveMerged(ctx, byRaw)
     }
 
     for (const user of await ctx.db.query('users').collect()) {
       if (user.membership_id && normalizeMembershipForLookup(user.membership_id) === normalized) {
-        return user
+        return await resolveMerged(ctx, user)
       }
     }
     return null
   },
 })
 
+/** Follow `merged_into` links (duplicates) to the record people should sign in as. */
+async function resolveMerged(ctx: QueryCtx, user: Doc<'users'> | null): Promise<Doc<'users'> | null> {
+  let current = user
+  for (let hops = 0; current?.merged_into && hops < 5; hops++) {
+    const next = await ctx.db.get('users', current.merged_into)
+    if (!next) break
+    current = next
+  }
+  return current
+}
+
 export const findUserByPhoneWithSecret = query({
   args: { secret: v.string(), phone: v.string() },
   returns: v.any(),
   handler: async (ctx, { secret, phone }) => {
     assertServerSecret(secret)
-    for (const candidate of phoneLookupVariants(phone)) {
+    const variants = phoneLookupVariants(phone)
+    for (const candidate of variants) {
       const found = await ctx.db
         .query('users')
         .withIndex('by_phone', (q) => q.eq('phone', candidate))
         .first()
-      if (found) return found
+      if (found) return await resolveMerged(ctx, found)
+    }
+    // Numbers people changed to (added by an admin as a secondary phone).
+    for (const candidate of variants) {
+      const found = await ctx.db
+        .query('users')
+        .withIndex('by_secondary_phone', (q) => q.eq('secondary_phone', candidate))
+        .first()
+      if (found) return await resolveMerged(ctx, found)
     }
 
     const target = normalizeGhanaPhone(phone)
+    if (!target) return null
     for (const user of await ctx.db.query('users').collect()) {
-      if (user.phone && normalizeGhanaPhone(user.phone) === target) {
-        return user
+      if (
+        (user.phone && normalizeGhanaPhone(user.phone) === target) ||
+        (user.secondary_phone && normalizeGhanaPhone(user.secondary_phone) === target)
+      ) {
+        return await resolveMerged(ctx, user)
       }
     }
     return null
+  },
+})
+
+export const findUserByAuthUidWithSecret = query({
+  args: { secret: v.string(), auth_uid: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { secret, auth_uid }) => {
+    assertServerSecret(secret)
+    if (!auth_uid.trim()) return null
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_auth_uid', (q) => q.eq('auth_uid', auth_uid))
+      .first()
+    return await resolveMerged(ctx, user)
+  },
+})
+
+/** Set a user's role and extra permissions; backfills a login handle if missing. */
+export const setUserAccessWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    id: v.id('users'),
+    role: userRole,
+    permissions: v.array(v.string()),
+  },
+  returns: v.any(),
+  handler: async (ctx, { secret, id, role, permissions }) => {
+    assertServerSecret(secret)
+    const existing = await ctx.db.get('users', id)
+    if (!existing) throw new Error('User not found.')
+    const patch: Record<string, unknown> = {
+      role,
+      permissions: Array.from(new Set(permissions)),
+      updated_at: Date.now(),
+    }
+    if (!existing.auth_uid) {
+      const c = globalThis.crypto as Crypto | undefined
+      patch.auth_uid = c?.randomUUID
+        ? `cgms-${c.randomUUID()}`
+        : `cgms-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+    }
+    await ctx.db.patch('users', id, patch)
+    return await ctx.db.get('users', id)
+  },
+})
+
+/**
+ * Same person, two records (e.g. an Excel import with an old number): keep `keep_id`,
+ * store the duplicate's phone as its secondary phone, and point the duplicate at it.
+ * Nothing is deleted; signing in with either number reaches the kept record.
+ */
+export const linkDuplicateUserWithSecret = mutation({
+  args: { secret: v.string(), keep_id: v.id('users'), duplicate_id: v.id('users') },
+  returns: v.any(),
+  handler: async (ctx, { secret, keep_id, duplicate_id }) => {
+    assertServerSecret(secret)
+    if (keep_id === duplicate_id) throw new Error('Choose two different records.')
+    const keep = await ctx.db.get('users', keep_id)
+    const duplicate = await ctx.db.get('users', duplicate_id)
+    if (!keep || !duplicate) throw new Error('One of these records no longer exists.')
+    if (keep.merged_into) throw new Error('The record you are keeping is itself merged into another.')
+
+    const dupPhone = duplicate.phone ? normalizeGhanaPhone(duplicate.phone) : ''
+    if (!dupPhone) throw new Error('The duplicate has no valid phone number to add.')
+    const keepPhone = keep.phone ? normalizeGhanaPhone(keep.phone) : ''
+    const keepSecondary = keep.secondary_phone ? normalizeGhanaPhone(keep.secondary_phone) : ''
+
+    const patch: Record<string, unknown> = { updated_at: Date.now() }
+    if (dupPhone !== keepPhone && dupPhone !== keepSecondary) {
+      if (!keepPhone) {
+        // Kept record's own number is missing/malformed: the working number becomes primary.
+        patch.phone = dupPhone
+      } else if (keepSecondary) {
+        throw new Error(
+          `${keep.full_name} already has a secondary phone. Remove it first, then link this record.`
+        )
+      } else {
+        patch.secondary_phone = dupPhone
+      }
+    }
+    if (!keep.auth_uid && duplicate.auth_uid) patch.auth_uid = duplicate.auth_uid
+    if (!keep.email && duplicate.email) patch.email = duplicate.email
+
+    await ctx.db.patch('users', keep_id, patch)
+    await ctx.db.patch('users', duplicate_id, { merged_into: keep_id, updated_at: Date.now() })
+    return await ctx.db.get('users', keep_id)
+  },
+})
+
+/** Set or clear a person's secondary (login) phone. */
+export const setUserSecondaryPhoneWithSecret = mutation({
+  args: { secret: v.string(), id: v.id('users'), secondary_phone: v.optional(v.string()) },
+  returns: v.any(),
+  handler: async (ctx, { secret, id, secondary_phone }) => {
+    assertServerSecret(secret)
+    const user = await ctx.db.get('users', id)
+    if (!user) throw new Error('User not found.')
+    let next: string | undefined
+    if (secondary_phone?.trim()) {
+      next = normalizeGhanaPhone(secondary_phone)
+      if (!next) throw new Error('Enter a valid Ghana phone number.')
+      if (user.phone && normalizeGhanaPhone(user.phone) === next) {
+        throw new Error('That is already their main phone number.')
+      }
+      for (const index of ['by_phone', 'by_secondary_phone'] as const) {
+        const field = index === 'by_phone' ? 'phone' : 'secondary_phone'
+        const taken = await ctx.db
+          .query('users')
+          .withIndex(index, (q) => q.eq(field, next!))
+          .first()
+        if (taken && taken._id !== id && taken.merged_into !== id) {
+          throw new Error(`That number already belongs to ${taken.full_name}. Link the records instead.`)
+        }
+      }
+    }
+    await ctx.db.patch('users', id, { secondary_phone: next, updated_at: Date.now() })
+    return await ctx.db.get('users', id)
   },
 })
 
@@ -170,7 +311,16 @@ export const updateUserWithSecret = mutation({
     const patch: Record<string, unknown> = { updated_at: Date.now() }
     if (args.full_name != null) patch.full_name = args.full_name.trim()
     if (args.email != null) patch.email = args.email.trim() || undefined
-    if (args.role != null) patch.role = args.role
+    if (args.role != null) {
+      patch.role = args.role
+      // Promoted people must be able to sign in.
+      if (!existing.auth_uid) {
+        const c = globalThis.crypto as Crypto | undefined
+        patch.auth_uid = c?.randomUUID
+          ? `cgms-${c.randomUUID()}`
+          : `cgms-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+      }
+    }
     if (args.membership_id != null) patch.membership_id = args.membership_id.trim()
     if (args.join_year != null) patch.join_year = args.join_year
 
@@ -450,22 +600,35 @@ export const bootstrapUserWithSecret = mutation({
       updated_at: now,
     }
 
+    /**
+     * Existing person: only fill gaps and set the role. Never overwrite their login
+     * handle, membership ID, or clear name fields — doing so used to log people out
+     * and change their membership ID when an admin "created" them again.
+     */
+    const upgradeExisting = async (existing: Doc<'users'>) => {
+      const patch: Record<string, unknown> = { role: args.role, updated_at: now }
+      if (!existing.auth_uid) patch.auth_uid = args.auth_uid
+      if (!existing.phone) patch.phone = phone
+      if (!existing.email && args.email?.trim()) patch.email = args.email.trim()
+      if (!existing.full_name?.trim()) patch.full_name = args.full_name
+      if (!existing.first_name && args.first_name) patch.first_name = args.first_name
+      if (!existing.last_name && args.last_name) patch.last_name = args.last_name
+      await ctx.db.patch('users', existing._id, patch)
+      return await ctx.db.get('users', existing._id)
+    }
+
     for (const candidate of phoneLookupVariants(args.phone)) {
       const byPhone = await ctx.db
         .query('users')
         .withIndex('by_phone', (q) => q.eq('phone', candidate))
         .first()
-      if (byPhone) {
-        await ctx.db.patch('users', byPhone._id, payload)
-        return await ctx.db.get('users', byPhone._id)
-      }
+      if (byPhone) return await upgradeExisting(byPhone)
     }
 
     const targetPhone = normalizeGhanaPhone(args.phone)
     for (const user of await ctx.db.query('users').collect()) {
       if (user.phone && normalizeGhanaPhone(user.phone) === targetPhone) {
-        await ctx.db.patch('users', user._id, payload)
-        return await ctx.db.get('users', user._id)
+        return await upgradeExisting(user)
       }
     }
 
@@ -474,20 +637,14 @@ export const bootstrapUserWithSecret = mutation({
         .query('users')
         .withIndex('by_email', (q) => q.eq('email', args.email!.trim()))
         .first()
-      if (byEmail) {
-        await ctx.db.patch('users', byEmail._id, payload)
-        return await ctx.db.get('users', byEmail._id)
-      }
+      if (byEmail) return await upgradeExisting(byEmail)
     }
 
     const byMembership = await ctx.db
       .query('users')
       .withIndex('by_membership_id', (q) => q.eq('membership_id', args.membership_id))
       .first()
-    if (byMembership) {
-      await ctx.db.patch('users', byMembership._id, payload)
-      return await ctx.db.get('users', byMembership._id)
-    }
+    if (byMembership) return await upgradeExisting(byMembership)
 
     const userId = await ctx.db.insert('users', payload)
     const user = await ctx.db.get('users', userId)

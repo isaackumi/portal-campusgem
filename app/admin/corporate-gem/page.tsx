@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
+import { AccessDenied } from '@/components/auth/access-denied'
 import {
   ensureCorporateGemGroup,
   ensureCorporateGemRegistrationForm,
@@ -104,7 +105,8 @@ function BoardGroupCard({ group }: { group: CorporateGemBoardGroup }) {
 
 export default function CorporateGemAdminPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, can } = useAuth()
+  const allowed = can('groups.manage')
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [board, setBoard] = useState<Awaited<ReturnType<typeof loadCorporateGemBoardAction>>['data']>(null)
@@ -117,9 +119,14 @@ export default function CorporateGemAdminPage() {
   }, [authLoading, user, router])
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') return
+    if (!user) return
+    if (!allowed) {
+      setLoading(false)
+      return
+    }
     void loadBoard()
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, allowed])
 
   async function loadBoard() {
     setLoading(true)
@@ -157,19 +164,8 @@ export default function CorporateGemAdminPage() {
     )
   }
 
-  if (user?.role !== 'admin') {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold">Admin access required</h2>
-            <Button className="mt-4" onClick={() => router.push('/dashboard')}>
-              Go to dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  if (!allowed) {
+    return <AccessDenied permission="groups.manage" />
   }
 
   const groups = board?.groups ?? []
@@ -185,7 +181,7 @@ export default function CorporateGemAdminPage() {
               Back to Admin
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Corporate Gem</h1>
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Corporate Gem</h1>
               <p className="mt-1 max-w-2xl text-muted-foreground">
                 Graduates and working professionals — executives, leaders, members, activities, and forms. Promote
                 students here when they finish campus.

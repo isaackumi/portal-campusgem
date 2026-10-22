@@ -92,7 +92,7 @@ export const landingSections: LandingSection[] = [
         description: 'Registrations, directory, check-in, and camp operations.',
         icon: Calendar,
         accent: 'amber',
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'camp.manage',
       },
       {
         href: '/members',
@@ -135,7 +135,7 @@ export const landingSections: LandingSection[] = [
         description: 'Campus fellowships and church-wide events.',
         icon: Building2,
         accent: 'emerald',
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'groups.manage',
       },
       {
         href: '/admin/corporate-gem',
@@ -143,7 +143,7 @@ export const landingSections: LandingSection[] = [
         description: 'Graduates and professionals outreach.',
         icon: Briefcase,
         accent: 'violet',
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'groups.manage',
       },
       {
         href: '/admin/forms',
@@ -151,7 +151,7 @@ export const landingSections: LandingSection[] = [
         description: 'Build forms, publish links, and review responses.',
         icon: ClipboardList,
         accent: 'amber',
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'forms.manage',
       },
       {
         href: '/admin',
@@ -166,27 +166,35 @@ export const landingSections: LandingSection[] = [
 ]
 
 const accentStyles: Record<LandingDestination['accent'], { icon: string; ring: string }> = {
-  amber: { icon: 'bg-amber-100 text-amber-900', ring: 'group-hover:ring-amber-200' },
+  amber: {
+    icon: 'bg-brand-100 text-brand-800 dark:bg-brand-900/40 dark:text-brand-300',
+    ring: 'group-hover:ring-brand-200',
+  },
   sky: { icon: 'bg-sky-100 text-sky-900', ring: 'group-hover:ring-sky-200' },
   emerald: { icon: 'bg-emerald-100 text-emerald-900', ring: 'group-hover:ring-emerald-200' },
   violet: { icon: 'bg-violet-100 text-violet-900', ring: 'group-hover:ring-violet-200' },
-  slate: { icon: 'bg-slate-100 text-slate-900', ring: 'group-hover:ring-slate-200' },
+  slate: { icon: 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100', ring: 'group-hover:ring-neutral-200' },
 }
 
 export function landingAccentStyles(accent: LandingDestination['accent']) {
   return accentStyles[accent]
 }
 
-export function canSeeLandingDestination(role: UserRole, item: LandingDestination): boolean {
+export function canSeeLandingDestination(
+  role: UserRole,
+  item: LandingDestination,
+  extra?: readonly string[] | null
+): boolean {
   if (item.public) return true
-  if (item.permission && !hasPermission(role, item.permission)) return false
-  if (item.roles && !item.roles.includes(role)) return false
-  return canAccessPath(role, item.href.split('?')[0])
+  if (item.permission && !hasPermission(role, item.permission, extra)) return false
+  if (item.roles && !item.roles.includes(role) && !(extra && extra.length > 0)) return false
+  return canAccessPath(role, item.href.split('?')[0], extra)
 }
 
 export function filterLandingSections(
   role: UserRole | undefined,
-  sections: LandingSection[] = landingSections
+  sections: LandingSection[] = landingSections,
+  extra?: readonly string[] | null
 ): LandingSection[] {
   return sections
     .map((section) => ({
@@ -194,7 +202,7 @@ export function filterLandingSections(
       destinations: section.destinations.filter((item) => {
         if (item.public) return true
         if (!role) return true
-        return canSeeLandingDestination(role, item)
+        return canSeeLandingDestination(role, item, extra)
       }),
     }))
     .filter((section) => section.destinations.length > 0)

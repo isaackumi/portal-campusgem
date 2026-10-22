@@ -323,7 +323,7 @@ export default function GroupDetailsPage() {
                 Back to Groups
               </Button>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {group.name}
             </h1>
             <div className="flex items-center space-x-4">

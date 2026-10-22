@@ -528,7 +528,7 @@ export default function CampScannerPage() {
                   className={cn(
                     'rounded-xl border-2 p-3 text-left transition-colors',
                     isSelected
-                      ? 'border-slate-900 bg-slate-900 text-white'
+                      ? 'border-brand-700 bg-brand-600 text-white'
                       : isSuggested
                         ? 'border-emerald-400 bg-emerald-50'
                         : 'border-slate-200 bg-white',
@@ -564,7 +564,7 @@ export default function CampScannerPage() {
 
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl border bg-white p-3 text-center">
-            <div className="text-2xl font-bold text-slate-900">{sessionStats.totalRegistrations}</div>
+            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{sessionStats.totalRegistrations}</div>
             <div className="text-xs text-slate-500">At camp</div>
           </div>
           <div className="rounded-xl border bg-white p-3 text-center">
@@ -615,7 +615,7 @@ export default function CampScannerPage() {
                   className={cn(
                     'flex min-h-11 items-center justify-center gap-1.5 rounded-lg border text-sm font-medium',
                     moreTool === tool.id
-                      ? 'border-slate-900 bg-slate-900 text-white'
+                      ? 'border-brand-700 bg-brand-600 text-white'
                       : 'border-slate-200 bg-slate-50 text-slate-700'
                   )}
                 >

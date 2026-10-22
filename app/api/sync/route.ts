@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { Attendance } from '@/lib/types'
+import { guard } from '@/lib/auth/action-guard'
 
 function convexConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_CONVEX_URL && process.env.CAMP_CONVEX_SERVER_SECRET)
 }
 
+async function unauthorized(permission: Parameters<typeof guard>[0]): Promise<NextResponse | null> {
+  try {
+    await guard(permission)
+    return null
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
+  const denied = await unauthorized('attendance.record')
+  if (denied) return denied
   try {
     if (!convexConfigured()) {
       return NextResponse.json({ error: 'Convex is not configured for sync' }, { status: 503 })
@@ -53,6 +68,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const denied = await unauthorized('attendance.view')
+  if (denied) return denied
   try {
     if (!convexConfigured()) {
       return NextResponse.json({ error: 'Convex is not configured for sync' }, { status: 503 })

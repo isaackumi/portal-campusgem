@@ -43,7 +43,7 @@ export function PublicFormPageShell({
 function PublicFormPageShellInner({ children }: { children: ReactNode }) {
   return (
     <div
-      className="min-h-[100dvh] bg-[#eceff1] text-slate-900 antialiased"
+      className="min-h-[100dvh] bg-neutral-100 text-neutral-900 antialiased dark:bg-neutral-900 dark:text-neutral-100"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       <div className={cn(SHELL_WIDTH, 'pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]')}>

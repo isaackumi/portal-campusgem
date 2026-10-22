@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import type { ChurchForm, Group } from '@/lib/types'
 import { CORPORATE_GEM_GROUP_TYPE } from '@/lib/constants/corporate-gem'
 
@@ -47,6 +48,7 @@ export async function loadCorporateGemBoardAction(): Promise<{
   data: CorporateGemBoardData | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return {
       data: null,

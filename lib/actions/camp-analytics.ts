@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import {
   buildCampAnalyticsReport,
   type CampAnalyticsReport,
@@ -20,6 +21,7 @@ export async function getCampAnalyticsReport(selectedYearId: string | 'all'): Pr
   } | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { getAllCampYears, getCampRegistrations } = await import('@/lib/actions/camp')

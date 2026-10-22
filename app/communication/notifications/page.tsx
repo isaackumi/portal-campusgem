@@ -16,10 +16,10 @@ export default function CommunicationNotificationsPage() {
             Dashboard
           </Link>
         </Button>
-        <Card className="border-indigo-100 shadow-sm">
+        <Card className="border-brand-100 shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Bell className="h-6 w-6 text-indigo-600" />
+              <Bell className="h-6 w-6 text-brand-600" />
               <CardTitle>Notifications</CardTitle>
             </div>
             <CardDescription>Where automated and manual notices are configured.</CardDescription>

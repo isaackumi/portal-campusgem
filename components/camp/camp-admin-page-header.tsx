@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CampYear } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { ArrowLeft, Calendar, MapPin, Sparkles } from 'lucide-react'
 
@@ -38,51 +37,52 @@ export function CampAdminPageHeader({
   const router = useRouter()
 
   return (
-    <div className={cn('flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between', className)}>
-      <div className="min-w-0 space-y-3">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="-ml-2 h-8 shrink-0" onClick={() => router.push(backHref)}>
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.65rem]">{title}</h1>
-          {campYear ? (
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
+    <div className={cn('mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between', className)}>
+      <div className="min-w-0">
+        <button
+          type="button"
+          onClick={() => router.push(backHref)}
+          className="mb-4 inline-flex items-center gap-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{title}</h1>
+        {campYear ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className="border-neutral-200 bg-neutral-100 font-semibold text-neutral-900 hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+            >
+              <Calendar className="mr-1 h-3 w-3" />
+              {campYear.year}
+            </Badge>
+            {campYear.theme ? (
               <Badge
                 variant="outline"
-                className="border-slate-200 bg-slate-50 font-semibold text-slate-900 hover:bg-slate-50"
+                className="max-w-[min(100%,20rem)] border-brand-200 bg-brand-50 font-medium text-brand-800 hover:bg-brand-50 dark:border-brand-800 dark:bg-brand-900/40 dark:text-brand-200"
+                title={campYear.theme}
               >
-                <Calendar className="mr-1 h-3 w-3" />
-                {campYear.year}
+                <Sparkles className="mr-1 h-3 w-3 shrink-0" />
+                <span className="truncate">{campYear.theme}</span>
               </Badge>
-              {campYear.theme ? (
-                <Badge
-                  variant="outline"
-                  className="max-w-[min(100%,20rem)] border-violet-200 bg-violet-50 font-medium text-violet-900 hover:bg-violet-50"
-                  title={campYear.theme}
-                >
-                  <Sparkles className="mr-1 h-3 w-3 shrink-0" />
-                  <span className="truncate">{campYear.theme}</span>
-                </Badge>
-              ) : null}
-              {campYear.venue ? (
-                <Badge
-                  variant="outline"
-                  className="max-w-[min(100%,16rem)] border-amber-200 bg-amber-50 font-medium text-amber-950 hover:bg-amber-50"
-                  title={campYear.venue}
-                >
-                  <MapPin className="mr-1 h-3 w-3 shrink-0" />
-                  <span className="truncate">{campYear.venue}</span>
-                </Badge>
-              ) : null}
+            ) : null}
+            {campYear.venue ? (
               <Badge
                 variant="outline"
-                className="border-slate-200 bg-slate-50 font-normal text-slate-700 hover:bg-slate-50"
+                className="max-w-[min(100%,16rem)] border-neutral-200 bg-white font-medium text-neutral-700 hover:bg-white dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200"
+                title={campYear.venue}
               >
-                {campDateRange(campYear)}
+                <MapPin className="mr-1 h-3 w-3 shrink-0" />
+                <span className="truncate">{campYear.venue}</span>
               </Badge>
+            ) : null}
+            <Badge
+              variant="outline"
+              className="border-neutral-200 bg-neutral-50 font-normal text-neutral-600 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+            >
+              {campDateRange(campYear)}
+            </Badge>
               {campYear.is_active ? (
                 <Badge className="border-emerald-200 bg-emerald-100 text-emerald-900 hover:bg-emerald-100">
                   Active year
@@ -94,7 +94,6 @@ export function CampAdminPageHeader({
             </div>
           ) : null}
           {children ? <div className="mt-2 flex flex-wrap items-center gap-2">{children}</div> : null}
-        </div>
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
     </div>

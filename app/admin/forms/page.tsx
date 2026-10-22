@@ -480,7 +480,7 @@ function FormsAdminContent() {
               {activeModule ? `Back to ${moduleLabel}` : 'Back to Admin'}
             </Button>
             <div>
-              <p className="text-sm font-medium uppercase tracking-wide text-indigo-600">
+              <p className="text-sm font-medium uppercase tracking-wide text-brand-600">
                 {activeModule ? `${moduleLabel} forms` : 'Forms & Outreach'}
               </p>
               <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -506,7 +506,7 @@ function FormsAdminContent() {
             ) : null}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-indigo-600 hover:bg-indigo-700">
+                <Button className="bg-brand-600 hover:bg-brand-700">
                   <Plus className="mr-2 h-4 w-4" />
                   New form
                 </Button>
@@ -647,9 +647,9 @@ function FormsAdminContent() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-indigo-100 bg-white/90 shadow-sm">
+          <Card className="border-brand-100 bg-white/90 shadow-sm">
             <CardContent className="flex items-center gap-3 p-5">
-              <FileText className="h-8 w-8 text-indigo-600" />
+              <FileText className="h-8 w-8 text-brand-600" />
               <div>
                 <p className="text-sm text-muted-foreground">Total forms</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
@@ -726,7 +726,7 @@ function FormsAdminContent() {
         <Card className="border-slate-200/80 bg-gradient-to-r from-slate-50 to-slate-100/50 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <ClipboardList className="h-5 w-5 text-indigo-700" />
+              <ClipboardList className="h-5 w-5 text-brand-700" />
               Eagles camp meeting registration
             </CardTitle>
             <CardDescription>
@@ -753,7 +753,7 @@ function FormsAdminContent() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 variant="secondary"
-                className="min-h-11 border-indigo-300 bg-white hover:bg-slate-50"
+                className="min-h-11 border-brand-300 bg-white hover:bg-slate-50"
                 disabled={creatingCampMeetingTemplate}
                 onClick={() => void handleCreateCampMeetingRegistrationTemplate()}
               >
@@ -878,7 +878,7 @@ function FormsAdminContent() {
                           Member registration
                         </Badge>
                       ) : isCampMeeting ? (
-                        <Badge className="bg-indigo-100 font-normal text-slate-900 hover:bg-indigo-100">
+                        <Badge className="bg-brand-100 font-normal text-slate-900 hover:bg-brand-100">
                           Camp meeting
                         </Badge>
                       ) : form.category ? (

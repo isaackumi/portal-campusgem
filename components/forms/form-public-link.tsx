@@ -25,7 +25,7 @@ export function FormPublicLink({ slug, className, showPathOnly = false }: Props)
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        'inline-flex max-w-full items-center gap-1 text-xs font-medium text-indigo-600 underline-offset-2 hover:text-indigo-800 hover:underline',
+        'inline-flex max-w-full items-center gap-1 text-xs font-medium text-brand-600 underline-offset-2 hover:text-brand-800 hover:underline',
         className
       )}
       title="Open public form in a new tab"

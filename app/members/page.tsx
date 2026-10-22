@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay, EmptyState } from '@/components/ui/error-display'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { StatCard } from '@/components/ui/stat-card'
 import { ContactActions } from '@/components/contact/contact-actions'
 import { MemberRowActions } from '@/components/members/member-row-actions'
 import { 
@@ -28,8 +29,6 @@ import {
   Copy,
   CheckCircle,
   User,
-  Crown,
-  Star,
   RefreshCw,
   X,
   ChevronDown,
@@ -249,8 +248,8 @@ export default function MembersPage() {
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Authentication Required</h2>
-            <p className="text-slate-600 mb-4">Please log in to view members.</p>
+            <h2 className="mb-2 text-2xl font-bold text-neutral-900 dark:text-neutral-100">Authentication Required</h2>
+            <p className="mb-4 text-neutral-600 dark:text-neutral-400">Please log in to view members.</p>
             <Button onClick={() => router.push('/auth')}>
               Go to Login
             </Button>
@@ -264,14 +263,14 @@ export default function MembersPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Members</h1>
-            <p className="text-slate-600 mt-1">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Members</h1>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
               Manage church members and their information
             </p>
           </div>
-          <div className="mt-4 sm:mt-0 flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={refetch} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -287,63 +286,24 @@ export default function MembersPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{total}</div>
-              <p className="text-xs text-muted-foreground">
-                Active members
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">New This Year</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {members?.filter(m => m.user?.join_year === new Date().getFullYear()).length || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Joined in {new Date().getFullYear()}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Elders</CardTitle>
-              <Crown className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {members?.filter(m => m.user?.role === 'elder').length || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Church leadership
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pastors</CardTitle>
-              <Star className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {members?.filter(m => m.user?.role === 'pastor').length || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Church leadership
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <section aria-label="Member totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Total members" value={total} sub="Active members" />
+          <StatCard
+            label="New this year"
+            value={members?.filter(m => m.user?.join_year === new Date().getFullYear()).length || 0}
+            sub={`Joined in ${new Date().getFullYear()}`}
+          />
+          <StatCard
+            label="Elders"
+            value={members?.filter(m => m.user?.role === 'elder').length || 0}
+            sub="Church leadership"
+          />
+          <StatCard
+            label="Pastors"
+            value={members?.filter(m => m.user?.role === 'pastor').length || 0}
+            sub="Church leadership"
+          />
+        </section>
 
         {/* Search and Filters */}
         <Card>
@@ -501,15 +461,15 @@ export default function MembersPage() {
                 {filteredMembers.map((member) => (
                   <div
                     key={member.id}
-                    className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 border-b border-neutral-100 py-4 last:border-0 dark:border-neutral-700 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-primary" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                        <User className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-medium text-slate-900">
+                          <h3 className="font-medium text-neutral-900 dark:text-neutral-100">
                             {member.user?.full_name || 'Unknown'}
                           </h3>
                           <Badge className={getRoleColor(member.user?.role || '')}>
@@ -524,7 +484,7 @@ export default function MembersPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
                           <span className="flex items-center">
                             <Copy className="h-3 w-3 mr-1" />
                             {formatMembershipIdForDisplay(member.user?.membership_id || '')}
@@ -542,7 +502,7 @@ export default function MembersPage() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center space-x-2 text-xs text-gray-400">
+                        <div className="flex items-center space-x-2 text-xs text-neutral-400">
                           {member.address && (
                             <span className="flex items-center">
                               <MapPin className="h-3 w-3 mr-1" />

@@ -1,15 +1,15 @@
 /** Shared palette aligned with form analytics colors. */
 export const CHART_PALETTE = [
-  '#3b82f6',
-  '#8b5cf6',
+  '#ce1440',
+  '#ec3560',
   '#10b981',
   '#f59e0b',
-  '#ef4444',
-  '#06b6d4',
-  '#ec4899',
-  '#64748b',
+  '#7a1231',
+  '#737373',
+  '#fb6485',
+  '#404040',
   '#14b8a6',
-  '#f97316',
+  '#ad0e36',
 ] as const
 
 export function chartColor(index: number): string {
@@ -43,13 +43,13 @@ export function slicesToChartData(slices: SliceDatum[]) {
 }
 
 export const CHART_AXIS = {
-  tick: { fill: '#64748b', fontSize: 11 },
-  axisLine: { stroke: '#e2e8f0' },
-  tickLine: { stroke: '#e2e8f0' },
+  tick: { fill: '#737373', fontSize: 11 },
+  axisLine: { stroke: '#e5e5e5' },
+  tickLine: { stroke: '#e5e5e5' },
 } as const
 
 export const CHART_GRID = {
-  stroke: '#e2e8f0',
+  stroke: '#e5e5e5',
   strokeDasharray: '4 4',
   vertical: false,
 } as const

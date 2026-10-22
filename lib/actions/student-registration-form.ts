@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { createFormFromTemplate } from '@/lib/actions/form-templates'
 import { STUDENT_REGISTRATION_CATEGORY } from '@/lib/constants/corporate-gem'
 import type { ChurchForm } from '@/lib/types'
@@ -9,6 +10,7 @@ export async function ensureStudentRegistrationForm(
   groupId: string,
   groupName: string
 ): Promise<{ data: ChurchForm | null; created: boolean; error: string | null }> {
+  await guard('forms.manage')
   try {
     const { data: forms, error: listError } = await listForms(groupId)
     if (listError) return { data: null, created: false, error: listError }

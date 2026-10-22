@@ -242,7 +242,7 @@ export default function ManualCheckInPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
             <div>
-            <h1 className="text-3xl font-bold text-slate-900">Manual Check-in</h1>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Manual Check-in</h1>
             <p className="text-slate-600 mt-2">Search and check in members manually</p>
             </div>
           <div className="flex items-center space-x-2">

@@ -13,7 +13,7 @@ export function BrandMark({
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white font-semibold tracking-[0.08em] text-slate-900',
+        'flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 font-semibold tracking-[0.08em] text-white shadow-sm',
         box,
         className
       )}
@@ -37,8 +37,8 @@ export function BrandTitle({
     return (
       <span
         className={cn(
-          'text-sm font-semibold tracking-tight',
-          light ? 'text-slate-900' : 'text-slate-900',
+          'text-sm font-bold tracking-tight',
+          light ? 'text-neutral-900 dark:text-white' : 'text-neutral-900 dark:text-white',
           className
         )}
       >
@@ -49,16 +49,17 @@ export function BrandTitle({
 
   return (
     <div className={cn('min-w-0', className)}>
-      <p
-        className={cn(
-          'truncate text-sm font-semibold tracking-tight text-slate-900',
-          className
-        )}
-        style={{ fontFamily: '"Source Serif 4", Georgia, serif' }}
-      >
+      <p className="truncate text-[11px] font-medium uppercase tracking-wider text-neutral-400">
         Campus Gem
       </p>
-      <p className="truncate text-xs text-slate-500">Church management</p>
+      <p
+        className={cn(
+          'truncate text-base font-bold tracking-tight text-neutral-900 dark:text-white',
+          className
+        )}
+      >
+        Ministries
+      </p>
     </div>
   )
 }

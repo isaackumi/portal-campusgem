@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isValidMembershipId, normalizeMembershipId } from '@/lib/membershipId'
 import { normalizePhone, isValidPhone } from '@/lib/phone'
 import type { AppUser } from '@/lib/types'
-import { CHMS_AUTH_SESSION_COOKIE } from '@/lib/auth/session-cookie'
+import { applySessionCookies, toSessionPayload } from '@/lib/auth/server-session'
 
 async function findUserByMembershipId(membershipId: string): Promise<AppUser | null> {
   const { findUserByMembershipIdFromConvex } = await import('@/lib/convex/core-bridge')
@@ -73,29 +73,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Account not properly set up' }, { status: 400 })
     }
 
-    const response = NextResponse.json({
-      success: true,
-      user: {
-        id: userData.id,
-        full_name: userData.full_name,
-        role: userData.role,
-        phone: userData.phone,
-        auth_uid: userData.auth_uid,
-        membership_id: userData.membership_id,
-      },
-    })
-
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    }
-
-    response.cookies.set(CHMS_AUTH_SESSION_COOKIE, userData.auth_uid, cookieOptions)
-    response.cookies.set('chms-role', userData.role, cookieOptions)
-    response.cookies.set('chms-user-id', userData.id, cookieOptions)
+    const response = NextResponse.json({ success: true, user: toSessionPayload(userData) })
+    applySessionCookies(response, userData)
 
     return response
   } catch (error) {

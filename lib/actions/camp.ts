@@ -1,5 +1,6 @@
 'use server'
 
+import { guard, asSystem } from '@/lib/auth/action-guard'
 import {
   CampRegistrationForm,
   CampYear,
@@ -25,6 +26,7 @@ function requireConvexEnv(): void {
 }
 
 export async function getActiveCampYear(): Promise<{ data: CampYear | null; error: string | null }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchActiveCampYearFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -43,35 +45,39 @@ export async function getOpenRegistrationCampYear(): Promise<{
   data: CampYear | null
   error: string | null
 }> {
-  requireConvexEnv()
-  try {
-    const { fetchRegistrationYearFromConvex } = await import('@/lib/convex/camp-bridge')
-    const data = await fetchRegistrationYearFromConvex()
-    return { data, error: null }
-  } catch (error: unknown) {
-    console.error('Error fetching open registration camp year from Convex:', error)
-    return {
-      data: null,
-      error:
-        error instanceof Error ? error.message : 'Failed to fetch open registration camp year from Convex',
+  return asSystem(async () => {
+    requireConvexEnv()
+    try {
+      const { fetchRegistrationYearFromConvex } = await import('@/lib/convex/camp-bridge')
+      const data = await fetchRegistrationYearFromConvex()
+      return { data, error: null }
+    } catch (error: unknown) {
+      console.error('Error fetching open registration camp year from Convex:', error)
+      return {
+        data: null,
+        error:
+          error instanceof Error ? error.message : 'Failed to fetch open registration camp year from Convex',
+      }
     }
-  }
+  })
 }
 
 export async function getCampYearById(yearId: string): Promise<{ data: CampYear | null; error: string | null }> {
-  requireConvexEnv()
-  try {
-    const { fetchCampYearByIdFromConvex } = await import('@/lib/convex/camp-bridge')
-    const data = await fetchCampYearByIdFromConvex(yearId)
-    if (!data) return { data: null, error: 'Not found' }
-    return { data, error: null }
-  } catch (error: unknown) {
-    console.error('Error fetching camp year from Convex:', error)
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Failed to fetch camp year',
+  return asSystem(async () => {
+    requireConvexEnv()
+    try {
+      const { fetchCampYearByIdFromConvex } = await import('@/lib/convex/camp-bridge')
+      const data = await fetchCampYearByIdFromConvex(yearId)
+      if (!data) return { data: null, error: 'Not found' }
+      return { data, error: null }
+    } catch (error: unknown) {
+      console.error('Error fetching camp year from Convex:', error)
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Failed to fetch camp year',
+      }
     }
-  }
+  })
 }
 
 export async function lookupCampRegistrationByPhone(
@@ -85,37 +91,41 @@ export async function lookupCampRegistrationByPhone(
   current_year_registration: CampRegistration | null
   error: string | null
 }> {
-  requireConvexEnv()
-  try {
-    const { lookupCamperByPhoneFromConvex } = await import('@/lib/convex/camp-bridge')
-    const result = await lookupCamperByPhoneFromConvex(phone, campYearId)
-    return { ...result, error: null }
-  } catch (error: unknown) {
-    return {
-      found: false,
-      already_registered_this_year: false,
-      previous_registrations: 0,
-      profile: null,
-      current_year_registration: null,
-      error: error instanceof Error ? error.message : 'Failed to look up registration',
+  return asSystem(async () => {
+    requireConvexEnv()
+    try {
+      const { lookupCamperByPhoneFromConvex } = await import('@/lib/convex/camp-bridge')
+      const result = await lookupCamperByPhoneFromConvex(phone, campYearId)
+      return { ...result, error: null }
+    } catch (error: unknown) {
+      return {
+        found: false,
+        already_registered_this_year: false,
+        previous_registrations: 0,
+        profile: null,
+        current_year_registration: null,
+        error: error instanceof Error ? error.message : 'Failed to look up registration',
+      }
     }
-  }
+  })
 }
 
 export async function getCampYearByYear(year: number): Promise<{ data: CampYear | null; error: string | null }> {
-  requireConvexEnv()
-  try {
-    const { fetchCampYearByYearFromConvex } = await import('@/lib/convex/camp-bridge')
-    const data = await fetchCampYearByYearFromConvex(year)
-    if (!data) return { data: null, error: 'Not found' }
-    return { data, error: null }
-  } catch (error: unknown) {
-    console.error('Error fetching camp year from Convex:', error)
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Failed to fetch camp year',
+  return asSystem(async () => {
+    requireConvexEnv()
+    try {
+      const { fetchCampYearByYearFromConvex } = await import('@/lib/convex/camp-bridge')
+      const data = await fetchCampYearByYearFromConvex(year)
+      if (!data) return { data: null, error: 'Not found' }
+      return { data, error: null }
+    } catch (error: unknown) {
+      console.error('Error fetching camp year from Convex:', error)
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Failed to fetch camp year',
+      }
     }
-  }
+  })
 }
 
 export async function registerCamper(formData: CampRegistrationForm): Promise<{
@@ -123,48 +133,51 @@ export async function registerCamper(formData: CampRegistrationForm): Promise<{
   data?: CampRegistration
   error?: string
 }> {
-  requireConvexEnv()
-  if (!isValidPhone(formData.phone)) {
-    return { success: false, error: 'Enter a valid Ghana mobile number to register.' }
-  }
-
-  try {
-    const duplicate = await lookupCampRegistrationByPhone(formData.phone, formData.camp_year_id)
-    if (duplicate.already_registered_this_year) {
-      return {
-        success: false,
-        error: 'This phone number is already registered for this Camp Meeting.',
-      }
+  return asSystem(async () => {
+    requireConvexEnv()
+    if (!isValidPhone(formData.phone)) {
+      return { success: false, error: 'Enter a valid Ghana mobile number to register.' }
     }
-
-    const { registerCamperViaConvex } = await import('@/lib/convex/camp-bridge')
-    const updatedReg = await registerCamperViaConvex(formData)
-    revalidatePath('/admin/camp-meeting')
 
     try {
-      const result = await sendCampRegistrationConfirmationSms(updatedReg)
-      if (!result.sent) {
-        console.error('[camp-registration-sms] legacy register path', {
-          id: updatedReg.id,
-          ...result,
-        })
+      const duplicate = await lookupCampRegistrationByPhone(formData.phone, formData.camp_year_id)
+      if (duplicate.already_registered_this_year) {
+        return {
+          success: false,
+          error: 'This phone number is already registered for this Camp Meeting.',
+        }
       }
-    } catch (err) {
-      console.error('[camp-registration-sms] legacy register path failed', err)
-    }
 
-    return { success: true, data: updatedReg }
-  } catch (error: unknown) {
-    console.error('Registration error (Convex):', error)
-    const message = error instanceof Error ? error.message : 'Registration failed. Please try again.'
-    return { success: false, error: message }
-  }
+      const { registerCamperViaConvex } = await import('@/lib/convex/camp-bridge')
+      const updatedReg = await registerCamperViaConvex(formData)
+      revalidatePath('/admin/camp-meeting')
+
+      try {
+        const result = await sendCampRegistrationConfirmationSms(updatedReg)
+        if (!result.sent) {
+          console.error('[camp-registration-sms] legacy register path', {
+            id: updatedReg.id,
+            ...result,
+          })
+        }
+      } catch (err) {
+        console.error('[camp-registration-sms] legacy register path failed', err)
+      }
+
+      return { success: true, data: updatedReg }
+    } catch (error: unknown) {
+      console.error('Registration error (Convex):', error)
+      const message = error instanceof Error ? error.message : 'Registration failed. Please try again.'
+      return { success: false, error: message }
+    }
+  })
 }
 
 export async function backfillCampCheckInCodes(campYearId: string): Promise<{
   data: { updated: number } | null
   error: string | null
 }> {
+  await guard('camp.manage')
   requireConvexEnv()
   const secret = process.env.CAMP_CONVEX_SERVER_SECRET
   if (!secret) {
@@ -194,6 +207,7 @@ export async function getCampRegistrations(campYearId: string): Promise<{
   data: CampRegistration[] | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchRegistrationsFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -212,6 +226,7 @@ export async function getCamperDirectory(): Promise<{
   data: import('@/lib/types').CampCamperDirectoryRow[]
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchCamperDirectoryFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -244,6 +259,7 @@ export async function getCampUnregisteredAudienceAction(campYearId: string): Pro
   } | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   if (!campYearId) return { data: null, error: 'Camp year is required' }
 
@@ -347,6 +363,7 @@ export async function mergeCampDirectoryContacts(args: {
   data: { merged: number; skipped: number; conflicts: Array<{ registration_id: string; reason: string }> } | null
   error: string | null
 }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { mergeCampDirectoryContactsInConvex } = await import('@/lib/convex/camp-bridge')
@@ -363,6 +380,7 @@ export async function mergeCampDirectoryContacts(args: {
 export async function getCampRegistrationById(
   id: string
 ): Promise<{ data: CampRegistration | null; error: string | null }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchRegistrationFromConvex, fetchInteractionsFromConvex } = await import(
@@ -384,6 +402,7 @@ export async function patchCampRegistration(
   id: string,
   patch: Partial<CampRegistration> & Record<string, unknown>
 ): Promise<{ data: CampRegistration | null; error: string | null }> {
+  await guard(['camp.manage', 'camp.payments'])
   requireConvexEnv()
   try {
     const { fetchRegistrationFromConvex, patchRegistrationInConvex } = await import(
@@ -429,6 +448,7 @@ export async function patchCampRegistration(
 export async function getCampCommunications(
   campYearId: string
 ): Promise<{ data: CampCommunication[] | null; error: string | null }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchCampCommunicationsFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -445,6 +465,7 @@ export async function getCampCommunications(
 export async function recordCampCommunication(
   communication: Omit<CampCommunication, 'id' | 'created_at'>
 ): Promise<{ data: CampCommunication | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { logCampCommunicationInConvex } = await import('@/lib/convex/camp-bridge')
@@ -481,6 +502,7 @@ export async function resendCampCommunicationAction(input: {
   data: { success: boolean; provider?: string; messageId?: string } | null
   error: string | null
 }> {
+  await guard('sms.send')
   requireConvexEnv()
   if (!input.sender_id) return { data: null, error: 'Sender is required' }
 
@@ -633,6 +655,7 @@ export async function sendCampRegistrationConfirmationSms(
   >,
   options?: { force?: boolean; sender_id?: string }
 ): Promise<{ sent: boolean; skipped?: string; error?: string }> {
+  await guard('camp.manage')
   let payload = { ...registration }
 
   // Prefer fresh Convex row — form/legacy responses can miss phone or check-in code.
@@ -829,6 +852,7 @@ export async function sendCampTemplateSmsToRegistrationsAction(input: {
   } | null
   error: string | null
 }> {
+  await guard('sms.send')
   requireConvexEnv()
   if (!input.sender_id) return { data: null, error: 'Sender is required' }
   if (!input.registration_ids.length) return { data: null, error: 'Select at least one registration' }
@@ -981,6 +1005,7 @@ export async function sendCampBulkSmsAction(input: {
   } | null
   error: string | null
 }> {
+  await guard('sms.send')
   requireConvexEnv()
   if (!input.sender_id) return { data: null, error: 'Sender is required' }
   if (!input.message_template.trim()) return { data: null, error: 'Message is required' }
@@ -1135,6 +1160,7 @@ export async function appendCampInteraction(data: {
   interaction_type: CampInteraction['interaction_type']
   notes?: string
 }): Promise<{ data: CampInteraction | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { addInteractionInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1151,6 +1177,7 @@ export async function appendCampInteraction(data: {
 export async function loadCampActivitiesForYear(
   campYearId: string
 ): Promise<{ data: unknown[] | null; error: string | null }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchCampActivitiesFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -1172,6 +1199,7 @@ export async function createCampActivityRecord(activity: Record<string, unknown>
   data: unknown | null
   error: string | null
 }> {
+  await guard('camp.manage')
   requireConvexEnv()
   const campYearId = String(activity.camp_year_id ?? '')
   try {
@@ -1203,6 +1231,7 @@ export async function ensureDailyCampSessionsAction(input: {
   } | null
   error: string | null
 }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const {
@@ -1277,6 +1306,7 @@ export async function updateCampActivityRecord(
   id: string,
   patch: Record<string, unknown>
 ): Promise<{ data: unknown | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { updateCampActivityInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1292,6 +1322,7 @@ export async function updateCampActivityRecord(
 }
 
 export async function deleteCampActivityRecord(id: string): Promise<{ error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { deleteCampActivityInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1315,6 +1346,7 @@ export async function createCampYear(yearData: {
   flyer_image_url?: string | null
   venue?: string
 }): Promise<{ success: boolean; data?: CampYear; error?: string }> {
+  await guard('camp.settings')
   requireConvexEnv()
   try {
     const { createCampYearInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1341,6 +1373,7 @@ export async function updateCampYear(
     venue?: string
   }
 ): Promise<{ success: boolean; data?: CampYear; error?: string }> {
+  await guard('camp.settings')
   requireConvexEnv()
   try {
     const { updateCampYearInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1359,6 +1392,7 @@ export async function toggleCampYearRegistration(
   yearId: string,
   currentStatus: boolean
 ): Promise<{ success: boolean; error?: string }> {
+  await guard('camp.settings')
   requireConvexEnv()
   try {
     const { toggleCampYearRegistrationInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1374,6 +1408,7 @@ export async function toggleCampYearRegistration(
 }
 
 export async function setActiveCampYear(yearId: string): Promise<{ success: boolean; error?: string }> {
+  await guard('camp.settings')
   requireConvexEnv()
   try {
     const { setActiveCampYearInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1390,6 +1425,7 @@ export async function setActiveCampYear(yearId: string): Promise<{ success: bool
 }
 
 export async function deactivateCampYear(yearId: string): Promise<{ success: boolean; error?: string }> {
+  await guard('camp.settings')
   requireConvexEnv()
   try {
     const { deactivateCampYearInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1415,6 +1451,7 @@ export async function deleteCampYear(args: {
   data: import('@/lib/convex/camp-bridge').DeleteCampYearResult | null
   error: string | null
 }> {
+  await guard('camp.settings')
   requireConvexEnv()
   try {
     const { deleteCampYearInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1438,6 +1475,7 @@ export async function deleteCampYear(args: {
 }
 
 export async function clearActiveCampYear(): Promise<{ success: boolean; error?: string }> {
+  await guard('camp.settings')
   requireConvexEnv()
   try {
     const { clearActiveCampYearInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1458,6 +1496,7 @@ export async function bulkPatchCampRegistrations(args: {
   assigned_to?: string
   follow_up_status?: 'pending' | 'in_progress' | 'completed'
 }): Promise<{ updated: number; error: string | null }> {
+  await guard(['camp.manage', 'camp.payments'])
   requireConvexEnv()
   try {
     const { bulkPatchRegistrationsInConvex, fetchRegistrationFromConvex, fetchCampYearByIdFromConvex } =
@@ -1497,6 +1536,7 @@ export async function bulkPatchCampRegistrations(args: {
 }
 
 export async function getAllCampYears(): Promise<{ data: CampYear[] | null; error: string | null }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchAllCampYearsFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -1520,6 +1560,7 @@ export async function promoteCampRegistrant(
     birth_year?: number
   }
 ): Promise<{ data: CampRegistration | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { promoteCampRegistrantInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1545,6 +1586,7 @@ export async function syncCampRegistrationDobToMember(registrationId: string): P
   data: boolean
   error: string | null
 }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { fetchRegistrationFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -1587,6 +1629,7 @@ export async function recordCampSessionCheckIn(args: {
   } | null
   error: string | null
 }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { recordCampSessionCheckInInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1606,6 +1649,7 @@ export async function getCampSessionAttendancesForActivity(activityId: string): 
   data: import('@/lib/types').CampSessionAttendance[] | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchCampSessionAttendancesForActivityFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -1623,6 +1667,7 @@ export async function getCampRooms(campYearId: string): Promise<{
   data: import('@/lib/types').CampRoom[] | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchCampRoomsFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -1644,6 +1689,7 @@ export async function createCampRoom(input: {
   gender?: import('@/lib/types').CampRoomGender
   notes?: string
 }): Promise<{ data: import('@/lib/types').CampRoom | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { createCampRoomInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1668,6 +1714,7 @@ export async function updateCampRoom(
     notes?: string
   }
 ): Promise<{ data: import('@/lib/types').CampRoom | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { updateCampRoomInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1686,6 +1733,7 @@ export async function deleteCampRoom(id: string): Promise<{
   data: { deleted: boolean; unassigned: number } | null
   error: string | null
 }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { deleteCampRoomInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1704,6 +1752,7 @@ export async function assignCampRegistrationRoom(args: {
   registration_id: string
   room_id: string | null
 }): Promise<{ data: CampRegistration | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { assignCampRegistrationRoomInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1724,6 +1773,7 @@ export async function randomAssignCampRooms(args: {
   respect_gender?: boolean
   only_unassigned?: boolean
 }): Promise<{ data: { assigned: number; skipped: number } | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { randomAssignCampRoomsInConvex } = await import('@/lib/convex/camp-bridge')
@@ -1743,6 +1793,7 @@ export async function getCampRegistrationRoomContext(registrationId: string): Pr
   data: import('@/lib/types').CampRegistrationRoomContext | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { fetchCampRegistrationRoomContextFromConvex } = await import('@/lib/convex/camp-bridge')
@@ -1760,6 +1811,7 @@ export async function setCampRoomLeader(args: {
   room_id: string
   registration_id: string | null
 }): Promise<{ data: import('@/lib/types').CampRoom | null; error: string | null }> {
+  await guard('camp.manage')
   requireConvexEnv()
   try {
     const { setCampRoomLeaderInConvex } = await import('@/lib/convex/camp-bridge')

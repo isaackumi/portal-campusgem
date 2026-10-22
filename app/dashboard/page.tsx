@@ -4,12 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { useAllUsers } from '@/lib/hooks/use-data'
-import { useDashboardStats, useUpcomingEvents } from '@/lib/hooks/use-data'
+import { useUpcomingEvents } from '@/lib/hooks/use-data'
 import { getActiveCampYear, getCampRegistrations } from '@/lib/actions/camp'
 import { Button } from '@/components/ui/button'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { LoadingPage } from '@/components/ui/loading'
-import { ErrorDisplay } from '@/components/ui/error-display'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { OfflineSync } from '@/components/offline-sync'
@@ -21,6 +20,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { ContactRowActions } from '@/components/contacts/contact-row-actions'
 import { followUpBoardHref, summarizeFollowUpSla } from '@/lib/camp/follow-up-sla'
 import { cn } from '@/lib/utils'
+import { StatCard } from '@/components/ui/stat-card'
 import {
   ArrowBottomRightIcon,
   ArrowRightIcon,
@@ -28,8 +28,9 @@ import {
 } from '@radix-ui/react-icons'
 
 function DashboardContent() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, can } = useAuth()
   const router = useRouter()
+  const canSeeCamp = can('camp.view')
   const [campRows, setCampRows] = useState<CampCamperDirectoryRow[]>([])
   const [campLoading, setCampLoading] = useState(false)
   const [campError, setCampError] = useState<string | null>(null)
@@ -38,7 +39,6 @@ function DashboardContent() {
   const [activeYearRegistrations, setActiveYearRegistrations] = useState<CampRegistration[]>([])
   const [activeCampYearId, setActiveCampYearId] = useState<string | null>(null)
 
-  const { data: stats, error: statsError, loading: statsLoading, refetch: refetchStats } = useDashboardStats()
   const { data: allUsers, loading: usersLoading } = useAllUsers()
   const { data: upcomingEvents } = useUpcomingEvents()
 
@@ -70,11 +70,17 @@ function DashboardContent() {
     setMyFollowUpsLoading(false)
   }, [user?.id])
 
+  const userId = user?.id
   useEffect(() => {
-    if (!user) return
+    if (!userId || !canSeeCamp) return
     void loadCampDirectory()
     void loadMyFollowUps()
-  }, [user, loadCampDirectory, loadMyFollowUps])
+  }, [userId, canSeeCamp, loadCampDirectory, loadMyFollowUps])
+
+  // Session ended (or never existed in this browser): go sign in instead of hanging.
+  useEffect(() => {
+    if (!authLoading && !user) router.replace('/auth?redirect=/dashboard')
+  }, [authLoading, user, router])
 
   const campColumns = useMemo<ColumnDef<CampCamperDirectoryRow>[]>(
     () => [
@@ -83,7 +89,7 @@ function DashboardContent() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Contact" />,
         cell: ({ row }) => (
           <div className="min-w-[170px]">
-            <p className="font-medium text-slate-900">{row.original.full_name}</p>
+            <p className="font-medium text-neutral-900 dark:text-neutral-100">{row.original.full_name}</p>
             <p className="text-xs text-muted-foreground">{row.original.phone}</p>
           </div>
         ),
@@ -106,7 +112,7 @@ function DashboardContent() {
         cell: ({ row }) => {
           const status = row.original.years[0]?.status ?? 'registered'
           return (
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
               {status.replace('_', ' ')}
             </span>
           )
@@ -134,10 +140,10 @@ function DashboardContent() {
           if (latestStatus !== 'checked_in') score += 1
           const tone =
             score >= 4
-              ? 'bg-slate-900 text-white'
+              ? 'bg-brand-600 text-white'
               : score >= 3
-                ? 'bg-slate-100 text-slate-800'
-                : 'bg-transparent text-slate-600 ring-1 ring-slate-200'
+                ? 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-100'
+                : 'bg-transparent text-neutral-600 dark:text-neutral-400 ring-1 ring-neutral-200 dark:ring-neutral-600'
           return (
             <span className={cn('inline-flex min-w-[2.5rem] justify-center rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums', tone)}>
               {score}/5
@@ -275,30 +281,14 @@ function DashboardContent() {
       }))
   }, [upcomingEvents?.birthdays])
 
-  if (authLoading || statsLoading) {
+  // Render as soon as we know who the user is; each panel fills in as its data arrives.
+  if (authLoading || !user) {
     return (
       <DashboardLayout>
-        <LoadingPage title="Loading Dashboard..." description="Preparing member and follow-up data..." />
+        <LoadingPage title="Loading dashboard…" description="Getting your workspace ready." />
       </DashboardLayout>
     )
   }
-
-  if (statsError) {
-    return (
-      <DashboardLayout>
-        <div className="max-w-7xl mx-auto">
-          <ErrorDisplay
-            error={statsError}
-            onRetry={refetchStats}
-            variant="page"
-            title="Failed to load dashboard"
-          />
-        </div>
-      </DashboardLayout>
-    )
-  }
-
-  if (!user) return null
 
   const greetingName = user.full_name?.split(' ')[0] || 'there'
   const todayLabel = new Date().toLocaleDateString('en-GB', {
@@ -310,66 +300,62 @@ function DashboardContent() {
   return (
     <DashboardLayout>
       <div className="dashboard-shell">
-        <header className="flex flex-col gap-6 border-b border-slate-300/70 pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 space-y-2">
-            <p className="app-stat-label text-amber-700/90">{todayLabel}</p>
-            <h1 className="app-page-title text-[1.75rem] leading-tight sm:text-[2.15rem]">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               Good day, {greetingName}
             </h1>
-            <p className="app-page-description max-w-xl">
-              Follow-ups, camp contacts, and today’s birthdays — one place to work from.
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              {todayLabel}. Follow-ups, camp contacts, and today’s birthdays.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
-              className="min-h-11 cursor-pointer border-slate-300 bg-white"
               onClick={() => router.push('/admin/camp-meeting/follow-up')}
             >
               Follow-up board
             </Button>
-            <Button
-              className="min-h-11 cursor-pointer bg-slate-900 text-white hover:bg-slate-800"
-              onClick={() => router.push('/admin/camp-meeting/registrations')}
-            >
+            <Button onClick={() => router.push('/admin/camp-meeting/registrations')}>
               Registrations
               <ArrowRightIcon className="ml-2 h-4 w-4" aria-hidden />
             </Button>
           </div>
-        </header>
+        </div>
 
-        <section aria-label="Key metrics" className="dashboard-metric-strip">
-          <div className="dashboard-metric-cell">
-            <p className="app-stat-label">Admins</p>
-            <p className="app-stat-value">{usersLoading ? '…' : totalAdmins}</p>
-            <p className="text-sm text-slate-500">Accounts with admin access</p>
-          </div>
-          <div className="dashboard-metric-cell">
-            <p className="app-stat-label">Camp contacts</p>
-            <p className="app-stat-value">{campRows.length}</p>
-            <p className="text-sm text-slate-500">Unique phone profiles</p>
-          </div>
-          <div className="dashboard-metric-cell">
-            <p className="app-stat-label">Linked</p>
-            <p className="app-stat-value">{linkedContacts}</p>
-            <p className="text-sm text-slate-500">Matched to member accounts</p>
-          </div>
-          <div className="dashboard-metric-cell">
-            <p className="app-stat-label">My follow-ups</p>
-            <p className="app-stat-value">{myFollowUpsLoading ? '…' : myPendingFollowUps}</p>
-            <p className="text-sm text-slate-500">Pending, assigned to you</p>
-          </div>
+        <section aria-label="Key metrics" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Admins"
+            value={usersLoading ? '…' : totalAdmins}
+            sub="Accounts with admin access"
+          />
+          <StatCard
+            label="Camp contacts"
+            value={campRows.length}
+            sub="Unique phone profiles"
+          />
+          <StatCard
+            label="Linked"
+            value={linkedContacts}
+            sub="Matched to member accounts"
+          />
+          <StatCard
+            label="My follow-ups"
+            value={myFollowUpsLoading ? '…' : myPendingFollowUps}
+            sub="Pending, assigned to you"
+            tone={myPendingFollowUps > 0 ? 'warning' : 'default'}
+          />
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-3">
+        <section className="grid gap-6 lg:grid-cols-3">
           <div className="dashboard-panel p-5 sm:p-6">
             <div className="mb-4 flex items-baseline justify-between gap-2">
               <h2 className="app-section-title text-base">Follow-up SLA</h2>
-              <span className="text-xs text-slate-500">Queue health</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">Queue health</span>
             </div>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-slate-700">Overdue</span>
+              <li className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-700 pb-3">
+                <span className="text-neutral-700 dark:text-neutral-300">Overdue</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -377,23 +363,23 @@ function DashboardContent() {
                       followUpBoardHref({ sla: 'overdue', yearId: activeCampYearId ?? undefined })
                     )
                   }
-                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
                   aria-label="Open overdue follow-ups"
                 >
                   <span
                     className={cn(
                       'inline-flex min-w-[2rem] justify-center rounded-md px-2 py-0.5 text-sm font-semibold tabular-nums',
                       followUpSla.overdue > 10
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-slate-100 text-slate-800'
+                        ? 'bg-brand-600 text-white'
+                        : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-100'
                     )}
                   >
                     {followUpSla.overdue}
                   </span>
                 </button>
               </li>
-              <li className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-slate-700">Due soon</span>
+              <li className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-700 pb-3">
+                <span className="text-neutral-700 dark:text-neutral-300">Due soon</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -401,16 +387,16 @@ function DashboardContent() {
                       followUpBoardHref({ sla: 'due_soon', yearId: activeCampYearId ?? undefined })
                     )
                   }
-                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
                   aria-label="Open due-soon follow-ups"
                 >
-                  <span className="inline-flex min-w-[2rem] justify-center rounded-md bg-slate-100 px-2 py-0.5 text-sm font-semibold tabular-nums text-slate-800">
+                  <span className="inline-flex min-w-[2rem] justify-center rounded-md bg-neutral-100 dark:bg-neutral-700 px-2 py-0.5 text-sm font-semibold tabular-nums text-neutral-800 dark:text-neutral-100">
                     {followUpSla.dueSoon}
                   </span>
                 </button>
               </li>
               <li className="flex items-center justify-between">
-                <span className="text-slate-700">Healthy</span>
+                <span className="text-neutral-700 dark:text-neutral-300">Healthy</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -418,10 +404,10 @@ function DashboardContent() {
                       followUpBoardHref({ sla: 'healthy', yearId: activeCampYearId ?? undefined })
                     )
                   }
-                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
                   aria-label="Open healthy follow-ups"
                 >
-                  <span className="inline-flex min-w-[2rem] justify-center rounded-md bg-slate-100 px-2 py-0.5 text-sm font-semibold tabular-nums text-slate-800">
+                  <span className="inline-flex min-w-[2rem] justify-center rounded-md bg-neutral-100 dark:bg-neutral-700 px-2 py-0.5 text-sm font-semibold tabular-nums text-neutral-800 dark:text-neutral-100">
                     {followUpSla.healthy}
                   </span>
                 </button>
@@ -432,16 +418,16 @@ function DashboardContent() {
           <div className="dashboard-panel p-5 sm:p-6">
             <div className="mb-4 flex items-baseline justify-between gap-2">
               <h2 className="app-section-title text-base">Staff load</h2>
-              <span className="text-xs text-slate-500">Pending by assignee</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">Pending by assignee</span>
             </div>
             {assignmentBalance.length === 0 ? (
-              <p className="text-sm text-slate-500">No pending assigned follow-ups yet.</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">No pending assigned follow-ups yet.</p>
             ) : (
               <ul className="space-y-2.5">
                 {assignmentBalance.map((item) => (
                   <li key={item.userId} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate text-slate-800">{item.name}</span>
-                    <span className="shrink-0 tabular-nums font-semibold text-slate-900">{item.count}</span>
+                    <span className="truncate text-neutral-800 dark:text-neutral-100">{item.name}</span>
+                    <span className="shrink-0 tabular-nums font-semibold text-neutral-900 dark:text-neutral-100">{item.count}</span>
                   </li>
                 ))}
               </ul>
@@ -451,49 +437,49 @@ function DashboardContent() {
           <div className="dashboard-panel p-5 sm:p-6">
             <div className="mb-4 flex items-baseline justify-between gap-2">
               <h2 className="app-section-title text-base">Registration mix</h2>
-              <span className="text-xs text-slate-500">New vs returning</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">New vs returning</span>
             </div>
             <ul className="space-y-3 text-sm">
               <li className="flex items-center justify-between">
-                <span className="text-slate-700">Last 7 days · new</span>
-                <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-slate-900">
+                <span className="text-neutral-700 dark:text-neutral-300">Last 7 days · new</span>
+                <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
                   {trendSignals.newDelta > 0.5 ? (
-                    <ArrowTopRightIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+                    <ArrowTopRightIcon className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" aria-hidden />
                   ) : trendSignals.newDelta < -0.5 ? (
-                    <ArrowBottomRightIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+                    <ArrowBottomRightIcon className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" aria-hidden />
                   ) : null}
                   {contactTrend.new7}
                 </span>
               </li>
               <li className="flex items-center justify-between">
-                <span className="text-slate-700">Last 7 days · returning</span>
-                <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-slate-900">
+                <span className="text-neutral-700 dark:text-neutral-300">Last 7 days · returning</span>
+                <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
                   {trendSignals.returningDelta > 0.5 ? (
-                    <ArrowTopRightIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+                    <ArrowTopRightIcon className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" aria-hidden />
                   ) : trendSignals.returningDelta < -0.5 ? (
-                    <ArrowBottomRightIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+                    <ArrowBottomRightIcon className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" aria-hidden />
                   ) : null}
                   {contactTrend.returning7}
                 </span>
               </li>
-              <li className="flex items-center justify-between border-t border-slate-100 pt-3">
-                <span className="text-slate-700">Last 30 days · new</span>
-                <span className="font-semibold tabular-nums text-slate-900">{contactTrend.new30}</span>
+              <li className="flex items-center justify-between border-t border-neutral-100 dark:border-neutral-700 pt-3">
+                <span className="text-neutral-700 dark:text-neutral-300">Last 30 days · new</span>
+                <span className="font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{contactTrend.new30}</span>
               </li>
               <li className="flex items-center justify-between">
-                <span className="text-slate-700">Last 30 days · returning</span>
-                <span className="font-semibold tabular-nums text-slate-900">{contactTrend.returning30}</span>
+                <span className="text-neutral-700 dark:text-neutral-300">Last 30 days · returning</span>
+                <span className="font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{contactTrend.returning30}</span>
               </li>
             </ul>
           </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-2">
+        <section className="grid gap-6 lg:grid-cols-2">
           <div className="dashboard-panel p-5 sm:p-6">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="app-section-title text-base">My assigned follow-ups</h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                   {myFollowUpsLoading
                     ? 'Loading…'
                     : `${myFollowUps.length} assigned · ${myPendingFollowUps} pending`}
@@ -502,20 +488,20 @@ function DashboardContent() {
             </div>
             <div className="space-y-2">
               {myFollowUpsLoading ? (
-                <p className="text-sm text-slate-500">Loading…</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading…</p>
               ) : myFollowUps.length === 0 ? (
-                <p className="text-sm text-slate-500">Nothing assigned to you in the active camp year.</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">Nothing assigned to you in the active camp year.</p>
               ) : (
                 myFollowUps.slice(0, 5).map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-3 border-b border-slate-100 py-2.5 last:border-0"
+                    className="flex items-center justify-between gap-3 border-b border-neutral-100 dark:border-neutral-700 py-2.5 last:border-0"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">{item.full_name}</p>
-                      <p className="text-xs text-slate-500">{item.phone}</p>
+                      <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{item.full_name}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.phone}</p>
                     </div>
-                    <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                       {(item.follow_up_status ?? 'pending').replace('_', ' ')}
                     </span>
                   </div>
@@ -524,7 +510,7 @@ function DashboardContent() {
             </div>
             <Button
               variant="outline"
-              className="mt-4 min-h-10 w-full cursor-pointer border-slate-300"
+              className="mt-4 min-h-10 w-full cursor-pointer border-neutral-300 dark:border-neutral-600"
               onClick={() =>
                 router.push(followUpBoardHref({ mine: true, yearId: activeCampYearId ?? undefined }))
               }
@@ -535,7 +521,7 @@ function DashboardContent() {
 
           <div className="dashboard-panel p-5 sm:p-6">
             <h2 className="app-section-title text-base">Shortcuts</h2>
-            <p className="mt-1 text-sm text-slate-500">Common admin paths</p>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Common admin paths</p>
             <div className="mt-4 grid gap-2">
               {[
                 { href: '/admin/camp-meeting/follow-up', label: 'Follow-up board' },
@@ -549,15 +535,15 @@ function DashboardContent() {
                   key={item.href}
                   type="button"
                   onClick={() => router.push(item.href)}
-                  className="flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-[#fafaf8] px-3 text-left text-sm font-medium text-slate-800 transition-colors duration-150 hover:border-slate-300 hover:bg-white"
+                  className="flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 text-left text-sm font-medium text-neutral-800 transition-colors duration-150 hover:bg-white dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-100 dark:hover:bg-neutral-700"
                 >
                   {item.label}
-                  <ArrowRightIcon className="h-4 w-4 text-slate-400" aria-hidden />
+                  <ArrowRightIcon className="h-4 w-4 text-neutral-400" aria-hidden />
                 </button>
               ))}
             </div>
-            <div className="mt-5 border-t border-slate-100 pt-4 text-sm text-slate-600">
-              <p className="font-medium text-slate-800">Campus Gem Ministries</p>
+            <div className="mt-5 border-t border-neutral-100 dark:border-neutral-700 pt-4 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="font-medium text-neutral-800 dark:text-neutral-100">Campus Gem Ministries</p>
               <p className="mt-1">Kokomlemle, Accra</p>
               <p>Sundays 7:00 AM & 9:00 AM</p>
             </div>
@@ -565,17 +551,17 @@ function DashboardContent() {
         </section>
 
         <section className="dashboard-panel overflow-hidden">
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-neutral-200 dark:border-neutral-700 px-5 py-4 sm:px-6">
             <div>
               <h2 className="app-section-title text-base">Camp contacts</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                 Searchable directory · {followUpCandidates} multi-year contacts need attention
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="min-h-10 cursor-pointer border-slate-300"
+              className="min-h-10 cursor-pointer border-neutral-300 dark:border-neutral-600"
               onClick={() => void loadCampDirectory()}
               disabled={campLoading}
             >
@@ -593,7 +579,7 @@ function DashboardContent() {
           </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-3">
+        <section className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <BirthdayNotifications
               todayBirthdays={todayBirthdays}
@@ -602,7 +588,7 @@ function DashboardContent() {
           </div>
           <div className="dashboard-panel p-5 sm:p-6">
             <h2 className="app-section-title text-base">Operations</h2>
-            <p className="mt-1 mb-4 text-sm text-slate-500">Offline sync and system status</p>
+            <p className="mt-1 mb-4 text-sm text-neutral-500 dark:text-neutral-400">Offline sync and system status</p>
             <OfflineSync />
           </div>
         </section>

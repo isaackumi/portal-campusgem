@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import type { ChurchFormField } from '@/lib/types'
 import { memberDobIsoFromCampRegistration } from '@/lib/camp/birthday'
 import { buildPrefillMapFromFormValues } from '@/lib/forms/extract-prefill-values'
@@ -17,6 +18,7 @@ export async function syncDirectoryProfileFromFormSubmit(input: {
   respondent_email?: string
   camp_registration_id?: string
 }): Promise<{ updated: boolean; error: string | null }> {
+  await guard('members.manage')
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
     return { updated: false, error: null }
   }

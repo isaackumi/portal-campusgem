@@ -67,7 +67,7 @@ export function CampFunnelSteps({ steps }: { steps: FunnelStep[] }) {
         {steps.map((step, index) => (
           <div key={step.label} className="rounded-lg border bg-slate-50 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{step.label}</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{step.count.toLocaleString()}</p>
+            <p className="mt-1 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{step.count.toLocaleString()}</p>
             <p className="text-sm text-slate-600">{step.percent}% of registered</p>
             {step.dropOffPercent != null && step.dropOffPercent > 0 ? (
               <p className="mt-1 text-xs text-rose-600">{step.dropOffPercent}% drop from previous step</p>

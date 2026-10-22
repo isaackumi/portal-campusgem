@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { revalidatePath } from 'next/cache'
 import { ensureDirectoryUserFromCampContact } from '@/lib/actions/ensure-camp-directory-user'
 import { promoteUserToCorporateGem } from '@/lib/actions/corporate-gem'
@@ -53,6 +54,7 @@ export async function promoteCampContactToCorporateGem(
   profileCreated: boolean
   error: string | null
 }> {
+  await guard('groups.manage')
   const resolved = await resolveUserId(input)
   if ('error' in resolved) {
     return { data: null, group: null, userId: null, profileCreated: false, error: resolved.error }
@@ -89,6 +91,7 @@ export async function promoteCampContactWithRole(
   profileCreated: boolean
   error: string | null
 }> {
+  await guard('users.manage')
   if (!STAFF_ROLES.includes(role)) {
     return { data: null, profileCreated: false, error: 'Choose a staff role with elevated permissions.' }
   }
@@ -117,5 +120,6 @@ export async function promoteCampContactWithRole(
 
 /** @deprecated Use promoteCampContactWithRole with role `admin` */
 export async function promoteCampContactToAdmin(input: CampContactPromotionInput) {
+  await guard('admins.manage')
   return promoteCampContactWithRole(input, 'admin')
 }

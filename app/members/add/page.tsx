@@ -739,7 +739,7 @@ export default function AddMemberPage() {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Members
             </Button>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               Add New Member
             </h1>
           </div>

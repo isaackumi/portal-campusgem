@@ -372,7 +372,7 @@ export default function ComprehensiveAttendancePage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center">
             <BarChart3 className="h-8 w-8 mr-3 text-primary" />
             Comprehensive Attendance Management
           </h1>
