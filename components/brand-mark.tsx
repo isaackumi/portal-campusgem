@@ -49,15 +49,8 @@ export function BrandTitle({
 
   return (
     <div className={cn('min-w-0', className)}>
-      <p className="truncate text-[11px] font-medium uppercase tracking-wider text-neutral-400">
-        Campus Gem
-      </p>
-      <p
-        className={cn(
-          'truncate text-base font-bold tracking-tight text-neutral-900 dark:text-white',
-          className
-        )}
-      >
+      <p className="app-overline truncate leading-4">Campus Gem</p>
+      <p className="truncate text-[15px] font-semibold leading-5 tracking-tight text-neutral-900 dark:text-white">
         Ministries
       </p>
     </div>

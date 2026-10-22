@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DashboardPanel } from '@/components/dashboard/panel'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -246,13 +246,9 @@ export function OfflineSync() {
 
   // Get status badge variant
   const getStatusVariant = () => {
-    if (syncStatus.isOnline && syncStatus.pendingItems === 0) {
-      return 'default' // green
-    } else if (syncStatus.isOnline && syncStatus.pendingItems > 0) {
-      return 'secondary' // yellow
-    } else {
-      return 'destructive' // red
-    }
+    if (syncStatus.isOnline && syncStatus.pendingItems === 0) return 'success' as const
+    if (syncStatus.isOnline) return 'warning' as const
+    return 'danger' as const
   }
 
   // Get status text
@@ -269,68 +265,57 @@ export function OfflineSync() {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              {syncStatus.isOnline ? (
-                <Wifi className="h-5 w-5 text-green-600" />
-              ) : (
-                <WifiOff className="h-5 w-5 text-red-600" />
-              )}
-              Offline Sync
-            </CardTitle>
-            <CardDescription>
-              Manage offline data synchronization
-            </CardDescription>
-          </div>
-          <Badge variant={getStatusVariant()}>
-            {getStatusText()}
-          </Badge>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Status Info */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
+    <DashboardPanel
+      title="Offline sync"
+      action={
+        <Badge variant={getStatusVariant()}>
+          {syncStatus.isOnline ? (
+            <Wifi className="h-3 w-3" aria-hidden />
+          ) : (
+            <WifiOff className="h-3 w-3" aria-hidden />
+          )}
+          {getStatusText()}
+        </Badge>
+      }
+    >
+      <div className="space-y-4 py-3">
+        <dl className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-slate-500" />
-            <span className="text-slate-600">Last Sync:</span>
-            <span className="font-medium">
-              {syncStatus.lastSync 
-                ? syncStatus.lastSync.toLocaleTimeString()
-                : 'Never'
-              }
-            </span>
+            <Clock className="h-4 w-4 text-neutral-400" aria-hidden />
+            <dt className="text-[13px] text-neutral-500 dark:text-neutral-400">Last sync</dt>
+            <dd className="text-sm font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
+              {syncStatus.lastSync ? syncStatus.lastSync.toLocaleTimeString() : 'Never'}
+            </dd>
           </div>
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-slate-500" />
-            <span className="text-slate-600">Pending:</span>
-            <span className="font-medium">{syncStatus.pendingItems}</span>
+            <Users className="h-4 w-4 text-neutral-400" aria-hidden />
+            <dt className="text-[13px] text-neutral-500 dark:text-neutral-400">Pending</dt>
+            <dd className="text-sm font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
+              {syncStatus.pendingItems}
+            </dd>
           </div>
-        </div>
+        </dl>
 
         {/* Pending Items */}
         {pendingItems.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-slate-700">Pending Changes:</h4>
+            <h4 className="font-medium text-sm text-neutral-700 dark:text-neutral-300">Pending Changes:</h4>
             <div className="space-y-1 max-h-32 overflow-y-auto">
               {pendingItems.slice(0, 5).map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded">
+                <div key={item.id} className="flex items-center justify-between text-xs bg-neutral-50 dark:bg-neutral-800 rounded-md p-2">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-3 w-3 text-slate-500" />
+                    <Calendar className="h-3 w-3 text-neutral-500 dark:text-neutral-400" />
                     <span className="capitalize">{item.type}</span>
-                    <span className="text-slate-500">•</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">•</span>
                     <span className="capitalize">{item.action}</span>
                   </div>
-                  <span className="text-slate-500">
+                  <span className="text-neutral-500 dark:text-neutral-400">
                     {item.timestamp.toLocaleTimeString()}
                   </span>
                 </div>
               ))}
               {pendingItems.length > 5 && (
-                <p className="text-xs text-slate-500 text-center">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center">
                   +{pendingItems.length - 5} more items
                 </p>
               )}
@@ -357,7 +342,7 @@ export function OfflineSync() {
             </div>
             <div className="space-y-1">
               {syncStatus.errors.slice(0, 3).map((error, index) => (
-                <p key={index} className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                <p key={index} className="text-xs text-red-600 bg-red-50 rounded-md p-2">
                   {error}
                 </p>
               ))}
@@ -370,6 +355,7 @@ export function OfflineSync() {
           <Button
             onClick={handleManualSync}
             disabled={!syncStatus.isOnline || syncStatus.isSyncing}
+            variant="outline"
             size="sm"
             className="flex-1"
           >
@@ -386,7 +372,7 @@ export function OfflineSync() {
             )}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </DashboardPanel>
   )
 }

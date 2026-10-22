@@ -31,17 +31,13 @@ export function StatCard({
   className?: string
 }) {
   return (
-    <div className={cn('dashboard-panel px-4 py-3.5 sm:px-5 sm:py-4', className)}>
-      <p className="text-sm text-neutral-500 underline decoration-neutral-300 decoration-dotted underline-offset-4 dark:text-neutral-400 dark:decoration-neutral-600">
-        {label}
-      </p>
-      <p className="mt-1.5 text-[26px] font-semibold leading-tight tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50 sm:text-[28px]">
-        {value}
-      </p>
+    <div className={cn('dashboard-panel flex flex-col gap-3 p-5', className)}>
+      <p className="app-stat-label">{label}</p>
+      <p className="app-stat-value">{value}</p>
       {sub ? (
-        <p className={cn('mt-1 flex items-center gap-1.5 text-xs', toneSub[tone])}>
-          {tone !== 'default' && <span className={cn('h-1.5 w-1.5 rounded-full', toneDot[tone])} aria-hidden />}
-          {sub}
+        <p className={cn('flex items-center gap-1.5 text-[13px]', toneSub[tone])}>
+          {tone !== 'default' && <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', toneDot[tone])} aria-hidden />}
+          <span className="truncate">{sub}</span>
         </p>
       ) : null}
     </div>

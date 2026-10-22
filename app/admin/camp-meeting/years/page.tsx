@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/components/providers'
 import { getCampRegistrations, createCampYear, updateCampYear, toggleCampYearRegistration, setActiveCampYear, deactivateCampYear, deleteCampYear, getAllCampYears } from '@/lib/actions/camp'
 import { CampYear } from '@/lib/types'
@@ -60,6 +61,7 @@ interface CampYearWithStats extends CampYear {
 export default function CampYearsPage() {
     const router = useRouter()
     const { toast } = useToast()
+    const queryClient = useQueryClient()
     const { user, loading: authLoading } = useAuth()
     const [years, setYears] = useState<CampYearWithStats[]>([])
     const [loading, setLoading] = useState(true)
@@ -115,6 +117,8 @@ export default function CampYearsPage() {
               : 'grid gap-6 md:grid-cols-2 lg:grid-cols-3'
 
     async function loadYears() {
+        // Year edits can change the active year; drop the cached copy the header and dashboard share.
+        void queryClient.invalidateQueries({ queryKey: ['camp-year'] })
         try {
             setLoading(true)
             const result = await getAllCampYears()
@@ -400,7 +404,7 @@ export default function CampYearsPage() {
                             Back
                         </Button>
                         <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+                            <h1 className="app-page-title">
                                 Camp Years Management
                             </h1>
                             <p className="text-muted-foreground mt-1">
@@ -659,7 +663,7 @@ export default function CampYearsPage() {
                                             {year.registration_open ? (
                                                 <>
                                                     <CheckCircle className="h-4 w-4 text-green-600" />
-                                                    <Badge variant="default" className="bg-green-600">Open</Badge>
+                                                    <Badge variant="success">Open</Badge>
                                                 </>
                                             ) : (
                                                 <>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export interface DashboardCardOption<Id extends string> {
@@ -134,16 +135,17 @@ export function CustomiseCardsButton<Id extends string>({
 
   return (
     <div ref={wrapRef} className="relative shrink-0">
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white/95 px-3 py-1.5 text-sm font-medium text-neutral-800 shadow-sm backdrop-blur hover:bg-white dark:border-neutral-700 dark:bg-neutral-900/90 dark:text-neutral-100 dark:hover:bg-neutral-900"
+        className="gap-2 bg-white/90 backdrop-blur dark:bg-neutral-900/80"
       >
         <SlidersHorizontal className="h-4 w-4" aria-hidden />
         Customise
-      </button>
+      </Button>
 
       {open && (
         <div
@@ -152,7 +154,7 @@ export function CustomiseCardsButton<Id extends string>({
           className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[290px] rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
         >
           <div className="flex items-center justify-between px-2 pb-1 pt-1">
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Show and order cards</p>
+            <p className="app-overline">Show and order cards</p>
             <button
               type="button"
               onClick={onReset}
@@ -193,7 +195,7 @@ export function CustomiseCardsButton<Id extends string>({
                     onClick={() => onMove(id, -1)}
                     disabled={index === 0}
                     aria-label={`Move ${labelFor.get(id)} up`}
-                    className="rounded p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 dark:hover:bg-neutral-800"
+                    className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 dark:hover:bg-neutral-800"
                   >
                     <ChevronUp className="h-4 w-4" />
                   </button>
@@ -202,7 +204,7 @@ export function CustomiseCardsButton<Id extends string>({
                     onClick={() => onMove(id, 1)}
                     disabled={index === rows.length - 1}
                     aria-label={`Move ${labelFor.get(id)} down`}
-                    className="rounded p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 dark:hover:bg-neutral-800"
+                    className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 dark:hover:bg-neutral-800"
                   >
                     <ChevronDown className="h-4 w-4" />
                   </button>

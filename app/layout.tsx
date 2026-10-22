@@ -1,21 +1,33 @@
 import type { Metadata } from 'next'
-import { Caveat, Inter } from 'next/font/google'
+import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/toaster'
 
-const inter = Inter({
+/*
+ * Type pairing — each family has one job:
+ *   display  Instrument Serif   greetings and page titles, 24px and up only
+ *   sans     Geist              all UI: body, labels, buttons, cards, numbers
+ *   mono     Geist Mono         IDs, codes, keyboard shortcuts
+ */
+const display = Instrument_Serif({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-display',
 })
 
-/** Handwriting for the dashboard's sticky-note quick actions. */
-const caveat = Caveat({
+const sans = Geist({
   subsets: ['latin'],
   display: 'swap',
-  weight: ['500', '600'],
-  variable: '--font-hand',
+  variable: '--font-sans',
+})
+
+const mono = Geist_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-mono',
 })
 
 export const metadata: Metadata = {
@@ -122,12 +134,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${caveat.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <DevAssetRecoveryScript />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
+      <body className={`font-sans min-h-screen bg-background text-foreground antialiased`}>
         <Providers>
           {children}
           <Toaster />

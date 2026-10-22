@@ -3,6 +3,9 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { getActiveCampYear, getCampRegistrations, getCampYearById } from '@/lib/actions/camp'
 import { CampRegistration, CampYear } from '@/lib/types'
 
+/** Stable empty list: a fresh `[]` each render would re-trigger effects that depend on it. */
+const NO_REGISTRATIONS: CampRegistration[] = []
+
 async function loadCampYear(campYearId?: string | null): Promise<CampYear | null> {
   if (campYearId) {
     const { data, error } = await getCampYearById(campYearId)
@@ -27,7 +30,7 @@ async function loadCampRegistrations(yearId: string): Promise<CampRegistration[]
 /**
  * Hook to fetch and manage active camp year
  */
-export function useActiveCampYear() {
+export function useActiveCampYear({ enabled = true }: { enabled?: boolean } = {}) {
   const query = useQuery({
     queryKey: ['camp-year', 'active'],
     queryFn: async () => {
@@ -35,6 +38,7 @@ export function useActiveCampYear() {
       if (error) throw new Error(error)
       return data
     },
+    enabled,
     staleTime: 30_000,
     retry: 1,
   })
@@ -51,12 +55,16 @@ export function useActiveCampYear() {
  * Hook to fetch and manage camp registrations
  * Automatically fetches registrations for the active camp year
  */
-export function useCampRegistrations(campYearId?: string | null) {
+export function useCampRegistrations(
+  campYearId?: string | null,
+  { enabled = true }: { enabled?: boolean } = {}
+) {
   const yearKey = campYearId ?? 'active'
 
   const yearQuery = useQuery({
     queryKey: ['camp-year', yearKey],
     queryFn: () => loadCampYear(campYearId),
+    enabled,
     staleTime: 30_000,
     retry: 1,
   })
@@ -64,7 +72,7 @@ export function useCampRegistrations(campYearId?: string | null) {
   const registrationsQuery = useQuery({
     queryKey: ['camp-registrations', yearQuery.data?.id ?? yearKey],
     queryFn: () => loadCampRegistrations(yearQuery.data!.id),
-    enabled: Boolean(yearQuery.data?.id),
+    enabled: enabled && Boolean(yearQuery.data?.id),
     staleTime: 30_000,
     placeholderData: keepPreviousData,
     retry: 1,
@@ -88,7 +96,7 @@ export function useCampRegistrations(campYearId?: string | null) {
         : null
 
   return {
-    registrations: registrationsQuery.data ?? [],
+    registrations: registrationsQuery.data ?? NO_REGISTRATIONS,
     campYear: yearQuery.data ?? null,
     loading:
       yearQuery.isLoading ||
@@ -112,7 +120,7 @@ export function useCampRegistrationsByYear(campYearId: string | null) {
   })
 
   return {
-    registrations: query.data ?? [],
+    registrations: query.data ?? NO_REGISTRATIONS,
     loading: query.isLoading,
     error: query.error instanceof Error ? query.error.message : query.error ? String(query.error) : null,
     refetch: () => query.refetch(),

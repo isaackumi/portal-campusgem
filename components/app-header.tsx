@@ -12,68 +12,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  canSeeNavItem,
-  filterSidebarSections,
-  sidebarSettingsNavigation,
-} from '@/lib/navigation/sidebar'
-import type { CampYear, UserRole } from '@/lib/types'
-import { getActiveCampYear } from '@/lib/actions/camp'
-import { cn } from '@/lib/utils'
-
-function initials(name?: string | null) {
-  if (!name?.trim()) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase()
-}
-
-function formatRole(role?: string) {
-  if (!role) return 'Member'
-  return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-/** Active camp year, shared across page navigations for a few minutes. */
-let campYearCache: { value: CampYear | null; at: number } | null = null
-const CAMP_CACHE_MS = 5 * 60_000
+import { useVisibleNav } from '@/lib/navigation/use-visible-nav'
+import { useActiveCampYear } from '@/lib/hooks/use-camp'
+import { ROLE_LABELS, isUserRole } from '@/lib/auth/roles'
+import { cn, getInitials } from '@/lib/utils'
 
 function CampStatusChip() {
   const { can } = useAuth()
   const allowed = can('camp.view')
-  const [year, setYear] = useState<CampYear | null>(campYearCache?.value ?? null)
-
-  useEffect(() => {
-    if (!allowed) return
-    if (campYearCache && Date.now() - campYearCache.at < CAMP_CACHE_MS) {
-      setYear(campYearCache.value)
-      return
-    }
-    let cancelled = false
-    void getActiveCampYear()
-      .then(({ data }) => {
-        campYearCache = { value: data, at: Date.now() }
-        if (!cancelled) setYear(data)
-      })
-      .catch(() => undefined)
-    return () => {
-      cancelled = true
-    }
-  }, [allowed])
+  const { campYear: year } = useActiveCampYear({ enabled: allowed })
 
   if (!allowed || !year) return null
   const open = year.registration_open
   return (
     <Link
       href="/admin/camp-meeting"
-      className="hidden items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-800 shadow-[0_1px_1px_rgba(0,0,0,0.03)] hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 md:inline-flex"
+      className="header-chip hidden md:inline-flex"
       title={open ? 'Camp registration is open' : 'Camp registration is closed'}
     >
       <span
-        className={cn('h-2 w-2 rounded-full', open ? 'bg-emerald-500' : 'bg-neutral-400')}
+        className={cn('h-1.5 w-1.5 rounded-full', open ? 'bg-emerald-500' : 'bg-neutral-400')}
         aria-hidden
       />
       <span className="font-medium">Camp {year.year}</span>
-      <span className="text-neutral-500 dark:text-neutral-400">· {open ? 'Registration open' : 'Registration closed'}</span>
+      <span className="text-neutral-500 dark:text-neutral-400">{open ? 'Registration open' : 'Registration closed'}</span>
     </Link>
   )
 }
@@ -107,19 +69,9 @@ export function AppHeader({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const role = user?.role as UserRole | undefined
-  const extra = user?.permissions
-
-  const pages = useMemo(() => {
-    const sections = filterSidebarSections(role, undefined, extra)
-    const settings = sidebarSettingsNavigation.filter((item) => canSeeNavItem(role, item, extra))
-    return [
-      ...sections.flatMap((section) =>
-        section.items.map((item) => ({ ...item, section: section.title }))
-      ),
-      ...settings.map((item) => ({ ...item, section: 'Settings' })),
-    ]
-  }, [role, extra])
+  const { pages } = useVisibleNav()
+  const role = user?.role
+  const roleLabel = isUserRole(role) ? ROLE_LABELS[role] : 'Member'
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -195,10 +147,10 @@ export function AppHeader({
         type="button"
         onClick={onToggleSidebar}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="hidden items-center justify-center rounded-lg p-1.5 text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-300 dark:hover:bg-neutral-800 lg:inline-flex"
+        className="hidden h-9 w-9 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-200/70 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white lg:inline-flex"
       >
         <span className="sr-only">{collapsed ? 'Expand sidebar' : 'Collapse sidebar'}</span>
-        <PanelLeft className="h-5 w-5" aria-hidden />
+        <PanelLeft className="h-[18px] w-[18px]" aria-hidden />
       </button>
 
       <div id="global-search-wrap" className="relative mx-auto min-w-0 max-w-md flex-1">
@@ -226,16 +178,16 @@ export function AppHeader({
             if (event.key === 'Escape') setOpen(false)
           }}
           placeholder="Search pages, or filter this page…"
-          className="block w-full rounded-lg border border-neutral-200 bg-white py-2 pl-9 pr-12 text-sm font-normal text-neutral-900 placeholder:text-neutral-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500"
+          className="block h-9 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-12 text-sm font-normal text-neutral-900 placeholder:text-neutral-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500"
         />
-        <kbd className="pointer-events-none absolute inset-y-0 right-2 my-auto hidden h-5 items-center rounded border border-neutral-200 bg-neutral-50 px-1.5 font-sans text-[10px] font-medium text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 sm:inline-flex">
+        <kbd className="pointer-events-none absolute inset-y-0 right-2 my-auto hidden h-5 items-center rounded border border-neutral-200 bg-neutral-50 px-1.5 font-mono text-[11px] font-medium text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 sm:inline-flex">
           ⌘K
         </kbd>
         {open && query.trim() ? (
           <div className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-50 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
             {matches.length > 0 ? (
               <ul className="py-1">
-                <li className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
+                <li className="app-overline px-3 pb-1 pt-2">
                   Pages
                 </li>
                 {matches.map((item) => {
@@ -279,14 +231,14 @@ export function AppHeader({
             aria-label="Open user menu"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-              {initials(user?.full_name)}
+              {user?.full_name?.trim() ? getInitials(user.full_name) : '?'}
             </span>
             <span className="hidden text-left leading-tight lg:block">
               <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
                 {user?.full_name || 'Signed in'}
               </span>
               <span className="block text-xs text-neutral-500 dark:text-neutral-400">
-                {formatRole(user?.role)}
+                {roleLabel}
               </span>
             </span>
           </DropdownMenuTrigger>
@@ -297,7 +249,7 @@ export function AppHeader({
                 {user?.full_name || 'User'}
               </p>
               <p className="text-xs text-neutral-700 dark:text-neutral-300">
-                {user?.email || user?.phone || user?.membership_id || formatRole(user?.role)}
+                {user?.email || user?.phone || user?.membership_id || roleLabel}
               </p>
             </div>
             <DropdownMenuItem

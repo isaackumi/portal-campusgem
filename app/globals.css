@@ -82,11 +82,18 @@
 
 @layer components {
   /*
-   * Dashboard type scale (dense ops UI):
-   * 12 label → 14 body → 16 card title → 18 section → 24/30 page → 30/36 stat
+   * Type scale. Every screen picks from these so sizes and weights never drift:
+   * 11 overline → 13 meta/label → 14 body → 15 card/section title → 28 stat → 32/40 page.
+   * Display serif only for page-level headings; everything inside cards is Geist.
+   * Geist weights: semibold for headings, medium for emphasis, regular for body.
    */
   .app-page-title {
-    @apply text-2xl font-bold text-neutral-900 dark:text-neutral-100;
+    @apply font-display text-[32px] font-normal leading-[1.1] tracking-[-0.01em] text-neutral-900 dark:text-neutral-50 sm:text-[40px];
+  }
+
+  /* Italic serif accent inside a display heading, e.g. the person's name. */
+  .app-display-accent {
+    @apply font-display italic text-brand-700 dark:text-brand-300;
   }
 
   .app-page-description {
@@ -94,19 +101,24 @@
   }
 
   .app-section-title {
-    @apply text-base font-semibold text-neutral-900 dark:text-neutral-100;
+    @apply text-[15px] font-semibold leading-6 tracking-tight text-neutral-900 dark:text-neutral-100;
   }
 
   .app-card-title {
-    @apply text-base font-semibold leading-snug tracking-tight text-neutral-900 dark:text-neutral-100;
+    @apply text-[15px] font-semibold leading-6 tracking-tight text-neutral-900 dark:text-neutral-100;
+  }
+
+  /* Small caps-style label for groups and table headings. The only uppercase text style. */
+  .app-overline {
+    @apply text-[11px] font-medium uppercase tracking-[0.06em] text-neutral-500 dark:text-neutral-400;
   }
 
   .app-stat-label {
-    @apply text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400;
+    @apply text-[13px] font-medium text-neutral-500 dark:text-neutral-400;
   }
 
   .app-stat-value {
-    @apply text-3xl font-semibold tabular-nums tracking-tight text-neutral-900 dark:text-neutral-100;
+    @apply text-[28px] font-semibold leading-none tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50;
   }
 
   .dashboard-shell {
@@ -175,34 +187,39 @@
     @apply flex h-full min-h-full flex-col bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-100;
   }
 
-  .sidebar-panel .sidebar-section-label {
-    @apply text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500;
+  .sidebar-panel .sidebar-group-toggle {
+    @apply app-overline mb-0.5 flex h-7 w-full items-center justify-between gap-2 rounded-md px-2 text-left transition-colors hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:hover:text-neutral-200;
   }
 
   .sidebar-panel .sidebar-nav-item {
-    @apply relative text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white;
+    @apply relative flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:text-neutral-400 dark:hover:bg-neutral-800/70 dark:hover:text-white;
   }
 
   .sidebar-panel .sidebar-nav-item[data-active='true'] {
-    @apply bg-white font-medium text-neutral-900 shadow-sm ring-1 ring-neutral-200/80 dark:bg-neutral-800 dark:text-white dark:ring-neutral-700;
+    @apply bg-white font-medium text-neutral-900 shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-neutral-200/80 dark:bg-neutral-800 dark:text-white dark:ring-neutral-700/80;
   }
 
   /* Brand marker on the active row, like a bookmark ribbon. */
   .sidebar-panel .sidebar-nav-item[data-active='true']::before {
     content: '';
-    @apply absolute -left-2 top-2 bottom-2 w-[3px] rounded-full bg-brand-600 dark:bg-brand-500;
+    @apply absolute -left-2 bottom-2 top-2 w-[3px] rounded-full bg-brand-600 dark:bg-brand-500;
   }
 
   .sidebar-panel .sidebar-nav-icon {
-    @apply text-neutral-500 group-hover:text-neutral-700 dark:text-neutral-400 dark:group-hover:text-neutral-200;
+    @apply text-neutral-400 transition-colors group-hover:text-neutral-700 dark:text-neutral-500 dark:group-hover:text-neutral-200;
   }
 
   .sidebar-panel .sidebar-nav-item[data-active='true'] .sidebar-nav-icon {
-    @apply text-brand-700 dark:text-brand-300;
+    @apply text-brand-600 dark:text-brand-400;
   }
 
   .sidebar-panel .sidebar-sign-out {
     @apply text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white;
+  }
+
+  /* Small bordered pill in the top bar (camp status, etc.). */
+  .header-chip {
+    @apply h-9 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-[13px] text-neutral-800 transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-700;
   }
 
   /* Dashboard sticky-note quick actions */

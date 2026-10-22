@@ -156,12 +156,6 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         permission: 'rlc.manage',
       },
       {
-        name: 'Communications',
-        href: '/admin/communications',
-        icon: ChatBubbleIcon,
-        permission: 'rlc.manage',
-      },
-      {
         name: 'Attendance',
         href: '/admin/rlc/attendance',
         icon: CalendarIcon,
@@ -240,6 +234,15 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
     ],
   },
   {
+    title: 'Finance',
+    items: [
+      { name: 'Donations', href: '/financial/donations', icon: CardStackIcon },
+      { name: 'Payments', href: '/financial/payments', icon: IdCardIcon },
+      { name: 'Budget', href: '/financial/budget', icon: ClockIcon },
+      { name: 'Reports', href: '/financial/reports', icon: TableIcon },
+    ],
+  },
+  {
     title: 'Administration',
     items: [
       {
@@ -251,15 +254,6 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
       { name: 'Users', href: '/admin/users', icon: PersonIcon },
       { name: 'Access & roles', href: '/admin/admins', icon: LockClosedIcon },
       { name: 'Groups', href: '/admin/groups', icon: GroupIcon },
-    ],
-  },
-  {
-    title: 'Finance',
-    items: [
-      { name: 'Donations', href: '/financial/donations', icon: CardStackIcon },
-      { name: 'Payments', href: '/financial/payments', icon: IdCardIcon },
-      { name: 'Budget', href: '/financial/budget', icon: ClockIcon },
-      { name: 'Reports', href: '/financial/reports', icon: TableIcon },
     ],
   },
 ]
@@ -314,14 +308,7 @@ export function isSidebarItemActive(
     return pathname === '/dashboard'
   }
 
-  if (base === '/admin/camp-meeting/follow-up') {
-    if (pathname !== base) return false
-    const wantsMine = expected?.get('mine') === '1'
-    const isMine = searchParams?.get('mine') === '1'
-    return wantsMine ? isMine : !isMine
-  }
-
-  if (base === '/admin/rlc/follow-up') {
+  if (base === '/admin/camp-meeting/follow-up' || base === '/admin/rlc/follow-up') {
     if (pathname !== base) return false
     const wantsMine = expected?.get('mine') === '1'
     const isMine = searchParams?.get('mine') === '1'
@@ -346,4 +333,21 @@ export function isSidebarItemActive(
 
   if (pathname === base) return true
   return pathname.startsWith(`${base}/`)
+}
+
+/**
+ * Several items can match one URL (e.g. /admin/camp-meeting and
+ * /admin/camp-meeting/registrations); only the most specific one is active.
+ */
+export function activeNavHref(
+  items: readonly SidebarNavItem[],
+  pathname: string,
+  searchParams?: URLSearchParams | null
+): string | null {
+  let best: string | null = null
+  for (const item of items) {
+    if (!isSidebarItemActive(pathname, item.href, searchParams)) continue
+    if (!best || navHrefPath(item.href).length > navHrefPath(best).length) best = item.href
+  }
+  return best
 }
