@@ -9,16 +9,20 @@ interface DashboardLayoutProps {
   children: ReactNode
 }
 
+/**
+ * App shell: sidebar and top bar sit on the neutral canvas; page content lives in a
+ * single rounded panel so every screen reads as one surface.
+ */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-neutral-100 dark:bg-neutral-900">
+    <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950">
       <div
         className={cn(
           'hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:flex-col',
-          collapsed ? 'lg:w-[72px]' : 'lg:w-[250px]'
+          collapsed ? 'lg:w-[72px]' : 'lg:w-[248px]'
         )}
       >
         <Sidebar collapsed={collapsed} />
@@ -29,7 +33,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <div
         className={cn(
           'transition-[padding] duration-300 ease-in-out',
-          collapsed ? 'lg:pl-[72px]' : 'lg:pl-[250px]'
+          collapsed ? 'lg:pl-[72px]' : 'lg:pl-[248px]'
         )}
       >
         <AppHeader
@@ -38,8 +42,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           onOpenMobile={() => setMobileOpen(true)}
         />
 
-        <main data-app-main className="py-8">
-          <div className="min-w-0 px-4 sm:px-6 lg:px-8">{children}</div>
+        <main data-app-main className="px-2 pb-2 sm:px-3 sm:pb-3 lg:pl-0">
+          <div className="app-content-panel min-h-[calc(100dvh-4rem)] min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

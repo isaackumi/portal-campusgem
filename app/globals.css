@@ -151,28 +151,91 @@
     @apply h-full rounded-full bg-brand-600 transition-all duration-300 dark:bg-brand-500;
   }
 
+  .app-content-panel {
+    @apply rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] dark:border-neutral-800 dark:bg-neutral-900;
+  }
+
+  /*
+   * Older pages wrap themselves in a full-height grey/gradient backdrop meant for the
+   * previous grey canvas. Inside the content panel that backdrop becomes a slab (and
+   * stays light in dark mode), so let the panel provide the surface instead.
+   */
+  .app-content-panel .min-h-screen {
+    min-height: calc(100dvh - 9rem);
+  }
+
+  .app-content-panel .min-h-screen[class*='bg-gradient'],
+  .app-content-panel .min-h-screen.bg-slate-50,
+  .app-content-panel .min-h-screen.bg-gray-50 {
+    background-color: transparent;
+    background-image: none;
+  }
+
   .sidebar-panel {
-    @apply flex h-full min-h-full flex-col border-r border-neutral-200 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100;
+    @apply flex h-full min-h-full flex-col bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-100;
   }
 
   .sidebar-panel .sidebar-section-label {
-    @apply text-xs font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500;
+    @apply text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500;
   }
 
   .sidebar-panel .sidebar-nav-item {
-    @apply text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-white;
+    @apply relative text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white;
   }
 
   .sidebar-panel .sidebar-nav-item[data-active='true'] {
-    @apply bg-brand-700/10 font-medium text-brand-700 dark:bg-neutral-700 dark:text-white;
+    @apply bg-white font-medium text-neutral-900 shadow-sm ring-1 ring-neutral-200/80 dark:bg-neutral-800 dark:text-white dark:ring-neutral-700;
+  }
+
+  /* Brand marker on the active row, like a bookmark ribbon. */
+  .sidebar-panel .sidebar-nav-item[data-active='true']::before {
+    content: '';
+    @apply absolute -left-2 top-2 bottom-2 w-[3px] rounded-full bg-brand-600 dark:bg-brand-500;
   }
 
   .sidebar-panel .sidebar-nav-icon {
-    @apply text-current;
+    @apply text-neutral-500 group-hover:text-neutral-700 dark:text-neutral-400 dark:group-hover:text-neutral-200;
+  }
+
+  .sidebar-panel .sidebar-nav-item[data-active='true'] .sidebar-nav-icon {
+    @apply text-brand-700 dark:text-brand-300;
   }
 
   .sidebar-panel .sidebar-sign-out {
-    @apply text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-white;
+    @apply text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white;
+  }
+
+  /* Dashboard sticky-note quick actions */
+  .sticky-note {
+    @apply relative flex h-[118px] w-[118px] shrink-0 flex-col justify-end rounded-lg p-3 text-left transition-transform duration-200 ease-out sm:h-[125px] sm:w-[125px];
+    background-image: linear-gradient(rgba(255, 255, 255, 0.35), transparent 30%);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08), 0 6px 10px -4px rgba(0, 0, 0, 0.22);
+    transform: rotate(var(--note-tilt, 0deg));
+  }
+
+  .sticky-note:hover,
+  .sticky-note:focus-visible {
+    transform: rotate(0deg) translateY(-3px);
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08), 0 12px 18px -6px rgba(0, 0, 0, 0.28);
+  }
+
+  /* Curled bottom-right corner */
+  .sticky-note::after {
+    content: '';
+    @apply pointer-events-none absolute bottom-0 right-0 h-4 w-4 rounded-tl-md;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.5));
+  }
+
+  .sticky-note-tape {
+    @apply pointer-events-none absolute -top-2 left-1/2 h-4 w-14 -translate-x-1/2 rounded-[2px] bg-white/60 shadow-[0_1px_1px_rgba(0,0,0,0.06)] backdrop-blur-[1px];
+    transform: translateX(-50%) rotate(var(--tape-tilt, -2deg));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sticky-note,
+    .sticky-note:hover {
+      transition: none;
+    }
   }
 
   .sidebar-scroll {

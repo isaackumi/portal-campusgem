@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Caveat, Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/toaster'
@@ -8,6 +8,14 @@ const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
+})
+
+/** Handwriting for the dashboard's sticky-note quick actions. */
+const caveat = Caveat({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['500', '600'],
+  variable: '--font-hand',
 })
 
 export const metadata: Metadata = {
@@ -114,7 +122,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${caveat.variable}`} suppressHydrationWarning>
       <head>
         <DevAssetRecoveryScript />
         <meta name="mobile-web-app-capable" content="yes" />

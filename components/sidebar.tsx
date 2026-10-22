@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import {
   filterSidebarSections,
   isSidebarItemActive,
+  navHrefPath,
   sidebarSettingsNavigation,
   canSeeNavItem,
 } from '@/lib/navigation/sidebar'
@@ -57,6 +58,17 @@ function SidebarNavInner({
   const searchParams = useSearchParams()
   const { sections, settingsItems } = useSidebarNav()
 
+  // Several items can match (e.g. /admin/camp-meeting and /admin/camp-meeting/registrations);
+  // highlight only the most specific one.
+  const activeHref = useMemo(() => {
+    let best: string | null = null
+    for (const item of [...sections.flatMap((section) => section.items), ...settingsItems]) {
+      if (!isSidebarItemActive(pathname, item.href, searchParams)) continue
+      if (!best || navHrefPath(item.href).length > navHrefPath(best).length) best = item.href
+    }
+    return best
+  }, [sections, settingsItems, pathname, searchParams])
+
   function go(href: string) {
     router.push(href)
     onNavigate?.()
@@ -66,19 +78,19 @@ function SidebarNavInner({
     <div className="flex min-h-0 flex-1 flex-col">
       <nav
         className={cn(
-          'sidebar-scroll mt-6 flex min-h-0 flex-1 flex-col gap-y-1 overflow-y-auto pb-4',
+          'sidebar-scroll mt-3 flex min-h-0 flex-1 flex-col gap-y-1 overflow-y-auto pb-4',
           collapsed ? 'px-2' : 'px-4'
         )}
       >
         {sections.map((section, sectionIndex) => (
-          <div key={section.title} className={sectionIndex > 0 ? 'mt-4' : undefined}>
+          <div key={section.title} className={sectionIndex > 0 ? 'mt-5' : undefined}>
             {!collapsed && (
-              <p className="sidebar-section-label mb-1 px-2 py-1">{section.title}</p>
+              <p className="sidebar-section-label mb-1 px-2">{section.title}</p>
             )}
-            <ul className="flex flex-col gap-y-1">
+            <ul className="flex flex-col gap-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon
-                const isActive = isSidebarItemActive(pathname, item.href, searchParams)
+                const isActive = item.href === activeHref
                 return (
                   <li key={`${section.title}-${item.name}`}>
                     <button
@@ -87,11 +99,11 @@ function SidebarNavInner({
                       title={collapsed ? item.name : item.description ?? item.name}
                       data-active={isActive ? 'true' : 'false'}
                       className={cn(
-                        'sidebar-nav-item group flex w-full items-center gap-x-3 rounded-lg p-2 text-left text-sm font-medium transition-colors',
+                        'sidebar-nav-item group flex w-full items-center gap-x-2.5 rounded-lg px-2 py-1.5 text-left text-[13.5px] transition-colors',
                         collapsed && 'justify-center px-2.5'
                       )}
                     >
-                      <Icon className="sidebar-nav-icon h-5 w-5 shrink-0" />
+                      <Icon className="sidebar-nav-icon h-4 w-4 shrink-0" />
                       {!collapsed && <span className="truncate">{item.name}</span>}
                     </button>
                   </li>
@@ -105,16 +117,16 @@ function SidebarNavInner({
       {settingsItems.length > 0 ? (
         <div
           className={cn(
-            'mt-auto shrink-0 border-t border-neutral-200 py-3 dark:border-neutral-700',
+            'mt-auto shrink-0 border-t border-neutral-200/80 py-3 dark:border-neutral-800',
             collapsed ? 'px-2' : 'px-4',
             collapsed && 'flex flex-col items-center gap-1'
           )}
         >
           {!collapsed && <p className="sidebar-section-label mb-1.5 px-2">Settings</p>}
-          <ul className="flex w-full flex-col gap-y-1">
+          <ul className="flex w-full flex-col gap-y-0.5">
             {settingsItems.map((item) => {
               const Icon = item.icon
-              const isActive = isSidebarItemActive(pathname, item.href, searchParams)
+              const isActive = item.href === activeHref
               return (
                 <li key={item.name}>
                   <button
@@ -123,12 +135,12 @@ function SidebarNavInner({
                     title={item.name}
                     data-active={isActive ? 'true' : 'false'}
                     className={cn(
-                      'sidebar-nav-item flex w-full items-center gap-x-3 rounded-lg p-2 text-sm font-medium transition-colors',
+                      'sidebar-nav-item group flex w-full items-center gap-x-2.5 rounded-lg px-2 py-1.5 text-[13.5px] transition-colors',
                       collapsed && 'justify-center px-2'
                     )}
                   >
-                    <Icon className="sidebar-nav-icon h-5 w-5 shrink-0" />
-                    {!collapsed && <span className="truncate font-medium">{item.name}</span>}
+                    <Icon className="sidebar-nav-icon h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="truncate">{item.name}</span>}
                   </button>
                 </li>
               )
@@ -167,8 +179,8 @@ function SidebarShell({
     <div className="sidebar-panel">
       <div
         className={cn(
-          'flex shrink-0 items-center pt-6',
-          collapsed ? 'justify-center px-2' : 'gap-x-2.5 px-6'
+          'flex h-14 shrink-0 items-center',
+          collapsed ? 'justify-center px-2' : 'gap-x-2.5 px-5'
         )}
       >
         <BrandMark size={collapsed ? 'sm' : 'md'} />
@@ -186,7 +198,7 @@ export function Sidebar({ className, collapsed = false }: SidebarProps) {
     <div
       className={cn(
         'h-full transition-[width] duration-300 ease-in-out',
-        collapsed ? 'w-[72px]' : 'w-[250px]',
+        collapsed ? 'w-[72px]' : 'w-[248px]',
         className
       )}
     >
@@ -233,7 +245,7 @@ export function MobileSidebar({
           aria-label="Dismiss menu overlay"
           onClick={close}
         />
-        <aside className="mobile-nav-panel relative z-10 flex h-full max-h-[100dvh] w-full max-w-[260px] flex-col bg-white shadow-xl dark:bg-neutral-800">
+        <aside className="mobile-nav-panel relative z-10 flex h-full max-h-[100dvh] w-full max-w-[260px] flex-col shadow-xl">
           <SidebarShell
             collapsed={false}
             onNavigate={close}

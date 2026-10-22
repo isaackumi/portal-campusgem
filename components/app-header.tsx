@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LogOut, Menu, PanelLeft, Search } from 'lucide-react'
 import { useAuth } from '@/components/providers'
@@ -16,7 +17,8 @@ import {
   filterSidebarSections,
   sidebarSettingsNavigation,
 } from '@/lib/navigation/sidebar'
-import type { UserRole } from '@/lib/types'
+import type { CampYear, UserRole } from '@/lib/types'
+import { getActiveCampYear } from '@/lib/actions/camp'
 import { cn } from '@/lib/utils'
 
 function initials(name?: string | null) {
@@ -29,6 +31,51 @@ function initials(name?: string | null) {
 function formatRole(role?: string) {
   if (!role) return 'Member'
   return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** Active camp year, shared across page navigations for a few minutes. */
+let campYearCache: { value: CampYear | null; at: number } | null = null
+const CAMP_CACHE_MS = 5 * 60_000
+
+function CampStatusChip() {
+  const { can } = useAuth()
+  const allowed = can('camp.view')
+  const [year, setYear] = useState<CampYear | null>(campYearCache?.value ?? null)
+
+  useEffect(() => {
+    if (!allowed) return
+    if (campYearCache && Date.now() - campYearCache.at < CAMP_CACHE_MS) {
+      setYear(campYearCache.value)
+      return
+    }
+    let cancelled = false
+    void getActiveCampYear()
+      .then(({ data }) => {
+        campYearCache = { value: data, at: Date.now() }
+        if (!cancelled) setYear(data)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [allowed])
+
+  if (!allowed || !year) return null
+  const open = year.registration_open
+  return (
+    <Link
+      href="/admin/camp-meeting"
+      className="hidden items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-800 shadow-[0_1px_1px_rgba(0,0,0,0.03)] hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 md:inline-flex"
+      title={open ? 'Camp registration is open' : 'Camp registration is closed'}
+    >
+      <span
+        className={cn('h-2 w-2 rounded-full', open ? 'bg-emerald-500' : 'bg-neutral-400')}
+        aria-hidden
+      />
+      <span className="font-medium">Camp {year.year}</span>
+      <span className="text-neutral-500 dark:text-neutral-400">· {open ? 'Registration open' : 'Registration closed'}</span>
+    </Link>
+  )
 }
 
 export function AppHeader({
@@ -45,6 +92,20 @@ export function AppHeader({
   const { user, signOut } = useAuth()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // ⌘K / Ctrl+K jumps to search from anywhere.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        searchRef.current?.focus()
+        searchRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const role = user?.role as UserRole | undefined
   const extra = user?.permissions
@@ -120,7 +181,7 @@ export function AppHeader({
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-3 border-b border-neutral-200 bg-white px-4 dark:border-neutral-700 dark:bg-neutral-800 sm:gap-x-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-x-3 bg-neutral-100/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-neutral-100/80 dark:bg-neutral-950/90 sm:gap-x-4 sm:px-4 lg:pl-3 lg:pr-4">
       <button
         type="button"
         className="-m-2.5 p-2.5 text-neutral-700 dark:text-white lg:hidden"
@@ -134,20 +195,21 @@ export function AppHeader({
         type="button"
         onClick={onToggleSidebar}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="hidden items-center justify-center rounded-lg p-1.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700 lg:inline-flex"
+        className="hidden items-center justify-center rounded-lg p-1.5 text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-300 dark:hover:bg-neutral-800 lg:inline-flex"
       >
         <span className="sr-only">{collapsed ? 'Expand sidebar' : 'Collapse sidebar'}</span>
         <PanelLeft className="h-5 w-5" aria-hidden />
       </button>
 
-      <div id="global-search-wrap" className="relative min-w-0 max-w-xs flex-1">
+      <div id="global-search-wrap" className="relative mx-auto min-w-0 max-w-md flex-1">
         <label htmlFor="global-search" className="sr-only">
           Search
         </label>
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <Search className="h-5 w-5 text-neutral-400" aria-hidden />
+          <Search className="h-4 w-4 text-neutral-400" aria-hidden />
         </div>
         <input
+          ref={searchRef}
           id="global-search"
           type="search"
           value={query}
@@ -163,9 +225,12 @@ export function AppHeader({
             }
             if (event.key === 'Escape') setOpen(false)
           }}
-          placeholder="Search this page"
-          className="block w-full rounded-lg border border-neutral-300 bg-white py-2 pl-10 pr-3 text-sm font-normal text-neutral-900 placeholder:text-neutral-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500"
+          placeholder="Search pages, or filter this page…"
+          className="block w-full rounded-lg border border-neutral-200 bg-white py-2 pl-9 pr-12 text-sm font-normal text-neutral-900 placeholder:text-neutral-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500"
         />
+        <kbd className="pointer-events-none absolute inset-y-0 right-2 my-auto hidden h-5 items-center rounded border border-neutral-200 bg-neutral-50 px-1.5 font-sans text-[10px] font-medium text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 sm:inline-flex">
+          ⌘K
+        </kbd>
         {open && query.trim() ? (
           <div className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-50 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
             {matches.length > 0 ? (
@@ -203,7 +268,8 @@ export function AppHeader({
         ) : null}
       </div>
 
-      <div className="ml-auto flex items-center gap-x-2 sm:gap-x-3">
+      <div className="flex items-center gap-x-2 sm:gap-x-3">
+        <CampStatusChip />
         <ThemeToggle />
         <div className="hidden h-6 w-px bg-neutral-900/10 dark:bg-white/10 sm:block" aria-hidden />
 
