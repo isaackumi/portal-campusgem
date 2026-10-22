@@ -197,27 +197,85 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'financial.manage': 'Manage financials',
 }
 
+export const ALL_PERMISSIONS = Object.keys(PERMISSION_LABELS) as Permission[]
+
+/** Permissions grouped by area, for the access management UI. */
+export const PERMISSION_GROUPS: Array<{ label: string; permissions: Permission[] }> = [
+  { label: 'General', permissions: ['dashboard.view', 'celebrations.view', 'sms.send', 'forms.manage'] },
+  { label: 'Members & visitors', permissions: ['members.view', 'members.manage', 'visitors.view', 'visitors.manage'] },
+  { label: 'Groups', permissions: ['groups.view', 'groups.manage'] },
+  { label: 'Attendance', permissions: ['attendance.view', 'attendance.record', 'attendance.manage'] },
+  { label: 'Camp meeting', permissions: ['camp.view', 'camp.manage', 'camp.payments', 'camp.settings'] },
+  { label: 'RLC', permissions: ['rlc.view', 'rlc.manage'] },
+  { label: 'Finance', permissions: ['financial.view', 'financial.manage'] },
+  { label: 'Administration', permissions: ['users.manage', 'admins.manage'] },
+]
+
+export function isPermission(value: unknown): value is Permission {
+  return typeof value === 'string' && value in PERMISSION_LABELS
+}
+
+/** Keep only known permission strings (drops stale / unknown values). */
+export function sanitizePermissions(values: readonly unknown[] | null | undefined): Permission[] {
+  if (!values) return []
+  return Array.from(new Set(values.filter(isPermission)))
+}
+
+/** Serialize extra permissions for the `chms-perms` cookie. */
+export function encodePermissionsCookie(values: readonly unknown[] | null | undefined): string {
+  return sanitizePermissions(values).join(',')
+}
+
+export function decodePermissionsCookie(value: string | null | undefined): Permission[] {
+  return value ? sanitizePermissions(value.split(',')) : []
+}
+
 export function permissionsForRole(role: UserRole): Permission[] {
   return ROLE_PERMISSIONS[role] ? [...ROLE_PERMISSIONS[role]] : []
+}
+
+/** Role permissions plus any per-user grants. */
+export function effectivePermissions(
+  role: UserRole | null | undefined,
+  extra?: readonly unknown[] | null
+): Permission[] {
+  const base = role && isUserRole(role) ? ROLE_PERMISSIONS[role] : []
+  return Array.from(new Set([...base, ...sanitizePermissions(extra)]))
 }
 
 export function isStaffRole(role: string | null | undefined): boolean {
   return Boolean(role && STAFF_ROLES.includes(role as UserRole))
 }
 
-export function hasPermission(role: UserRole, permission: Permission): boolean {
-  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false
+export function hasPermission(
+  role: UserRole | null | undefined,
+  permission: Permission,
+  extra?: readonly unknown[] | null
+): boolean {
+  if (role && isUserRole(role) && ROLE_PERMISSIONS[role].includes(permission)) return true
+  return sanitizePermissions(extra).includes(permission)
 }
 
-export function canAccessPath(role: UserRole | null | undefined, pathname: string): boolean {
+export function canAccessPath(
+  role: UserRole | null | undefined,
+  pathname: string,
+  extra?: readonly unknown[] | null
+): boolean {
   if (!role || !isUserRole(role)) return false
   const path = pathname.split('?')[0].split('#')[0]
   const match = ROUTE_PERMISSIONS.find((rule) => path.startsWith(rule.prefix))
   if (!match) return true
-  return hasPermission(role, match.permission)
+  return hasPermission(role, match.permission, extra)
 }
 
 export function requiredPermissionForPath(pathname: string): Permission | null {
   const match = ROUTE_PERMISSIONS.find((rule) => pathname.startsWith(rule.prefix))
   return match?.permission ?? null
+}
+
+/** Only allow same-origin relative redirects after login. */
+export function safeRedirectPath(raw: string | null | undefined, fallback = '/dashboard'): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return fallback
+  if (raw === '/auth' || raw.startsWith('/auth?') || raw.startsWith('/auth/')) return fallback
+  return raw
 }

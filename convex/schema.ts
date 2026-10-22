@@ -63,6 +63,10 @@ export default defineSchema({
     middle_name: v.optional(v.string()),
     last_name: v.optional(v.string()),
     role: userRole,
+    /** Extra permissions granted on top of the role. */
+    permissions: v.optional(v.array(v.string())),
+    /** Set when this record is a duplicate of another person; login follows the link. */
+    merged_into: v.optional(v.id('users')),
     join_year: v.number(),
     occupation: v.optional(v.string()),
     place_of_work: v.optional(v.string()),
@@ -85,6 +89,7 @@ export default defineSchema({
   })
     .index('by_membership_id', ['membership_id'])
     .index('by_phone', ['phone'])
+    .index('by_secondary_phone', ['secondary_phone'])
     .index('by_auth_uid', ['auth_uid'])
     .index('by_email', ['email']),
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runTodaysBirthdaySmsJob } from '@/lib/actions/birthdays'
+import { asSystem } from '@/lib/auth/action-guard'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest) {
   const force = req.nextUrl.searchParams.get('force') === '1'
 
   try {
-    const result = await runTodaysBirthdaySmsJob({ dry_run: dryRun, force })
+    // Authorised by CRON_SECRET above, not a user session.
+    const result = await asSystem(() => runTodaysBirthdaySmsJob({ dry_run: dryRun, force }))
     if (result.error) {
       return NextResponse.json({ ok: false, error: result.error, data: result.data }, { status: 500 })
     }

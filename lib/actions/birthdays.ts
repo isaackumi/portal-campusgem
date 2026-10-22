@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import type { ApiResponse } from '@/lib/services/api-types'
 import {
   type BirthdayEntry,
@@ -26,6 +27,7 @@ function convexUnavailable(): string {
 }
 
 export async function loadCampusGemBirthdaysAction(): Promise<ApiResponse<BirthdayEntry[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -55,6 +57,7 @@ export async function loadCampusGemBirthdaysAction(): Promise<ApiResponse<Birthd
 }
 
 export async function loadRlcBirthdaysAction(): Promise<ApiResponse<BirthdayEntry[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -138,6 +141,7 @@ export async function sendBirthdaySmsAction(input: {
   /** Mark log metadata as cron/auto send */
   auto?: boolean
 }): Promise<ApiResponse<BirthdaySmsSendResult>> {
+  await guard('sms.send')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -271,6 +275,7 @@ export async function runTodaysBirthdaySmsJob(input?: {
     date: string
   }>
 > {
+  await guard('sms.send')
   const date = ghanaCalendarDate().iso
   if (!input?.force && !isBirthdaySmsAutoEnabled()) {
     return {

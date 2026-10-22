@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { canAccessPath, isUserRole } from '@/lib/auth/roles'
+import { canAccessPath, decodePermissionsCookie, isUserRole, safeRedirectPath } from '@/lib/auth/roles'
 import { CHMS_AUTH_SESSION_COOKIE } from '@/lib/auth/session-cookie'
 import { RLC_PUBLIC_VISIT_PATH, RLC_PUBLIC_JOIN_PATH } from '@/lib/constants/rlc'
-
-const publicRoutes = ['/', '/auth', '/camp-meeting/register', '/camp-meeting/success', '/f', '/rlc/visit', '/rlc/join']
 
 /** Staff-only admin form; guests without a session use the public self-registration page. */
 const RLC_ADMIN_VISITOR_ADD_PATH = '/admin/rlc/visitors/add'
@@ -52,9 +50,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 301)
   }
 
-  const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  )
   const isProtectedRoute = protectedPrefixes.some((prefix) => pathname.startsWith(prefix))
   const hasAuthToken = request.cookies.has(CHMS_AUTH_SESSION_COOKIE)
 
@@ -74,16 +69,19 @@ export function middleware(request: NextRequest) {
     }
 
     const role = request.cookies.get('chms-role')?.value
-    if (role && isUserRole(role) && !canAccessPath(role, pathname)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+    const extra = decodePermissionsCookie(request.cookies.get('chms-perms')?.value)
+    if (role && isUserRole(role) && !canAccessPath(role, pathname, extra)) {
+      // The cookie may predate a promotion: re-check against the DB before refusing.
+      const refreshUrl = new URL('/api/auth/refresh', request.url)
+      refreshUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`)
+      return NextResponse.redirect(refreshUrl)
     }
   }
 
-  if (pathname === '/') {
-    const hasAuthToken = request.cookies.has(CHMS_AUTH_SESSION_COOKIE)
-    if (hasAuthToken && !isPublicRoute) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
+  // Already signed in: skip the sign-in form instead of making the user log in again.
+  if (pathname === '/auth' && hasAuthToken) {
+    const target = safeRedirectPath(request.nextUrl.searchParams.get('redirect'))
+    return NextResponse.redirect(new URL(target, request.url))
   }
 
   return NextResponse.next()

@@ -54,6 +54,10 @@ export interface AppUser {
   middle_name?: string
   last_name?: string
   role: UserRole
+  /** Extra permissions granted on top of the role (see lib/auth/roles.ts). */
+  permissions?: string[]
+  /** This record is a duplicate; sign-in resolves to the linked user. */
+  merged_into?: string
   join_year: number
   occupation?: string
   place_of_work?: string

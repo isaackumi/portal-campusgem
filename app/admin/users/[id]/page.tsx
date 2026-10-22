@@ -27,7 +27,8 @@ function roleBadgeVariant(role: AppUser['role']) {
 }
 
 export default function AdminUserDetailPage() {
-  const { user: currentUser, loading: authLoading } = useAuth()
+  const { user: currentUser, loading: authLoading, can } = useAuth()
+  const allowed = can('users.manage')
   const router = useRouter()
   const params = useParams()
   const userId = params.id as string
@@ -37,10 +38,10 @@ export default function AdminUserDetailPage() {
   const [memberLoading, setMemberLoading] = useState(true)
 
   useEffect(() => {
-    if (!authLoading && currentUser?.role !== 'admin') {
+    if (!authLoading && currentUser && !allowed) {
       router.push('/dashboard')
     }
-  }, [authLoading, currentUser, router])
+  }, [authLoading, currentUser, allowed, router])
 
   useEffect(() => {
     if (!userId) return
@@ -64,7 +65,7 @@ export default function AdminUserDetailPage() {
     )
   }
 
-  if (currentUser?.role !== 'admin') {
+  if (!allowed) {
     return null
   }
 

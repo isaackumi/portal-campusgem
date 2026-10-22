@@ -1,5 +1,6 @@
 'use server'
 
+import { guard, asSystem } from '@/lib/auth/action-guard'
 import type { ApiResponse } from '@/lib/services/api-types'
 import type {
   Attendance,
@@ -61,6 +62,7 @@ async function enrichRlcMembers(members: Member[]): Promise<Member[]> {
 }
 
 export async function loadRlcStatsAction(): Promise<ApiResponse<RlcStats>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -83,6 +85,7 @@ export async function loadRlcVisitorsAction(filters?: {
   assigned_to?: string
   include_inactive?: boolean
 }): Promise<ApiResponse<Visitor[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -101,6 +104,7 @@ export async function loadRlcVisitorsAction(filters?: {
 }
 
 export async function loadRlcVisitorAction(id: string): Promise<ApiResponse<Visitor>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -120,6 +124,7 @@ export async function loadRlcVisitorAction(id: string): Promise<ApiResponse<Visi
 }
 
 export async function loadRlcInteractionsAction(visitorId: string): Promise<ApiResponse<RlcInteraction[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -140,6 +145,7 @@ export async function createRlcVisitorAction(
   form: CreateVisitorForm,
   performedBy: string
 ): Promise<ApiResponse<Visitor>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -162,6 +168,7 @@ export async function updateRlcVisitorAction(
   form: CreateVisitorForm,
   performedBy: string
 ): Promise<ApiResponse<Visitor>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -184,6 +191,7 @@ export async function deleteRlcVisitorAction(
   performedBy: string,
   hardDelete?: boolean
 ): Promise<ApiResponse<{ id: string; hard_delete: boolean }>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -208,6 +216,7 @@ export async function addRlcInteractionAction(args: {
   followUpStatus?: VisitorFollowUpStatus
   pipelineStatus?: RlcPipelineStatus
 }): Promise<ApiResponse<RlcInteraction>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -235,6 +244,7 @@ export async function bulkConvertRlcVisitorsToMembersAction(args: {
   performedBy: string
   rlcMembershipType?: RlcMembershipType
 }): Promise<ApiResponse<BulkConvertVisitorsResult>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -298,6 +308,7 @@ export async function convertRlcVisitorAction(
   form: ConvertRlcVisitorForm,
   performedBy: string
 ): Promise<ApiResponse<{ visitor: Visitor; member: Member }>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -321,6 +332,7 @@ export async function convertRlcVisitorAction(
 }
 
 export async function searchRlcImportAction(query: string): Promise<ApiResponse<RlcImportSearchResult[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -345,6 +357,7 @@ export async function preparePersonForRlcAction(args: {
   email?: string
   campRegistrationId?: string
 }): Promise<ApiResponse<{ userId: string; memberId: string }>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -425,6 +438,7 @@ export async function addPersonToRlcAction(args: {
   rlcRoles: string[]
   rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
 }): Promise<ApiResponse<Member>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -458,6 +472,7 @@ export async function importToRlcAction(args: {
   rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
   rlcRoles?: string[]
 }): Promise<ApiResponse<Visitor | Member>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -555,6 +570,7 @@ export async function bulkImportCampToRlcAction(args: {
   linkAsMember?: boolean
   rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
 }): Promise<ApiResponse<BulkImportCampToRlcResult>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -614,6 +630,7 @@ export async function bulkImportCampToRlcAction(args: {
 }
 
 export async function loadRlcMembersAction(): Promise<ApiResponse<Member[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -632,6 +649,7 @@ export async function loadRlcMembersAction(): Promise<ApiResponse<Member[]>> {
 }
 
 export async function loadRlcMemberAction(id: string): Promise<ApiResponse<Member>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -659,6 +677,7 @@ export async function createRlcMemberAction(
   form: import('@/lib/types').CreateRlcMemberForm,
   performedBy: string
 ): Promise<ApiResponse<Member>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -695,6 +714,7 @@ export async function updateRlcMemberAction(args: {
   rlcRoles: string[]
   rlcMembershipType?: 'full_member' | 'associate' | 'visitor_converted'
 }): Promise<ApiResponse<Member>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -721,6 +741,7 @@ export async function loadRlcAttendanceAction(args?: {
   toDate?: string
   limit?: number
 }): Promise<ApiResponse<Attendance[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -748,6 +769,7 @@ export async function recordRlcAttendanceAction(args: {
   notes?: string
   status?: Attendance['status']
 }): Promise<ApiResponse<{ already_checked_in: boolean; attendance: Attendance }>> {
+  await guard(['rlc.manage', 'attendance.record'])
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -772,6 +794,7 @@ export async function updateRlcAttendanceAction(args: {
   notes?: string
   status?: Attendance['status']
 }): Promise<ApiResponse<Attendance>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -791,6 +814,7 @@ export async function updateRlcAttendanceAction(args: {
 export async function deleteRlcAttendanceAction(
   attendanceId: string
 ): Promise<ApiResponse<{ deleted: boolean }>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -810,6 +834,7 @@ export async function deleteRlcAttendanceAction(
 export async function resolveRlcScanAction(scanned: string): Promise<
   ApiResponse<{ type: 'visitor' | 'member'; visitor?: Visitor; member?: Member }>
 > {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -829,6 +854,7 @@ export async function resolveRlcScanAction(scanned: string): Promise<
 export async function loadRlcCustomServicesAction(): Promise<
   ApiResponse<import('@/lib/types').RlcCustomService[]>
 > {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -849,6 +875,7 @@ export async function createRlcCustomServiceAction(args: {
   name: string
   createdBy?: string
 }): Promise<ApiResponse<import('@/lib/types').RlcCustomService>> {
+  await guard('rlc.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -868,168 +895,176 @@ export async function createRlcCustomServiceAction(args: {
 export async function searchRlcSponsorsAction(
   query: string
 ): Promise<ApiResponse<import('@/lib/types').RlcSponsorSearchResult[]>> {
-  if (!isConvexDataSource()) {
-    return { data: null, error: convexUnavailable(), loading: false }
-  }
-  const needle = query.trim()
-  if (needle.length < 1) {
-    return { data: [], error: null, loading: false }
-  }
-
-  try {
-    const { loadMembersPage } = await import('@/lib/actions/core-data')
-    const { searchRlcImportFromConvex } = await import('@/lib/convex/rlc-bridge')
-    type RlcSponsorSearchResult = import('@/lib/types').RlcSponsorSearchResult
-
-    const [membersPage, importRows] = await Promise.all([
-      loadMembersPage(1, 15, needle),
-      searchRlcImportFromConvex(needle),
-    ])
-
-    const results: RlcSponsorSearchResult[] = []
-    const seenMemberIds = new Set<string>()
-
-    for (const m of membersPage.data ?? []) {
-      if (seenMemberIds.has(m.id)) continue
-      seenMemberIds.add(m.id)
-      results.push({
-        key: `member:${m.id}`,
-        member_id: m.id,
-        user_id: m.user_id,
-        full_name: m.user?.full_name?.trim() || 'Member',
-        phone: m.user?.phone,
-        email: m.user?.email,
-        membership_id: m.user?.membership_id,
-        source: 'member',
-        badge: 'Member',
-      })
+  return asSystem(async () => {
+    if (!isConvexDataSource()) {
+      return { data: null, error: convexUnavailable(), loading: false }
+    }
+    const needle = query.trim()
+    if (needle.length < 1) {
+      return { data: [], error: null, loading: false }
     }
 
-    for (const row of importRows) {
-      if (row.member_id) {
-        if (seenMemberIds.has(row.member_id)) continue
-        seenMemberIds.add(row.member_id)
+    try {
+      const { loadMembersPage } = await import('@/lib/actions/core-data')
+      const { searchRlcImportFromConvex } = await import('@/lib/convex/rlc-bridge')
+      type RlcSponsorSearchResult = import('@/lib/types').RlcSponsorSearchResult
+
+      const [membersPage, importRows] = await Promise.all([
+        loadMembersPage(1, 15, needle),
+        searchRlcImportFromConvex(needle),
+      ])
+
+      const results: RlcSponsorSearchResult[] = []
+      const seenMemberIds = new Set<string>()
+
+      for (const m of membersPage.data ?? []) {
+        if (seenMemberIds.has(m.id)) continue
+        seenMemberIds.add(m.id)
         results.push({
-          key: `member:${row.member_id}`,
-          member_id: row.member_id,
+          key: `member:${m.id}`,
+          member_id: m.id,
+          user_id: m.user_id,
+          full_name: m.user?.full_name?.trim() || 'Member',
+          phone: m.user?.phone,
+          email: m.user?.email,
+          membership_id: m.user?.membership_id,
+          source: 'member',
+          badge: 'Member',
+        })
+      }
+
+      for (const row of importRows) {
+        if (row.member_id) {
+          if (seenMemberIds.has(row.member_id)) continue
+          seenMemberIds.add(row.member_id)
+          results.push({
+            key: `member:${row.member_id}`,
+            member_id: row.member_id,
+            user_id: row.user_id,
+            full_name: row.full_name,
+            phone: row.phone,
+            email: row.email,
+            membership_id: row.membership_id,
+            source: 'campus_member',
+            badge: 'Campus Gem',
+          })
+          continue
+        }
+
+        const campKey = row.camp_registration_id ? `camp:${row.camp_registration_id}` : row.user_id ? `user:${row.user_id}` : null
+        if (!campKey) continue
+        if (results.some((r) => r.key === campKey)) continue
+
+        results.push({
+          key: campKey,
           user_id: row.user_id,
+          camp_registration_id: row.camp_registration_id,
           full_name: row.full_name,
           phone: row.phone,
           email: row.email,
           membership_id: row.membership_id,
-          source: 'campus_member',
-          badge: 'Campus Gem',
+          source: 'camp_registration',
+          badge: 'Camp',
         })
-        continue
       }
 
-      const campKey = row.camp_registration_id ? `camp:${row.camp_registration_id}` : row.user_id ? `user:${row.user_id}` : null
-      if (!campKey) continue
-      if (results.some((r) => r.key === campKey)) continue
-
-      results.push({
-        key: campKey,
-        user_id: row.user_id,
-        camp_registration_id: row.camp_registration_id,
-        full_name: row.full_name,
-        phone: row.phone,
-        email: row.email,
-        membership_id: row.membership_id,
-        source: 'camp_registration',
-        badge: 'Camp',
-      })
+      return { data: results.slice(0, 20), error: null, loading: false }
+    } catch (error: unknown) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Sponsor search failed',
+        loading: false,
+      }
     }
-
-    return { data: results.slice(0, 20), error: null, loading: false }
-  } catch (error: unknown) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Sponsor search failed',
-      loading: false,
-    }
-  }
+  })
 }
 
 export async function resolveRlcSponsorToMemberAction(
   sponsor: import('@/lib/types').RlcSponsorSearchResult
 ): Promise<ApiResponse<{ memberId: string }>> {
-  if (sponsor.member_id) {
-    return { data: { memberId: sponsor.member_id }, error: null, loading: false }
-  }
-  const prepared = await preparePersonForRlcAction({
-    userId: sponsor.user_id,
-    fullName: sponsor.full_name,
-    phone: sponsor.phone,
-    email: sponsor.email,
-    campRegistrationId: sponsor.camp_registration_id,
+  return asSystem(async () => {
+    if (sponsor.member_id) {
+      return { data: { memberId: sponsor.member_id }, error: null, loading: false }
+    }
+    const prepared = await preparePersonForRlcAction({
+      userId: sponsor.user_id,
+      fullName: sponsor.full_name,
+      phone: sponsor.phone,
+      email: sponsor.email,
+      campRegistrationId: sponsor.camp_registration_id,
+    })
+    if (prepared.error || !prepared.data) {
+      return { data: null, error: prepared.error ?? 'Could not link sponsor', loading: false }
+    }
+    return { data: { memberId: prepared.data.memberId }, error: null, loading: false }
   })
-  if (prepared.error || !prepared.data) {
-    return { data: null, error: prepared.error ?? 'Could not link sponsor', loading: false }
-  }
-  return { data: { memberId: prepared.data.memberId }, error: null, loading: false }
 }
 
 export async function registerPublicRlcMemberAction(
   form: import('@/lib/types').CreateRlcMemberForm
 ): Promise<ApiResponse<{ id: string; first_name: string; check_in_code?: string }>> {
-  const { PUBLIC_RLC_MEMBER_PERFORMED_BY } = await import('@/lib/constants/rlc')
-  const result = await createRlcMemberAction(
-    {
-      ...form,
-      rlc_roles: ['member'],
-      rlc_membership_type: 'full_member',
-    },
-    PUBLIC_RLC_MEMBER_PERFORMED_BY
-  )
-  if (result.error || !result.data) {
-    return { data: null, error: result.error ?? 'Registration failed', loading: false }
-  }
-  return {
-    data: {
-      id: result.data.id,
-      first_name: form.first_name.trim(),
-      check_in_code: result.data.check_in_code,
-    },
-    error: null,
-    loading: false,
-  }
+  return asSystem(async () => {
+    const { PUBLIC_RLC_MEMBER_PERFORMED_BY } = await import('@/lib/constants/rlc')
+    const result = await createRlcMemberAction(
+      {
+        ...form,
+        rlc_roles: ['member'],
+        rlc_membership_type: 'full_member',
+      },
+      PUBLIC_RLC_MEMBER_PERFORMED_BY
+    )
+    if (result.error || !result.data) {
+      return { data: null, error: result.error ?? 'Registration failed', loading: false }
+    }
+    return {
+      data: {
+        id: result.data.id,
+        first_name: form.first_name.trim(),
+        check_in_code: result.data.check_in_code,
+      },
+      error: null,
+      loading: false,
+    }
+  })
 }
 
 export async function registerPublicRlcVisitorAction(
   form: CreateVisitorForm
 ): Promise<ApiResponse<{ id: string; first_name: string; check_in_code?: string }>> {
-  if (!isConvexDataSource()) {
-    return { data: null, error: convexUnavailable(), loading: false }
-  }
-  if (!form.first_name?.trim()) {
-    return { data: null, error: 'First name is required', loading: false }
-  }
-  if (!form.visit_date) {
-    return { data: null, error: 'Visit date is required', loading: false }
-  }
+  return asSystem(async () => {
+    if (!isConvexDataSource()) {
+      return { data: null, error: convexUnavailable(), loading: false }
+    }
+    if (!form.first_name?.trim()) {
+      return { data: null, error: 'First name is required', loading: false }
+    }
+    if (!form.visit_date) {
+      return { data: null, error: 'Visit date is required', loading: false }
+    }
 
-  try {
-    const { PUBLIC_RLC_PERFORMED_BY } = await import('@/lib/constants/rlc')
-    const { createRlcVisitorInConvex } = await import('@/lib/convex/rlc-bridge')
-    const visitor = await createRlcVisitorInConvex(
-      {
-        ...form,
-        source: form.source ?? 'walk_in',
-        pipeline_status: form.pipeline_status ?? 'first_visit',
-        follow_up_status: form.follow_up_status ?? 'pending',
-      },
-      PUBLIC_RLC_PERFORMED_BY
-    )
-    return {
-      data: { id: visitor.id, first_name: visitor.first_name, check_in_code: visitor.check_in_code },
-      error: null,
-      loading: false,
+    try {
+      const { PUBLIC_RLC_PERFORMED_BY } = await import('@/lib/constants/rlc')
+      const { createRlcVisitorInConvex } = await import('@/lib/convex/rlc-bridge')
+      const visitor = await createRlcVisitorInConvex(
+        {
+          ...form,
+          source: form.source ?? 'walk_in',
+          pipeline_status: form.pipeline_status ?? 'first_visit',
+          follow_up_status: form.follow_up_status ?? 'pending',
+        },
+        PUBLIC_RLC_PERFORMED_BY
+      )
+      return {
+        data: { id: visitor.id, first_name: visitor.first_name, check_in_code: visitor.check_in_code },
+        error: null,
+        loading: false,
+      }
+    } catch (error: unknown) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Registration failed',
+        loading: false,
+      }
     }
-  } catch (error: unknown) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Registration failed',
-      loading: false,
-    }
-  }
+  })
 }

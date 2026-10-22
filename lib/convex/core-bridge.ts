@@ -85,6 +85,8 @@ export function convexUserDocToAppUser(doc: Record<string, unknown> | null | und
     middle_name: doc.middle_name != null ? String(doc.middle_name) : undefined,
     last_name: doc.last_name != null ? String(doc.last_name) : undefined,
     role: (doc.role as AppUser['role']) ?? 'member',
+    permissions: Array.isArray(doc.permissions) ? (doc.permissions as string[]) : undefined,
+    merged_into: doc.merged_into != null ? String(doc.merged_into) : undefined,
     join_year: Number(doc.join_year ?? new Date().getFullYear()),
     occupation: doc.occupation != null ? String(doc.occupation) : undefined,
     place_of_work: doc.place_of_work != null ? String(doc.place_of_work) : undefined,
@@ -167,6 +169,58 @@ export async function findUserByPhoneFromConvex(phone: string): Promise<AppUser 
     phone,
   })) as Record<string, unknown> | null
   return convexUserDocToAppUser(doc)
+}
+
+export async function findUserByAuthUidFromConvex(authUid: string): Promise<AppUser | null> {
+  const client = getConvexHttpClient()
+  const doc = (await client.query(api.core.findUserByAuthUidWithSecret, {
+    secret: requireCoreServerSecret(),
+    auth_uid: authUid,
+  })) as Record<string, unknown> | null
+  return convexUserDocToAppUser(doc)
+}
+
+export async function setUserAccessInConvex(
+  userId: string,
+  access: { role: AppUser['role']; permissions: string[] }
+): Promise<AppUser> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.core.setUserAccessWithSecret, {
+    secret: requireCoreServerSecret(),
+    id: userId as Id<'users'>,
+    role: access.role,
+    permissions: access.permissions,
+  })) as Record<string, unknown> | null
+  const user = convexUserDocToAppUser(doc)
+  if (!user) throw new Error('Failed to update access')
+  return user
+}
+
+export async function linkDuplicateUserInConvex(keepId: string, duplicateId: string): Promise<AppUser> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.core.linkDuplicateUserWithSecret, {
+    secret: requireCoreServerSecret(),
+    keep_id: keepId as Id<'users'>,
+    duplicate_id: duplicateId as Id<'users'>,
+  })) as Record<string, unknown> | null
+  const user = convexUserDocToAppUser(doc)
+  if (!user) throw new Error('Failed to link records')
+  return user
+}
+
+export async function setUserSecondaryPhoneInConvex(
+  userId: string,
+  secondaryPhone: string | undefined
+): Promise<AppUser> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.core.setUserSecondaryPhoneWithSecret, {
+    secret: requireCoreServerSecret(),
+    id: userId as Id<'users'>,
+    secondary_phone: secondaryPhone,
+  })) as Record<string, unknown> | null
+  const user = convexUserDocToAppUser(doc)
+  if (!user) throw new Error('Failed to update secondary phone')
+  return user
 }
 
 export async function fetchMembersFromConvex(): Promise<Member[]> {

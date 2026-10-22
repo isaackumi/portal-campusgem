@@ -34,6 +34,8 @@ import { promoteUserToCorporateGem } from '@/lib/actions/corporate-gem'
 import { AddToRlcDialog } from '@/components/rlc/add-to-rlc-dialog'
 import { useAllUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/hooks/use-data'
 import { useAuth } from '@/components/providers'
+import { AccessDenied } from '@/components/auth/access-denied'
+import { LoadingSpinner } from '@/components/ui/loading'
 import { AppUser } from '@/lib/types'
 import { dataService } from '@/lib/services/data-service'
 import {
@@ -43,7 +45,7 @@ import {
 } from '@/lib/camp/birthday'
 
 export default function UsersManagementPage() {
-  const { user: currentUser } = useAuth()
+  const { loading: authLoading, can } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   
@@ -124,21 +126,16 @@ export default function UsersManagementPage() {
     }
   }, [users])
 
-  if (currentUser?.role !== 'admin') {
+  if (authLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">Access Denied</h2>
-            <p className="text-slate-600 mb-4">You don't have permission to access this page.</p>
-            <Button onClick={() => router.push('/dashboard')}>
-              Go to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <LoadingSpinner />
       </div>
     )
+  }
+
+  if (!can('users.manage')) {
+    return <AccessDenied permission="users.manage" />
   }
 
   // Handlers
@@ -403,7 +400,7 @@ export default function UsersManagementPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">User Management</h1>
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">User Management</h1>
               <p className="text-slate-600 mt-2">Manage church members and their roles</p>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -544,7 +541,7 @@ export default function UsersManagementPage() {
                 <Users className="h-8 w-8 text-primary" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-slate-600">Total Users</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total}</p>
                 </div>
               </div>
             </CardContent>
@@ -556,7 +553,7 @@ export default function UsersManagementPage() {
                 <Crown className="h-8 w-8 text-red-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-slate-600">Admins</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.admins}</p>
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.admins}</p>
                 </div>
               </div>
             </CardContent>
@@ -568,7 +565,7 @@ export default function UsersManagementPage() {
                 <Shield className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-slate-600">Pastors</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.pastors}</p>
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.pastors}</p>
                 </div>
               </div>
             </CardContent>
@@ -580,7 +577,7 @@ export default function UsersManagementPage() {
                 <UserCheck className="h-8 w-8 text-yellow-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-slate-600">Elders</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.elders}</p>
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.elders}</p>
                 </div>
               </div>
             </CardContent>
@@ -592,7 +589,7 @@ export default function UsersManagementPage() {
                 <User className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-slate-600">Members</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.members}</p>
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.members}</p>
                 </div>
               </div>
             </CardContent>

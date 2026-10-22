@@ -1,8 +1,10 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import type { AppUser, Attendance, DashboardStats, Group, GroupMembership, Member, Visitor } from '@/lib/types'
 import type { ApiResponse, PaginatedResponse } from '@/lib/services/api-types'
 import { generateMembershipId, normalizeMembershipId } from '@/lib/membershipId'
+import { isValidPhone } from '@/lib/phone'
 
 function isConvexDataSource(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_CONVEX_URL)
@@ -37,6 +39,7 @@ function matchesMemberSearch(member: Member, user: AppUser | undefined, search: 
 }
 
 export async function attachUsersToMembers(members: Member[]): Promise<Member[]> {
+  await guard('dashboard.view')
   if (members.length === 0) return members
   const { fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
   const userIds = Array.from(new Set(members.map((m) => m.user_id).filter(Boolean)))
@@ -57,6 +60,7 @@ export async function loadMembersPage(
   limit: number,
   search?: string
 ): Promise<PaginatedResponse<Member>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return {
       data: [],
@@ -114,6 +118,25 @@ export async function loadMemberById(id: string): Promise<{
     const { fetchMemberRefWithUserFromConvex } = await import('@/lib/convex/core-bridge')
     const member = await fetchMemberRefWithUserFromConvex(id)
     if (!member) return { data: null, error: null }
+    // Public pages (RLC sponsor picker) only need a display name; staff get the full record.
+    const { optionalSessionUser } = await import('@/lib/auth/action-guard')
+    if (!(await optionalSessionUser())) {
+      return {
+        data: {
+          id: member.id,
+          user_id: member.user_id,
+          status: member.status,
+          emergency_contacts: [],
+          documents: [],
+          created_at: member.created_at,
+          updated_at: member.updated_at,
+          user: member.user
+            ? ({ id: member.user.id, full_name: member.user.full_name, membership_id: member.user.membership_id } as Member['user'])
+            : undefined,
+        },
+        error: null,
+      }
+    }
     return { data: member, error: null }
   } catch (error: unknown) {
     return {
@@ -127,6 +150,7 @@ export async function loadMemberByUserId(userId: string): Promise<{
   data: Member | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: 'Convex is not configured' }
   }
@@ -150,6 +174,7 @@ export async function loadDashboardStats(): Promise<{
   data: DashboardStats | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: 'Convex is not configured' }
   }
@@ -172,6 +197,7 @@ export async function loadGroupsPage(
   search?: string,
   type?: string
 ): Promise<PaginatedResponse<Group>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return {
       data: [],
@@ -213,6 +239,7 @@ export async function loadGroupsPage(
 }
 
 export async function loadGroupById(id: string): Promise<{ data: Group | null; error: string | null }> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: 'Convex is not configured' }
   }
@@ -230,6 +257,7 @@ export async function loadGroupById(id: string): Promise<{ data: Group | null; e
 }
 
 export async function loadAllUsers(): Promise<ApiResponse<AppUser[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: 'Convex is not configured', loading: false }
   }
@@ -248,6 +276,7 @@ export async function loadAllUsers(): Promise<ApiResponse<AppUser[]>> {
 }
 
 export async function loadAllMembersSortedAction(): Promise<ApiResponse<AppUser[]>> {
+  await guard('dashboard.view')
   const base = await loadAllUsers()
   if (base.error || !base.data) return base
   const data = base.data
@@ -257,6 +286,7 @@ export async function loadAllMembersSortedAction(): Promise<ApiResponse<AppUser[
 }
 
 export async function createGroupAction(groupData: Partial<Group>): Promise<ApiResponse<Group>> {
+  await guard('groups.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -274,6 +304,7 @@ export async function createGroupAction(groupData: Partial<Group>): Promise<ApiR
 }
 
 export async function updateGroupAction(groupId: string, updates: Partial<Group>): Promise<ApiResponse<Group>> {
+  await guard('groups.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -291,6 +322,7 @@ export async function updateGroupAction(groupId: string, updates: Partial<Group>
 }
 
 export async function loadGroupByIdConvexAction(groupId: string): Promise<ApiResponse<Group>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -316,7 +348,23 @@ export async function updateUserRecord(
   }
 
   try {
-    const { updateUserInConvex } = await import('@/lib/convex/core-bridge')
+    const { updateUserInConvex, fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
+    const { requireAccessChange, requirePermission } = await import('@/lib/auth/server-session')
+    const target = await fetchUserFromConvex(userId)
+    if (updates.role && updates.role !== target?.role) {
+      await requireAccessChange({ target, nextRole: updates.role })
+    } else {
+      const actor = await requirePermission('dashboard.view')
+      if (actor.id !== userId) {
+        const { hasPermission } = await import('@/lib/auth/roles')
+        if (
+          !hasPermission(actor.role, 'members.manage', actor.permissions) &&
+          !hasPermission(actor.role, 'users.manage', actor.permissions)
+        ) {
+          throw new Error('You do not have permission to edit this person.')
+        }
+      }
+    }
     const data = await updateUserInConvex(userId, updates)
     return { data, error: null, loading: false }
   } catch (error: unknown) {
@@ -329,6 +377,7 @@ export async function updateUserRecord(
 }
 
 export async function createUserRecord(userData: Partial<AppUser>): Promise<ApiResponse<AppUser>> {
+  await guard('members.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: 'Convex is not configured', loading: false }
   }
@@ -337,17 +386,31 @@ export async function createUserRecord(userData: Partial<AppUser>): Promise<ApiR
     return { data: null, error: 'Name and phone are required', loading: false }
   }
 
+  // A mistyped number creates an account nobody can sign in to (or a duplicate person).
+  if (!isValidPhone(userData.phone)) {
+    return {
+      data: null,
+      error: 'Enter a valid Ghana phone number (e.g. 0541234567 or +233541234567).',
+      loading: false,
+    }
+  }
+
   const membershipId = normalizeMembershipId(
     userData.membership_id?.trim() ||
       generateMembershipId(userData.phone.trim(), userData.join_year ?? new Date().getFullYear())
   )
 
   try {
+    const role = userData.role ?? 'member'
+    if (role !== 'member' && role !== 'visitor') {
+      const { requireAccessChange } = await import('@/lib/auth/server-session')
+      await requireAccessChange({ target: null, nextRole: role })
+    }
     const { bootstrapUserInConvex } = await import('@/lib/convex/core-bridge')
     const data = await bootstrapUserInConvex({
       full_name: userData.full_name.trim(),
       phone: userData.phone.trim(),
-      role: userData.role ?? 'member',
+      role,
       email: userData.email,
       membership_id: membershipId,
       auth_uid: userData.auth_uid ?? crypto.randomUUID(),
@@ -366,6 +429,7 @@ export async function createUserRecord(userData: Partial<AppUser>): Promise<ApiR
 export async function saveAttendanceRecord(
   attendanceData: Partial<Attendance>
 ): Promise<{ data: Attendance | null; error: string | null }> {
+  await guard('attendance.record')
   if (!isConvexDataSource()) {
     return { data: null, error: 'Convex is not configured' }
   }
@@ -390,6 +454,7 @@ export async function loadAttendanceHistoryAction(
   memberId?: string,
   limitCount: number = 50
 ): Promise<ApiResponse<Attendance[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -424,6 +489,7 @@ export async function loadAttendanceRecordsAction(filters?: {
   dateFilter?: string
   serviceFilter?: string
 }): Promise<ApiResponse<AttendanceRecordRow[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -510,6 +576,7 @@ export async function loadAttendanceStatsAction(): Promise<
     monthly_attendance: number
   }>
 > {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -527,6 +594,7 @@ export async function loadAttendanceStatsAction(): Promise<
 }
 
 export async function loadVisitorsAction(): Promise<Visitor[]> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) return []
   try {
     const { listVisitorsFromConvex } = await import('@/lib/convex/core-bridge')
@@ -537,6 +605,7 @@ export async function loadVisitorsAction(): Promise<Visitor[]> {
 }
 
 export async function createVisitorAction(visitor: Partial<Visitor>): Promise<ApiResponse<Visitor>> {
+  await guard(['visitors.manage', 'rlc.manage'])
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -554,6 +623,7 @@ export async function createVisitorAction(visitor: Partial<Visitor>): Promise<Ap
 }
 
 export async function loadGroupMembersAction(groupId: string): Promise<ApiResponse<GroupMembership[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -603,6 +673,7 @@ export async function addUserToGroupAction(
   userId: string,
   role: GroupMembership['role'] = 'member'
 ): Promise<ApiResponse<GroupMembership>> {
+  await guard('groups.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -620,6 +691,7 @@ export async function addUserToGroupAction(
 }
 
 export async function removeGroupMemberAction(membershipId: string): Promise<ApiResponse<boolean>> {
+  await guard('groups.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -640,6 +712,7 @@ export async function removeUserFromGroupAction(
   groupId: string,
   userId: string
 ): Promise<ApiResponse<boolean>> {
+  await guard('groups.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -660,6 +733,7 @@ export async function updateGroupMembershipAction(
   membershipId: string,
   updates: Partial<GroupMembership>
 ): Promise<ApiResponse<GroupMembership>> {
+  await guard('groups.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -677,6 +751,7 @@ export async function updateGroupMembershipAction(
 }
 
 export async function deleteGroupAction(groupId: string): Promise<ApiResponse<boolean>> {
+  await guard('groups.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -694,6 +769,7 @@ export async function deleteGroupAction(groupId: string): Promise<ApiResponse<bo
 }
 
 export async function deleteUserAction(userId: string): Promise<ApiResponse<boolean>> {
+  await guard('users.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -711,6 +787,7 @@ export async function deleteUserAction(userId: string): Promise<ApiResponse<bool
 }
 
 export async function createMemberAction(memberData: Partial<Member>): Promise<ApiResponse<Member>> {
+  await guard('members.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -735,6 +812,7 @@ export async function updateMemberAction(
   id: string,
   updates: Partial<Member>
 ): Promise<ApiResponse<Member>> {
+  await guard('members.manage')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -752,6 +830,7 @@ export async function updateMemberAction(
 }
 
 export async function loadUserByIdAction(userId: string): Promise<ApiResponse<AppUser>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -771,6 +850,7 @@ export async function loadUserByIdAction(userId: string): Promise<ApiResponse<Ap
 export async function loadUpcomingEventsAction(): Promise<
   ApiResponse<{ birthdays: Member[]; anniversaries: Member[] }>
 > {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -804,6 +884,7 @@ export async function loadAttendanceAnalyticsAction(filters: {
   } | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable() }
   }

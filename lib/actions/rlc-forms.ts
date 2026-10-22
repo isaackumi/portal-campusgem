@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { createGroupAction } from '@/lib/actions/core-data'
 import {
   DEFAULT_RLC_FORMS_GROUP_NAME,
@@ -11,6 +12,7 @@ export async function findRlcFormsGroups(): Promise<{
   data: Group[]
   error: string | null
 }> {
+  await guard('dashboard.view')
   try {
     const { fetchGroupsFromConvex } = await import('@/lib/convex/core-bridge')
     const groups = await fetchGroupsFromConvex()
@@ -36,6 +38,7 @@ export async function ensureRlcFormsGroup(): Promise<{
   created: boolean
   error: string | null
 }> {
+  await guard('rlc.manage')
   const { data: existing, error: listError } = await findRlcFormsGroups()
   if (listError) return { data: null, created: false, error: listError }
 

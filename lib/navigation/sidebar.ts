@@ -74,61 +74,56 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         name: 'Overview',
         href: '/admin/camp-meeting',
         icon: DashboardIcon,
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'camp.manage',
       },
       {
         name: 'Registrations',
         href: '/admin/camp-meeting/registrations',
         icon: PersonIcon,
-        roles: ['admin', 'pastor', 'elder'],
       },
       {
         name: 'Directory',
         href: '/admin/camp-meeting/directory',
         icon: ClipboardIcon,
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'camp.manage',
       },
       {
         name: 'Follow-up',
         href: '/admin/camp-meeting/follow-up',
         icon: CheckCircledIcon,
-        roles: ['admin', 'pastor', 'elder', 'finance_officer'],
       },
       {
         name: 'Analytics',
         href: '/admin/camp-meeting/analytics',
         icon: BarChartIcon,
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'camp.manage',
       },
       {
         name: 'Check-in hub',
         href: '/admin/camp-meeting/scan',
         icon: ViewGridIcon,
-        roles: ['admin', 'pastor', 'elder'],
       },
       {
         name: 'Rooms',
         href: '/admin/camp-meeting/rooms',
         icon: HomeIcon,
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'camp.manage',
       },
       {
         name: 'Camp years',
         href: '/admin/camp-meeting/years',
         icon: CalendarIcon,
-        roles: ['admin'],
       },
       {
         name: 'Import data',
         href: '/admin/camp-meeting/import',
         icon: UploadIcon,
-        roles: ['admin', 'pastor', 'elder'],
       },
       {
         name: 'Forms',
         href: '/admin/forms?module=camp_meeting',
         icon: FileTextIcon,
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'forms.manage',
       },
     ],
   },
@@ -211,19 +206,17 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         name: 'Campus activities',
         href: '/admin/campus-activities',
         icon: CubeIcon,
-        roles: ['admin', 'pastor', 'elder'],
       },
       {
         name: 'Corporate Gem',
         href: '/admin/corporate-gem',
         icon: ArchiveIcon,
-        roles: ['admin', 'pastor', 'elder'],
       },
       {
         name: 'Forms',
         href: '/admin/forms',
         icon: ClipboardIcon,
-        roles: ['admin', 'pastor', 'elder'],
+        permission: 'forms.manage',
       },
     ],
   },
@@ -255,9 +248,9 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         icon: DashboardIcon,
         roles: ['admin', 'pastor', 'elder', 'finance_officer'],
       },
-      { name: 'Users', href: '/admin/users', icon: PersonIcon, roles: ['admin'] },
-      { name: 'Admins', href: '/admin/admins', icon: LockClosedIcon, roles: ['admin'] },
-      { name: 'Groups', href: '/admin/groups', icon: GroupIcon, roles: ['admin', 'pastor', 'elder'] },
+      { name: 'Users', href: '/admin/users', icon: PersonIcon },
+      { name: 'Access & roles', href: '/admin/admins', icon: LockClosedIcon },
+      { name: 'Groups', href: '/admin/groups', icon: GroupIcon },
     ],
   },
   {
@@ -281,21 +274,30 @@ export function navHrefPath(href: string): string {
   return href.split('?')[0].split('#')[0]
 }
 
-export function canSeeNavItem(role: UserRole | undefined, item: SidebarNavItem): boolean {
-  if (!role) return true
-  if (item.permission && !hasPermission(role, item.permission)) return false
-  if (item.roles && !item.roles.includes(role)) return false
-  return canAccessPath(role, navHrefPath(item.href))
+/**
+ * Nav visibility follows the same permission map as middleware, so a link is shown
+ * exactly when the page would let the user in. Per-user grants (`extra`) count too.
+ */
+export function canSeeNavItem(
+  role: UserRole | undefined,
+  item: SidebarNavItem,
+  extra?: readonly string[] | null
+): boolean {
+  if (!role) return false
+  if (item.permission && !hasPermission(role, item.permission, extra)) return false
+  if (item.roles && !item.roles.includes(role) && !(extra && extra.length > 0)) return false
+  return canAccessPath(role, navHrefPath(item.href), extra)
 }
 
 export function filterSidebarSections(
   role: UserRole | undefined,
-  sections: SidebarNavSection[] = sidebarNavigationSections
+  sections: SidebarNavSection[] = sidebarNavigationSections,
+  extra?: readonly string[] | null
 ): SidebarNavSection[] {
   return sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => canSeeNavItem(role, item)),
+      items: section.items.filter((item) => canSeeNavItem(role, item, extra)),
     }))
     .filter((section) => section.items.length > 0)
 }

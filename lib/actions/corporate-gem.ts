@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { createFormFromTemplate } from '@/lib/actions/form-templates'
 import { addUserToGroupAction, createGroupAction } from '@/lib/actions/core-data'
 import { listForms } from '@/lib/actions/forms'
@@ -14,6 +15,7 @@ export async function findCorporateGemGroups(): Promise<{
   data: Group[]
   error: string | null
 }> {
+  await guard('dashboard.view')
   try {
     const { fetchGroupsFromConvex } = await import('@/lib/convex/core-bridge')
     const groups = await fetchGroupsFromConvex()
@@ -34,6 +36,7 @@ export async function ensureCorporateGemGroup(): Promise<{
   created: boolean
   error: string | null
 }> {
+  await guard('groups.manage')
   const { data: existing, error: listError } = await findCorporateGemGroups()
   if (listError) return { data: null, created: false, error: listError }
 
@@ -61,6 +64,7 @@ export async function ensureCorporateGemRegistrationForm(
   groupId: string,
   groupName?: string
 ): Promise<{ data: ChurchForm | null; created: boolean; error: string | null }> {
+  await guard('groups.manage')
   try {
     const { data: forms, error: listError } = await listForms(groupId)
     if (listError) return { data: null, created: false, error: listError }
@@ -93,6 +97,7 @@ export async function promoteUserToCorporateGem(
   userId: string,
   options?: { groupId?: string; role?: GroupMembership['role'] }
 ): Promise<{ data: GroupMembership | null; group: Group | null; error: string | null }> {
+  await guard('groups.manage')
   let group: Group | null = null
 
   if (options?.groupId) {

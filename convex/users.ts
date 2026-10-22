@@ -15,6 +15,7 @@ export const getById = query({
   args: { id: v.id('users') },
   returns: v.any(),
   handler: async (ctx, { id }) => {
+    await requireAuth(ctx)
     return await ctx.db.get('users', id)
   },
 })
@@ -23,6 +24,7 @@ export const getByMembershipId = query({
   args: { membership_id: v.string() },
   returns: v.any(),
   handler: async (ctx, { membership_id }) => {
+    await requireAuth(ctx)
     return await ctx.db
       .query('users')
       .withIndex('by_membership_id', (q) => q.eq('membership_id', membership_id))

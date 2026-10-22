@@ -7,6 +7,8 @@ export interface TestUser {
   id: string
   full_name: string
   role: string
+  /** Per-user grants on top of the role. */
+  permissions?: string[]
   phone?: string
   auth_uid: string
   membership_id?: string

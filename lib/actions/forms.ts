@@ -1,5 +1,6 @@
 'use server'
 
+import { guard, asSystem } from '@/lib/auth/action-guard'
 import type { ChurchForm, ChurchFormField, ChurchFormResponse, ChurchFormSubmitResult } from '@/lib/types'
 
 function requireConvexEnv(): void {
@@ -9,6 +10,7 @@ function requireConvexEnv(): void {
 }
 
 export async function listForms(groupId?: string): Promise<{ data: ChurchForm[]; error: string | null }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { listFormsFromConvex } = await import('@/lib/convex/forms-bridge')
@@ -26,6 +28,7 @@ export async function getFormAdmin(formId: string): Promise<{
   data: { form: ChurchForm; fields: ChurchFormField[]; creator_name?: string } | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { getFormAdminFromConvex } = await import('@/lib/convex/forms-bridge')
@@ -59,46 +62,49 @@ export async function getPublishedFormBySlug(slug: string): Promise<{
   } | null
   error: string | null
 }> {
-  requireConvexEnv()
-  try {
-    const { getPublishedFormBySlugFromConvex } = await import('@/lib/convex/forms-bridge')
-    const data = await getPublishedFormBySlugFromConvex(slug)
-    if (!data) return { data: null, error: null }
+  return asSystem(async () => {
+    requireConvexEnv()
+    try {
+      const { getPublishedFormBySlugFromConvex } = await import('@/lib/convex/forms-bridge')
+      const data = await getPublishedFormBySlugFromConvex(slug)
+      if (!data) return { data: null, error: null }
 
-    let group_name: string | undefined
-    if (data.form.group_id) {
-      const { loadGroupById } = await import('@/lib/actions/core-data')
-      const groupRes = await loadGroupById(data.form.group_id)
-      group_name = groupRes.data?.name
-    }
+      let group_name: string | undefined
+      if (data.form.group_id) {
+        const { loadGroupById } = await import('@/lib/actions/core-data')
+        const groupRes = await loadGroupById(data.form.group_id)
+        group_name = groupRes.data?.name
+      }
 
-    let camp_year_label: string | undefined
-    let camp_registration_open: boolean | undefined
-    if (data.form.camp_year_id) {
-      const { getCampYearById } = await import('@/lib/actions/camp')
-      const { CAMP_MEETING_REGISTRATION_CATEGORY } = await import('@/lib/constants/camp-meeting')
-      const yearRes = await getCampYearById(data.form.camp_year_id)
-      if (yearRes.data) {
-        camp_year_label = `${yearRes.data.year}${yearRes.data.theme ? ` · ${yearRes.data.theme}` : ''}`
-        if (data.form.category === CAMP_MEETING_REGISTRATION_CATEGORY) {
-          camp_registration_open = yearRes.data.registration_open
+      let camp_year_label: string | undefined
+      let camp_registration_open: boolean | undefined
+      if (data.form.camp_year_id) {
+        const { getCampYearById } = await import('@/lib/actions/camp')
+        const { CAMP_MEETING_REGISTRATION_CATEGORY } = await import('@/lib/constants/camp-meeting')
+        const yearRes = await getCampYearById(data.form.camp_year_id)
+        if (yearRes.data) {
+          camp_year_label = `${yearRes.data.year}${yearRes.data.theme ? ` · ${yearRes.data.theme}` : ''}`
+          if (data.form.category === CAMP_MEETING_REGISTRATION_CATEGORY) {
+            camp_registration_open = yearRes.data.registration_open
+          }
         }
       }
-    }
 
-    return { data: { ...data, group_name, camp_year_label, camp_registration_open }, error: null }
-  } catch (error: unknown) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Failed to load form',
+      return { data: { ...data, group_name, camp_year_label, camp_registration_open }, error: null }
+    } catch (error: unknown) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Failed to load form',
+      }
     }
-  }
+  })
 }
 
 export async function listFormResponses(formId: string): Promise<{
   data: ChurchFormResponse[]
   error: string | null
 }> {
+  await guard('dashboard.view')
   requireConvexEnv()
   try {
     const { listFormResponsesFromConvex } = await import('@/lib/convex/forms-bridge')
@@ -123,6 +129,7 @@ export async function createForm(input: {
   camp_year_id?: string
   module?: ChurchForm['module']
 }): Promise<{ data: ChurchForm | null; error: string | null }> {
+  await guard('forms.manage')
   requireConvexEnv()
   try {
     const { createFormInConvex } = await import('@/lib/convex/forms-bridge')
@@ -154,6 +161,7 @@ export async function updateForm(
     module?: ChurchForm['module']
   }
 ): Promise<{ data: ChurchForm | null; error: string | null }> {
+  await guard('forms.manage')
   requireConvexEnv()
   try {
     const { updateFormInConvex } = await import('@/lib/convex/forms-bridge')
@@ -179,6 +187,7 @@ export async function saveFormFields(
     sort_order: number
   }>
 ): Promise<{ data: ChurchFormField[]; error: string | null }> {
+  await guard('forms.manage')
   requireConvexEnv()
   try {
     const { replaceFormFieldsInConvex } = await import('@/lib/convex/forms-bridge')
@@ -193,6 +202,7 @@ export async function saveFormFields(
 }
 
 export async function deleteForm(formId: string): Promise<{ error: string | null }> {
+  await guard('forms.manage')
   requireConvexEnv()
   try {
     const { deleteFormInConvex } = await import('@/lib/convex/forms-bridge')
@@ -209,17 +219,19 @@ export async function getPublishedCampFormForYear(campYearId: string): Promise<{
   data: ChurchForm | null
   error: string | null
 }> {
-  requireConvexEnv()
-  try {
-    const { getPublishedCampFormByCampYearFromConvex } = await import('@/lib/convex/forms-bridge')
-    const data = await getPublishedCampFormByCampYearFromConvex(campYearId)
-    return { data, error: null }
-  } catch (error: unknown) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Failed to load camp registration form',
+  return asSystem(async () => {
+    requireConvexEnv()
+    try {
+      const { getPublishedCampFormByCampYearFromConvex } = await import('@/lib/convex/forms-bridge')
+      const data = await getPublishedCampFormByCampYearFromConvex(campYearId)
+      return { data, error: null }
+    } catch (error: unknown) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Failed to load camp registration form',
+      }
     }
-  }
+  })
 }
 
 export async function submitFormResponse(input: {
@@ -232,65 +244,67 @@ export async function submitFormResponse(input: {
   respondent_longitude?: number
   respondent_location_label?: string
 }): Promise<{ data: ChurchFormSubmitResult | null; error: string | null }> {
-  requireConvexEnv()
-  try {
-    const { getPublishedFormBySlugFromConvex, submitFormResponseInConvex } = await import(
-      '@/lib/convex/forms-bridge'
-    )
-    const published = await getPublishedFormBySlugFromConvex(input.slug)
-    const data = await submitFormResponseInConvex(input)
+  return asSystem(async () => {
+    requireConvexEnv()
+    try {
+      const { getPublishedFormBySlugFromConvex, submitFormResponseInConvex } = await import(
+        '@/lib/convex/forms-bridge'
+      )
+      const published = await getPublishedFormBySlugFromConvex(input.slug)
+      const data = await submitFormResponseInConvex(input)
 
-    if (published?.fields?.length) {
-      const { syncDirectoryProfileFromFormSubmit } = await import('@/lib/actions/sync-form-profile')
-      await syncDirectoryProfileFromFormSubmit({
-        fields: published.fields,
-        values: input.values,
-        respondent_phone: input.respondent_phone,
-        respondent_name: input.respondent_name,
-        respondent_email: input.respondent_email,
-        camp_registration_id: data.camp_registration?.id,
-      })
-    }
-
-    if (data.camp_registration?.id && data.camp_registration.camp_year_id) {
-      const registrationPayload = {
-        id: data.camp_registration.id,
-        camp_year_id: data.camp_registration.camp_year_id,
-        full_name: data.camp_registration.full_name,
-        first_name: data.camp_registration.first_name,
-        last_name: data.camp_registration.last_name,
-        phone: data.camp_registration.phone || input.respondent_phone || '',
-        email: data.camp_registration.email || input.respondent_email || '',
-        role: data.camp_registration.role || 'Participant',
-        check_in_code: data.camp_registration.check_in_code,
-        qr_code:
-          data.camp_registration.qr_code ||
-          data.camp_registration.check_in_code ||
-          '',
+      if (published?.fields?.length) {
+        const { syncDirectoryProfileFromFormSubmit } = await import('@/lib/actions/sync-form-profile')
+        await syncDirectoryProfileFromFormSubmit({
+          fields: published.fields,
+          values: input.values,
+          respondent_phone: input.respondent_phone,
+          respondent_name: input.respondent_name,
+          respondent_email: input.respondent_email,
+          camp_registration_id: data.camp_registration?.id,
+        })
       }
 
-      // Await delivery so Vercel does not freeze the function before Hubtel returns.
-      // Registration already succeeded in Convex — SMS failure must not fail the form.
-      try {
-        const { sendCampRegistrationConfirmationSms } = await import('@/lib/actions/camp')
-        const result = await sendCampRegistrationConfirmationSms(registrationPayload)
-        if (!result.sent) {
-          console.error('[camp-registration-sms] form path', {
-            id: registrationPayload.id,
-            phone: registrationPayload.phone,
-            ...result,
-          })
+      if (data.camp_registration?.id && data.camp_registration.camp_year_id) {
+        const registrationPayload = {
+          id: data.camp_registration.id,
+          camp_year_id: data.camp_registration.camp_year_id,
+          full_name: data.camp_registration.full_name,
+          first_name: data.camp_registration.first_name,
+          last_name: data.camp_registration.last_name,
+          phone: data.camp_registration.phone || input.respondent_phone || '',
+          email: data.camp_registration.email || input.respondent_email || '',
+          role: data.camp_registration.role || 'Participant',
+          check_in_code: data.camp_registration.check_in_code,
+          qr_code:
+            data.camp_registration.qr_code ||
+            data.camp_registration.check_in_code ||
+            '',
         }
-      } catch (err) {
-        console.error('[camp-registration-sms] form path failed', err)
+
+        // Await delivery so Vercel does not freeze the function before Hubtel returns.
+        // Registration already succeeded in Convex — SMS failure must not fail the form.
+        try {
+          const { sendCampRegistrationConfirmationSms } = await import('@/lib/actions/camp')
+          const result = await sendCampRegistrationConfirmationSms(registrationPayload)
+          if (!result.sent) {
+            console.error('[camp-registration-sms] form path', {
+              id: registrationPayload.id,
+              phone: registrationPayload.phone,
+              ...result,
+            })
+          }
+        } catch (err) {
+          console.error('[camp-registration-sms] form path failed', err)
+        }
+      }
+
+      return { data, error: null }
+    } catch (error: unknown) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Failed to submit form',
       }
     }
-
-    return { data, error: null }
-  } catch (error: unknown) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Failed to submit form',
-    }
-  }
+  })
 }

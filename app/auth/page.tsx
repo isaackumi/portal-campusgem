@@ -1,24 +1,32 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { BrandMark, BrandTitle } from '@/components/brand-mark'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Phone, ArrowRight } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { setTestUser, type TestUser } from '@/lib/auth-utils'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { safeRedirectPath } from '@/lib/auth/roles'
 
 function AuthPageContent() {
   const [phoneOrId, setPhoneOrId] = useState('')
   const [loading, setLoading] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
-  const redirectTo = searchParams.get('redirect') || '/dashboard'
+  const redirectTo = safeRedirectPath(searchParams.get('redirect'))
+
+  // Warm the destination route while the user types, so the post-login jump is instant.
+  useEffect(() => {
+    router.prefetch(redirectTo)
+  }, [router, redirectTo])
 
   const handleDirectLogin = async () => {
     const identifier = phoneOrId.trim().replace(/\s/g, '')
@@ -59,11 +67,13 @@ function AuthPageContent() {
 
       if (data.success && data.user) {
         setTestUser(data.user)
+        // Keep the button busy until the next page takes over (no "dead" Continue state).
+        setRedirecting(true)
+        router.replace(redirectTo)
         toast({
           title: 'Welcome back',
           description: `Signed in as ${data.user.full_name}`,
         })
-        router.push(redirectTo)
       } else {
         throw new Error(data.error || 'Invalid credentials')
       }
@@ -85,67 +95,48 @@ function AuthPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
-        {/* Brand panel */}
-        <section className="relative hidden overflow-hidden bg-slate-950 px-12 py-16 lg:flex lg:flex-col lg:justify-between">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-40"
-            style={{
-              backgroundImage: 'url(/login-bg.svg)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          />
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 left-8 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl" />
+    <div className="flex min-h-screen bg-neutral-100 dark:bg-neutral-900">
+      <aside className="relative hidden w-[42%] max-w-xl flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-700 via-brand-800 to-neutral-900 p-10 text-white lg:flex">
+        <div className="flex items-center gap-3">
+          <BrandMark size="lg" className="bg-white/15 from-transparent to-transparent shadow-none" />
+          <span className="leading-tight">
+            <span className="block text-[11px] font-medium uppercase tracking-wider text-white/60">Campus Gem</span>
+            <span className="block text-lg font-bold">Ministries</span>
+          </span>
+        </div>
+        <div>
+          <p className="text-3xl font-semibold leading-snug">Ministry management, without the spreadsheet chase.</p>
+          <ul className="mt-8 space-y-3 text-sm text-white/80">
+            <li className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-[10px]">1</span>
+              Sign in with a phone number or membership ID
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-[10px]">2</span>
+              Camp, RLC, members, and outreach in one place
+            </li>
+          </ul>
+        </div>
+        <p className="text-xs text-white/50">© {new Date().getFullYear()} Campus Gem Ministries</p>
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/5" aria-hidden />
+        <div className="pointer-events-none absolute -bottom-32 right-10 h-96 w-96 rounded-full bg-white/5" aria-hidden />
+      </aside>
 
-          <div className="relative z-10 flex items-center gap-4">
-            <BrandMark size="lg" />
-            <div>
-              <p className="text-lg font-semibold text-white">Campus Gem Ministries</p>
-              <p className="text-sm text-slate-400">Kokomlemle, Accra</p>
-            </div>
+      <main className="relative flex flex-1 items-center justify-center px-4 py-10">
+        <div className="absolute right-4 top-4">
+          <ThemeToggle />
+        </div>
+        <div className="w-full max-w-md">
+          <div className="mb-6 flex items-center gap-3 lg:hidden">
+            <BrandMark />
+            <BrandTitle />
           </div>
-
-          <div className="relative z-10 max-w-md space-y-6">
-            <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white">
-              Ministry management,{' '}
-              <span className="text-amber-400">in one place</span>
-            </h1>
-            <p className="text-base leading-relaxed text-slate-300">
-              Members, attendance, camp meeting, RLC follow-up, and outreach — sign in with your
-              phone or membership ID.
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 sm:p-8">
+            <h1 className="text-xl font-bold text-neutral-900 dark:text-white">Sign in</h1>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              Phone number or membership ID (e.g. CG-2024-XXXX)
             </p>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li className="flex items-center gap-2">
-                <span className="h-1 w-1 rounded-full bg-amber-400" />
-                Secure staff sign-in
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-1 w-1 rounded-full bg-amber-400" />
-                Role-based access
-              </li>
-            </ul>
-          </div>
-
-          <p className="relative z-10 text-xs text-slate-500">© Campus Gem Ministries</p>
-        </section>
-
-        {/* Sign-in form */}
-        <section className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
-          <div className="mx-auto w-full max-w-sm">
-            <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <BrandMark />
-              <BrandTitle light />
-            </div>
-
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Sign in</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Phone number or membership ID (e.g. CG-2024-XXXX)
-              </p>
-            </div>
+            <div className="mt-6">
 
             <form
               className="space-y-5"
@@ -157,7 +148,7 @@ function AuthPageContent() {
               <div className="space-y-2">
                 <Label htmlFor="phone-or-id">Phone or membership ID</Label>
                 <div className="relative">
-                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                   <Input
                     id="phone-or-id"
                     type="text"
@@ -165,7 +156,7 @@ function AuthPageContent() {
                     value={phoneOrId}
                     onChange={(e) => setPhoneOrId(e.target.value)}
                     className="h-11 pl-10"
-                    disabled={loading}
+                    disabled={loading || redirecting}
                     autoComplete="username"
                     autoFocus
                   />
@@ -175,12 +166,12 @@ function AuthPageContent() {
               <Button
                 type="submit"
                 className="h-11 w-full gap-2"
-                disabled={loading || !phoneOrId.trim()}
+                disabled={loading || redirecting || !phoneOrId.trim()}
               >
-                {loading ? (
+                {loading || redirecting ? (
                   <>
                     <LoadingSpinner size="sm" className="text-white" />
-                    Signing in…
+                    {redirecting ? 'Opening your dashboard…' : 'Signing in…'}
                   </>
                 ) : (
                   <>
@@ -191,12 +182,13 @@ function AuthPageContent() {
               </Button>
             </form>
 
-            <p className="mt-8 text-center text-xs text-slate-500">
+            <p className="mt-8 text-center text-xs text-neutral-500 dark:text-neutral-400">
               Need access? Contact your church administrator.
             </p>
           </div>
-        </section>
+        </div>
       </div>
+      </main>
     </div>
   )
 }
@@ -205,7 +197,7 @@ export default function AuthPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex min-h-screen items-center justify-center bg-neutral-100 dark:bg-neutral-900">
           <LoadingSpinner />
         </div>
       }

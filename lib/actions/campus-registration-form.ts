@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { createFormFromTemplate } from '@/lib/actions/form-templates'
 import type { ChurchForm } from '@/lib/types'
 import { CAMPUS_MEMBER_REGISTRATION_CATEGORY } from '@/lib/forms/campus-member-registration'
@@ -9,6 +10,7 @@ export async function ensureCampusMemberRegistrationForm(
   groupId: string,
   groupName: string
 ): Promise<{ data: ChurchForm | null; created: boolean; error: string | null }> {
+  await guard(['groups.manage', 'forms.manage'])
   try {
     const { data: forms, error: listError } = await listForms(groupId)
     if (listError) return { data: null, created: false, error: listError }
@@ -42,6 +44,7 @@ export async function ensureCampusMemberRegistrationForm(
 export async function publishCampusMemberRegistrationForm(
   formId: string
 ): Promise<{ data: ChurchForm | null; error: string | null }> {
+  await guard(['groups.manage', 'forms.manage'])
   const { updateForm } = await import('@/lib/actions/forms')
   return updateForm(formId, { status: 'published' })
 }

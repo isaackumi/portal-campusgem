@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
+import { AccessDenied } from '@/components/auth/access-denied'
 import {
   loadCampusActivityBoardAction,
   type CampusActivityBoardGroup,
@@ -82,7 +83,7 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
             </Badge>
           </div>
           {group.group_type === 'campus' ? (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-700">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
               <Building2 className="h-5 w-5" />
             </div>
           ) : (
@@ -207,7 +208,8 @@ function Section({
 
 export default function CampusActivitiesAdminPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, can } = useAuth()
+  const allowed = can('groups.manage')
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [board, setBoard] = useState<CampusActivityBoardData | null>(null)
@@ -220,9 +222,14 @@ export default function CampusActivitiesAdminPage() {
   }, [authLoading, user, router])
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') return
+    if (!user) return
+    if (!allowed) {
+      setLoading(false)
+      return
+    }
     void loadBoard()
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, allowed])
 
   async function loadBoard() {
     setLoading(true)
@@ -246,20 +253,8 @@ export default function CampusActivitiesAdminPage() {
     )
   }
 
-  if (user?.role !== 'admin') {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold text-slate-900">Admin access required</h2>
-            <p className="mt-2 text-slate-600">Only administrators can manage campus and activity units.</p>
-            <Button className="mt-4" onClick={() => router.push('/dashboard')}>
-              Go to dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  if (!allowed) {
+    return <AccessDenied permission="groups.manage" />
   }
 
   const totals = board?.totals ?? { campuses: 0, activities: 0, members: 0, forms: 0 }
@@ -274,7 +269,7 @@ export default function CampusActivitiesAdminPage() {
               Back to Admin
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Campus & Activities</h1>
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Campus & Activities</h1>
               <p className="mt-1 max-w-2xl text-muted-foreground">
                 University fellowships and church-wide events in one place — members, leaders, executives, and scoped
                 forms.
@@ -295,9 +290,9 @@ export default function CampusActivitiesAdminPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-indigo-100 bg-white/80">
+          <Card className="border-brand-100 bg-white/80">
             <CardContent className="flex items-center gap-3 p-5">
-              <Building2 className="h-8 w-8 text-indigo-600" />
+              <Building2 className="h-8 w-8 text-brand-600" />
               <div>
                 <p className="text-sm text-muted-foreground">Campuses</p>
                 <p className="text-2xl font-bold">{totals.campuses}</p>

@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { revalidatePath } from 'next/cache'
 import { createUserRecord } from '@/lib/actions/core-data'
 
@@ -23,6 +24,7 @@ export async function ensureDirectoryUserFromCampContact(args: {
   data: { userId: string; created: boolean } | null
   error: string | null
 }> {
+  await guard('camp.manage')
   const fullName = args.full_name?.trim()
   const phone = args.phone?.trim()
   if (!fullName) {

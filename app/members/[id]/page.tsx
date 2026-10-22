@@ -42,7 +42,7 @@ interface MemberWithDetails extends Member {
 }
 
 export default function MemberProfilePage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, can } = useAuth()
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
@@ -281,14 +281,14 @@ export default function MemberProfilePage() {
               Back to Members
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                 Member Profile
               </h1>
               <p className="text-slate-600">{member.user?.full_name}</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && (
+            {can('members.manage') && (
               <Button 
                 variant="outline" 
                 onClick={isEditing ? handleSaveEdit : handleEdit}

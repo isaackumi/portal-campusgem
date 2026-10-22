@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import type { ChurchForm, Group } from '@/lib/types'
 
 export type CampusActivityBoardGroup = Group & {
@@ -48,6 +49,7 @@ export async function loadCampusActivityBoardAction(): Promise<{
   data: CampusActivityBoardData | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return {
       data: null,

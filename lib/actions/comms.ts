@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import type { ApiResponse } from '@/lib/services/api-types'
 import type {
   CommunicationRecord,
@@ -41,6 +42,7 @@ export async function listCommunicationsAction(filters?: {
   batch_id?: string
   limit?: number
 }): Promise<ApiResponse<CommunicationRecord[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -60,6 +62,7 @@ export async function listCommunicationsAction(filters?: {
 export async function getCommsStatsAction(
   module?: CommsModule
 ): Promise<ApiResponse<CommsStats>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -90,6 +93,7 @@ export async function getCommsProviderStatusAction(): Promise<
     envPresence: Record<string, boolean>
   }>
 > {
+  await guard('dashboard.view')
   const emailProvider = process.env.NEXT_PUBLIC_EMAIL_PROVIDER ?? 'mock'
   const sms = getSmsProviderStatus()
   return {
@@ -126,6 +130,7 @@ export async function sendTestSmsAction(input: {
     error?: string
   }>
 > {
+  await guard('sms.send')
   const phone = input.phone?.trim()
   if (!phone) return { data: null, error: 'Phone is required', loading: false }
   if (!isValidSmsPhone(phone)) {
@@ -205,6 +210,7 @@ export async function searchCommsRecipientsAction(params: {
   query?: string
   limit?: number
 }): Promise<ApiResponse<CommsRecipient[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -289,6 +295,7 @@ export async function resolveGroupRecipientsAction(params: {
   group_id: string
   module: CommsModule
 }): Promise<ApiResponse<CommsRecipient[]>> {
+  await guard('dashboard.view')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -321,6 +328,7 @@ export async function sendCommsAction(
     manual_recipients?: string
   }
 ): Promise<ApiResponse<SendCommsResult>> {
+  await guard('sms.send')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -393,6 +401,7 @@ export async function resendCommunicationAction(input: {
     | 'status'
   >
 }): Promise<ApiResponse<SendCommsResult>> {
+  await guard('sms.send')
   if (!isConvexDataSource()) {
     return { data: null, error: convexUnavailable(), loading: false }
   }
@@ -468,6 +477,7 @@ export async function resendCommunicationAction(input: {
 export async function loadCommsGroupsAction(): Promise<
   ApiResponse<Array<{ id: string; name: string; group_type: string }>>
 > {
+  await guard('dashboard.view')
   try {
     const { loadGroupsPage } = await import('@/lib/actions/core-data')
     const { data } = await loadGroupsPage(1, 200)

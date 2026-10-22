@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import type { ApiResponse } from '@/lib/services/api-types'
 
 export async function syncAndBackfillCampFormExtrasAction(): Promise<
@@ -10,6 +11,7 @@ export async function syncAndBackfillCampFormExtrasAction(): Promise<
     registrations_patched: number
   }>
 > {
+  await guard('camp.manage')
   try {
     const {
       syncCampMeetingFormPrefillKeysInConvex,

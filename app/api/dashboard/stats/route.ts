@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { DashboardStats } from '@/lib/types'
+import { guard } from '@/lib/auth/action-guard'
 
 const CACHE_TTL_MS = 15_000
 
@@ -30,6 +31,15 @@ function emptyDashboardStats(): DashboardStats {
 }
 
 export async function GET() {
+  try {
+    await guard('dashboard.view')
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
   if (!process.env.NEXT_PUBLIC_CONVEX_URL || !process.env.CAMP_CONVEX_SERVER_SECRET) {
     return NextResponse.json({ error: 'Convex is not configured' }, { status: 503 })
   }

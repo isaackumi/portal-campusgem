@@ -1,5 +1,6 @@
 'use server'
 
+import { guard } from '@/lib/auth/action-guard'
 import { createFormFromTemplate } from '@/lib/actions/form-templates'
 import { createGroupAction } from '@/lib/actions/core-data'
 import { listForms } from '@/lib/actions/forms'
@@ -16,6 +17,7 @@ export async function findEaglesCampMeetingGroups(): Promise<{
   data: Group[]
   error: string | null
 }> {
+  await guard('dashboard.view')
   try {
     const { fetchGroupsFromConvex } = await import('@/lib/convex/core-bridge')
     const groups = await fetchGroupsFromConvex()
@@ -39,6 +41,7 @@ export async function ensureEaglesCampMeetingGroup(): Promise<{
   created: boolean
   error: string | null
 }> {
+  await guard('camp.manage')
   const { data: existing, error: listError } = await findEaglesCampMeetingGroups()
   if (listError) return { data: null, created: false, error: listError }
 
@@ -62,6 +65,7 @@ export async function findCampMeetingFormForYear(campYearId: string): Promise<{
   data: ChurchForm | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   try {
     const { listFormsFromConvex } = await import('@/lib/convex/forms-bridge')
     const forms = await listFormsFromConvex()
@@ -83,6 +87,7 @@ export async function ensureCampMeetingRegistrationForm(campYearId: string): Pro
   created: boolean
   error: string | null
 }> {
+  await guard('camp.manage')
   if (!campYearId.trim()) {
     return { data: null, created: false, error: 'Select a camp year first.' }
   }
@@ -141,6 +146,7 @@ export async function findCampMeetingFeedbackFormForYear(campYearId: string): Pr
   data: ChurchForm | null
   error: string | null
 }> {
+  await guard('dashboard.view')
   try {
     const { listFormsFromConvex } = await import('@/lib/convex/forms-bridge')
     const forms = await listFormsFromConvex()
@@ -162,6 +168,7 @@ export async function ensureCampMeetingFeedbackForm(campYearId: string): Promise
   created: boolean
   error: string | null
 }> {
+  await guard('camp.manage')
   if (!campYearId.trim()) {
     return { data: null, created: false, error: 'Select a camp year first.' }
   }
