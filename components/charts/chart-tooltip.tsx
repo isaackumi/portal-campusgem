@@ -28,8 +28,8 @@ export function AnalyticsChartTooltip({
   const displayLabel = labelFormatter && label != null ? labelFormatter(String(label)) : label
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm">
-      {displayLabel ? <p className="mb-1.5 font-semibold text-slate-800">{displayLabel}</p> : null}
+    <div className="rounded-lg border border-neutral-200 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm dark:border-neutral-700 dark:bg-neutral-800/95">
+      {displayLabel ? <p className="mb-1.5 font-semibold text-neutral-800 dark:text-neutral-100">{displayLabel}</p> : null}
       <ul className="space-y-1">
         {payload.map((entry) => {
           const name = String(entry.name ?? entry.dataKey ?? '')
@@ -41,8 +41,8 @@ export function AnalyticsChartTooltip({
                 className="h-2 w-2 shrink-0 rounded-full"
                 style={{ backgroundColor: entry.color ?? '#3b82f6' }}
               />
-              <span className="text-slate-600">{name}</span>
-              <span className="ml-auto font-medium tabular-nums text-slate-900">
+              <span className="text-neutral-600 dark:text-neutral-300">{name}</span>
+              <span className="ml-auto font-medium tabular-nums text-neutral-900 dark:text-neutral-50">
                 {valueFormatter(raw, name, entry)}
                 {typeof percent === 'number' ? ` (${percent}%)` : null}
               </span>

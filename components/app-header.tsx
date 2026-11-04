@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
 import { LogOut, Menu, PanelLeft, Search } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -12,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useVisibleNav } from '@/lib/navigation/use-visible-nav'
+import { CommandPalette } from '@/components/command-palette'
 import { useActiveCampYear } from '@/lib/hooks/use-camp'
 import { ROLE_LABELS, isUserRole } from '@/lib/auth/roles'
 import { cn, getInitials } from '@/lib/utils'
@@ -49,88 +48,28 @@ export function AppHeader({
   onToggleSidebar: () => void
   onOpenMobile: () => void
 }) {
-  const router = useRouter()
-  const pathname = usePathname()
   const { user, signOut } = useAuth()
-  const [query, setQuery] = useState('')
-  const [open, setOpen] = useState(false)
-  const searchRef = useRef<HTMLInputElement>(null)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
-  // ⌘K / Ctrl+K jumps to search from anywhere.
+  // ⌘K / Ctrl+K (or "/" outside a text field) opens search from anywhere.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      const typing = target?.closest('input, textarea, select, [contenteditable="true"]')
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        searchRef.current?.focus()
-        searchRef.current?.select()
+        setPaletteOpen((v) => !v)
+      } else if (event.key === '/' && !typing && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault()
+        setPaletteOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const { pages } = useVisibleNav()
   const role = user?.role
   const roleLabel = isUserRole(role) ? ROLE_LABELS[role] : 'Member'
-
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-    return pages
-      .filter(
-        (item) =>
-          item.name.toLowerCase().includes(q) ||
-          item.section.toLowerCase().includes(q) ||
-          (item.description?.toLowerCase().includes(q) ?? false)
-      )
-      .slice(0, 8)
-  }, [pages, query])
-
-  useEffect(() => {
-    setQuery('')
-    setOpen(false)
-  }, [pathname])
-
-  useEffect(() => {
-    if (!open) return
-    const onPointerDown = (event: MouseEvent) => {
-      const target = event.target
-      if (!(target instanceof Node)) return
-      if (document.getElementById('global-search-wrap')?.contains(target)) return
-      setOpen(false)
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [open])
-
-  useEffect(() => {
-    const main = document.querySelector('[data-app-main]')
-    if (!main) return
-
-    const apply = () => {
-      const q = query.trim().toLowerCase()
-      main.querySelectorAll('tbody tr').forEach((node) => {
-        const row = node as HTMLElement
-        row.hidden = Boolean(q) && !row.innerText.toLowerCase().includes(q)
-      })
-    }
-
-    apply()
-    const observer = new MutationObserver(apply)
-    observer.observe(main, { childList: true, subtree: true, characterData: true })
-    return () => {
-      observer.disconnect()
-      main.querySelectorAll('tbody tr').forEach((node) => {
-        ;(node as HTMLElement).hidden = false
-      })
-    }
-  }, [query, pathname])
-
-  function go(href: string) {
-    setQuery('')
-    setOpen(false)
-    router.push(href)
-  }
 
   return (
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-x-3 bg-neutral-100/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-neutral-100/80 dark:bg-neutral-950/90 sm:gap-x-4 sm:px-4 lg:pl-3 lg:pr-4">
@@ -153,71 +92,23 @@ export function AppHeader({
         <PanelLeft className="h-[18px] w-[18px]" aria-hidden />
       </button>
 
-      <div id="global-search-wrap" className="relative mx-auto min-w-0 max-w-md flex-1">
-        <label htmlFor="global-search" className="sr-only">
-          Search
-        </label>
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <Search className="h-4 w-4 text-neutral-400" aria-hidden />
-        </div>
-        <input
-          ref={searchRef}
-          id="global-search"
-          type="search"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value)
-            setOpen(true)
-          }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && matches[0]) {
-              event.preventDefault()
-              go(matches[0].href)
-            }
-            if (event.key === 'Escape') setOpen(false)
-          }}
-          placeholder="Search pages, or filter this page…"
-          className="block h-9 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-12 text-sm font-normal text-neutral-900 placeholder:text-neutral-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500"
-        />
-        <kbd className="pointer-events-none absolute inset-y-0 right-2 my-auto hidden h-5 items-center rounded border border-neutral-200 bg-neutral-50 px-1.5 font-mono text-[11px] font-medium text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 sm:inline-flex">
-          ⌘K
-        </kbd>
-        {open && query.trim() ? (
-          <div className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-50 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
-            {matches.length > 0 ? (
-              <ul className="py-1">
-                <li className="app-overline px-3 pb-1 pt-2">
-                  Pages
-                </li>
-                {matches.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <li key={`${item.section}-${item.href}`}>
-                      <button
-                        type="button"
-                        onClick={() => go(item.href)}
-                        className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-neutral-800 hover:bg-neutral-50 dark:text-neutral-100 dark:hover:bg-neutral-700"
-                      >
-                        <Icon className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-300" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium">{item.name}</span>
-                          <span className="block truncate text-xs text-neutral-500 dark:text-neutral-400">
-                            {item.section}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            ) : (
-              <p className="px-3 py-3 text-sm text-neutral-500 dark:text-neutral-400">
-                No pages match. Table rows on this page are filtered as you type.
-              </p>
-            )}
-          </div>
-        ) : null}
+      <div className="mx-auto min-w-0 max-w-md flex-1">
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-haspopup="dialog"
+          className="group flex h-9 w-full items-center gap-2.5 rounded-lg border border-neutral-200 bg-white pl-3 pr-2 text-left text-sm text-neutral-400 transition-colors hover:border-neutral-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-500 dark:hover:border-neutral-600"
+        >
+          <Search className="h-4 w-4 shrink-0 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300" aria-hidden />
+          <span className="min-w-0 flex-1 truncate">
+            <span className="sm:hidden">Search</span>
+            <span className="hidden sm:inline">Search people, campers, pages…</span>
+          </span>
+          <kbd className="hidden h-5 items-center rounded border border-neutral-200 bg-neutral-50 px-1.5 font-mono text-[11px] font-medium text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 sm:inline-flex">
+            ⌘K
+          </kbd>
+        </button>
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       </div>
 
       <div className="flex items-center gap-x-2 sm:gap-x-3">

@@ -1,6 +1,21 @@
 import type { Config } from 'tailwindcss'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
+/* True gray, matching Trovesuite Accounting's neutral scale. */
+const neutralScale = {
+  50: '#fafafa',
+  100: '#f5f5f5',
+  200: '#e5e5e5',
+  300: '#d4d4d4',
+  400: '#a3a3a3',
+  500: '#737373',
+  600: '#525252',
+  700: '#404040',
+  800: '#262626',
+  900: '#171717',
+  950: '#0a0a0a',
+}
+
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -24,20 +39,10 @@ const config: Config = {
         mono: ['var(--font-mono)', ...defaultTheme.fontFamily.mono],
       },
       colors: {
-        /* True gray, matching Trovesuite Accounting's neutral scale. */
-        slate: {
-          50: '#fafafa',
-          100: '#f5f5f5',
-          200: '#e5e5e5',
-          300: '#d4d4d4',
-          400: '#a3a3a3',
-          500: '#737373',
-          600: '#525252',
-          700: '#404040',
-          800: '#262626',
-          900: '#171717',
-          950: '#0a0a0a',
-        },
+        /* One grey everywhere: slate and gray resolve to the neutral scale, so old
+           screens match new ones in both themes. */
+        slate: neutralScale,
+        gray: neutralScale,
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

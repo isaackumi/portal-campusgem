@@ -1,227 +1,64 @@
-# Design System Master File
+# Campus Gem design system
 
-> **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
-> If that file exists, its rules **override** this Master file.
-> If not, strictly follow the rules below.
+The source of truth is the code: `tailwind.config.ts`, `app/globals.css`, `components/ui/*`.
+This page explains the rules so new screens match the old ones in both themes.
 
----
+## Colour
 
-**Project:** Campus Gem
-**Generated:** 2026-08-24 15:21:59
-**Category:** Smart Home/IoT Dashboard
-**Design Dials:** Variance 4/10 (Balanced / Modern) | Motion 3/10 (Subtle) | Density 8/10 (Dense / Dashboard)
+| Role | Light | Dark | Use |
+|------|-------|------|-----|
+| Canvas (header, sidebar) | `neutral-100` | `neutral-950` | Behind everything |
+| Content panel | `white` | `neutral-900` | `.app-content-panel` |
+| Card | `white` | `neutral-800` | `.dashboard-panel`, `.app-card` |
+| Inset well | `neutral-50` | `neutral-900/40` | Code boxes, stat wells |
+| Border | `neutral-200` | `neutral-700` | Cards, inputs, dividers |
+| Ink: primary | `neutral-900` | `neutral-50`/`100` | Titles, values |
+| Ink: secondary | `neutral-600`/`700` | `neutral-300` | Body |
+| Ink: muted | `neutral-500` | `neutral-400` | Meta, labels |
+| Brand action | `brand-600` | `brand-700` (button), `brand-400` (text) | Primary buttons, links, active nav |
 
----
+- **One grey.** `slate` and `gray` are aliased to the neutral scale. Write `neutral-*` in new code.
+- **Status colours are reserved:** emerald = good, amber = needs attention, red = problem.
+  Always pair them with an icon or a label. Never use them for decoration or "series 4".
+- **Every colour class needs a `dark:` pair.** `globals.css` has a safety net for older
+  screens (light-only `text-slate-900`, `bg-blue-50`, etc.), but it only applies when the
+  element has no `dark:` class of the same kind. Explicit `dark:` classes always win.
+- Tinted panels: `bg-{hue}-50 text-{hue}-800 border-{hue}-200` in light,
+  `dark:bg-{hue}-950/30 dark:text-{hue}-200 dark:border-{hue}-900/60` in dark.
 
-## Global Rules
+## Type
 
-### Color Palette
+See AGENTS.md. In short: Instrument Serif only for page titles (`.app-page-title`,
+`.app-display-accent`); Geist for everything else; Geist Mono for IDs, check-in codes and
+phone numbers in call lists. Use `.app-section-title`, `.app-overline`, `.app-stat-label`,
+`.app-stat-value`, `.app-page-description`; don't invent sizes.
 
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#0F172A` | `--color-primary` |
-| On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#1E293B` | `--color-secondary` |
-| Accent/CTA | `#22C55E` | `--color-accent` |
-| Background | `#020617` | `--color-background` |
-| Foreground | `#F8FAFC` | `--color-foreground` |
-| Muted | `#1A1E2F` | `--color-muted` |
-| Border | `#334155` | `--color-border` |
-| Destructive | `#EF4444` | `--color-destructive` |
-| Ring | `#0F172A` | `--color-ring` |
+## Components
 
-**Color Notes:** Dark bg + green positive indicators
+| Need | Use |
+|------|-----|
+| Page header | `PageHeader` (or `CampAdminPageHeader` inside camp) |
+| Card | `.dashboard-panel` + `p-5`, title `.app-section-title` |
+| Headline number | `StatCard`, or a linked KPI tile like the camp overview |
+| Progress | `Meter` (`components/ui/meter.tsx`) |
+| Parts of a whole | `SegmentedBar`: legend always shows label + count |
+| Chip | `Badge` with `success` / `warning` / `danger` / `secondary` / `brand` / `outline` |
+| Person | `PersonAvatar` (stable pastel per person) |
+| Bulk actions | Floating bar at the bottom centre once rows are selected |
+| Long jobs (bulk SMS) | `useBackgroundJobs().start(...)`, never block the page |
+| Search | ⌘K palette (`components/command-palette.tsx`); list pages also get their own search box |
 
-### Typography
+## Charts
 
-- **Heading Font:** Fira Code
-- **Body Font:** Fira Sans
-- **Mood:** dashboard, data, analytics, code, technical, precise
-- **Google Fonts:** [Fira Code + Fira Sans](https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap)
+- One series → no legend; the title names it. Bars `brand-600` (light) / `brand-500` (dark),
+  4px rounded tops, recessive grid (`currentColor` at 12%), tooltip on hover.
+- Never a dual axis. Status colours only for status.
+- Give every chart a text summary (`figcaption` or `sr-only`).
+- Check palettes with the data-viz validator before adding a categorical one.
 
-**CSS Import:**
-```css
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
-```
+## Interaction
 
-### Spacing Variables
-
-*Density: 8/10 — Dense / Dashboard*
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-xs` | `2px` / `0.125rem` | Tight gaps |
-| `--space-sm` | `4px` / `0.25rem` | Icon gaps, inline spacing |
-| `--space-md` | `8px` / `0.5rem` | Standard padding |
-| `--space-lg` | `12px` / `0.75rem` | Section padding |
-| `--space-xl` | `16px` / `1rem` | Large gaps |
-| `--space-2xl` | `24px` / `1.5rem` | Section margins |
-| `--space-3xl` | `32px` / `2rem` | Hero padding |
-
-### Shadow Depths
-
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle lift |
-| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Cards, buttons |
-| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
-| `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
-
----
-
-## Component Specs
-
-### Buttons
-
-```css
-/* Primary Button */
-.btn-primary {
-  background: #22C55E;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* Secondary Button */
-.btn-secondary {
-  background: transparent;
-  color: #0F172A;
-  border: 2px solid #0F172A;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-```
-
-### Cards
-
-```css
-.card {
-  background: #020617;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
-```
-
-### Inputs
-
-```css
-.input {
-  padding: 12px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 200ms ease;
-}
-
-.input:focus {
-  border-color: #0F172A;
-  outline: none;
-  box-shadow: 0 0 0 3px #0F172A20;
-}
-```
-
-### Modals
-
-```css
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-.modal {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 90%;
-}
-```
-
----
-
-## Style Guidelines
-
-**Style:** Soft UI Evolution
-
-**Keywords:** Evolved soft UI, better contrast, modern aesthetics, subtle depth, accessibility-focused, improved shadows, hybrid
-
-**Best For:** Modern enterprise apps, SaaS platforms, health/wellness, modern business tools, professional, hybrid
-
-**Key Effects:** Improved shadows (softer than flat, clearer than neumorphism), modern (200-300ms), focus visible, WCAG AA/AAA
-
-### Page Pattern
-
-**Pattern Name:** Real-Time / Operations Landing
-
-- **Conversion Strategy:** For ops/security/iot products. Demo or sandbox link. Trust signals.
-- **CTA Placement:** Primary CTA in nav + After metrics
-- **Section Order:** 1. Hero (product + live preview or status), 2. Key metrics/indicators, 3. How it works, 4. CTA (Start trial / Contact)
-
----
-
-## Motion
-
-**Page Transition** (Subtle) — Trigger: route change | Duration: 200-300ms | Easing: `power1.inOut`
-
-```js
-gsap.to(main, { opacity: 0, duration: 0.2, onComplete: () => { navigate(); gsap.fromTo(main, { opacity: 0 }, { opacity: 1, duration: 0.2 }); } });
-```
-
-**Framework notes:** Pair with the router's transition hooks (Next.js App Router transitions, React Router's useNavigate, Vue Router's beforeEach/afterEach)
-
-- ✅ Preload the destination route's critical assets before the exit tween finishes
-- ❌ Don't block navigation on animation; cap exit duration at ~250ms so the app never feels unresponsive
-- ⚡ Exit animation should always resolve faster than entrance (asymmetric timing) so back/forward feels snappy
-
----
-
-## Anti-Patterns (Do NOT Use)
-
-- ❌ Slow updates
-- ❌ No automation
-
-### Additional Forbidden Patterns
-
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
-
----
-
-## Pre-Delivery Checklist
-
-Before delivering any UI code, verify:
-
-- [ ] No emojis used as icons (use SVG instead)
-- [ ] All icons from consistent icon set (Heroicons/Lucide)
-- [ ] `cursor-pointer` on all clickable elements
-- [ ] Hover states with smooth transitions (150-300ms)
-- [ ] Light mode: text contrast 4.5:1 minimum
-- [ ] Focus states visible for keyboard navigation
-- [ ] `prefers-reduced-motion` respected
-- [ ] Responsive: 375px, 768px, 1024px, 1440px
-- [ ] No content hidden behind fixed navbars
-- [ ] No horizontal scroll on mobile
+- Primary action top-right of the page header; destructive actions confirm.
+- Optimistic updates for one-tap actions (e.g. call outcomes), with a toast and rollback on error.
+- Empty states say what's missing and offer the next step.
+- Keyboard: ⌘K or `/` opens search; dialogs trap focus; every icon-only button has a label.

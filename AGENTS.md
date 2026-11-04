@@ -20,6 +20,9 @@ camp meeting, RLC (mother church), forms, SMS.
   starts with `await guard('<permission>')` (`lib/auth/action-guard.ts`). Intentionally
   public entry points (camp registration, public forms, RLC visit/join) wrap their body
   in `asSystem(...)`. Add one or the other to every new action.
+- **Callers:** `camp.calls` lets a volunteer open `/admin/camp-meeting/calls` and see only
+  the registrants assigned to them (`assigned_to`). Assigning, and texting call lists, needs
+  `camp.manage` (+ `sms.send` for SMS). Logic lives in `lib/camp/call-campaign.ts`.
 - **Access management UI:** `/admin/admins` ("Access & roles"). Role or grant changes go
   through `updateUserAccess` / `requireAccessChange`: `users.manage` is required, and
   `admins.manage` too for anything touching admin rights.
@@ -31,6 +34,7 @@ camp meeting, RLC (mother church), forms, SMS.
   `requireAuth` functions are unreachable from the browser.
 - After changing `convex/schema.ts` or functions, deploy with `npx convex deploy`
   (or `npx convex dev`).
+- `patchCampRegistrationWithSecret` treats a `null` value as "remove this field".
 
 ## Checks
 
@@ -47,6 +51,9 @@ Three families, each with one job (set up in `app/layout.tsx`):
   Never inside cards, buttons, tables or forms.
 - **Geist** (`font-sans`, the default): everything else, numbers included.
 - **Geist Mono** (`font-mono`): membership IDs, check-in codes, keyboard shortcuts.
+
+Colour rules, components and chart rules: `design-system/campus-gem/MASTER.md`. Every
+colour class needs a `dark:` pair; write `neutral-*` (slate and gray are aliased to it).
 
 Use the type classes in `app/globals.css` (`app-section-title`, `app-overline`,
 `app-stat-label`, `app-stat-value`) rather than ad-hoc sizes. Chips are `Badge` with a tone
