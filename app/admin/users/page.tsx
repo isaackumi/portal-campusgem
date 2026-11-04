@@ -36,23 +36,18 @@ import {
   Calendar,
   Shield,
   Crown,
-  User,
-  Cake
+  User
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { promoteUserToCorporateGem } from '@/lib/actions/corporate-gem'
 import { AddToRlcDialog } from '@/components/rlc/add-to-rlc-dialog'
-import { useAllUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/hooks/use-data'
+import { useAllUsers, useCreateUser, useDeleteUser } from '@/lib/hooks/use-data'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { AppUser } from '@/lib/types'
 import { dataService } from '@/lib/services/data-service'
-import {
-  memberDobIsoFromCampRegistration,
-  parseIsoDob,
-  MEMBER_DOB_PLACEHOLDER_YEAR,
-} from '@/lib/camp/birthday'
+import { EditUserDialog } from '@/components/users/edit-user-dialog'
 
 export default function UsersManagementPage() {
   const { loading: authLoading, can } = useAuth()
@@ -64,8 +59,7 @@ export default function UsersManagementPage() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [editingUser, setEditingUser] = useState<AppUser | null>(null)
-  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [promotingUserId, setPromotingUserId] = useState<string | null>(null)
   const [rlcUser, setRlcUser] = useState<AppUser | null>(null)
   const [rlcMemberId, setRlcMemberId] = useState<string | undefined>()
@@ -95,7 +89,6 @@ export default function UsersManagementPage() {
   // Data hooks
   const { data: users, loading, error, refetch } = useAllUsers()
   const { createUser, loading: creating } = useCreateUser()
-  const { updateUser, loading: updating } = useUpdateUser()
   const { deleteUser, loading: deleting } = useDeleteUser()
 
   // Filter and search users (must run before any early return — same order every render)
@@ -170,79 +163,6 @@ export default function UsersManagementPage() {
       toast({
         title: "Error",
         description: "Failed to create user. Please try again.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleUpdateUser = async () => {
-    if (!editingUser) return
-    
-    try {
-      const result = await updateUser(editingUser.id, {
-        full_name: formData.full_name,
-        phone: formData.phone,
-        email: formData.email,
-        role: formData.role as 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor',
-        membership_id: formData.membership_id,
-        join_year: formData.join_year,
-        marital_status: formData.marital_status || undefined,
-        occupation: formData.occupation,
-        place_of_work: formData.place_of_work,
-        emergency_contact_name: formData.emergency_contact_name,
-        emergency_contact_phone: formData.emergency_contact_phone,
-        emergency_contact_relation: formData.emergency_contact_relation
-      })
-      if (result) {
-        const m = parseInt(formData.dob_month, 10)
-        const d = parseInt(formData.dob_day, 10)
-        if (Number.isFinite(m) && Number.isFinite(d)) {
-          const yRaw = formData.dob_year.trim()
-          const y = yRaw ? parseInt(yRaw, 10) : undefined
-          const dob = memberDobIsoFromCampRegistration(
-            {},
-            { birth_month: m, birth_day: d, birth_year: y }
-          )
-          if (dob) {
-            if (formData.member_id) {
-              const memRes = await dataService.updateMember(formData.member_id, { dob })
-              if (memRes.error) {
-                toast({
-                  title: 'User updated; birthday not saved',
-                  description: memRes.error,
-                  variant: 'destructive'
-                })
-              }
-            } else {
-              const memRes = await dataService.createMember({
-                user_id: editingUser.id,
-                dob,
-                status: 'active'
-              })
-              if (memRes.error) {
-                toast({
-                  title: 'User updated; member profile not created',
-                  description: memRes.error,
-                  variant: 'destructive'
-                })
-              }
-            }
-          }
-        }
-        toast({
-          title: "User Updated",
-          description: `${formData.full_name} has been successfully updated.`,
-          variant: "default"
-        })
-        setShowEditDialog(false)
-        setEditingUser(null)
-        resetForm()
-        refetch()
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update user. Please try again.",
         variant: "destructive"
       })
     }
@@ -325,35 +245,6 @@ export default function UsersManagementPage() {
       title: 'Added to Corporate Gem',
       description: `${user.full_name} is now in ${group?.name ?? 'Corporate Gem'} as ${data.role}.`,
     })
-  }
-
-  const openEditDialog = async (user: AppUser) => {
-    setEditingUser(user)
-    const memberRes = await dataService.getMemberByUserId(user.id)
-    const member = memberRes.data
-    const isoParts = member?.dob ? parseIsoDob(member.dob) : {}
-    const hidesPlaceholderYear = isoParts.year === MEMBER_DOB_PLACEHOLDER_YEAR
-    setFormData({
-      full_name: user.full_name || '',
-      phone: user.phone || '',
-      email: user.email || '',
-      role: user.role || 'member',
-      membership_id: user.membership_id || '',
-      join_year: user.join_year || new Date().getFullYear(),
-      marital_status: user.marital_status || '',
-      occupation: user.occupation || '',
-      place_of_work: user.place_of_work || '',
-      address: '',
-      emergency_contact_name: user.emergency_contact_name || '',
-      emergency_contact_phone: user.emergency_contact_phone || '',
-      emergency_contact_relation: user.emergency_contact_relation || '',
-      member_id: member?.id ?? '',
-      dob_month: isoParts.month != null ? String(isoParts.month) : '',
-      dob_day: isoParts.day != null ? String(isoParts.day) : '',
-      dob_year:
-        isoParts.year != null && !hidesPlaceholderYear ? String(isoParts.year) : ''
-    })
-    setShowEditDialog(true)
   }
 
   if (loading) {
@@ -646,7 +537,7 @@ export default function UsersManagementPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuItem onClick={() => void openEditDialog(user)}>
+                          <DropdownMenuItem onClick={() => setEditingUserId(user.id)}>
                             <Edit className="mr-2 h-4 w-4" aria-hidden />
                             Edit details
                           </DropdownMenuItem>
@@ -679,117 +570,14 @@ export default function UsersManagementPage() {
           </CardContent>
         </Card>
 
-        {/* Edit User Dialog */}
-        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit User</DialogTitle>
-              <DialogDescription>
-                Update user information and role.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit_full_name">Full Name *</Label>
-                  <Input
-                    id="edit_full_name"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                    placeholder="Enter full name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_phone">Phone Number *</Label>
-                  <Input
-                    id="edit_phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Enter phone number"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit_email">Email</Label>
-                  <Input
-                    id="edit_email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter email address"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_role">Role *</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor' }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="visitor">Visitor</SelectItem>
-                      <SelectItem value="elder">Elder</SelectItem>
-                      <SelectItem value="pastor">Pastor</SelectItem>
-                      <SelectItem value="finance_officer">Finance officer</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-teal-200 bg-gradient-to-br from-teal-50/90 to-white p-4 space-y-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-teal-950">
-                  <Cake className="h-4 w-4 text-teal-700" />
-                  Member birthday
-                </div>
-                <p className="text-xs text-teal-800 leading-relaxed">
-                  Used for upcoming birthdays on the dashboard. Month and day are required; year is optional (we store{' '}
-                  {MEMBER_DOB_PLACEHOLDER_YEAR} until a real year is set).
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-xs">Month</Label>
-                    <Input
-                      inputMode="numeric"
-                      placeholder="1–12"
-                      value={formData.dob_month}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, dob_month: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Day</Label>
-                    <Input
-                      inputMode="numeric"
-                      placeholder="1–31"
-                      value={formData.dob_day}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, dob_day: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Year (optional)</Label>
-                    <Input
-                      inputMode="numeric"
-                      placeholder="e.g. 1998"
-                      value={formData.dob_year}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, dob_year: e.target.value }))}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleUpdateUser} disabled={updating}>
-                  {updating ? 'Updating...' : 'Update User'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <EditUserDialog
+          open={Boolean(editingUserId)}
+          onOpenChange={(open) => {
+            if (!open) setEditingUserId(null)
+          }}
+          userId={editingUserId ?? ''}
+          onSaved={() => refetch()}
+        />
 
         {rlcUser ? (
           <AddToRlcDialog

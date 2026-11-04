@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { campService } from '@/lib/services/camp-service'
 import { dataService } from '@/lib/services/data-service'
@@ -20,12 +21,13 @@ import {
     User, Phone, Mail, Calendar, MessageSquare, ArrowLeft, 
     Download, QrCode, CheckCircle2, XCircle, Edit, DollarSign,
     UserPlus, UserMinus, FileText, MapPin, GraduationCap,
-    Heart, Shield, Clock, CreditCard, Send, Cake, Sparkles
+    Heart, Shield, Clock, CreditCard, Send, Cake, Sparkles, Pencil, ExternalLink
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { ImportContactWarningsBadge, ImportContactWarningsList } from '@/components/camp/import-contact-warnings'
 import { CampRegistrationRoomCard } from '@/components/camp/camp-registration-room-card'
 import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { EditRegistrationDialog } from '@/components/camp/edit-registration-dialog'
 import {
     memberDobIsoFromCampRegistration,
     MEMBER_DOB_PLACEHOLDER_YEAR,
@@ -43,7 +45,9 @@ export default function RegistrationDetailPage() {
     const { id } = useParams() as { id: string }
     const router = useRouter()
     const { toast } = useToast()
-    const { user } = useAuth()
+    const { user, can } = useAuth()
+    const canEdit = can('camp.manage') || can('camp.payments')
+    const [editOpen, setEditOpen] = useState(false)
 
     const [data, setData] = useState<CampRegistration | null>(null)
     const [roomContext, setRoomContext] = useState<CampRegistrationRoomContext | null>(null)
@@ -557,7 +561,7 @@ export default function RegistrationDetailPage() {
     const qrScanValue = data.qr_code
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-neutral-950 dark:to-neutral-900">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4">
@@ -578,6 +582,18 @@ export default function RegistrationDetailPage() {
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        {canEdit ? (
+                            <Button onClick={() => setEditOpen(true)}>
+                                <Pencil className="mr-2 h-4 w-4" aria-hidden /> Edit details
+                            </Button>
+                        ) : null}
+                        {data.user_id ? (
+                            <Button variant="outline" asChild>
+                                <Link href={`/admin/users/${data.user_id}`}>
+                                    <ExternalLink className="mr-2 h-4 w-4" aria-hidden /> Open user profile
+                                </Link>
+                            </Button>
+                        ) : null}
                         <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="outline">
@@ -1052,6 +1068,13 @@ export default function RegistrationDetailPage() {
                             </CardContent>
                         </Card>
 
+                        <EditRegistrationDialog
+                            open={editOpen}
+                            onOpenChange={setEditOpen}
+                            registration={data}
+                            onSaved={() => void loadData()}
+                        />
+
                         <CampSmsReviewDialog
                             open={confirmSmsReviewOpen}
                             onOpenChange={setConfirmSmsReviewOpen}
@@ -1086,12 +1109,18 @@ export default function RegistrationDetailPage() {
                             </CardHeader>
                             <CardContent className="space-y-4 pt-6">
                                 {linkedUser && (
-                                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 text-sm">
-                                        <p className="font-medium text-emerald-950">Linked directory user</p>
-                                        <p className="text-emerald-900">{linkedUser.full_name}</p>
-                                        <p className="text-xs text-emerald-800">
+                                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/40">
+                                        <p className="font-medium text-emerald-950 dark:text-emerald-200">Linked directory user</p>
+                                        <p className="text-emerald-900 dark:text-emerald-300">{linkedUser.full_name}</p>
+                                        <p className="text-xs text-emerald-800 dark:text-emerald-400">
                                             {linkedUser.phone} · {linkedUser.membership_id} · {linkedUser.role}
                                         </p>
+                                        <Link
+                                            href={`/admin/users/${linkedUser.id}`}
+                                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-900 underline-offset-2 hover:underline dark:text-emerald-300"
+                                        >
+                                            Open user profile <ExternalLink className="h-3 w-3" aria-hidden />
+                                        </Link>
                                     </div>
                                 )}
                                 <div className="grid grid-cols-3 gap-2">

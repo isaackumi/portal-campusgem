@@ -301,6 +301,29 @@ export const updateUserWithSecret = mutation({
     role: v.optional(userRole),
     membership_id: v.optional(v.string()),
     join_year: v.optional(v.number()),
+    // Profile fields. Strings: "" clears. Nullable fields: null clears.
+    first_name: v.optional(v.string()),
+    middle_name: v.optional(v.string()),
+    last_name: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    occupation: v.optional(v.string()),
+    place_of_work: v.optional(v.string()),
+    marital_status: v.optional(
+      v.union(
+        v.literal('single'),
+        v.literal('married'),
+        v.literal('divorced'),
+        v.literal('widowed'),
+        v.literal('separated'),
+        v.null()
+      )
+    ),
+    spouse_name: v.optional(v.string()),
+    anniversary_date: v.optional(v.string()),
+    children_count: v.optional(v.union(v.number(), v.null())),
+    emergency_contact_name: v.optional(v.string()),
+    emergency_contact_phone: v.optional(v.string()),
+    emergency_contact_relation: v.optional(v.string()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -323,6 +346,34 @@ export const updateUserWithSecret = mutation({
     }
     if (args.membership_id != null) patch.membership_id = args.membership_id.trim()
     if (args.join_year != null) patch.join_year = args.join_year
+
+    const optionalText = [
+      'first_name',
+      'middle_name',
+      'last_name',
+      'occupation',
+      'place_of_work',
+      'spouse_name',
+      'anniversary_date',
+      'emergency_contact_name',
+      'emergency_contact_relation',
+    ] as const
+    for (const key of optionalText) {
+      const value = args[key]
+      if (value !== undefined) patch[key] = value.trim() || undefined
+    }
+    for (const key of ['whatsapp', 'emergency_contact_phone'] as const) {
+      const value = args[key]
+      if (value === undefined) continue
+      if (!value.trim()) {
+        patch[key] = undefined
+        continue
+      }
+      // Contact-only numbers: normalize when we can, keep foreign/legacy formats otherwise.
+      patch[key] = normalizeGhanaPhone(value) || value.trim()
+    }
+    if (args.marital_status !== undefined) patch.marital_status = args.marital_status ?? undefined
+    if (args.children_count !== undefined) patch.children_count = args.children_count ?? undefined
 
     if (args.phone != null) {
       const phone = normalizeGhanaPhone(args.phone)

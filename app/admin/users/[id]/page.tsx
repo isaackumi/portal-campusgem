@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { EditUserDialog } from '@/components/users/edit-user-dialog'
 import { ArrowLeft, Calendar, Edit, Mail, Phone, Shield, User } from 'lucide-react'
 
 function roleBadgeVariant(role: AppUser['role']) {
@@ -33,9 +34,11 @@ export default function AdminUserDetailPage() {
   const params = useParams()
   const userId = params.id as string
 
-  const { data: user, loading, error } = useUserById(userId)
+  const { data: user, loading, error, refetch } = useUserById(userId)
   const [memberId, setMemberId] = useState<string | null>(null)
   const [memberLoading, setMemberLoading] = useState(true)
+  const [editOpen, setEditOpen] = useState(false)
+  const [memberReload, setMemberReload] = useState(0)
 
   useEffect(() => {
     if (!authLoading && currentUser && !allowed) {
@@ -55,9 +58,9 @@ export default function AdminUserDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [userId, memberReload])
 
-  if (authLoading || loading) {
+  if (authLoading || (loading && !user)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <LoadingSpinner />
@@ -72,8 +75,8 @@ export default function AdminUserDetailPage() {
   if (error || !user) {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
-        <User className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-        <h2 className="text-lg font-semibold text-slate-900">User not found</h2>
+        <User className="mx-auto mb-4 h-12 w-12 text-neutral-300 dark:text-neutral-600" />
+        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">User not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           {error ?? 'This account may have been removed.'}
         </p>
@@ -102,11 +105,9 @@ export default function AdminUserDetailPage() {
               <Link href={`/members/${memberId}`}>Open member profile</Link>
             </Button>
           ) : null}
-          <Button variant="secondary" asChild>
-            <Link href="/admin/users">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit user
-            </Link>
+          <Button onClick={() => setEditOpen(true)}>
+            <Edit className="mr-2 h-4 w-4" aria-hidden />
+            Edit user
           </Button>
         </div>
       </div>
@@ -130,6 +131,18 @@ export default function AdminUserDetailPage() {
             <Phone className="h-4 w-4 text-muted-foreground" />
             <span>{user.phone || '—'}</span>
           </div>
+          {user.secondary_phone ? (
+            <div className="flex items-center gap-2 text-sm">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span>{user.secondary_phone} <span className="text-muted-foreground">(secondary)</span></span>
+            </div>
+          ) : null}
+          {user.whatsapp ? (
+            <div className="flex items-center gap-2 text-sm">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span>{user.whatsapp} <span className="text-muted-foreground">(WhatsApp)</span></span>
+            </div>
+          ) : null}
           <div className="flex items-center gap-2 text-sm">
             <Mail className="h-4 w-4 text-muted-foreground" />
             <span>{user.email || '—'}</span>
@@ -150,8 +163,8 @@ export default function AdminUserDetailPage() {
             </div>
           ) : null}
           {user.emergency_contact_name ? (
-            <div className="sm:col-span-2 rounded-lg bg-slate-50 p-3 text-sm">
-              <p className="font-medium text-slate-900">Emergency contact</p>
+            <div className="sm:col-span-2 rounded-lg bg-neutral-50 p-3 text-sm dark:bg-neutral-800/60">
+              <p className="font-medium text-neutral-900 dark:text-neutral-100">Emergency contact</p>
               <p className="mt-1 text-muted-foreground">
                 {user.emergency_contact_name}
                 {user.emergency_contact_phone ? ` · ${user.emergency_contact_phone}` : ''}
@@ -163,13 +176,23 @@ export default function AdminUserDetailPage() {
       </Card>
 
       {!memberLoading && !memberId ? (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardContent className="py-4 text-sm text-amber-900">
+        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/30">
+          <CardContent className="py-4 text-sm text-amber-900 dark:text-amber-200">
             This user has no linked member profile yet. Member-only fields (address, groups, attendance)
             appear after a member record exists.
           </CardContent>
         </Card>
       ) : null}
+
+      <EditUserDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        userId={user.id}
+        onSaved={() => {
+          refetch()
+          setMemberReload((n) => n + 1)
+        }}
+      />
     </div>
   )
 }

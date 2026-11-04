@@ -92,6 +92,7 @@ export function convexUserDocToAppUser(doc: Record<string, unknown> | null | und
     place_of_work: doc.place_of_work != null ? String(doc.place_of_work) : undefined,
     marital_status: doc.marital_status as AppUser['marital_status'],
     spouse_name: doc.spouse_name != null ? String(doc.spouse_name) : undefined,
+    anniversary_date: doc.anniversary_date != null ? String(doc.anniversary_date) : undefined,
     children_count: doc.children_count != null ? Number(doc.children_count) : undefined,
     emergency_contact_name:
       doc.emergency_contact_name != null ? String(doc.emergency_contact_name) : undefined,
@@ -417,6 +418,25 @@ export async function updateUserInConvex(
     role: updates.role,
     membership_id: updates.membership_id,
     join_year: updates.join_year,
+    first_name: updates.first_name,
+    middle_name: updates.middle_name,
+    last_name: updates.last_name,
+    whatsapp: updates.whatsapp,
+    occupation: updates.occupation,
+    place_of_work: updates.place_of_work,
+    // A key that is present but empty means "clear it".
+    marital_status: 'marital_status' in updates ? (updates.marital_status ?? null) : undefined,
+    spouse_name: updates.spouse_name,
+    anniversary_date: updates.anniversary_date,
+    children_count:
+      'children_count' in updates
+        ? updates.children_count != null && Number.isFinite(updates.children_count)
+          ? updates.children_count
+          : null
+        : undefined,
+    emergency_contact_name: updates.emergency_contact_name,
+    emergency_contact_phone: updates.emergency_contact_phone,
+    emergency_contact_relation: updates.emergency_contact_relation,
   })) as Record<string, unknown>
   const user = convexUserDocToAppUser(doc)
   if (!user) throw new Error('Failed to update user')

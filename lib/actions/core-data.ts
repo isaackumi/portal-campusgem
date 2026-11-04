@@ -365,6 +365,10 @@ export async function updateUserRecord(
         }
       }
     }
+    // The main phone is the sign-in number: never save one nobody can log in with.
+    if (updates.phone !== undefined && updates.phone !== target?.phone && !isValidPhone(updates.phone)) {
+      throw new Error('Enter a valid Ghana phone number (e.g. 024 123 4567).')
+    }
     const data = await updateUserInConvex(userId, updates)
     return { data, error: null, loading: false }
   } catch (error: unknown) {

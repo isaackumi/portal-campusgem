@@ -13,9 +13,10 @@ import { Button } from '@/components/ui/button'
 import { AddToGroupDialog, type CampContactForGroup } from '@/components/groups/add-to-group-dialog'
 import { AddToRlcDialog, type CampContactForRlc } from '@/components/rlc/add-to-rlc-dialog'
 import { PromoteCorporateGemDialog, PromoteStaffRoleDialog } from '@/components/contacts/promote-contact-dialogs'
+import { EditRegistrationDialog } from '@/components/camp/edit-registration-dialog'
 import { useAuth } from '@/components/providers'
 import { hasPermission, isStaffRole } from '@/lib/auth/roles'
-import { Copy, ExternalLink, Gem, Church, MoreHorizontal, Shield, UserPlus, Users } from 'lucide-react'
+import { Copy, ExternalLink, Gem, Church, MoreHorizontal, Pencil, Shield, UserPlus, Users } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { UserRole } from '@/lib/types'
 
@@ -49,12 +50,14 @@ export function ContactRowActions({
   onPromoted,
 }: Props) {
   const router = useRouter()
-  const { user: currentUser } = useAuth()
+  const { user: currentUser, can } = useAuth()
   const { toast } = useToast()
   const [addToGroupOpen, setAddToGroupOpen] = useState(false)
   const [addToRlcOpen, setAddToRlcOpen] = useState(false)
   const [corporateGemOpen, setCorporateGemOpen] = useState(false)
   const [staffRoleOpen, setStaffRoleOpen] = useState(false)
+  const [editRegistrationOpen, setEditRegistrationOpen] = useState(false)
+  const canEditRegistration = Boolean(latestRegistrationId) && (can('camp.manage') || can('camp.payments'))
 
   const actorRole = currentUser?.role as UserRole | undefined
   const canManageGroups = Boolean(actorRole && hasPermission(actorRole, 'groups.manage'))
@@ -104,6 +107,12 @@ export function ContactRowActions({
             >
               <ExternalLink className="mr-2 h-4 w-4" />
               Open registration
+            </DropdownMenuItem>
+          ) : null}
+          {canEditRegistration ? (
+            <DropdownMenuItem onClick={() => setEditRegistrationOpen(true)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit registration
             </DropdownMenuItem>
           ) : null}
           {showFollowUp ? (
@@ -203,6 +212,15 @@ export function ContactRowActions({
           contactName={contactName}
           input={promotionInput}
           onSuccess={afterPromote}
+        />
+      ) : null}
+
+      {editRegistrationOpen && latestRegistrationId ? (
+        <EditRegistrationDialog
+          open={editRegistrationOpen}
+          onOpenChange={setEditRegistrationOpen}
+          registrationId={latestRegistrationId}
+          onSaved={afterPromote}
         />
       ) : null}
 

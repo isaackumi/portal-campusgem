@@ -21,6 +21,7 @@ import { ImportContactWarningsBadge } from '@/components/camp/import-contact-war
 import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { EditRegistrationDialog } from '@/components/camp/edit-registration-dialog'
 import { 
     Download, 
     Search, 
@@ -58,7 +59,9 @@ function RegistrationsPageContent() {
     const searchParams = useSearchParams()
     const campYearId = searchParams.get('year')
     const { toast } = useToast()
-    const { user, loading: authLoading } = useAuth()
+    const { user, loading: authLoading, can } = useAuth()
+    const canEditRegistrations = can('camp.manage') || can('camp.payments')
+    const [editingRegistration, setEditingRegistration] = useState<CampRegistration | null>(null)
     const { registrations, campYear, loading, error, refresh } = useCampRegistrations(campYearId)
     const [currentPage, setCurrentPage] = useState(1)
     
@@ -775,10 +778,23 @@ function RegistrationsPageContent() {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
+                                                                aria-label={`View ${reg.full_name || 'registration'}`}
+                                                                title="View"
                                                                 onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
                                                             >
                                                                 <Eye className="h-4 w-4" />
                                                             </Button>
+                                                            {canEditRegistrations ? (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    aria-label={`Edit ${reg.full_name || 'registration'}`}
+                                                                    title="Edit"
+                                                                    onClick={() => setEditingRegistration(reg)}
+                                                                >
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Button>
+                                                            ) : null}
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
@@ -844,6 +860,15 @@ function RegistrationsPageContent() {
                 </Card>
             </div>
             </div>
+
+            <EditRegistrationDialog
+                open={Boolean(editingRegistration)}
+                onOpenChange={(open) => {
+                    if (!open) setEditingRegistration(null)
+                }}
+                registration={editingRegistration}
+                onSaved={() => refresh()}
+            />
 
             <CampSmsReviewDialog
                 open={Boolean(bulkSmsReview)}
