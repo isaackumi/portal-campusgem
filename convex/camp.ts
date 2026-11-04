@@ -621,6 +621,96 @@ export const bulkPatchCampRegistrationsWithSecret = mutation({
   },
 })
 
+const attendanceConfirmationValue = v.union(
+  v.literal('unconfirmed'),
+  v.literal('confirmed'),
+  v.literal('maybe'),
+  v.literal('declined'),
+  v.literal('unreachable')
+)
+
+/**
+ * Give each registration its own caller (or clear it with `assigned_to: null`).
+ * The Next action decides the split (one caller, round-robin, a group's members).
+ */
+export const setCallAssignmentsWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    assignments: v.array(
+      v.object({
+        registration_id: v.id('camp_registrations'),
+        assigned_to: v.union(v.string(), v.null()),
+      })
+    ),
+  },
+  returns: v.object({ updated: v.number() }),
+  handler: async (ctx, { secret, assignments }) => {
+    assertServerSecret(secret)
+    const now = Date.now()
+    let updated = 0
+    for (const { registration_id, assigned_to } of assignments) {
+      const reg = await ctx.db.get(registration_id)
+      if (!reg) continue
+      await ctx.db.patch(registration_id, {
+        assigned_to: assigned_to ?? undefined,
+        follow_up_status: assigned_to ? reg.follow_up_status ?? 'pending' : reg.follow_up_status,
+        updated_at: now,
+      })
+      updated += 1
+    }
+    return { updated }
+  },
+})
+
+const OUTCOME_LABELS: Record<string, string> = {
+  unconfirmed: 'Not confirmed',
+  confirmed: 'Confirmed attending',
+  maybe: 'Not sure yet',
+  declined: 'Not coming',
+  unreachable: 'No answer',
+}
+
+/** Record one confirmation call: outcome, attempt count, note, and an interaction row. */
+export const recordCallOutcomeWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    registration_id: v.id('camp_registrations'),
+    outcome: attendanceConfirmationValue,
+    note: v.optional(v.string()),
+    performed_by: v.string(),
+    /** False when correcting a status without having placed a call. */
+    count_attempt: v.optional(v.boolean()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const reg = await ctx.db.get(args.registration_id)
+    if (!reg) throw new Error('Registration not found')
+    const now = Date.now()
+    const countAttempt = args.count_attempt !== false
+    const note = args.note?.trim() || undefined
+    const settled = args.outcome === 'confirmed' || args.outcome === 'declined'
+    await ctx.db.patch(args.registration_id, {
+      attendance_confirmation: args.outcome,
+      confirmation_note: note ?? reg.confirmation_note,
+      confirmation_updated_at: now,
+      confirmation_updated_by: args.performed_by,
+      call_attempts: (reg.call_attempts ?? 0) + (countAttempt ? 1 : 0),
+      last_called_at: countAttempt ? now : reg.last_called_at,
+      follow_up_status: settled ? 'completed' : 'in_progress',
+      updated_at: now,
+    })
+    await ctx.db.insert('camp_interactions', {
+      registration_id: args.registration_id,
+      performed_by: args.performed_by,
+      interaction_type: countAttempt ? 'call' : 'status_change',
+      notes: [OUTCOME_LABELS[args.outcome] ?? args.outcome, note].filter(Boolean).join(' — '),
+      updated_at: now,
+    })
+    return await ctx.db.get(args.registration_id)
+  },
+})
+
 export const getRegistrationWithSecret = query({
   args: { secret: v.string(), id: v.id('camp_registrations') },
   returns: v.any(),
@@ -635,7 +725,13 @@ export const patchCampRegistrationWithSecret = mutation({
   returns: v.any(),
   handler: async (ctx, { secret, id, patch }) => {
     assertServerSecret(secret)
-    await ctx.db.patch(id, { ...patch, updated_at: Date.now() })
+    // `null` means "clear this field": Convex removes fields patched to undefined.
+    const next: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries((patch ?? {}) as Record<string, unknown>)) {
+      if (key === '_id' || key === '_creationTime') continue
+      next[key] = value === null ? undefined : value
+    }
+    await ctx.db.patch(id, { ...next, updated_at: Date.now() })
     return await ctx.db.get('camp_registrations', id)
   },
 })

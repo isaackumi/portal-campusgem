@@ -33,6 +33,7 @@ export type Permission =
   | 'celebrations.view'
   | 'camp.view'
   | 'camp.manage'
+  | 'camp.calls'
   | 'camp.payments'
   | 'camp.settings'
   | 'forms.manage'
@@ -59,6 +60,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'celebrations.view',
     'camp.view',
     'camp.manage',
+    'camp.calls',
     'camp.payments',
     'camp.settings',
     'forms.manage',
@@ -84,6 +86,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'celebrations.view',
     'camp.view',
     'camp.manage',
+    'camp.calls',
     'camp.payments',
     'forms.manage',
     'rlc.view',
@@ -104,6 +107,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'celebrations.view',
     'camp.view',
     'camp.manage',
+    'camp.calls',
     'forms.manage',
     'rlc.view',
     'rlc.manage',
@@ -143,6 +147,7 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/admin/camp-meeting/communications', permission: 'camp.manage' },
   { prefix: '/admin/camp-meeting/import', permission: 'camp.manage' },
   { prefix: '/admin/camp-meeting/follow-up', permission: 'camp.manage' },
+  { prefix: '/admin/camp-meeting/calls', permission: 'camp.calls' },
   { prefix: '/admin/camp-meeting/registrations', permission: 'camp.manage' },
   { prefix: '/admin/camp-meeting/scan', permission: 'camp.manage' },
   { prefix: '/admin/camp-meeting/activities', permission: 'camp.manage' },
@@ -186,6 +191,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'celebrations.view': 'View celebrations',
   'camp.view': 'View camp meeting',
   'camp.manage': 'Manage camp meeting',
+  'camp.calls': 'Make camp confirmation calls',
   'camp.payments': 'Manage camp payments',
   'camp.settings': 'Camp settings',
   'forms.manage': 'Manage forms',
@@ -205,7 +211,7 @@ export const PERMISSION_GROUPS: Array<{ label: string; permissions: Permission[]
   { label: 'Members & visitors', permissions: ['members.view', 'members.manage', 'visitors.view', 'visitors.manage'] },
   { label: 'Groups', permissions: ['groups.view', 'groups.manage'] },
   { label: 'Attendance', permissions: ['attendance.view', 'attendance.record', 'attendance.manage'] },
-  { label: 'Camp meeting', permissions: ['camp.view', 'camp.manage', 'camp.payments', 'camp.settings'] },
+  { label: 'Camp meeting', permissions: ['camp.view', 'camp.calls', 'camp.manage', 'camp.payments', 'camp.settings'] },
   { label: 'RLC', permissions: ['rlc.view', 'rlc.manage'] },
   { label: 'Finance', permissions: ['financial.view', 'financial.manage'] },
   { label: 'Administration', permissions: ['users.manage', 'admins.manage'] },

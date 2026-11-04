@@ -409,6 +409,21 @@ export default defineSchema({
     check_in_code: v.optional(v.string()),
     /** Assigned lodging room for this camp year. */
     room_id: v.optional(v.string()),
+    /** Outcome of the "are you still coming?" confirmation call. */
+    attendance_confirmation: v.optional(
+      v.union(
+        v.literal('unconfirmed'),
+        v.literal('confirmed'),
+        v.literal('maybe'),
+        v.literal('declined'),
+        v.literal('unreachable')
+      )
+    ),
+    confirmation_note: v.optional(v.string()),
+    confirmation_updated_at: v.optional(v.number()),
+    confirmation_updated_by: v.optional(v.string()),
+    call_attempts: v.optional(v.number()),
+    last_called_at: v.optional(v.number()),
     qr_code: v.string(),
     updated_at: v.number(),
   })

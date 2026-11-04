@@ -21,6 +21,7 @@ import {
   IdCardIcon,
   ListBulletIcon,
   LockClosedIcon,
+  MobileIcon,
   PersonIcon,
   ReaderIcon,
   TableIcon,
@@ -80,6 +81,13 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         name: 'Registrations',
         href: '/admin/camp-meeting/registrations',
         icon: PersonIcon,
+      },
+      {
+        name: 'Confirmation calls',
+        href: '/admin/camp-meeting/calls',
+        icon: MobileIcon,
+        permission: 'camp.calls',
+        description: 'Call registrants to confirm they are coming',
       },
       {
         name: 'Directory',

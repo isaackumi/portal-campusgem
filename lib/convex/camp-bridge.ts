@@ -201,6 +201,14 @@ export function convexRegistrationDocToCampRegistration(
       : undefined,
     check_in_code: doc.check_in_code != null ? String(doc.check_in_code) : undefined,
     room_id: doc.room_id != null ? String(doc.room_id) : undefined,
+    attendance_confirmation: doc.attendance_confirmation as CampRegistration['attendance_confirmation'],
+    confirmation_note: doc.confirmation_note != null ? String(doc.confirmation_note) : undefined,
+    confirmation_updated_at:
+      typeof doc.confirmation_updated_at === 'number' ? iso(doc.confirmation_updated_at) : undefined,
+    confirmation_updated_by:
+      doc.confirmation_updated_by != null ? String(doc.confirmation_updated_by) : undefined,
+    call_attempts: doc.call_attempts != null ? Number(doc.call_attempts) : undefined,
+    last_called_at: typeof doc.last_called_at === 'number' ? iso(doc.last_called_at) : undefined,
     qr_code: String(doc.qr_code ?? ''),
     created_at: iso(ct) || new Date().toISOString(),
     updated_at: iso(ut) || iso(ct) || new Date().toISOString(),
@@ -393,6 +401,41 @@ export async function bulkPatchRegistrationsInConvex(args: {
     follow_up_status: args.follow_up_status,
   })) as { updated: number }
   return result.updated
+}
+
+export async function setCallAssignmentsInConvex(
+  assignments: Array<{ registration_id: string; assigned_to: string | null }>
+): Promise<number> {
+  const client = getConvexHttpClient()
+  const result = (await client.mutation(api.camp.setCallAssignmentsWithSecret, {
+    secret: requireCampAdminSecret(),
+    assignments: assignments.map((a) => ({
+      registration_id: a.registration_id as Id<'camp_registrations'>,
+      assigned_to: a.assigned_to,
+    })),
+  })) as { updated: number }
+  return result.updated
+}
+
+export async function recordCallOutcomeInConvex(args: {
+  registration_id: string
+  outcome: import('@/lib/types').CampAttendanceConfirmation
+  note?: string
+  performed_by: string
+  count_attempt?: boolean
+}): Promise<CampRegistration> {
+  const client = getConvexHttpClient()
+  const doc = (await client.mutation(api.camp.recordCallOutcomeWithSecret, {
+    secret: requireCampAdminSecret(),
+    registration_id: args.registration_id as Id<'camp_registrations'>,
+    outcome: args.outcome,
+    note: args.note,
+    performed_by: args.performed_by,
+    count_attempt: args.count_attempt,
+  })) as Record<string, unknown>
+  const r = convexRegistrationDocToCampRegistration(doc)
+  if (!r) throw new Error('Could not save the call outcome')
+  return r
 }
 
 export async function fetchRegistrationFromConvex(id: string): Promise<CampRegistration | null> {

@@ -912,6 +912,13 @@ export interface CampYear {
   updated_at: string
 }
 
+export type CampAttendanceConfirmation =
+  | 'unconfirmed'
+  | 'confirmed'
+  | 'maybe'
+  | 'declined'
+  | 'unreachable'
+
 export interface CampRegistration {
   id: string
   camp_year_id: string
@@ -956,6 +963,13 @@ export interface CampRegistration {
   check_in_code?: string
   /** Lodging room assignment for this camp year */
   room_id?: string
+  /** Outcome of the confirmation call ("are you still coming?") */
+  attendance_confirmation?: CampAttendanceConfirmation
+  confirmation_note?: string
+  confirmation_updated_at?: string
+  confirmation_updated_by?: string
+  call_attempts?: number
+  last_called_at?: string
   qr_code: string
   created_at: string
   updated_at: string
