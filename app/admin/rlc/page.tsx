@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { getCamperDirectory } from '@/lib/actions/camp'
 import { loadRlcMembersAction, loadRlcStatsAction, loadRlcVisitorsAction } from '@/lib/actions/rlc'
@@ -12,13 +11,14 @@ import { RLC_NAME, RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
 import type { CampCamperDirectoryRow, Member, RlcStats, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatCard } from '@/components/ui/stat-card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import {
   BarChart3,
   Calendar,
+  ChevronRight,
   Cake,
   Church,
   Printer,
@@ -30,37 +30,7 @@ import {
   Users,
 } from 'lucide-react'
 
-function StatCard({
-  title,
-  value,
-  hint,
-  href,
-}: {
-  title: string
-  value: number | string
-  hint?: string
-  href?: string
-}) {
-  const inner = (
-    <Card className="border-rose-100/80 shadow-sm transition hover:border-rose-200">
-      <CardHeader className="pb-2">
-        <CardDescription className="app-stat-label normal-case tracking-normal text-slate-500">
-          {title}
-        </CardDescription>
-        <p className="app-stat-value">{value}</p>
-      </CardHeader>
-      {hint ? (
-        <CardContent className="pt-0">
-          <p className="app-meta">{hint}</p>
-        </CardContent>
-      ) : null}
-    </Card>
-  )
-  return href ? <Link href={href}>{inner}</Link> : inner
-}
-
 export default function RlcDashboardPage() {
-  const router = useRouter()
   const { user } = useAuth()
   const [stats, setStats] = useState<RlcStats | null>(null)
   const [visitors, setVisitors] = useState<Visitor[]>([])
@@ -129,126 +99,118 @@ export default function RlcDashboardPage() {
   }
 
   return (
-    <PageContainer className="space-y-8">
+    <PageContainer className="space-y-6 sm:space-y-8">
       <RlcPageHeader
         title="Mother Church Hub"
         subtitle={`Visitor pipeline, membership, attendance, and ministry records for ${RLC_NAME}.`}
         actions={
           <>
-            <Button variant="outline" className="w-full sm:w-auto" asChild>
+            <Button variant="outline" asChild>
               <Link href="/admin/rlc/attendance">
                 <Calendar className="mr-2 h-4 w-4" />
                 Attendance
               </Link>
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto" asChild>
+            <Button asChild>
               <Link href="/admin/rlc/visitors/add">
                 <UserPlus className="mr-2 h-4 w-4" />
-                Register visitor
-              </Link>
-            </Button>
-            <Button className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto" asChild>
-              <Link href="/admin/rlc/import">
-                <Upload className="mr-2 h-4 w-4" />
-                Import
+                <span className="sm:hidden">Visitor</span>
+                <span className="hidden sm:inline">Register visitor</span>
               </Link>
             </Button>
           </>
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Active visitors" value={stats?.active_visitors ?? 0} href="/admin/rlc/visitors" />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard className="p-4 sm:p-5" label="Active visitors" value={stats?.active_visitors ?? 0} href="/admin/rlc/visitors" />
         <StatCard
-          title="Pending follow-up"
+          className="p-4 sm:p-5"
+          label="Pending follow-up"
           value={stats?.pending_follow_up ?? 0}
+          tone={(stats?.pending_follow_up ?? 0) > 0 ? 'warning' : 'default'}
           href={rlcFollowUpHref({ status: 'pending' })}
         />
-        <StatCard title="RLC members" value={stats?.rlc_members ?? 0} href="/admin/rlc/members" />
+        <StatCard className="p-4 sm:p-5" label="RLC members" value={stats?.rlc_members ?? 0} href="/admin/rlc/members" />
         <StatCard
-          title="Conversion rate"
+          className="p-4 sm:p-5"
+          label="Conversion rate"
           value={`${stats?.conversion_rate ?? 0}%`}
-          hint={`${stats?.converted_visitors ?? 0} converted`}
+          sub={`${stats?.converted_visitors ?? 0} converted`}
           href="/admin/rlc/analytics"
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-rose-200">
-          <CardHeader className="pb-2">
-            <CardDescription>Follow-up SLA</CardDescription>
-            <CardTitle>Queue health</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm">
-            <Link href={rlcFollowUpHref({ sla: 'overdue' })} className="text-rose-700">
-              Overdue <Badge variant="destructive">{sla.overdue}</Badge>
-            </Link>
-            <Link href={rlcFollowUpHref({ sla: 'due_soon' })} className="text-amber-700">
-              Due soon <Badge variant="secondary">{sla.dueSoon}</Badge>
-            </Link>
-            <Link href={rlcFollowUpHref({ mine: true })} className="text-slate-700">
-              Mine <Badge variant="outline">{myFollowUps.length}</Badge>
-            </Link>
-          </CardContent>
-        </Card>
-        <Card className="border-emerald-200">
-          <CardHeader className="pb-2">
-            <CardDescription>Ready to convert</CardDescription>
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
+        <section className="dashboard-panel p-4 sm:p-5">
+          <p className="app-stat-label">Follow-up SLA</p>
+          <h2 className="app-section-title">Queue health</h2>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[
+              { href: rlcFollowUpHref({ sla: 'overdue' }), label: 'Overdue', count: sla.overdue, variant: 'danger' as const },
+              { href: rlcFollowUpHref({ sla: 'due_soon' }), label: 'Due soon', count: sla.dueSoon, variant: 'warning' as const },
+              { href: rlcFollowUpHref({ mine: true }), label: 'Mine', count: myFollowUps.length, variant: 'secondary' as const },
+            ].map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="flex min-h-11 flex-col items-start justify-center gap-1 rounded-lg px-2 py-1.5 text-sm text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/[0.06]"
+              >
+                <span className="text-[13px]">{item.label}</span>
+                <Badge variant={item.variant}>{item.count}</Badge>
+              </Link>
+            ))}
+          </div>
+        </section>
+        <section className="dashboard-panel flex flex-col gap-3 p-4 sm:p-5">
+          <div>
+            <p className="app-stat-label">Ready to convert</p>
             <p className="app-stat-value">{convertQueue.length}</p>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/rlc/visitors?pipeline=new_member">Open conversion queue</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200">
-          <CardHeader className="pb-2">
-            <CardDescription>Today / this week</CardDescription>
+          </div>
+          <Button variant="outline" className="h-11 w-full sm:h-9 sm:w-auto sm:self-start" asChild>
+            <Link href="/admin/rlc/visitors?pipeline=new_member">Open conversion queue</Link>
+          </Button>
+        </section>
+        <section className="dashboard-panel flex flex-col gap-3 p-4 sm:p-5">
+          <div>
+            <p className="app-stat-label">Today / this week</p>
             <p className="app-stat-value">
               {stats?.today_attendance ?? 0}
-              <span className="text-base font-normal text-muted-foreground">
-                {' '}
-                / {stats?.week_attendance ?? 0}
-              </span>
+              <span className="text-base font-normal text-neutral-500 dark:text-neutral-400"> / {stats?.week_attendance ?? 0}</span>
             </p>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/rlc/attendance">Attendance + print</Link>
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+          <Button variant="outline" className="h-11 w-full sm:h-9 sm:w-auto sm:self-start" asChild>
+            <Link href="/admin/rlc/attendance">Attendance + print</Link>
+          </Button>
+        </section>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-rose-100/80">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-rose-700" />
-              Visitor pipeline
-            </CardTitle>
-            <CardDescription>From first visit to full membership</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+        <section className="dashboard-panel p-4 sm:p-5">
+          <h2 className="app-section-title flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
+            Visitor pipeline
+          </h2>
+          <p className="app-meta">From first visit to full membership</p>
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             {[
               ['First visit', stats?.pipeline_counts.first_visit ?? 0],
               ['Follow-up', stats?.pipeline_counts.follow_up ?? 0],
               ['New member', stats?.pipeline_counts.new_member ?? 0],
               ['Full member', stats?.pipeline_counts.full_member ?? 0],
             ].map(([label, count]) => (
-              <div key={label} className="rounded-lg bg-rose-50/60 px-3 py-2 text-center">
+              <div key={label} className="rounded-lg bg-neutral-50 px-3 py-2 text-center dark:bg-white/[0.04]">
                 <p className="app-stat-value text-2xl">{count}</p>
                 <p className="app-meta">{label}</p>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
         <RlcCampBridgePanel campRows={campRows} visitors={visitors} members={members} />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
         {[
           { href: '/admin/rlc/visitors', icon: UserPlus, title: 'Visitors', desc: 'Full visitor records' },
           { href: '/admin/rlc/follow-up', icon: UserCheck, title: 'Follow-up', desc: 'Assign & track contacts' },
@@ -259,39 +221,37 @@ export default function RlcDashboardPage() {
           { href: '/admin/rlc/scan', icon: QrCode, title: 'Optional QR scan', desc: 'Camera only when needed' },
           { href: '/admin/rlc/visitors/print', icon: Printer, title: 'Welcome slips', desc: 'Print visitor QR cards' },
           { href: '/admin/rlc/analytics', icon: BarChart3, title: 'Analytics', desc: 'Conversion & sources' },
+          { href: '/admin/rlc/import', icon: Upload, title: 'Import', desc: 'Bring in visitors from a sheet' },
         ].map((item) => (
-          <Card
+          <Link
             key={item.href}
-            className="cursor-pointer border-rose-100/80 transition hover:border-rose-300 hover:shadow-md"
-            onClick={() => router.push(item.href)}
+            href={item.href}
+            className="dashboard-panel flex min-h-[60px] items-center gap-3 p-3 transition-[box-shadow,border-color] hover:border-neutral-300 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:hover:border-white/[0.12] sm:p-4"
           >
-            <CardHeader className="flex flex-row items-center gap-3 pb-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 text-rose-800">
-                <item.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle>{item.title}</CardTitle>
-                <CardDescription>{item.desc}</CardDescription>
-              </div>
-            </CardHeader>
-          </Card>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+              <item.icon className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="app-section-title block truncate">{item.title}</span>
+              <span className="app-meta block truncate">{item.desc}</span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden />
+          </Link>
         ))}
       </div>
 
       {rosterCounts.length > 0 ? (
-        <Card className="border-rose-100/80">
-          <CardHeader>
-            <CardTitle>Ministry snapshot</CardTitle>
-            <CardDescription>People currently tagged with RLC ministry roles</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
+        <section className="dashboard-panel p-4 sm:p-5">
+          <h2 className="app-section-title">Ministry snapshot</h2>
+          <p className="app-meta">People currently tagged with RLC ministry roles</p>
+          <div className="mt-3 flex flex-wrap gap-2">
             {rosterCounts.map((row) => (
               <Badge key={row.role} variant="secondary">
                 {RLC_ROLE_LABELS[row.role]} · {row.count}
               </Badge>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       ) : null}
     </PageContainer>
   )

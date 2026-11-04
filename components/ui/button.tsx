@@ -9,15 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-brand-600 text-white hover:bg-brand-700 dark:bg-brand-700 dark:hover:bg-brand-600",
+        default: "bg-brand-600 text-white shadow-[0_1px_2px_rgb(15_23_42/0.1),inset_0_1px_0_rgb(255_255_255/0.12)] hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-400",
         destructive:
           "bg-red-600 text-white hover:bg-red-700",
         outline:
-          "border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700",
+          "border border-neutral-200 bg-white text-neutral-800 shadow-[0_1px_2px_rgb(15_23_42/0.04)] hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-neutral-100 dark:shadow-none dark:hover:bg-white/[0.07]",
         secondary:
-          "border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700",
-        ghost: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700",
-        link: "text-brand-700 underline-offset-4 hover:underline dark:text-brand-400",
+          "border-transparent bg-neutral-100 text-neutral-800 hover:bg-neutral-200/70 dark:bg-white/[0.06] dark:text-neutral-100 dark:hover:bg-white/10",
+        ghost: "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-white/[0.07] dark:hover:text-white",
+        link: "text-brand-600 underline-offset-4 hover:underline dark:text-brand-300",
       },
       size: {
         default: "h-10 px-4 py-2",

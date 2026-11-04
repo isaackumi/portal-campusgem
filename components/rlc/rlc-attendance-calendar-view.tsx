@@ -119,39 +119,39 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-rose-700">{monthStats.meetingDays}</p>
+          <CardContent className="p-3 sm:p-6">
+            <p className="text-2xl font-bold text-brand-700 dark:text-brand-300">{monthStats.meetingDays}</p>
             <p className="text-sm text-muted-foreground">Meeting days this month</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-emerald-700">{monthStats.sessions}</p>
+          <CardContent className="p-3 sm:p-6">
+            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{monthStats.sessions}</p>
             <p className="text-sm text-muted-foreground">Service sessions recorded</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-emerald-600">{monthStats.present}</p>
+          <CardContent className="p-3 sm:p-6">
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-300">{monthStats.present}</p>
             <p className="text-sm text-muted-foreground">Present / late check-ins</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-amber-700">{monthStats.absent}</p>
+          <CardContent className="p-3 sm:p-6">
+            <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{monthStats.absent}</p>
             <p className="text-sm text-muted-foreground">Absent with note</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-rose-100/80">
+      <Card className="border-brand-100/80 dark:border-brand-400/20">
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-rose-700" />
+              <CalendarDays className="h-5 w-5 text-brand-700 dark:text-brand-300" />
               {monthLabel}
             </CardTitle>
             <CardDescription>
@@ -159,12 +159,13 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)} aria-label="Previous month">
+            <Button variant="outline" size="icon" className="h-11 w-11 sm:h-10 sm:w-10" onClick={() => shiftMonth(-1)} aria-label="Previous month">
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
+              className="h-11 sm:h-8"
               onClick={() => {
                 setMonthCursor({ year: today.getFullYear(), month: today.getMonth() })
                 setSelectedDate(today.toISOString().split('T')[0])
@@ -172,13 +173,13 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
             >
               Today
             </Button>
-            <Button variant="outline" size="icon" onClick={() => shiftMonth(1)} aria-label="Next month">
+            <Button variant="outline" size="icon" className="h-11 w-11 sm:h-10 sm:w-10" onClick={() => shiftMonth(1)} aria-label="Next month">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-7 gap-1 text-center app-overline">
+        <CardContent className="space-y-4 px-2 sm:px-6">
+          <div className="grid grid-cols-7 gap-0.5 text-center app-overline sm:gap-1">
             {WEEKDAY_LABELS.map((label) => (
               <div key={label} className="py-1">
                 {label}
@@ -188,10 +189,10 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
 
           <div className="space-y-1">
             {weeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-7 gap-1">
+              <div key={weekIndex} className="grid grid-cols-7 gap-0.5 sm:gap-1">
                 {week.map((cell, cellIndex) => {
                   if (!cell.date) {
-                    return <div key={`pad-${weekIndex}-${cellIndex}`} className="min-h-[5.5rem] rounded-lg bg-slate-50/50" />
+                    return <div key={`pad-${weekIndex}-${cellIndex}`} className="min-h-12 rounded-lg bg-neutral-50/50 dark:bg-white/[0.04] sm:min-h-[5.5rem]" />
                   }
 
                   const isSelected = selectedDate === cell.date
@@ -203,30 +204,30 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
                       type="button"
                       onClick={() => setSelectedDate(cell.date)}
                       className={cn(
-                        'min-h-[5.5rem] rounded-lg border p-1.5 text-left transition-colors',
+                        'min-h-12 min-w-0 rounded-lg border p-1 text-left transition-colors sm:min-h-[5.5rem] sm:p-1.5',
                         isSelected
-                          ? 'border-rose-400 bg-rose-50 ring-2 ring-rose-300/40'
+                          ? 'border-brand-400 bg-brand-50 ring-2 ring-brand-300/40 dark:bg-brand-400/10'
                           : hasSessions
-                            ? 'border-slate-200 bg-white hover:border-rose-200 hover:bg-rose-50/40'
-                            : 'border-slate-100 bg-slate-50/80 hover:bg-white'
+                            ? 'border-neutral-200 bg-white hover:border-brand-200 hover:bg-brand-50/40 dark:border-white/10 dark:bg-neutral-800/60 dark:hover:bg-brand-400/10'
+                            : 'border-neutral-100 bg-neutral-50/80 hover:bg-white dark:border-white/10 dark:bg-white/[0.04]'
                       )}
                     >
                       <div className="flex items-center justify-between">
                         <span
                           className={cn(
                             'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold',
-                            cell.isToday ? 'bg-rose-700 text-white' : 'text-slate-800'
+                            cell.isToday ? 'bg-brand-700 text-white' : 'text-neutral-800 dark:text-neutral-100'
                           )}
                         >
                           {Number(cell.date.slice(-2))}
                         </span>
                         {hasSessions ? (
-                          <span className="text-[10px] font-medium text-muted-foreground">
+                          <span className="hidden text-[10px] font-medium text-muted-foreground sm:inline">
                             {cell.sessions.length}
                           </span>
                         ) : null}
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-1">
+                      <div className="mt-1 flex flex-wrap gap-0.5 sm:mt-2 sm:gap-1">
                         {cell.sessions.slice(0, 4).map((session) => (
                           <span
                             key={session.sessionKey}
@@ -235,7 +236,7 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
                           />
                         ))}
                       </div>
-                      <div className="mt-1.5 space-y-0.5">
+                      <div className="mt-1.5 hidden space-y-0.5 sm:block">
                         {cell.sessions.slice(0, 2).map((session) => (
                           <span
                             key={`chip-${session.sessionKey}`}
@@ -294,7 +295,7 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
               selectedSessions.map((session) => (
                 <div
                   key={session.sessionKey}
-                  className="flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-lg border px-3 py-3 sm:flex-row sm:px-4 sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -308,15 +309,15 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
                       {session.absentNoted > 0 ? ` · ${session.absentNoted} absent (noted)` : ''}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex gap-2">
                     <Button
                       size="sm"
-                      className="bg-rose-700 hover:bg-rose-800"
+                      className="h-10 flex-1 sm:h-8 sm:flex-none"
                       onClick={() => onOpenSession(session.serviceDate, session.selection)}
                     >
                       Open register
                     </Button>
-                    <Button size="sm" variant="outline" asChild>
+                    <Button size="sm" variant="outline" className="h-10 flex-1 sm:h-8 sm:flex-none" asChild>
                       <Link href={printHref(session)} target="_blank">
                         <Printer className="mr-2 h-3.5 w-3.5" />
                         Print

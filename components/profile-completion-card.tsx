@@ -97,10 +97,10 @@ export function ProfileCompletionCard({ user, member }: ProfileCompletionCardPro
   const completionPercentage = Math.round((completedWeight / totalWeight) * 100)
 
   const getCompletionColor = (percentage: number) => {
-    if (percentage >= 80) return 'text-green-600'
-    if (percentage >= 60) return 'text-yellow-600'
-    if (percentage >= 40) return 'text-orange-600'
-    return 'text-red-600'
+    if (percentage >= 80) return 'text-emerald-600 dark:text-emerald-400'
+    if (percentage >= 60) return 'text-amber-600 dark:text-amber-400'
+    if (percentage >= 40) return 'text-amber-700 dark:text-amber-300'
+    return 'text-red-600 dark:text-red-400'
   }
 
   const getCompletionMessage = (percentage: number) => {
@@ -136,7 +136,7 @@ export function ProfileCompletionCard({ user, member }: ProfileCompletionCardPro
           {/* Progress bar */}
           <div className="space-y-2">
             <Progress value={completionPercentage} className="h-2" />
-            <div className="flex justify-between text-xs text-slate-500">
+            <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
               <span>{completedWeight}/{totalWeight} points</span>
               <span>{completionItems.filter(item => item.completed).length}/{completionItems.length} completed</span>
             </div>
@@ -145,26 +145,24 @@ export function ProfileCompletionCard({ user, member }: ProfileCompletionCardPro
           {/* Completion checklist */}
           <div className="space-y-2">
             {completionItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
+              <div key={item.id} className="flex min-h-11 items-center justify-between gap-2 sm:min-h-8">
                 <div className="flex items-center space-x-3">
                   {item.completed ? (
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   ) : (
-                    <Circle className="h-4 w-4 text-gray-400" />
+                    <Circle className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
                   )}
-                  <item.icon className="h-4 w-4 text-slate-500" />
-                  <span className={`text-sm ${item.completed ? 'text-slate-700' : 'text-slate-500'}`}>
+                  <item.icon className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                  <span className={`text-sm ${item.completed ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-500 dark:text-neutral-400'}`}>
                     {item.label}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-400">{item.weight}pts</span>
+                  <span className="text-xs text-neutral-400 dark:text-neutral-500">{item.weight}pts</span>
                   {!item.completed && item.href && (
-                    <Link href={item.href}>
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                        Complete
-                      </Button>
-                    </Link>
+                    <Button variant="ghost" size="sm" className="h-10 px-3 text-xs sm:h-7 sm:px-2" asChild>
+                      <Link href={item.href}>Complete</Link>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -172,18 +170,14 @@ export function ProfileCompletionCard({ user, member }: ProfileCompletionCardPro
           </div>
 
           {/* Action buttons */}
-          <div className="pt-4 border-t">
+          <div className="border-t border-neutral-200/80 pt-4 dark:border-white/[0.06]">
             <div className="flex flex-col sm:flex-row gap-2">
-              <Link href="/profile/edit" className="flex-1">
-                <Button className="w-full" variant="outline">
-                  Edit Profile
-                </Button>
-              </Link>
-              <Link href="/profile/family" className="flex-1">
-                <Button className="w-full" variant="outline">
-                  Manage Family
-                </Button>
-              </Link>
+              <Button className="h-11 flex-1 sm:h-10" variant="outline" asChild>
+                <Link href="/profile/edit">Edit profile</Link>
+              </Button>
+              <Button className="h-11 flex-1 sm:h-10" variant="outline" asChild>
+                <Link href="/profile/family">Manage family</Link>
+              </Button>
             </div>
           </div>
         </div>

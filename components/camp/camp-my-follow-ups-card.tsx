@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import type { CampRegistration } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 
 type CampMyFollowUpsCardProps = {
   userId: string
@@ -34,12 +35,12 @@ export function CampMyFollowUpsCard({
 
   if (open.length === 0) {
     return (
-      <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800">
-        <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">My follow-ups</h2>
+      <div className="dashboard-panel p-4 sm:p-5">
+        <h2 className="app-section-title">My follow-ups</h2>
         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
           Nothing assigned to you for this camp year.
         </p>
-        <Button variant="outline" className="mt-4" onClick={onOpenQueue}>
+        <Button variant="outline" className="mt-4 h-11 w-full sm:h-10 sm:w-auto" onClick={onOpenQueue}>
           Open follow-up queue
         </Button>
       </div>
@@ -47,15 +48,15 @@ export function CampMyFollowUpsCard({
   }
 
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800">
+    <div className="dashboard-panel p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">My follow-ups</h2>
+          <h2 className="app-section-title">My follow-ups</h2>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             {open.length} open assignment{open.length === 1 ? '' : 's'} for this camp year
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={onOpenQueue}>
+        <Button size="sm" variant="outline" className="h-10 sm:h-9" onClick={onOpenQueue}>
           View queue
         </Button>
       </div>
@@ -69,20 +70,24 @@ export function CampMyFollowUpsCard({
       </div>
       <div className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-700">
         {open.slice(0, 5).map((registration) => (
-          <button
-            key={registration.id}
-            type="button"
-            onClick={() => onOpenRegistration(registration.id)}
-            className="flex w-full items-center justify-between gap-3 py-3 text-left"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{registration.full_name}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{registration.phone}</p>
+          <div key={registration.id} className="flex min-h-11 w-full items-center gap-3 py-2.5">
+            <div className="min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={() => onOpenRegistration(registration.id)}
+                className="block w-full truncate text-left text-sm font-medium text-neutral-900 hover:text-brand-600 dark:text-neutral-100 dark:hover:text-brand-300"
+              >
+                {registration.full_name}
+              </button>
+              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                <PhoneLink phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} />
+                <Badge variant="secondary" className="capitalize">
+                  {(registration.follow_up_status ?? 'pending').replace('_', ' ')}
+                </Badge>
+              </div>
             </div>
-            <Badge variant="secondary" className="shrink-0 capitalize">
-              {(registration.follow_up_status ?? 'pending').replace('_', ' ')}
-            </Badge>
-          </button>
+            <QuickContactButtons phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} />
+          </div>
         ))}
       </div>
       {open.length > 5 ? (

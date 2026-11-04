@@ -67,11 +67,11 @@ export function RlcVisitorRowActions({ visitor, onDeleted }: Props) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-1">
       {!visitor.converted_to_member ? (
         <Button
           size="sm"
-          className="bg-rose-700 hover:bg-rose-800"
+          className="h-10 flex-1 sm:h-8 sm:flex-none"
           disabled={busy}
           onClick={() => setConvertOpen(true)}
         >
@@ -79,7 +79,7 @@ export function RlcVisitorRowActions({ visitor, onDeleted }: Props) {
           Add as member
         </Button>
       ) : null}
-      <Button variant="outline" size="sm" asChild disabled={busy}>
+      <Button variant="outline" size="sm" className="h-10 flex-1 sm:h-8 sm:flex-none" asChild disabled={busy}>
         <Link href={`/admin/rlc/visitors/${visitor.id}`}>
           <Eye className="mr-2 h-4 w-4" />
           View
@@ -87,7 +87,7 @@ export function RlcVisitorRowActions({ visitor, onDeleted }: Props) {
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" disabled={busy}>
+          <Button variant="ghost" size="sm" className="h-10 w-10 shrink-0 px-0 sm:h-8 sm:w-8" disabled={busy} aria-label={`More actions for ${name}`}>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

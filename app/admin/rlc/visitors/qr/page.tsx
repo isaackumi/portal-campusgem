@@ -55,11 +55,11 @@ export default function RlcVisitorQrPage() {
           backHref="/admin/rlc/visitors"
           actions={
             <>
-              <Button variant="outline" className="w-full sm:w-auto" onClick={copyLink}>
+              <Button variant="outline" onClick={copyLink}>
                 <Copy className="mr-2 h-4 w-4" />
                 Copy link
               </Button>
-              <Button className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto" onClick={printPoster}>
+              <Button onClick={printPoster}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print poster
               </Button>
@@ -67,17 +67,17 @@ export default function RlcVisitorQrPage() {
           }
         />
 
-        <Card id="rlc-qr-print" className="border-rose-100/80">
+        <Card id="rlc-qr-print" className="border-brand-100/80 dark:border-brand-400/20">
           <CardHeader className="text-center">
             <CardTitle className="text-xl">{RLC_NAME}</CardTitle>
             <CardDescription>Scan to register as a visitor</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-6 pb-10">
-            <div className="rounded-2xl border-8 border-white bg-white p-4 shadow-lg">
+            <div className="rounded-2xl border-8 border-white bg-white p-4 shadow-lg dark:border-white">
               <QRCode value={visitUrl} size={220} />
             </div>
             <div className="max-w-sm text-center">
-              <p className="text-lg font-semibold text-slate-900">First time with us?</p>
+              <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">First time with us?</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Scan with your phone camera to share your details. Our welcome team will follow up with you.
               </p>
@@ -88,7 +88,7 @@ export default function RlcVisitorQrPage() {
 
         <p className="text-sm text-muted-foreground">
           Public form URL:{' '}
-          <Link href={RLC_PUBLIC_VISIT_PATH} className="text-rose-700 underline-offset-2 hover:underline">
+          <Link href={RLC_PUBLIC_VISIT_PATH} className="text-brand-700 underline-offset-2 hover:underline dark:text-brand-300">
             {RLC_PUBLIC_VISIT_PATH}
           </Link>
         </p>

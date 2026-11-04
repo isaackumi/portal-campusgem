@@ -18,6 +18,14 @@ import {
 } from '@/lib/camp/sms-templates'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import { StatCard } from '@/components/ui/stat-card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -41,7 +49,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
-import { BedDouble, Crown, MessageSquare, Pencil, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
+import { BedDouble, Crown, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
 
 const GENDER_OPTIONS = ['Mixed', 'Male', 'Female'] as const
 
@@ -392,7 +400,7 @@ function CampRoomsPageContent() {
 
   if (!campYear) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl">
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">No camp year available for rooms.</p>
@@ -409,8 +417,8 @@ function CampRoomsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div>
+      <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
         <CampAdminPageHeader
           title="Camp rooms & roommates"
           campYear={campYear}
@@ -424,19 +432,32 @@ function CampRoomsPageContent() {
               <Button variant="outline" asChild>
                 <Link href="/admin/camp-meeting/scan">Check-in hub</Link>
               </Button>
-              <Button variant="outline" onClick={() => void loadData(campYear)}>
+              <Button variant="outline" className="hidden sm:inline-flex" onClick={() => void loadData(campYear)}>
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="!flex-none sm:hidden" aria-label="More actions">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem className="min-h-11" onSelect={() => void loadData(campYear)}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           }
         />
 
-        <Card className="border-slate-200">
+        <Card>
           <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-slate-800">Camp year for rooms</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Camp year for rooms</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Rooms and lodging assignments are scoped to one season. Defaults to the active year.
               </p>
             </div>
@@ -447,7 +468,7 @@ function CampRoomsPageContent() {
                 <Badge variant="secondary">Historical year</Badge>
               )}
               <Select value={campYear.id} onValueChange={switchYear}>
-                <SelectTrigger className="min-h-10 w-[11rem] bg-white">
+                <SelectTrigger className="min-h-11 flex-1 sm:min-h-10 sm:w-[11rem] sm:flex-none">
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -463,7 +484,7 @@ function CampRoomsPageContent() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="min-h-10"
+                  className="min-h-11 sm:min-h-10"
                   onClick={() => switchYear(activeYear.id)}
                 >
                   Jump to active
@@ -473,36 +494,14 @@ function CampRoomsPageContent() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">Rooms</p>
-              <p className="text-3xl font-bold">{stats.roomCount}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">Assigned campers</p>
-              <p className="text-3xl font-bold text-green-700">{stats.assigned}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">Unassigned</p>
-              <p className="text-3xl font-bold text-amber-700">{stats.unassigned}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">Beds used</p>
-              <p className="text-3xl font-bold">
-                {stats.usedBeds}/{stats.totalBeds || '—'}
-              </p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <StatCard label="Rooms" value={stats.roomCount} icon={BedDouble} />
+          <StatCard label="Assigned campers" value={stats.assigned} tone="success" icon={Users} />
+          <StatCard label="Unassigned" value={stats.unassigned} tone={stats.unassigned > 0 ? 'warning' : 'default'} />
+          <StatCard label="Beds used" value={`${stats.usedBeds}/${stats.totalBeds || '—'}`} />
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap [&>button]:min-h-11 sm:[&>button]:min-h-10">
           <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
             <Button onClick={openCreateDialog}>
               <Plus className="mr-2 h-4 w-4" />
@@ -616,11 +615,11 @@ function CampRoomsPageContent() {
             ) : (
               <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
             )}
-            SMS room to all assigned ({stats.assigned})
+            <span className="truncate">SMS room to all assigned ({stats.assigned})</span>
           </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
             {rooms.length === 0 ? (
               <Card>
@@ -636,8 +635,8 @@ function CampRoomsPageContent() {
                   <Card key={room.id}>
                     <CardHeader className="pb-3">
                       <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <CardTitle className="flex items-center gap-2 text-lg">
+                        <div className="min-w-0">
+                          <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
                             <BedDouble className="h-5 w-5" />
                             {room.name}
                             {leaderId ? (
@@ -658,7 +657,7 @@ function CampRoomsPageContent() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="min-h-9 cursor-pointer"
+                            className="min-h-11 cursor-pointer sm:min-h-9"
                             disabled={sendingRoomSmsId === room.id || occupants.length === 0}
                             title="SMS room details to everyone in this room"
                             onClick={() =>
@@ -679,7 +678,9 @@ function CampRoomsPageContent() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-11 w-11 sm:h-10 sm:w-10"
                             title="Edit room"
+                            aria-label="Edit room"
                             onClick={() => openEditDialog(room)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -687,8 +688,9 @@ function CampRoomsPageContent() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-destructive"
+                            className="h-11 w-11 text-destructive sm:h-10 sm:w-10"
                             title="Delete room"
+                            aria-label="Delete room"
                             onClick={() => void handleDeleteRoom(room)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -702,7 +704,7 @@ function CampRoomsPageContent() {
                       ) : null}
                       {occupants.length > 0 ? (
                         <div className="space-y-2">
-                          <p className="text-sm font-medium text-slate-800">Room leader</p>
+                          <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Room leader</p>
                           <Select
                             value={leaderId ?? '__none__'}
                             disabled={leaderSavingRoomId === room.id}
@@ -710,7 +712,7 @@ function CampRoomsPageContent() {
                               void handleSetLeader(room.id, v === '__none__' ? null : v)
                             }
                           >
-                            <SelectTrigger className="min-h-10">
+                            <SelectTrigger className="min-h-11 sm:min-h-10">
                               <SelectValue placeholder="Choose room leader…" />
                             </SelectTrigger>
                             <SelectContent>
@@ -731,10 +733,10 @@ function CampRoomsPageContent() {
                           {occupants.map((reg) => (
                             <li
                               key={reg.id}
-                              className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-slate-50 px-3 py-2 text-sm"
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-neutral-200/80 bg-neutral-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03]"
                             >
-                              <div>
-                                <p className="font-medium">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-neutral-900 dark:text-neutral-100">
                                   {campRegistrationDisplayName(reg)}
                                   {reg.id === leaderId ? (
                                     <Badge className="ml-2 gap-1 align-middle text-xs">
@@ -746,10 +748,20 @@ function CampRoomsPageContent() {
                                 <p className="text-xs text-muted-foreground">
                                   {reg.role}
                                   {reg.sex ? ` · ${reg.sex}` : ''}
+                                  {reg.phone ? ' · ' : ''}
+                                  {reg.phone ? (
+                                    <PhoneLink phone={reg.phone} whatsapp={reg.whatsapp} name={campRegistrationDisplayName(reg)} />
+                                  ) : null}
                                 </p>
                               </div>
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm" asChild>
+                              <div className="flex w-full items-center gap-2 sm:w-auto">
+                                <QuickContactButtons
+                                  phone={reg.phone}
+                                  whatsapp={reg.whatsapp}
+                                  name={campRegistrationDisplayName(reg)}
+                                  className="mr-auto sm:mr-0"
+                                />
+                                <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" asChild>
                                   <Link href={`/admin/camp-meeting/registrations/${reg.id}?year=${campYear.id}`}>
                                     View
                                   </Link>
@@ -757,6 +769,7 @@ function CampRoomsPageContent() {
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="min-h-11 sm:min-h-9"
                                   disabled={assigning}
                                   onClick={() => void handleAssign(reg.id, null)}
                                 >
@@ -784,14 +797,15 @@ function CampRoomsPageContent() {
                 Assign each person to a room. Roommates share the same room.
               </CardDescription>
             </CardHeader>
-            <CardContent className="max-h-[70vh] space-y-3 overflow-y-auto">
+            <CardContent className="space-y-3 lg:max-h-[70vh] lg:overflow-y-auto">
               {unassigned.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Everyone has a room.</p>
               ) : (
                 unassigned.map((reg) => (
-                  <div key={reg.id} className="space-y-2 rounded-lg border p-3">
-                    <div>
-                      <p className="font-medium">{campRegistrationDisplayName(reg)}</p>
+                  <div key={reg.id} className="space-y-2 rounded-lg border border-neutral-200/80 p-3 dark:border-white/10">
+                    <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{campRegistrationDisplayName(reg)}</p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         <Badge variant="outline" className="text-xs">
                           {reg.role}
@@ -803,11 +817,13 @@ function CampRoomsPageContent() {
                         ) : null}
                       </div>
                     </div>
+                    <QuickContactButtons phone={reg.phone} whatsapp={reg.whatsapp} name={campRegistrationDisplayName(reg)} />
+                    </div>
                     <Select
                       disabled={assigning || rooms.length === 0}
                       onValueChange={(roomId) => void handleAssign(reg.id, roomId)}
                     >
-                      <SelectTrigger className="min-h-10">
+                      <SelectTrigger className="min-h-11 sm:min-h-10">
                         <SelectValue placeholder="Assign to room…" />
                       </SelectTrigger>
                       <SelectContent>

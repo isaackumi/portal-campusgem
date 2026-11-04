@@ -93,7 +93,7 @@ export function SegmentedBar({
               ))
           : null}
       </div>
-      <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
+      <ul className="mt-3 grid grid-cols-2 gap-x-5 gap-y-1.5">
         {segments.map((s) => {
           const content = (
             <>

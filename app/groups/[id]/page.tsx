@@ -10,7 +10,10 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { groupRoleTone } from '@/lib/ui/chip-tones'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { dataService } from '@/lib/services/data-service'
 import { GROUP_MEMBERSHIP_ROLES, GROUP_MEMBERSHIP_ROLE_LABELS } from '@/lib/constants/groups'
@@ -246,23 +249,21 @@ export default function GroupDetailsPage() {
   // Show loading state
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div className="grid gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2 space-y-6">
-                <div className="h-64 bg-gray-200 rounded"></div>
-                <div className="h-96 bg-gray-200 rounded"></div>
-              </div>
-              <div className="space-y-6">
-                <div className="h-48 bg-gray-200 rounded"></div>
-                <div className="h-32 bg-gray-200 rounded"></div>
-              </div>
+      <DashboardLayout>
+        <div className="mx-auto max-w-6xl animate-pulse">
+          <div className="mb-6 h-8 w-1/2 rounded bg-neutral-200 dark:bg-neutral-700 sm:w-1/4"></div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="space-y-6 lg:col-span-2">
+              <div className="h-64 rounded-xl bg-neutral-200 dark:bg-neutral-800"></div>
+              <div className="h-96 rounded-xl bg-neutral-200 dark:bg-neutral-800"></div>
+            </div>
+            <div className="space-y-6">
+              <div className="h-48 rounded-xl bg-neutral-200 dark:bg-neutral-800"></div>
+              <div className="h-32 rounded-xl bg-neutral-200 dark:bg-neutral-800"></div>
             </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
@@ -274,148 +275,187 @@ export default function GroupDetailsPage() {
     return (
       <DashboardLayout>
         <div className="py-12 text-center">
-          <h2 className="text-lg font-semibold text-slate-900">Group not found</h2>
-          <p className="mt-2 text-sm text-muted-foreground">This group may have been removed or the link is invalid.</p>
-          <Button className="mt-4" onClick={() => router.push('/groups')}>
-            Back to Groups
+          <h2 className="app-section-title">Group not found</h2>
+          <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">This group may have been removed or the link is invalid.</p>
+          <Button className="mt-4 h-11 sm:h-10" onClick={() => router.push('/groups')}>
+            Back to groups
           </Button>
         </div>
       </DashboardLayout>
     )
   }
 
+  const leaders = [
+    { person: group.leader, label: 'Leader', icon: Crown, tone: 'bg-amber-50 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300' },
+    { person: group.co_leader, label: 'Co-leader', icon: Star, tone: 'bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300' },
+  ].filter((l) => l.person)
+
   return (
     <DashboardLayout>
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-6xl mx-auto">
+      <div className="mx-auto max-w-6xl pb-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center mb-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => router.push('/groups')}
-                className="mr-3 text-slate-600 hover:text-slate-900"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Groups
-              </Button>
-            </div>
-            <h1 className="app-page-title mb-2">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() => router.push('/groups')}
+              className="-ml-1 mb-3 inline-flex min-h-11 items-center gap-2 rounded-md px-1 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 sm:min-h-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to groups
+            </button>
+            <h1 className="app-page-title break-words">
               {group.name}
             </h1>
-            <div className="flex items-center space-x-4">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
               <Badge variant="secondary" className="capitalize">
                 {group.group_type.replace('_', ' ')}
               </Badge>
-              <span className="text-slate-600">
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">
                 {members.length} member{members.length !== 1 ? 's' : ''}
               </span>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Button variant="outline">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Group
+          <div className="flex items-center gap-2">
+            <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => setShowAddMember(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add member
             </Button>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export
+            <Button variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-11 w-11 shrink-0 p-0 sm:h-10 sm:w-10" aria-label="More actions">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem className="min-h-11 gap-2">
+                  <Download className="h-4 w-4" />
+                  Export members
+                </DropdownMenuItem>
+                <DropdownMenuItem className="min-h-11 gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Schedule event
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Leadership first on phones: it's who people want to reach */}
+          {leaders.length > 0 ? (
+            <Card className="lg:col-start-3 lg:row-start-1">
+              <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="app-section-title flex items-center gap-2">
+                  <Crown className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                  Leadership
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1 p-4 pt-0 sm:p-6 sm:pt-0">
+                {leaders.map(({ person, label, icon: Icon, tone }) => (
+                  <div key={person!.id} className="flex min-h-14 items-center gap-3">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tone}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{person!.full_name}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        {label}
+                        {person!.phone ? (
+                          <>
+                            {' · '}
+                            <PhoneLink phone={person!.phone} whatsapp={person!.whatsapp} name={person!.full_name} />
+                          </>
+                        ) : null}
+                      </p>
+                    </div>
+                    <QuickContactButtons phone={person!.phone} whatsapp={person!.whatsapp} name={person!.full_name} />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="min-w-0 space-y-6 lg:col-span-2 lg:col-start-1 lg:row-span-3 lg:row-start-1">
             <Tabs defaultValue="members" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <ScrollableTabsList>
                 <TabsTrigger value="members">Members</TabsTrigger>
                 <TabsTrigger value="messages">Messages</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
+              </ScrollableTabsList>
 
               {/* Members Tab */}
-              <TabsContent value="members" className="space-y-6">
-                {/* Members Header */}
+              <TabsContent value="members" className="mt-4 space-y-6">
                 <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center">
-                        <Users className="h-5 w-5 mr-2" />
-                        Group Members
-                      </CardTitle>
-                      <Button 
-                        onClick={() => setShowAddMember(true)}
-                        className=""
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Add Member
-                      </Button>
-                    </div>
+                  <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
+                    <CardTitle className="app-section-title flex items-center gap-2">
+                      <Users className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                      Group members
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                     {/* Search and Filters */}
-                    <div className="flex flex-col md:flex-row gap-4 mb-6">
-                      <div className="flex-1">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input
-                            placeholder="Search members..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                          />
-                        </div>
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                        <Input
+                          type="search"
+                          placeholder="Search members..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="h-11 w-full pl-10 sm:h-10"
+                        />
                       </div>
-                      <div>
-                        <Select value={roleFilter} onValueChange={setRoleFilter}>
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Roles</SelectItem>
-                            {GROUP_MEMBERSHIP_ROLES.map((item) => (
-                              <SelectItem key={item.value} value={item.value}>
-                                {item.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Select value={roleFilter} onValueChange={setRoleFilter}>
+                        <SelectTrigger className="h-11 w-full sm:h-10 sm:w-40" aria-label="Filter by role">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All roles</SelectItem>
+                          {GROUP_MEMBERSHIP_ROLES.map((item) => (
+                            <SelectItem key={item.value} value={item.value}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Members List */}
-                    <div className="space-y-3">
-                      {membersLoading ? (
-                        <p className="py-6 text-center text-sm text-muted-foreground">Loading members…</p>
-                      ) : null}
-                      {filteredMembers.map((groupMember) => (
-                        <div
-                          key={groupMember.id}
-                          className="flex flex-col gap-3 rounded-lg bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                              <Users className="h-5 w-5 text-primary" />
+                    {membersLoading ? (
+                      <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">Loading members…</p>
+                    ) : null}
+                    <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+                      {filteredMembers.map((groupMember) => {
+                        const person = groupMember.member?.user
+                        const name = memberDisplayName(groupMember)
+                        return (
+                          <li key={groupMember.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+                                <Users className="h-5 w-5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{name}</p>
+                                <p className="flex flex-wrap items-center gap-x-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                  <span className="font-mono">{memberMembershipId(groupMember)}</span>
+                                  {person?.phone ? (
+                                    <PhoneLink phone={person.phone} whatsapp={person.whatsapp} name={name} />
+                                  ) : null}
+                                </p>
+                              </div>
+                              <QuickContactButtons phone={person?.phone} whatsapp={person?.whatsapp} name={name} />
                             </div>
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-slate-900">
-                                {memberDisplayName(groupMember)}
-                              </p>
-                              <p className="text-sm text-slate-500">{memberMembershipId(groupMember)}</p>
-                              {groupMember.member?.user?.phone ? (
-                                <p className="text-xs text-slate-500">{groupMember.member.user.phone}</p>
-                              ) : null}
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                            <Badge variant={groupRoleTone(groupMember.role)} className="capitalize">
-                              {getRoleIcon(groupMember.role)}
-                              {GROUP_MEMBERSHIP_ROLE_LABELS[groupMember.role]}
-                            </Badge>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 sm:justify-end">
+                              <Badge variant={groupRoleTone(groupMember.role)} className="hidden capitalize sm:inline-flex">
+                                {getRoleIcon(groupMember.role)}
+                                {GROUP_MEMBERSHIP_ROLE_LABELS[groupMember.role]}
+                              </Badge>
                               <Label htmlFor={`role-${groupMember.id}`} className="sr-only">
                                 Change role
                               </Label>
@@ -423,7 +463,7 @@ export default function GroupDetailsPage() {
                                 value={groupMember.role}
                                 onValueChange={(value) => updateMemberRole(groupMember.id, value)}
                               >
-                                <SelectTrigger id={`role-${groupMember.id}`} className="w-36 bg-white">
+                                <SelectTrigger id={`role-${groupMember.id}`} className="h-11 flex-1 sm:h-9 sm:w-36 sm:flex-none">
                                   <SelectValue placeholder="Change role" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -437,25 +477,23 @@ export default function GroupDetailsPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() =>
-                                  removeMemberFromGroup(groupMember.id, memberDisplayName(groupMember))
-                                }
-                                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                aria-label={`Remove ${memberDisplayName(groupMember)} from group`}
+                                onClick={() => removeMemberFromGroup(groupMember.id, name)}
+                                className="h-11 shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-400/30 dark:text-red-300 dark:hover:bg-red-400/10 dark:hover:text-red-200 sm:h-9"
+                                aria-label={`Remove ${name} from group`}
                               >
-                                <UserMinus className="mr-1 h-4 w-4" />
-                                Remove
+                                <UserMinus className="h-4 w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Remove</span>
                               </Button>
                             </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
 
                     {filteredMembers.length === 0 && !membersLoading && (
-                      <div className="text-center py-8">
-                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-slate-500">No members found</p>
+                      <div className="py-8 text-center">
+                        <Users className="mx-auto mb-4 h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">No members found</p>
                       </div>
                     )}
                   </CardContent>
@@ -463,15 +501,15 @@ export default function GroupDetailsPage() {
               </TabsContent>
 
               {/* Messages Tab */}
-              <TabsContent value="messages" className="space-y-6">
+              <TabsContent value="messages" className="mt-4 space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <MessageSquare className="h-5 w-5 mr-2" />
-                      Send Group Message
+                  <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
+                    <CardTitle className="app-section-title flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                      Send group message
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
                     <div>
                       <Label htmlFor="message">Message</Label>
                       <textarea
@@ -479,21 +517,21 @@ export default function GroupDetailsPage() {
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         placeholder="Type your message here..."
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
+                        className="mt-1.5 w-full rounded-xl border border-neutral-200 bg-white p-3 text-base text-neutral-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 sm:text-sm"
                         rows={4}
                       />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-slate-600">
-                        Message will be sent to {members.length} member{members.length !== 1 ? 's' : ''}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                        Goes to {members.length} member{members.length !== 1 ? 's' : ''}
                       </p>
-                      <Button 
+                      <Button
                         onClick={sendGroupMessage}
                         disabled={!messageText.trim()}
-                        className=""
+                        className="h-11 w-full sm:h-10 sm:w-auto"
                       >
-                        <Send className="h-4 w-4 mr-2" />
-                        Send Message
+                        <Send className="mr-2 h-4 w-4" />
+                        Send message
                       </Button>
                     </div>
                   </CardContent>
@@ -501,216 +539,151 @@ export default function GroupDetailsPage() {
               </TabsContent>
 
               {/* Settings Tab */}
-              <TabsContent value="settings" className="space-y-6">
+              <TabsContent value="settings" className="mt-4 space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Settings className="h-5 w-5 mr-2" />
-                      Group Settings
+                  <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
+                    <CardTitle className="app-section-title flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                      Group settings
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Group Type</Label>
-                        <p className="text-sm text-slate-600 capitalize">{group.group_type.replace('_', ' ')}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Max Members</Label>
-                        <p className="text-sm text-slate-600">{group.max_members || 'Unlimited'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Status</Label>
-                        <p className="text-sm text-slate-600">{group.is_active ? 'Active' : 'Inactive'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Created</Label>
-                        <p className="text-sm text-slate-600">{new Date(group.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
+                  <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                    <dl className="grid grid-cols-2 gap-4">
+                      {[
+                        ['Group type', group.group_type.replace('_', ' ')],
+                        ['Max members', group.max_members || 'Unlimited'],
+                        ['Status', group.is_active ? 'Active' : 'Inactive'],
+                        ['Created', new Date(group.created_at).toLocaleDateString()],
+                      ].map(([k, v]) => (
+                        <div key={String(k)}>
+                          <dt className="app-stat-label">{k}</dt>
+                          <dd className="mt-0.5 text-sm capitalize text-neutral-800 dark:text-neutral-200">{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
                   </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Group Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Eye className="h-5 w-5 mr-2" />
-                  Group Information
+          {/* Group Info */}
+          {group.description || group.meeting_schedule || group.meeting_location ? (
+            <Card className="lg:col-start-3">
+              <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="app-section-title flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                  About
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
                 {group.description && (
-                  <div>
-                    <Label className="text-sm font-medium">Description</Label>
-                    <p className="text-sm text-slate-600 mt-1">{group.description}</p>
-                  </div>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">{group.description}</p>
                 )}
 
                 {group.meeting_schedule && (
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium">Meeting Schedule</p>
-                      <p className="text-sm text-slate-600">{group.meeting_schedule}</p>
+                  <div className="flex items-start gap-2">
+                    <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
+                    <div className="min-w-0">
+                      <p className="app-stat-label">Meeting schedule</p>
+                      <p className="break-words text-sm text-neutral-700 dark:text-neutral-300">{group.meeting_schedule}</p>
                     </div>
                   </div>
                 )}
 
                 {group.meeting_location && (
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium">Location</p>
-                      <p className="text-sm text-slate-600">{group.meeting_location}</p>
-                    </div>
-                  </div>
-                )}
-
-              </CardContent>
-            </Card>
-
-            {/* Leadership */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Crown className="h-5 w-5 mr-2" />
-                  Leadership
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {group.leader && (
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                      <Crown className="h-4 w-4 text-yellow-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{group.leader.full_name}</p>
-                      <p className="text-xs text-slate-500">Leader</p>
-                    </div>
-                  </div>
-                )}
-
-                {group.co_leader && (
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                      <Star className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{group.co_leader.full_name}</p>
-                      <p className="text-xs text-slate-500">Co-Leader</p>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
+                    <div className="min-w-0">
+                      <p className="app-stat-label">Location</p>
+                      <p className="break-words text-sm text-neutral-700 dark:text-neutral-300">{group.meeting_location}</p>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setShowAddMember(true)}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Member
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Send Message
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Event
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Members
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          ) : null}
         </div>
 
-        {/* Add Member Modal */}
-        {showAddMember && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle>Add Member to Group</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="member-select">Select Member</Label>
-                  <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableMembers.length === 0 ? (
-                        <SelectItem value="no-members" disabled>No available members</SelectItem>
-                      ) : (
-                        availableMembers.map((member) => (
+        {/* Add Member Dialog */}
+        <Dialog
+          open={showAddMember}
+          onOpenChange={(open) => {
+            setShowAddMember(open)
+            if (!open) {
+              setSelectedMemberId('')
+              setSelectedRole('member')
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add member to group</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="member-select">Member</Label>
+                <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+                  <SelectTrigger id="member-select" className="h-11 sm:h-10">
+                    <SelectValue placeholder="Choose a member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMembers.length === 0 ? (
+                      <SelectItem value="no-members" disabled>No available members</SelectItem>
+                    ) : (
+                      availableMembers.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           <div>
                             <p className="font-medium">{member.full_name}</p>
-                            <p className="text-xs text-slate-500">{member.membership_id} • {member.role}</p>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                              <span className="font-mono">{member.membership_id}</span> · {member.role}
+                            </p>
                           </div>
                         </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="role-select">Role</Label>
-                  <Select value={selectedRole} onValueChange={setSelectedRole}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GROUP_MEMBERSHIP_ROLES.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end space-x-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowAddMember(false)
-                      setSelectedMemberId('')
-                      setSelectedRole('member')
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={addMemberToGroup}
-                    disabled={!selectedMemberId || selectedMemberId === 'no-members'}
-                    className=""
-                  >
-                    Add Member
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="role-select">Role</Label>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger id="role-select" className="h-11 sm:h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GROUP_MEMBERSHIP_ROLES.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                className="h-11 sm:h-10"
+                onClick={() => {
+                  setShowAddMember(false)
+                  setSelectedMemberId('')
+                  setSelectedRole('member')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="h-11 sm:h-10"
+                onClick={addMemberToGroup}
+                disabled={!selectedMemberId || selectedMemberId === 'no-members'}
+              >
+                Add member
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-    </div>
     </DashboardLayout>
   )
 }

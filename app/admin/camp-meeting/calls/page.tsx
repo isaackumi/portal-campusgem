@@ -46,6 +46,7 @@ import { AssignCallersDialog } from '@/components/camp/calls/assign-callers-dial
 import { TextCallListsDialog } from '@/components/camp/calls/text-call-lists-dialog'
 import { TextRegistrantsDialog } from '@/components/camp/calls/text-registrants-dialog'
 import { OutcomeBadge, outcomeSegments } from '@/components/camp/call-outcome'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 
 type View = 'team' | 'mine'
 type CallerFilter = 'all' | 'unassigned' | string
@@ -243,12 +244,12 @@ function CallsWorkspace() {
                 ))}
               </select>
             ) : null}
-            <Button variant="outline" onClick={() => void board.refetch()} disabled={board.isFetching}>
-              <RefreshCw className={cn('mr-2 h-4 w-4', board.isFetching && 'animate-spin')} aria-hidden />
-              Refresh
+            <Button variant="outline" onClick={() => void board.refetch()} disabled={board.isFetching} aria-label="Refresh">
+              <RefreshCw className={cn('h-4 w-4 sm:mr-2', board.isFetching && 'animate-spin')} aria-hidden />
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
             {data.canManage && data.canSms ? (
-              <Button onClick={() => setTextListsOpen(true)}>
+              <Button className="flex-1 sm:flex-none" onClick={() => setTextListsOpen(true)}>
                 <MessageSquareText className="mr-2 h-4 w-4" aria-hidden />
                 Text call lists
               </Button>
@@ -268,7 +269,7 @@ function CallsWorkspace() {
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">of {summary.total} · {confirmedPct}%</span>
                 </p>
               </div>
-              <dl className="flex gap-6 text-right">
+              <dl className="flex w-full justify-between gap-4 text-left sm:w-auto sm:justify-start sm:gap-6 sm:text-right">
                 <div>
                   <dt className="app-stat-label">Still to reach</dt>
                   <dd className="mt-1 text-xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-50">{summary.open}</dd>
@@ -519,8 +520,8 @@ function CallsWorkspace() {
                           <div className="min-w-0">
                             <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{r.full_name}</p>
                             <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">
-                              <a href={`tel:${r.phone}`} className="font-mono hover:text-brand-700 dark:hover:text-brand-300">{r.phone}</a>
-                              {r.residence ? ` · ${r.residence}` : ''}
+                              <PhoneLink phone={r.phone} whatsapp={r.whatsapp} name={r.full_name} />
+                              {r.residence ? <span className="hidden sm:inline"> · {r.residence}</span> : null}
                             </p>
                           </div>
                         </div>
@@ -545,9 +546,10 @@ function CallsWorkspace() {
                         {r.call_attempts ?? 0}
                       </td>
                       <td className="px-4 py-3 text-right">
+                        <QuickContactButtons className="mr-1 sm:hidden" phone={r.phone} whatsapp={r.whatsapp} name={r.full_name} />
                         <Link
                           href={`/admin/camp-meeting/registrations/${r.id}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-white"
+                          className="hidden h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 sm:inline-flex hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-white"
                           aria-label={`Open ${r.full_name}`}
                         >
                           <ArrowUpRight className="h-4 w-4" />
@@ -570,8 +572,8 @@ function CallsWorkspace() {
       )}
 
       {data.canManage && selected.size > 0 ? (
-        <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4" role="region" aria-label="Selection actions">
-          <div className="flex max-w-full flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white/95 p-2 pl-4 shadow-xl backdrop-blur dark:border-neutral-700 dark:bg-neutral-900/95">
+        <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 lg:bottom-4" role="region" aria-label="Selection actions">
+          <div className="flex w-full max-w-xl flex-wrap items-center gap-2 rounded-2xl border border-neutral-200 bg-white/95 p-2 pl-4 shadow-pop backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 sm:w-auto">
             <span className="mr-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">
               <span className="tabular-nums">{selected.size}</span> selected
             </span>

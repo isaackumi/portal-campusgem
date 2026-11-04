@@ -54,7 +54,14 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { cn, formatDateTime } from '@/lib/utils'
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, CalendarClock, Copy, Eye, GripVertical, Link2, Plus, Save, Trash2, UserRound } from 'lucide-react'
+import { ArrowLeft, BarChart3, CalendarClock, Copy, Eye, GripVertical, Link2, MoreHorizontal, Plus, Save, Trash2, UserRound } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 type EditableField = {
   client_id: string
@@ -127,18 +134,18 @@ function SortableQuestionCard({
     <div ref={setNodeRef} style={style} className={cn(isDragging && 'relative z-10')}>
       <Card
         className={cn(
-          'overflow-hidden border-slate-200/80 bg-white shadow-sm transition-shadow',
+          'overflow-hidden border-neutral-200/80 bg-white shadow-sm transition-shadow dark:border-white/10 dark:bg-neutral-800/60',
           isDragging && 'opacity-40 ring-2 ring-slate-300/60'
         )}
       >
-        <CardHeader className="border-b border-slate-100 bg-slate-50/80 pb-3 pt-4">
+        <CardHeader className="border-b border-neutral-100 bg-neutral-50/80 pb-3 pt-4 dark:border-white/10 dark:bg-white/[0.04]">
           <div className="flex items-start gap-2">
             <button
               type="button"
               ref={setActivatorNodeRef}
               className={cn(
                 'mt-0.5 flex h-9 w-9 shrink-0 touch-none items-center justify-center rounded-md border border-transparent text-muted-foreground',
-                'hover:border-slate-200 hover:bg-white hover:text-foreground',
+                'hover:border-neutral-200 hover:bg-white hover:text-foreground',
                 'cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
               )}
               aria-label="Drag to reorder question"
@@ -148,7 +155,7 @@ function SortableQuestionCard({
               <GripVertical className="h-5 w-5" />
             </button>
             <div className="min-w-0 flex-1 pt-1">
-              <CardTitle className="text-base font-medium text-slate-800">Question {index + 1}</CardTitle>
+              <CardTitle className="text-base font-medium text-neutral-800 dark:text-neutral-100">Question {index + 1}</CardTitle>
               <p className="mt-0.5 truncate text-sm text-muted-foreground">{field.label || 'Untitled question'}</p>
             </div>
             <Button
@@ -444,13 +451,13 @@ export default function FormEditorPage() {
 
   if (!form) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div>
         <div className="mx-auto max-w-lg space-y-6">
-          <Button variant="ghost" onClick={() => router.push('/admin/forms')}>
+          <Button variant="ghost" className="-ml-2 h-11 px-2 sm:h-10" onClick={() => router.push('/admin/forms')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to forms
           </Button>
-          <Card className="border-amber-200 bg-amber-50/50">
+          <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-400/20 dark:bg-amber-400/10">
             <CardHeader>
               <CardTitle>Form not available</CardTitle>
               <CardDescription>
@@ -469,7 +476,7 @@ export default function FormEditorPage() {
 
   const actionButtons = (
     <>
-      <Button variant="outline" className="min-h-11 flex-1 sm:flex-none" asChild>
+      <Button variant="outline" className="min-h-11 flex-1 sm:flex-none lg:min-h-10" asChild>
         <Link href={`/admin/forms/${form.id}/preview`} target="_blank">
           <Eye className="mr-2 h-4 w-4 shrink-0" />
           Preview
@@ -477,14 +484,14 @@ export default function FormEditorPage() {
       </Button>
       <Button
         variant="outline"
-        className="min-h-11 flex-1 sm:flex-none"
+        className="min-h-11 flex-1 sm:flex-none lg:min-h-10"
         onClick={() => router.push(`/admin/forms/${form.id}/responses`)}
       >
         Responses
       </Button>
       <Button
         variant="outline"
-        className="min-h-11 flex-1 text-red-600 hover:bg-red-50 hover:text-red-700 sm:flex-none"
+        className="min-h-11 flex-1 text-red-600 hover:bg-red-50 hover:text-red-700 sm:flex-none lg:min-h-10 dark:text-red-300 dark:hover:bg-red-400/10"
         onClick={() => setDeleteOpen(true)}
       >
         <Trash2 className="mr-2 h-4 w-4 shrink-0" />
@@ -492,24 +499,61 @@ export default function FormEditorPage() {
       </Button>
       <Button
         variant="outline"
-        className="min-h-11 flex-1 sm:flex-none"
+        className="min-h-11 flex-1 sm:flex-none lg:min-h-10"
         onClick={() => void handleSave(false)}
         disabled={saving}
       >
         <Save className="mr-2 h-4 w-4 shrink-0" />
         Save
       </Button>
-      <Button className="min-h-11 flex-1 sm:flex-none" onClick={() => void handleSave(true)} disabled={saving}>
+      <Button className="min-h-11 flex-1 sm:flex-none lg:min-h-10" onClick={() => void handleSave(true)} disabled={saving}>
+        Publish
+      </Button>
+    </>
+  )
+
+  /** Phones: Save + Publish stay under the thumb; the rest live in a menu. */
+  const mobileActionButtons = (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="h-11 w-11 shrink-0 px-0" aria-label="More form actions">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" side="top" className="w-56">
+          <DropdownMenuItem asChild className="min-h-11">
+            <Link href={`/admin/forms/${form.id}/preview`} target="_blank">
+              <Eye className="mr-2 h-4 w-4" />
+              Preview
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="min-h-11" onClick={() => router.push(`/admin/forms/${form.id}/responses`)}>
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Responses
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete form
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button variant="outline" className="h-11 flex-1" onClick={() => void handleSave(false)} disabled={saving}>
+        <Save className="mr-2 h-4 w-4 shrink-0" />
+        Save
+      </Button>
+      <Button className="h-11 flex-1" onClick={() => void handleSave(true)} disabled={saving}>
         Publish
       </Button>
     </>
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-8">
-      <div className="mx-auto max-w-5xl space-y-4 px-3 py-4 sm:space-y-6 sm:p-6">
+    <div className="pb-20 lg:pb-0">
+      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button variant="ghost" className="-ml-2 w-fit min-h-10" onClick={() => router.push('/admin/forms')}>
+          <Button variant="ghost" className="-ml-2 min-h-11 w-fit px-2 sm:min-h-10" onClick={() => router.push('/admin/forms')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to forms
           </Button>
@@ -517,19 +561,20 @@ export default function FormEditorPage() {
         </div>
 
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold text-slate-900 sm:text-2xl">{title || 'Untitled form'}</h1>
+          <h1 className="app-page-title break-words">{title || 'Untitled form'}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {status === 'published' ? 'Published' : status === 'closed' ? 'Closed' : 'Draft'} · {fields.length}{' '}
             question{fields.length === 1 ? '' : 's'}
           </p>
         </div>
 
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
-          <div className="mx-auto flex max-w-5xl flex-wrap gap-2">{actionButtons}</div>
+        <div className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 rounded-xl border border-neutral-200 bg-white/95 p-2 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/95 sm:hidden">
+          <div className="mx-auto flex max-w-5xl gap-2">{mobileActionButtons}</div>
         </div>
+        <div className="hidden flex-wrap gap-2 sm:flex lg:hidden">{actionButtons}</div>
 
         <Tabs defaultValue="questions" className="space-y-0">
-          <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100/95 px-3 py-2 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+          <div>
             <ScrollableTabsList className="w-full">
               <TabsTrigger value="settings" className="flex-1 sm:flex-none sm:px-5">
                 Settings
@@ -541,7 +586,7 @@ export default function FormEditorPage() {
           </div>
 
           <TabsContent value="settings" className="mt-4 space-y-4 focus-visible:outline-none sm:mt-6">
-        <Card className="border-slate-200">
+        <Card className="border-neutral-200 dark:border-white/10">
           <CardHeader>
             <CardTitle>Form settings</CardTitle>
             <CardDescription>Title, share link, and optional phone lookup for returning campers.</CardDescription>
@@ -553,7 +598,7 @@ export default function FormEditorPage() {
               <span className="inline-flex items-center gap-1.5">
                 <UserRound className="h-4 w-4 shrink-0" />
                 By{' '}
-                <span className="font-medium text-slate-800">{creatorName ?? 'Unknown user'}</span>
+                <span className="font-medium text-neutral-800 dark:text-neutral-100">{creatorName ?? 'Unknown user'}</span>
               </span>
             </div>
           </CardHeader>
@@ -590,7 +635,7 @@ export default function FormEditorPage() {
                 Paste a link to a banner, flyer, or photo. Leave empty for a colored gradient header.
               </p>
               {isValidCoverImageUrl(coverImageUrl) ? (
-                <div className="overflow-hidden rounded-lg border bg-slate-50">
+                <div className="overflow-hidden rounded-lg border bg-neutral-50 dark:bg-white/[0.04]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={coverImageUrl.trim()}
@@ -711,7 +756,7 @@ export default function FormEditorPage() {
                   href={buildFormWhatsAppShareUrl({ formTitle: title, publicUrl })}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex text-sm font-medium text-emerald-700 hover:underline"
+                  className="inline-flex text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-300"
                 >
                   Share public link on WhatsApp
                 </a>
@@ -797,14 +842,14 @@ export default function FormEditorPage() {
             </SortableContext>
             <DragOverlay adjustScale={false}>
               {activeField ? (
-                <Card className="w-[min(100vw-2rem,56rem)] cursor-grabbing border-slate-200 shadow-2xl ring-2 ring-slate-400/30">
-                  <CardHeader className="border-b border-slate-100 bg-slate-50/90 pb-3 pt-4">
+                <Card className="w-[min(100vw-2rem,56rem)] cursor-grabbing border-neutral-200 shadow-2xl ring-2 ring-neutral-400/30 dark:border-white/10">
+                  <CardHeader className="border-b border-neutral-100 bg-neutral-50/90 pb-3 pt-4 dark:border-white/10 dark:bg-white/[0.04]">
                     <div className="flex items-start gap-2">
-                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-muted-foreground">
+                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-muted-foreground dark:border-white/10 dark:bg-neutral-800/60">
                         <GripVertical className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1 pt-1">
-                        <CardTitle className="text-base font-medium text-slate-800">
+                        <CardTitle className="text-base font-medium text-neutral-800 dark:text-neutral-100">
                           Question {activeQuestionNumber || 1}
                         </CardTitle>
                         <p className="mt-0.5 truncate text-sm text-muted-foreground">

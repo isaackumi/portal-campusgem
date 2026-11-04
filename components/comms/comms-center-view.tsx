@@ -35,6 +35,10 @@ import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
+import { StatCard } from '@/components/ui/stat-card'
+import { PageHeader } from '@/components/layout/page-header'
+import { PhoneLink } from '@/components/contact/phone-link'
+import { FormActionBar } from '@/components/admin/form-action-bar'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -70,27 +74,19 @@ function statusIcon(status: CommunicationRecord['status']) {
   switch (status) {
     case 'sent':
     case 'delivered':
-      return <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+      return <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
     case 'failed':
     case 'bounced':
-      return <XCircle className="h-4 w-4 text-red-600" />
+      return <XCircle className="h-4 w-4 text-red-600 dark:text-red-300" />
     case 'pending':
-      return <Clock className="h-4 w-4 text-amber-600" />
+      return <Clock className="h-4 w-4 text-amber-600 dark:text-amber-300" />
     default:
-      return <AlertCircle className="h-4 w-4 text-slate-400" />
+      return <AlertCircle className="h-4 w-4 text-neutral-400 dark:text-neutral-400" />
   }
 }
 
 function StatTile({ label, value, hint }: { label: string; value: number; hint?: string }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-2xl">{value}</CardTitle>
-        {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
-      </CardHeader>
-    </Card>
-  )
+  return <StatCard className="p-4 sm:p-5" label={label} value={value} sub={hint} />
 }
 
 export function CommsCenterView() {
@@ -357,25 +353,24 @@ export function CommsCenterView() {
 
   return (
     <PageContainer>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Communications Center</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Send and track email & SMS across Campus Gem, RLC, and Camp — single, group, or bulk.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => void refresh()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/admin/camp-meeting/communications">Camp bulk tools</Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        className="mb-0"
+        title="Communications Center"
+        description="Send and track email & SMS across Campus Gem, RLC, and Camp — single, group, or bulk."
+        actions={
+          <>
+            <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => void refresh()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button variant="outline" className="flex-1 sm:flex-none" asChild>
+              <Link href="/admin/camp-meeting/communications">Camp bulk tools</Link>
+            </Button>
+          </>
+        }
+      />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Total logged" value={stats?.total ?? 0} />
         <StatTile label="Sent / delivered" value={stats?.sent ?? 0} />
         <StatTile
@@ -389,7 +384,7 @@ export function CommsCenterView() {
       </div>
 
       {channel === 'sms' || providers ? (
-        <div className="mb-6">
+        <div>
           <SmsProviderBanner
             status={providers}
             dryRun={dryRun}
@@ -400,23 +395,6 @@ export function CommsCenterView() {
           />
         </div>
       ) : null}
-
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Label className="text-sm text-muted-foreground">History filter:</Label>
-        <Select value={moduleFilter} onValueChange={(v) => setModuleFilter(v as CommsModule | 'all')}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All modules</SelectItem>
-            {MODULES.map((m) => (
-              <SelectItem key={m} value={m}>
-                {COMMS_MODULE_LABELS[m]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <ScrollableTabsList>
@@ -487,11 +465,12 @@ export function CommsCenterView() {
               {audienceMode === 'single' ? (
                 <div className="space-y-3">
                   <Input
+                    type="search"
                     placeholder="Search by name, phone, or email…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                  <div className="max-h-56 overflow-y-auto rounded-lg border">
+                  <div className="max-h-72 overflow-y-auto rounded-lg border sm:max-h-56">
                     {searching ? (
                       <p className="p-4 text-sm text-muted-foreground">Searching…</p>
                     ) : searchResults.length === 0 ? (
@@ -505,7 +484,7 @@ export function CommsCenterView() {
                         return (
                           <label
                             key={`${r.entity_type}-${r.entity_id}`}
-                            className="flex cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-0 hover:bg-slate-50"
+                            className="flex min-h-12 cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-0 hover:bg-neutral-50 dark:hover:bg-white/[0.06]"
                           >
                             <Checkbox checked={checked} onCheckedChange={(c) => toggleRecipient(r, c === true)} />
                             <div className="min-w-0 flex-1">
@@ -595,7 +574,7 @@ export function CommsCenterView() {
               </div>
 
               {channel === 'sms' && selectedRecipients.length > 0 ? (
-                <div className="rounded-lg border bg-slate-50 px-3 py-2 text-xs text-slate-700 space-y-1">
+                <div className="space-y-1 break-words rounded-lg border bg-neutral-50 px-3 py-2 text-xs text-neutral-700 dark:bg-white/[0.04] dark:text-neutral-300">
                   <p>
                     {deliverableCount} valid Ghana phones · Hubtel format 233XXXXXXXXX
                   </p>
@@ -611,8 +590,8 @@ export function CommsCenterView() {
                 </div>
               ) : null}
 
+              <FormActionBar className="sm:justify-start">
               <Button
-                className="w-full sm:w-auto"
                 disabled={sending || (audienceMode !== 'manual' && deliverableCount === 0 && !manualRecipients.trim())}
                 onClick={requestSend}
               >
@@ -625,11 +604,28 @@ export function CommsCenterView() {
                       : 'Review & send SMS'
                     : `Send ${COMMS_CHANNEL_LABELS[channel]}`}
               </Button>
+              </FormActionBar>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Label className="text-sm text-muted-foreground">Show module</Label>
+            <Select value={moduleFilter} onValueChange={(v) => setModuleFilter(v as CommsModule | 'all')}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All modules</SelectItem>
+                {MODULES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {COMMS_MODULE_LABELS[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle>Message log</CardTitle>
@@ -643,21 +639,21 @@ export function CommsCenterView() {
                   {history.map((row) => {
                     const meta = commsMetaBadge(row.metadata)
                     return (
-                    <div key={row.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div key={row.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-6">
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           {statusIcon(row.status)}
-                          <span className="font-medium">{row.recipient_name ?? 'Recipient'}</span>
+                          <span className="min-w-0 break-words font-medium">{row.recipient_name ?? 'Recipient'}</span>
                           <Badge variant="outline">{COMMS_MODULE_LABELS[row.module]}</Badge>
                           <Badge variant="secondary">{COMMS_CHANNEL_LABELS[row.channel]}</Badge>
                           <Badge
-                            className={cn(
+                            variant={
                               row.status === 'failed' || row.status === 'bounced'
-                                ? 'bg-red-100 text-red-800'
+                                ? 'danger'
                                 : row.status === 'sent' || row.status === 'delivered'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-amber-100 text-amber-800'
-                            )}
+                                  ? 'success'
+                                  : 'warning'
+                            }
                           >
                             {COMMS_STATUS_LABELS[row.status]}
                           </Badge>
@@ -669,22 +665,28 @@ export function CommsCenterView() {
                           {meta.dryRun ? <Badge variant="secondary">dry-run</Badge> : null}
                           {meta.test ? <Badge variant="secondary">test</Badge> : null}
                         </div>
-                        {row.subject ? <p className="text-sm font-medium text-slate-700">{row.subject}</p> : null}
+                        {row.subject ? <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{row.subject}</p> : null}
                         <p className="line-clamp-2 text-sm text-muted-foreground">{row.message_body}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {row.recipient_email ?? row.recipient_phone ?? '—'}
-                          {row.sent_at ? ` · ${new Date(row.sent_at).toLocaleString()}` : ''}
+                        <p className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+                          {row.recipient_email ? (
+                            <span className="break-all">{row.recipient_email}</span>
+                          ) : row.recipient_phone ? (
+                            <PhoneLink phone={row.recipient_phone} name={row.recipient_name} />
+                          ) : (
+                            '—'
+                          )}
+                          {row.sent_at ? <span>· {new Date(row.sent_at).toLocaleString()}</span> : null}
                         </p>
                         {row.provider_message_id ? (
-                          <p className="font-mono text-[11px] text-slate-500">
+                          <p className="font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
                             id {row.provider_message_id}
                           </p>
                         ) : null}
                         {row.error_message ? (
-                          <p className="text-xs text-red-600">{row.error_message}</p>
+                          <p className="text-xs text-red-600 dark:text-red-300">{row.error_message}</p>
                         ) : null}
                       </div>
-                      <div className="flex shrink-0 flex-col items-end gap-2">
+                      <div className="flex shrink-0 flex-row-reverse items-center justify-end gap-2 sm:flex-col sm:items-end">
                         {(row.status === 'sent' ||
                           row.status === 'delivered' ||
                           row.status === 'failed' ||
@@ -757,12 +759,12 @@ export function CommsCenterView() {
               ) : null}
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
               <p className="mb-1 app-overline">
                 Message to send
               </p>
-              <p className="whitespace-pre-wrap leading-relaxed text-slate-900">{messageBody || '—'}</p>
-              <p className="mt-2 text-xs tabular-nums text-slate-500">
+              <p className="whitespace-pre-wrap leading-relaxed text-neutral-900 dark:text-neutral-100">{messageBody || '—'}</p>
+              <p className="mt-2 text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
                 {messageBody.length} characters
                 {messageBody.length > 160 ? ' · may split into multiple SMS' : ''}
               </p>
@@ -774,22 +776,22 @@ export function CommsCenterView() {
                   Recipients
                 </p>
                 {smsRecipients.length === 0 ? (
-                  <p className="text-slate-500">No valid phone numbers selected.</p>
+                  <p className="text-neutral-500 dark:text-neutral-400">No valid phone numbers selected.</p>
                 ) : (
-                  <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3">
+                  <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-neutral-800/60">
                     {smsRecipients.slice(0, 12).map((r) => (
                       <li
                         key={`${r.entity_id}-${r.id}`}
-                        className="flex items-center justify-between gap-3 text-slate-700"
+                        className="flex items-center justify-between gap-3 text-neutral-700 dark:text-neutral-300"
                       >
                         <span className="truncate font-medium">{r.name}</span>
-                        <span className="shrink-0 font-mono text-xs text-slate-500">
+                        <span className="shrink-0 font-mono text-xs text-neutral-500 dark:text-neutral-400">
                           {normalizeSmsPhone(r.phone!)}
                         </span>
                       </li>
                     ))}
                     {smsRecipients.length > 12 ? (
-                      <li className="pt-1 text-xs text-slate-500">
+                      <li className="pt-1 text-xs text-neutral-500 dark:text-neutral-400">
                         +{smsRecipients.length - 12} more
                       </li>
                     ) : null}
@@ -797,11 +799,11 @@ export function CommsCenterView() {
                 )}
               </div>
             ) : (
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="rounded-lg border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-neutral-800/60">
                 <p className="mb-1 app-overline">
                   Manual numbers
                 </p>
-                <p className="whitespace-pre-wrap font-mono text-xs text-slate-700">
+                <p className="whitespace-pre-wrap font-mono text-xs text-neutral-700 dark:text-neutral-300">
                   {manualRecipients.trim() || '—'}
                 </p>
               </div>

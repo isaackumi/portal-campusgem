@@ -41,6 +41,13 @@ import { RlcCheckInSearchHit } from '@/components/rlc/rlc-check-in-search-hit'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { RlcServiceSelect } from '@/components/rlc/rlc-service-select'
 import { Badge } from '@/components/ui/badge'
+import { PhoneLink } from '@/components/contact/phone-link'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -62,6 +69,7 @@ import {
   CalendarDays,
   CheckCircle,
   Download,
+  MoreHorizontal,
   Pencil,
   Printer,
   QrCode,
@@ -90,30 +98,28 @@ function RosterRow({
     <div key={row.attendance.id} className="rounded-lg border px-3 py-2 text-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-medium">{row.name}</p>
+          <p className="break-words font-medium">{row.name}</p>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             <Badge
               variant="outline"
               className={
                 row.kind === 'visitor'
-                  ? 'border-sky-200 bg-sky-50 text-sky-800'
+                  ? 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-300'
                   : row.kind === 'member'
-                    ? 'border-rose-200 bg-rose-50 text-rose-800'
+                    ? 'border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-400/20 dark:bg-brand-400/10 dark:text-brand-300'
                     : ''
               }
             >
               {row.kind === 'member' ? 'Member' : row.kind === 'visitor' ? 'Visitor' : 'Unknown'}
             </Badge>
-            {row.phone ? (
-              <span className="text-xs text-muted-foreground">{row.phone}</span>
-            ) : null}
-            {row.code ? <span className="text-xs text-muted-foreground">{row.code}</span> : null}
+            {row.phone ? <PhoneLink phone={row.phone} name={row.name} className="text-xs text-muted-foreground" /> : null}
+            {row.code ? <span className="font-mono text-xs text-muted-foreground">{row.code}</span> : null}
           </div>
         </div>
         {variant === 'present' ? (
-          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
         ) : (
-          <UserX className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <UserX className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
         )}
       </div>
       {variant === 'present' ? (
@@ -125,7 +131,7 @@ function RosterRow({
         </p>
       ) : null}
       {row.attendance.notes ? (
-        <p className="mt-2 rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-950">
+        <p className="mt-2 rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-950 dark:bg-amber-400/10 dark:text-amber-300">
           {row.attendance.notes}
         </p>
       ) : variant === 'absent' ? (
@@ -136,7 +142,7 @@ function RosterRow({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 px-2 text-xs text-rose-700"
+            className="h-10 px-3 text-xs text-brand-700 dark:text-brand-300 sm:h-8 sm:px-2"
             disabled={editingNoteId === row.attendance.id}
             onClick={() => onEditNote(row)}
           >
@@ -148,7 +154,7 @@ function RosterRow({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 px-2 text-xs text-red-700"
+            className="h-8 px-2 text-xs text-red-700 dark:text-red-300"
             disabled={removingId === row.attendance.id}
             onClick={() => onRemove(row)}
           >
@@ -395,16 +401,36 @@ export default function RlcAttendancePage() {
                   Print
                 </Link>
               </Button>
-              <Button variant="outline" onClick={handleDownloadCsv} disabled={roster.length === 0}>
+              <Button variant="outline" className="hidden sm:inline-flex" onClick={handleDownloadCsv} disabled={roster.length === 0}>
                 <Download className="mr-2 h-4 w-4" />
                 Download CSV
               </Button>
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="hidden sm:inline-flex" asChild>
                 <Link href="/admin/rlc/scan">
                   <QrCode className="mr-2 h-4 w-4" />
                   Optional QR scan
                 </Link>
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="sm:hidden">
+                    <MoreHorizontal className="mr-2 h-4 w-4" />
+                    More
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem className="min-h-11" disabled={roster.length === 0} onClick={handleDownloadCsv}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="min-h-11">
+                    <Link href="/admin/rlc/scan">
+                      <QrCode className="mr-2 h-4 w-4" />
+                      Optional QR scan
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : null
         }
@@ -430,8 +456,8 @@ export default function RlcAttendancePage() {
           <RlcAttendanceCalendarView onOpenSession={openSessionFromCalendar} />
         </TabsContent>
 
-        <TabsContent value="register" className="space-y-6">
-      <Card className="border-rose-100/80">
+        <TabsContent value="register" className="flex flex-col gap-4 sm:gap-6">
+      <Card className="border-brand-100/80 dark:border-brand-400/20">
         <CardHeader>
           <CardTitle>Service</CardTitle>
           <CardDescription>Attendance is tracked separately for each service on a date.</CardDescription>
@@ -456,88 +482,44 @@ export default function RlcAttendancePage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-emerald-700">{summary.present}</p>
-            <p className="text-sm text-muted-foreground">Present (checked in)</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-amber-700">{absentNoted.length}</p>
-            <p className="text-sm text-muted-foreground">Absent with note</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-slate-600">{implicitAbsentCount}</p>
-            <p className="text-sm text-muted-foreground">Implicitly absent (no record)</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {[
+          { value: summary.present, label: 'Present', hint: 'Checked in', cls: 'text-emerald-700 dark:text-emerald-300' },
+          { value: absentNoted.length, label: 'Absent', hint: 'With a note', cls: 'text-amber-700 dark:text-amber-300' },
+          { value: implicitAbsentCount, label: 'No record', hint: 'Implicitly absent', cls: 'text-neutral-600 dark:text-neutral-300' },
+        ].map((stat) => (
+          <div key={stat.label} className="dashboard-panel p-3 sm:p-5">
+            <p className={`app-stat-value ${stat.cls}`}>{stat.value}</p>
+            <p className="app-stat-label">{stat.label}</p>
+            <p className="hidden text-xs text-muted-foreground sm:block">{stat.hint}</p>
+          </div>
+        ))}
       </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold">{summary.members}</p>
-            <p className="text-sm text-muted-foreground">Members present</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold">{summary.visitors}</p>
-            <p className="text-sm text-muted-foreground">Visitors present</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold">{summary.male}</p>
-            <p className="text-sm text-muted-foreground">Males</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold">{summary.female}</p>
-            <p className="text-sm text-muted-foreground">Females</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-teal-100">
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-teal-800">{summary.children}</p>
-            <p className="text-sm text-muted-foreground">Children (0–12)</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold">{summary.teens}</p>
-            <p className="text-sm text-muted-foreground">Teens (13–17)</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold">{summary.youngAdults + summary.adults + summary.seniors}</p>
-            <p className="text-sm text-muted-foreground">Adults (18+)</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-2xl font-bold text-slate-500">{summary.genderUnspecified}</p>
-            <p className="text-sm text-muted-foreground">Gender not specified</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Age missing: {summary.ageUnspecified}
-              {summary.otherGender > 0 ? ` · Other gender: ${summary.otherGender}` : ''}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Gender and age come from member/visitor profiles. Existing records can be updated later so
-        these counts fill in.
-      </p>
+      <section className="dashboard-panel order-last p-4 sm:p-5 lg:order-none">
+        <h2 className="app-section-title">Who came</h2>
+        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+          {[
+            ['Members present', summary.members],
+            ['Visitors present', summary.visitors],
+            ['Males', summary.male],
+            ['Females', summary.female],
+            ['Children (0–12)', summary.children],
+            ['Teens (13–17)', summary.teens],
+            ['Adults (18+)', summary.youngAdults + summary.adults + summary.seniors],
+            ['Gender not specified', summary.genderUnspecified],
+          ].map(([label, value]) => (
+            <div key={label as string} className="min-w-0">
+              <dt className="app-stat-label truncate">{label}</dt>
+              <dd className="text-xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Age missing: {summary.ageUnspecified}
+          {summary.otherGender > 0 ? ` · Other gender: ${summary.otherGender}` : ''}. Gender and age come from
+          member/visitor profiles; update records so these counts fill in.
+        </p>
+      </section>
 
       <Tabs defaultValue="check-in" className="space-y-4">
         <ScrollableTabsList>
@@ -556,7 +538,7 @@ export default function RlcAttendancePage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Search className="h-5 w-5 text-rose-700" />
+                  <Search className="h-5 w-5 text-brand-700 dark:text-brand-300" />
                   Manual check-in
                 </CardTitle>
                 <CardDescription>
@@ -567,6 +549,8 @@ export default function RlcAttendancePage() {
               <CardContent className="space-y-3">
                 <Input
                   autoFocus
+                  type="search"
+                  className="h-11 text-base sm:h-10 sm:text-sm"
                   placeholder="Search name, phone, RLC-26-XXXX, membership ID…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -578,7 +562,7 @@ export default function RlcAttendancePage() {
                   }}
                 />
                 {lastCheckedIn ? (
-                  <p className="flex items-center gap-1.5 text-sm text-emerald-700">
+                  <p className="flex items-center gap-1.5 text-sm text-emerald-700 dark:text-emerald-300">
                     <CheckCircle className="h-4 w-4 shrink-0" />
                     Checked in {lastCheckedIn}
                   </p>
@@ -606,7 +590,7 @@ export default function RlcAttendancePage() {
               <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
                     Present · {serviceLabel}
                   </CardTitle>
                   <CardDescription>
@@ -616,14 +600,14 @@ export default function RlcAttendancePage() {
                 </div>
                 <Badge variant="secondary">{present.length}</Badge>
               </CardHeader>
-              <CardContent className="max-h-[28rem] space-y-2 overflow-y-auto">
+              <CardContent className="space-y-2 lg:max-h-[28rem] lg:overflow-y-auto">
                 {present.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No check-ins for this service yet.</p>
                 ) : (
                   <>
                     {presentVisitors.length > 0 ? (
                       <div className="space-y-2">
-                        <p className="app-overline text-sky-800">
+                        <p className="app-overline text-sky-800 dark:text-sky-300">
                           Visitors ({presentVisitors.length})
                         </p>
                         {presentVisitors.map((row) => (
@@ -644,7 +628,7 @@ export default function RlcAttendancePage() {
                     ) : null}
                     {presentMemberGroups.map((group) => (
                       <div key={group.type} className="space-y-2">
-                        <p className="app-overline text-rose-800">
+                        <p className="app-overline text-brand-800 dark:text-brand-300">
                           {presentMemberSectionLabel(group.type)} ({group.rows.length})
                         </p>
                         {group.rows.map((row) => (
@@ -675,7 +659,7 @@ export default function RlcAttendancePage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <UserX className="h-5 w-5 text-amber-700" />
+                  <UserX className="h-5 w-5 text-amber-700 dark:text-amber-300" />
                   Mark absent with note
                 </CardTitle>
                 <CardDescription>
@@ -706,21 +690,21 @@ export default function RlcAttendancePage() {
                   absentSearchHits.map((person) => (
                     <div
                       key={person.key}
-                      className="flex items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2"
+                      className="flex min-h-14 items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2 dark:bg-neutral-800/60"
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium">{person.name}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          <span className="font-medium text-sky-800">
+                          <span className="font-medium text-sky-800 dark:text-sky-300">
                             {person.kind === 'visitor' ? 'Visitor' : 'Member'}
                           </span>
-                          {person.phone ? ` · ${person.phone}` : ''}
+                          {person.phone ? <span className="font-mono"> · {person.phone}</span> : ''}
                         </p>
                       </div>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="shrink-0 border-amber-300 text-amber-900 hover:bg-amber-50"
+                        className="h-10 shrink-0 sm:h-8 border-amber-300 text-amber-900 hover:bg-amber-50 dark:border-amber-400/20 dark:text-amber-300 dark:hover:bg-amber-400/10"
                         disabled={recordingKey === person.key}
                         onClick={() => {
                           setAbsentTarget(person)
@@ -739,7 +723,7 @@ export default function RlcAttendancePage() {
               <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <UserX className="h-5 w-5 text-amber-700" />
+                    <UserX className="h-5 w-5 text-amber-700 dark:text-amber-300" />
                     Absent (noted)
                   </CardTitle>
                   <CardDescription>
@@ -748,7 +732,7 @@ export default function RlcAttendancePage() {
                 </div>
                 <Badge variant="outline">{absentNoted.length}</Badge>
               </CardHeader>
-              <CardContent className="max-h-[28rem] space-y-2 overflow-y-auto">
+              <CardContent className="space-y-2 lg:max-h-[28rem] lg:overflow-y-auto">
                 {absentNoted.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     No explicit absence notes yet. Use search to mark someone absent.
@@ -843,7 +827,7 @@ export default function RlcAttendancePage() {
                   type="button"
                   size="sm"
                   variant={editStatus === 'present' ? 'default' : 'outline'}
-                  className={editStatus === 'present' ? 'bg-rose-700 hover:bg-rose-800' : ''}
+                  className={editStatus === 'present' ? 'bg-brand-700 hover:bg-brand-800' : ''}
                   onClick={() => setEditStatus('present')}
                 >
                   Present

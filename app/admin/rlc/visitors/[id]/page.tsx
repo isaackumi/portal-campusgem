@@ -22,7 +22,14 @@ import {
 import { generateRlcMembershipId } from '@/lib/membershipId'
 import { serviceSelectValueToLabel, visitorToForm } from '@/lib/rlc/visitor-form'
 import type { ConvertRlcVisitorForm, CreateVisitorForm, RlcInteraction, Visitor } from '@/lib/types'
-import { ContactActions } from '@/components/contact/contact-actions'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { MemberSingleSelect } from '@/components/rlc/member-select'
 import { RlcSponsorMultiSelect } from '@/components/rlc/rlc-sponsor-multi-select'
 import { PageContainer } from '@/components/layout/page-container'
@@ -36,7 +43,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
-import { CheckCircle2, MessageSquare, Pencil, Trash2, UserCheck } from 'lucide-react'
+import { Archive, CheckCircle2, MessageSquare, MoreHorizontal, Pencil, Trash2, UserCheck } from 'lucide-react'
 
 const EMPTY_MEMBER_IDS: string[] = []
 
@@ -179,6 +186,8 @@ export default function RlcVisitorDetailPage() {
   }
 
   const pipeline = visitor.pipeline_status ?? 'first_visit'
+  const visitorName = [visitor.first_name, visitor.last_name].filter(Boolean).join(' ')
+  const phoneFields = new Set(['Phone', 'Secondary phone', 'Emergency phone'])
 
   return (
     <PageContainer size="md">
@@ -187,8 +196,8 @@ export default function RlcVisitorDetailPage() {
         subtitle={`Visit ${visitor.visit_date}${visitor.service_attended ? ` · ${visitor.service_attended}` : ''}`}
         backHref="/admin/rlc/visitors"
         actions={
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <Button variant="outline" className="w-full sm:w-auto" asChild>
+          <>
+            <Button variant="outline" className="hidden sm:inline-flex" asChild>
               <Link href={`/admin/rlc/visitors/${id}/edit`}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
@@ -196,30 +205,71 @@ export default function RlcVisitorDetailPage() {
             </Button>
             {!visitor.converted_to_member ? (
               <>
-                <Button className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto" onClick={() => setShowConvert(true)}>
+                <Button
+                  onClick={() => {
+                    setShowConvert(true)
+                    setTimeout(() => document.getElementById('convert-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+                  }}
+                >
                   <UserCheck className="mr-2 h-4 w-4" />
                   Convert to member
                 </Button>
                 {visitor.is_active !== false ? (
-                  <Button variant="outline" className="w-full sm:w-auto" onClick={archiveVisitor}>
+                  <Button variant="outline" className="hidden sm:inline-flex" onClick={archiveVisitor}>
                     Archive
                   </Button>
                 ) : null}
-                <Button variant="destructive" className="w-full sm:w-auto" onClick={permanentDelete}>
+                <Button variant="destructive" className="hidden sm:inline-flex" onClick={permanentDelete}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
               </>
-            ) : (
-              <Badge variant="success">
-                <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                Converted
-              </Badge>
-            )}
-          </div>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="sm:hidden">
+                  <MoreHorizontal className="mr-2 h-4 w-4" />
+                  More
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild className="min-h-11">
+                  <Link href={`/admin/rlc/visitors/${id}/edit`}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit record
+                  </Link>
+                </DropdownMenuItem>
+                {!visitor.converted_to_member && visitor.is_active !== false ? (
+                  <DropdownMenuItem className="min-h-11" onClick={archiveVisitor}>
+                    <Archive className="mr-2 h-4 w-4" />
+                    Archive
+                  </DropdownMenuItem>
+                ) : null}
+                {!visitor.converted_to_member ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onClick={permanentDelete}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete permanently
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         }
       >
-        <div className="flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <QuickContactButtons phone={visitor.phone} name={visitorName} />
+          {visitor.phone ? <PhoneLink phone={visitor.phone} name={visitorName} className="text-sm" /> : null}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {visitor.converted_to_member ? (
+            <Badge variant="success">
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+              Converted
+            </Badge>
+          ) : null}
           <Badge className={RLC_PIPELINE_COLORS[pipeline]}>{RLC_PIPELINE_LABELS[pipeline]}</Badge>
           {visitor.follow_up_status ? (
             <Badge variant="outline">{RLC_FOLLOW_UP_LABELS[visitor.follow_up_status]}</Badge>
@@ -238,9 +288,6 @@ export default function RlcVisitorDetailPage() {
               <CardTitle>Contact & profile</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <ContactActions phone={visitor.phone} email={visitor.email} />
-              </div>
               {[
                 ['Check-in code', visitor.check_in_code],
                 ['Phone', visitor.phone],
@@ -265,9 +312,21 @@ export default function RlcVisitorDetailPage() {
                 ['Notes', visitor.notes],
               ].map(([label, value]) =>
                 value ? (
-                  <div key={label}>
+                  <div key={label} className="min-w-0">
                     <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="font-medium">{value}</p>
+                    {phoneFields.has(label as string) ? (
+                      <PhoneLink
+                        phone={value}
+                        name={label === 'Emergency phone' ? visitor.emergency_contact_name ?? visitorName : visitorName}
+                        className="font-medium"
+                      />
+                    ) : label === 'Email' ? (
+                      <a href={`mailto:${value}`} className="break-all font-medium text-brand-700 hover:underline dark:text-brand-300">
+                        {value}
+                      </a>
+                    ) : (
+                      <p className="break-words font-medium">{value}</p>
+                    )}
                   </div>
                 ) : null
               )}
@@ -279,14 +338,14 @@ export default function RlcVisitorDetailPage() {
               <CardTitle>Follow-up timeline</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Textarea
                   placeholder="Log a call, visit, or note…"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
                 />
-                <Button type="button" variant="outline" className="shrink-0" onClick={logNote}>
+                <Button type="button" variant="outline" className="h-11 shrink-0 sm:h-10" onClick={logNote}>
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Log
                 </Button>
@@ -296,8 +355,8 @@ export default function RlcVisitorDetailPage() {
                   <p className="text-sm text-muted-foreground">No interactions yet.</p>
                 ) : (
                   interactions.map((i) => (
-                    <div key={i.id} className="rounded-lg border bg-slate-50/80 px-3 py-2 text-sm">
-                      <div className="flex items-center justify-between gap-2">
+                    <div key={i.id} className="rounded-lg border bg-neutral-50/80 px-3 py-2 text-sm dark:bg-white/[0.04]">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <Badge variant="outline">{i.interaction_type.replace('_', ' ')}</Badge>
                         <span className="text-xs text-muted-foreground">
                           {new Date(i.created_at).toLocaleString()}
@@ -312,7 +371,7 @@ export default function RlcVisitorDetailPage() {
           </Card>
 
           {showConvert && !visitor.converted_to_member ? (
-            <Card className="border-emerald-200">
+            <Card id="convert-form" className="scroll-mt-20 border-emerald-200 dark:border-emerald-400/20">
               <CardHeader>
                 <CardTitle>Complete member profile</CardTitle>
               </CardHeader>
@@ -416,11 +475,11 @@ export default function RlcVisitorDetailPage() {
                       onChange={(e) => setConvertForm({ ...convertForm, notes: e.target.value })}
                     />
                   </div>
-                  <div className="flex gap-2 sm:col-span-2">
-                    <Button type="button" variant="outline" onClick={() => setShowConvert(false)}>
+                  <div className="flex flex-col-reverse gap-2 sm:col-span-2 sm:flex-row">
+                    <Button type="button" variant="outline" className="h-11 sm:h-10" onClick={() => setShowConvert(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={converting} className="bg-emerald-700 hover:bg-emerald-800">
+                    <Button type="submit" disabled={converting} className="h-11 sm:h-10">
                       {converting ? 'Converting…' : 'Complete conversion'}
                     </Button>
                   </div>

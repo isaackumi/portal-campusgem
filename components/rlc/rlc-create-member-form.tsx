@@ -202,7 +202,7 @@ export function RlcCreateMemberForm({ form, onChange, publicMode }: Props) {
               value={form.whatsapp_same_as_phone !== false ? form.phone : (form.whatsapp ?? '')}
               onChange={(e) => onChange({ ...form, whatsapp: e.target.value })}
             />
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
               <Checkbox
                 checked={form.whatsapp_same_as_phone !== false}
                 onCheckedChange={(checked) =>

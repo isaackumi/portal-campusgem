@@ -4,39 +4,39 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { useMembers } from '@/lib/hooks/use-data'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { PersonAvatar, displayName } from '@/components/ui/person'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay, EmptyState } from '@/components/ui/error-display'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { StatCard } from '@/components/ui/stat-card'
-import { ContactActions } from '@/components/contact/contact-actions'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { MemberRowActions } from '@/components/members/member-row-actions'
 import { 
-  Users, 
-  Search, 
-  Plus, 
-  Download, 
+  Users,
+  Search,
+  Plus,
+  Download,
   Filter,
   Calendar,
   MapPin,
-  Phone,
-  Mail,
   Copy,
-  CheckCircle,
-  User,
   RefreshCw,
   X,
   ChevronDown,
   SortAsc,
   SortDesc,
-  Eye,
-  Edit
+  MoreHorizontal,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { formatMembershipIdForDisplay } from '@/lib/utils'
@@ -77,16 +77,6 @@ export default function MembersPage() {
     loading, 
     refetch
   } = useMembers(currentPage, 50, filters.search)
-
-  // Debug logging
-  console.log('Members page state:', { 
-    membersLength: members?.length, 
-    total, 
-    error, 
-    loading,
-    currentPage,
-    searchTerm: filters.search
-  })
 
   // Filter and sort members client-side for better UX
   const filteredMembers = useMemo(() => {
@@ -203,22 +193,10 @@ export default function MembersPage() {
         <div className="max-w-7xl mx-auto">
           <ErrorDisplay
             error={error}
-            onRetry={() => {
-              console.log('Retrying members fetch...')
-              refetch()
-            }}
+            onRetry={() => refetch()}
             variant="page"
             title="Failed to load members"
           />
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="text-sm font-medium text-yellow-800">Debug Information</h3>
-            <p className="text-sm text-yellow-700 mt-1">
-              Error: {error}
-            </p>
-            <p className="text-sm text-yellow-700 mt-1">
-              This might be due to database connection issues or missing data.
-            </p>
-          </div>
         </div>
       </DashboardLayout>
     )
@@ -241,34 +219,59 @@ export default function MembersPage() {
     )
   }
 
+  const hasActiveFilters =
+    !!filters.search || filters.role !== 'all' || filters.status !== 'all' || filters.joinYear !== 'all'
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <h1 className="app-page-title">Members</h1>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="app-page-description mt-1">
               Manage church members and their information
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={refetch} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={refetch}
+              disabled={loading}
+              className="hidden sm:inline-flex"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button variant="outline" onClick={() => window.print()}>
-              <Download className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={() => window.print()} className="hidden sm:inline-flex">
+              <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button onClick={() => router.push('/members/add')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Member
+            <Button onClick={() => router.push('/members/add')} className="h-11 flex-1 sm:h-10 sm:flex-none">
+              <Plus className="mr-2 h-4 w-4" />
+              Add member
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-11 w-11 sm:hidden" aria-label="More actions">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem className="min-h-11" onClick={() => refetch()}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </DropdownMenuItem>
+                <DropdownMenuItem className="min-h-11" onClick={() => window.print()}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
-        <section aria-label="Member totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section aria-label="Member totals" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <StatCard label="Total members" value={total} sub="Active members" />
           <StatCard
             label="New this year"
@@ -287,230 +290,256 @@ export default function MembersPage() {
           />
         </section>
 
-        {/* Search and Filters */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Search & Filter Members</CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
-                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-                </Button>
-                {(filters.search || filters.role !== 'all' || filters.status !== 'all' || filters.joinYear !== 'all') && (
-                  <Button variant="outline" size="sm" onClick={clearFilters}>
-                    <X className="h-4 w-4 mr-2" />
-                    Clear
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        {/* Search and filters */}
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
               <Input
-                placeholder="Search by name or membership ID..."
+                type="search"
+                placeholder="Search by name or membership ID"
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
+                className="h-11 pl-10 sm:h-10"
+                aria-label="Search members"
               />
             </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                aria-expanded={showFilters}
+                className="h-11 flex-1 sm:h-10 sm:flex-none"
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filters
+                <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </Button>
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={clearFilters} className="h-11 flex-1 sm:h-10 sm:flex-none">
+                  <X className="mr-2 h-4 w-4" />
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
 
-            {/* Advanced Filters */}
-            {showFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Role</label>
-                  <Select value={filters.role} onValueChange={(value) => handleFilterChange('role', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All roles" />
+          {showFilters && (
+            <div className="dashboard-panel grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
+              <div>
+                <label className="app-stat-label mb-1.5 block">Role</label>
+                <Select value={filters.role} onValueChange={(value) => handleFilterChange('role', value)}>
+                  <SelectTrigger className="h-11 sm:h-10">
+                    <SelectValue placeholder="All roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All roles</SelectItem>
+                    {uniqueRoles.map(role => (
+                      <SelectItem key={role} value={role || ''}>
+                        {(role || '').charAt(0).toUpperCase() + (role || '').slice(1).replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="app-stat-label mb-1.5 block">Status</label>
+                <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                  <SelectTrigger className="h-11 sm:h-10">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="transferred">Transferred</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="app-stat-label mb-1.5 block">Join year</label>
+                <Select value={filters.joinYear} onValueChange={(value) => handleFilterChange('joinYear', value)}>
+                  <SelectTrigger className="h-11 sm:h-10">
+                    <SelectValue placeholder="All years" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All years</SelectItem>
+                    {uniqueJoinYears.map(year => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="app-stat-label mb-1.5 block">Sort by</label>
+                <div className="flex gap-2">
+                  <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
+                    <SelectTrigger className="h-11 min-w-0 flex-1 sm:h-10">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Roles</SelectItem>
-                      {uniqueRoles.map(role => (
-                        <SelectItem key={role} value={role || ''}>
-                          {(role || '').charAt(0).toUpperCase() + (role || '').slice(1)}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="name">Name</SelectItem>
+                      <SelectItem value="join_date">Join date</SelectItem>
+                      <SelectItem value="membership_id">Membership ID</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Status</label>
-                  <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All statuses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="transferred">Transferred</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Join Year</label>
-                  <Select value={filters.joinYear} onValueChange={(value) => handleFilterChange('joinYear', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All years" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Years</SelectItem>
-                      {uniqueJoinYears.map(year => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Sort By</label>
-                  <div className="flex gap-2">
-                    <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="name">Name</SelectItem>
-                        <SelectItem value="join_date">Join Date</SelectItem>
-                        <SelectItem value="membership_id">Membership ID</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
-                    >
-                      {filters.sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 shrink-0 sm:h-10 sm:w-10"
+                    aria-label={filters.sortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'}
+                    onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                  >
+                    {filters.sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </div>
 
-        {/* Members List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Members ({filteredMembers.length})</CardTitle>
-            <CardDescription>
-              {filters.search && `Search results for "${filters.search}"`}
-              {filters.role !== 'all' && ` • Role: ${filters.role}`}
-              {filters.status !== 'all' && ` • Status: ${filters.status}`}
-              {filters.joinYear !== 'all' && ` • Year: ${filters.joinYear}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredMembers.length === 0 ? (
+        {/* Members list */}
+        <section className="dashboard-panel overflow-hidden">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-neutral-200/80 px-4 py-3 dark:border-white/[0.06] sm:px-5">
+            <h2 className="app-section-title">
+              Members <span className="tabular-nums text-neutral-500 dark:text-neutral-400">({filteredMembers.length})</span>
+            </h2>
+            {hasActiveFilters ? (
+              <p className="min-w-0 truncate text-[13px] text-neutral-500 dark:text-neutral-400">
+                {[
+                  filters.search && `“${filters.search}”`,
+                  filters.role !== 'all' && `Role: ${filters.role.replace(/_/g, ' ')}`,
+                  filters.status !== 'all' && `Status: ${filters.status}`,
+                  filters.joinYear !== 'all' && `Year: ${filters.joinYear}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            ) : null}
+          </div>
+          {filteredMembers.length === 0 ? (
+            <div className="p-4">
               <EmptyState
                 title="No members found"
-                description={filters.search || filters.role !== 'all' || filters.status !== 'all' || filters.joinYear !== 'all' 
-                  ? "Try adjusting your search or filter criteria."
-                  : members?.length === 0 
-                    ? "No members have been added yet."
-                    : "No members match your current filters."
+                description={hasActiveFilters
+                  ? 'Try adjusting your search or filter criteria.'
+                  : members?.length === 0
+                    ? 'No members have been added yet.'
+                    : 'No members match your current filters.'
                 }
-                icon={<Users className="h-12 w-12 text-gray-400" />}
+                icon={<Users className="h-12 w-12 text-neutral-400 dark:text-neutral-500" />}
                 action={
-                  <div className="flex gap-2">
-                    {(filters.search || filters.role !== 'all' || filters.status !== 'all' || filters.joinYear !== 'all') && (
-                      <Button variant="outline" onClick={clearFilters}>
-                        Clear Filters
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    {hasActiveFilters && (
+                      <Button variant="outline" onClick={clearFilters} className="h-11 sm:h-10">
+                        Clear filters
                       </Button>
                     )}
-                    <Button onClick={() => router.push('/members/add')}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Member
+                    <Button onClick={() => router.push('/members/add')} className="h-11 sm:h-10">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add member
                     </Button>
                   </div>
                 }
               />
-            ) : (
-              <div className="space-y-4">
-                {filteredMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex flex-col gap-3 border-b border-neutral-100 py-4 last:border-0 dark:border-neutral-700 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex items-center space-x-4">
+            </div>
+          ) : (
+            <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+              {filteredMembers.map((member) => {
+                const name = displayName(member.user?.full_name)
+                return (
+                  <li key={member.id} className="flex items-start gap-3 px-4 py-3 sm:items-center sm:px-5">
+                    <Link
+                      href={`/members/${member.id}`}
+                      className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                      aria-label={`Open ${name}`}
+                    >
                       <PersonAvatar name={member.user?.full_name} seed={member.id} size="lg" />
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {displayName(member.user?.full_name)}
-                          </h3>
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Link
+                          href={`/members/${member.id}`}
+                          className="min-w-0 max-w-full truncate text-sm font-semibold text-neutral-900 hover:text-brand-600 dark:text-neutral-100 dark:hover:text-brand-300"
+                        >
+                          {name}
+                        </Link>
+                        <Badge variant="secondary" className="capitalize">
+                          {(member.user?.role || 'member').replace(/_/g, ' ')}
+                        </Badge>
+                        {member.status !== 'active' ? (
                           <Badge variant="secondary" className="capitalize">
-                            {(member.user?.role || 'member').replace(/_/g, ' ')}
-                          </Badge>
-                          <Badge variant={member.status === 'active' ? 'success' : 'secondary'} className="capitalize">
                             {member.status}
                           </Badge>
-                          {member.user?.marital_status && (
-                            <Badge variant="outline" className="capitalize">
-                              {member.user.marital_status}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                          <span className="flex items-center font-mono text-[13px]">
-                            <Copy className="mr-1 h-3 w-3" />
-                            {formatMembershipIdForDisplay(member.user?.membership_id || '')}
-                          </span>
-                          <ContactActions
-                            phone={member.user?.phone}
-                            email={member.user?.email}
-                            compact
-                            size="sm"
+                        ) : null}
+                        {member.user?.marital_status && (
+                          <Badge variant="outline" className="hidden capitalize sm:inline-flex">
+                            {member.user.marital_status}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
+                        {member.user?.membership_id ? (
+                          <button
+                            type="button"
+                            onClick={() => copyMembershipId(member.user!.membership_id!)}
+                            className="inline-flex min-h-[28px] items-center gap-1 font-mono hover:text-neutral-800 dark:hover:text-neutral-200"
+                            aria-label="Copy membership ID"
+                          >
+                            {formatMembershipIdForDisplay(member.user.membership_id)}
+                            <Copy className="h-3 w-3" aria-hidden />
+                          </button>
+                        ) : null}
+                        {member.user?.phone ? (
+                          <PhoneLink
+                            phone={member.user.phone}
+                            whatsapp={member.user.whatsapp}
+                            name={name}
                           />
-                          {member.user?.join_year && (
-                            <span className="flex items-center">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              Joined {member.user.join_year}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2 text-xs text-neutral-400">
-                          {member.address && (
-                            <span className="flex items-center">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {member.address}
-                            </span>
-                          )}
-                          {member.dob && (
-                            <span className="flex items-center">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              Born {new Date(member.dob).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
+                        ) : null}
+                        {member.user?.join_year && (
+                          <span className="hidden items-center sm:inline-flex">
+                            <Calendar className="mr-1 h-3 w-3" aria-hidden />
+                            Joined {member.user.join_year}
+                          </span>
+                        )}
+                        {member.address && (
+                          <span className="hidden min-w-0 items-center md:inline-flex">
+                            <MapPin className="mr-1 h-3 w-3 shrink-0" aria-hidden />
+                            <span className="truncate">{member.address}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <MemberRowActions
-                      memberId={member.id}
-                      userId={member.user_id}
-                      displayName={member.user?.full_name || 'Member'}
-                      membershipId={member.user?.membership_id}
-                      rlcRoles={member.rlc_roles}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <QuickContactButtons
+                        phone={member.user?.phone}
+                        whatsapp={member.user?.whatsapp}
+                        name={name}
+                        className="hidden min-[400px]:inline-flex"
+                      />
+                      <MemberRowActions
+                        memberId={member.id}
+                        userId={member.user_id}
+                        displayName={member.user?.full_name || 'Member'}
+                        membershipId={member.user?.membership_id}
+                        rlcRoles={member.rlc_roles}
+                        phone={member.user?.phone}
+                        whatsapp={member.user?.whatsapp}
+                        email={member.user?.email}
+                      />
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
       </div>
     </DashboardLayout>
   )

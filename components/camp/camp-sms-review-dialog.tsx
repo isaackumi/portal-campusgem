@@ -58,7 +58,7 @@ export function CampSmsReviewDialog({
         if (!sending) onOpenChange(next)
       }}
     >
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -66,7 +66,7 @@ export function CampSmsReviewDialog({
 
         <div className="space-y-4 text-sm">
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{recipientName || 'Recipient'}</Badge>
+            <Badge variant="secondary" className="max-w-full break-words">{recipientName || 'Recipient'}</Badge>
             {isBulk ? (
               <Badge variant="outline">{recipientCount} recipients</Badge>
             ) : recipientPhone ? (
@@ -74,14 +74,14 @@ export function CampSmsReviewDialog({
                 {recipientPhone}
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-amber-800">
+              <Badge variant="warning">
                 No phone
               </Badge>
             )}
           </div>
 
           {isBulk && sampleRecipientNames.length > 0 ? (
-            <p className="text-xs leading-relaxed text-slate-600">
+            <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">
               Includes {sampleRecipientNames.slice(0, 6).join(', ')}
               {sampleRecipientNames.length > 6
                 ? `, +${sampleRecipientNames.length - 6} more`
@@ -90,14 +90,14 @@ export function CampSmsReviewDialog({
             </p>
           ) : null}
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-white/[0.06] dark:bg-neutral-900/40">
             <p className="mb-1 app-overline">
               {previewLabel ?? (isBulk ? 'Sample message (personalized per person)' : 'Message to send')}
             </p>
-            <p className="whitespace-pre-wrap leading-relaxed text-slate-900">
+            <p className="whitespace-pre-wrap break-words leading-relaxed text-neutral-900 dark:text-neutral-100">
               {previewBody || '—'}
             </p>
-            <p className="mt-2 text-xs tabular-nums text-slate-500">
+            <p className="mt-2 text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
               {previewBody.length} characters
               {previewBody.length > 160 ? ' · may split into multiple SMS' : ''}
             </p>

@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import type { ChurchFormField, ChurchFormResponse } from '@/lib/types'
 import { buildFormAnalyticsReport } from '@/lib/forms/analytics'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatCard } from '@/components/ui/stat-card'
 import { Badge } from '@/components/ui/badge'
 import { AnalyticsPieChart } from '@/components/charts/analytics-pie-chart'
 import { AnalyticsCumulativeChart, AnalyticsCompletionChart, AnalyticsHorizontalBarChart } from '@/components/charts/analytics-charts'
@@ -33,32 +34,12 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total responses</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{report.totalResponses}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Unique phones</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{report.uniquePhones}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Last 7 days</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{report.last7Days}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Avg completion</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{report.averageCompletion}%</CardTitle>
-          </CardHeader>
-        </Card>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard className="p-4 sm:p-5" label="Total responses" value={report.totalResponses} />
+        <StatCard className="p-4 sm:p-5" label="Unique phones" value={report.uniquePhones} />
+        <StatCard className="p-4 sm:p-5" label="Last 7 days" value={report.last7Days} />
+        <StatCard className="p-4 sm:p-5" label="Avg completion" value={`${report.averageCompletion}%`} />
       </div>
 
       <Card>
@@ -77,7 +58,7 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ListChecks className="h-5 w-5 text-emerald-600" />
+            <ListChecks className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
             Completion by question
           </CardTitle>
           <CardDescription>How fully each question is answered across all submissions.</CardDescription>
@@ -91,7 +72,7 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5 text-violet-600" />
+              <PieChartIcon className="h-5 w-5 text-violet-600 dark:text-violet-300" />
               Demographics
             </CardTitle>
             <CardDescription>Distribution from mapped prefill fields (sex, age, education, etc.).</CardDescription>
@@ -99,9 +80,9 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
           <CardContent>
             <div className="grid gap-6 lg:grid-cols-2">
               {report.demographics.map((chart) => (
-                <div key={chart.key} className="rounded-lg border bg-white p-4">
+                <div key={chart.key} className="min-w-0 rounded-lg border bg-white p-3 dark:border-white/10 dark:bg-neutral-800/60 sm:p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-medium text-slate-900">{chart.title}</h3>
+                    <h3 className="font-medium text-neutral-900 dark:text-neutral-100">{chart.title}</h3>
                     <Badge variant="outline">{chart.answered} answered</Badge>
                   </div>
                   <AnalyticsPieChart slices={chart.slices} height={240} />
@@ -115,16 +96,16 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-emerald-600" />
+            <BarChart3 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
             Question breakdown
           </CardTitle>
           <CardDescription>Per-question distributions with interactive charts for choice-based fields.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {report.fieldAnalytics.map((field) => (
-            <div key={field.fieldId} className="rounded-lg border p-4">
+            <div key={field.fieldId} className="min-w-0 rounded-lg border p-3 dark:border-white/10 sm:p-4">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-medium">{field.label}</h3>
+                <h3 className="min-w-0 break-words font-medium">{field.label}</h3>
                 <div className="flex gap-2">
                   <Badge variant="secondary" className="capitalize">
                     {field.type.replace('_', ' ')}

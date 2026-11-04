@@ -74,7 +74,7 @@ function CampAnalyticsContent() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl">
         <Card>
           <CardContent className="py-12 text-center">
             <p className="mb-4 text-muted-foreground">{error}</p>
@@ -87,7 +87,7 @@ function CampAnalyticsContent() {
 
   if (!report || years.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl">
         <Card>
           <CardContent className="py-12 text-center">
             <p className="mb-4 text-muted-foreground">No camp years found. Create a camp year to start tracking analytics.</p>
@@ -99,8 +99,8 @@ function CampAnalyticsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div>
+      <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
         <CampAdminPageHeader
           title={selectedYearId === 'all' ? 'Camp analytics — all years' : 'Camp analytics'}
           campYear={activeYear}
@@ -108,18 +108,18 @@ function CampAnalyticsContent() {
             <>
               {report ? (
                 <Button variant="outline" onClick={() => downloadCampAnalyticsCsv(report)}>
-                  <FileSpreadsheet className="mr-2 h-4 w-4" /> Export analytics CSV
+                  <FileSpreadsheet className="mr-2 h-4 w-4" aria-hidden /> <span className="sm:hidden">Export CSV</span><span className="hidden sm:inline">Export analytics CSV</span>
                 </Button>
               ) : null}
               <Button variant="outline" onClick={() => router.push('/admin/camp-meeting/registrations')}>
-                <Download className="mr-2 h-4 w-4" /> Registrations list
+                <Download className="mr-2 h-4 w-4" aria-hidden /> <span className="sm:hidden">Registrations</span><span className="hidden sm:inline">Registrations list</span>
               </Button>
             </>
           }
         >
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Select value={selectedYearId} onValueChange={handleYearChange}>
-              <SelectTrigger className="w-[min(100%,16rem)] bg-white">
+              <SelectTrigger className="h-11 w-full sm:h-10 sm:w-64">
                 <SelectValue placeholder="Select camp year" />
               </SelectTrigger>
               <SelectContent>
@@ -139,7 +139,7 @@ function CampAnalyticsContent() {
               </SelectContent>
             </Select>
             {selectedYearId === 'all' ? (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
                 Combined view deduplicates campers by phone for demographics
               </span>
             ) : null}

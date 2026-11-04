@@ -4,12 +4,23 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { StatCard } from '@/components/ui/stat-card'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/page-header'
+import { Meter } from '@/components/ui/meter'
+import { displayName } from '@/components/ui/person'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import { WhatsappLogo } from '@/components/icons/whatsapp-logo'
+import { telHref, whatsAppChatHref } from '@/lib/contact-links'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -35,14 +46,15 @@ import {
   Activity,
   Target,
   PieChart,
-  LineChart
+  LineChart,
+  MoreVertical
 } from 'lucide-react'
 import { enhancedAttendanceService, AttendanceStats } from '@/lib/services/enhanced-attendance-service'
 import { AttendanceActivity } from '@/lib/types'
 import { dataService } from '@/lib/services/data-service'
 import { ServiceTypeMapper } from '@/lib/constants/service-types'
 import { useToast } from '@/hooks/use-toast'
-import { formatDateTime } from '@/lib/utils'
+import { cn, formatDateTime } from '@/lib/utils'
 
 interface Member {
   id: string
@@ -368,460 +380,457 @@ export default function ComprehensiveAttendancePage() {
     return null
   }
 
+  const allMembersSelected = selectedMembers.length === filteredMembers.length && filteredMembers.length > 0
+  const activityIcon = (type: string) => {
+    switch (type) {
+      case 'check_in':
+        return <UserCheck className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+      case 'bulk_attendance':
+        return <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+      case 'absentee_marked':
+        return <UserX className="h-5 w-5 text-red-600 dark:text-red-400" />
+      case 'follow_up':
+        return <MessageSquare className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+      default:
+        return <Activity className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />
+    }
+  }
+
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="app-page-title mb-2">
-            Comprehensive Attendance Management
-          </h1>
-          <p className="text-slate-600">Advanced attendance tracking with departments, duplicate prevention, and absentee management</p>
-        </div>
+      <div className={cn('mx-auto max-w-7xl', selectedMembers.length > 0 && 'pb-24')}>
+        <PageHeader
+          title="Attendance desk"
+          description="Record attendance by department, prevent duplicates and follow up absentees"
+          className="mb-4 sm:mb-6"
+        />
 
-        {error && (
-          <ErrorDisplay
-            error={error}
-            onRetry={fetchData}
-            variant="page"
-          />
-        )}
+        {error && <ErrorDisplay error={error} onRetry={fetchData} variant="page" />}
 
-        {/* Quick Stats */}
         {stats && (
-          <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <StatCard label="Total attendance" value={stats.total_attendance} />
-
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard className="p-4 sm:p-5" label="Total attendance" value={stats.total_attendance} />
             <StatCard
+              className="p-4 sm:p-5"
               label="Male / female"
               value={`${stats.male_attendance} / ${stats.female_attendance}`}
             />
             <StatCard
+              className="p-4 sm:p-5"
               label="Adults / children"
               value={`${stats.adult_attendance} / ${stats.children_attendance}`}
             />
-            <StatCard label="Absentees" value={absentees.length} />
+            <StatCard className="p-4 sm:p-5" label="Absentees" value={absentees.length} tone={absentees.length ? 'warning' : 'default'} />
           </div>
         )}
 
-        {/* Main Content */}
-        <Tabs defaultValue="attendance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="attendance" className="space-y-4 sm:space-y-6">
+          <ScrollableTabsList>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="absentees">Absentees</TabsTrigger>
+            <TabsTrigger value="absentees">
+              Absentees{absentees.length ? ` (${absentees.length})` : ''}
+            </TabsTrigger>
             <TabsTrigger value="departments">Departments</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
-          </TabsList>
+          </ScrollableTabsList>
 
-          {/* Attendance Tab */}
-          <TabsContent value="attendance" className="space-y-6">
-            {/* Filters */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                  <div>
-                    <Label>Service Date</Label>
-                    <Input
-                      type="date"
-                      value={serviceDate}
-                      onChange={(e) => setServiceDate(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Service Type</Label>
-                    <Select value={serviceType} onValueChange={setServiceType}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {serviceTypes.map(service => (
-                          <SelectItem key={service.value} value={service.value}>
-                            {service.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Department</Label>
-                    <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Departments</SelectItem>
-                        {uniqueDepartments.map(dept => (
-                          <SelectItem key={dept} value={dept}>
-                            {dept}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Gender</Label>
-                    <Select value={genderFilter} onValueChange={setGenderFilter}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Age Group</Label>
-                    <Select value={ageFilter} onValueChange={setAgeFilter}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="adult">Adults</SelectItem>
-                        <SelectItem value="child">Children</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      placeholder="Search members..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+          <TabsContent value="attendance" className="space-y-4">
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+                <div className="min-w-0 sm:w-44">
+                  <Label htmlFor="cmp-date" className="app-overline">Date</Label>
+                  <Input
+                    id="cmp-date"
+                    type="date"
+                    value={serviceDate}
+                    onChange={(e) => setServiceDate(e.target.value)}
+                    className="mt-1 h-11 sm:h-10"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Actions */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Checkbox
-                      checked={selectedMembers.length === filteredMembers.length && filteredMembers.length > 0}
-                      onCheckedChange={handleSelectAllMembers}
-                    />
-                    <span className="text-sm text-slate-600">
-                      {selectedMembers.length} of {filteredMembers.length} members selected
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      onClick={handleBulkAttendance}
-                      disabled={selectedMembers.length === 0 || recordingAttendance}
-                    >
-                      {recordingAttendance ? (
-                        <>
-                          <LoadingSpinner className="h-4 w-4 mr-2" />
-                          Recording...
-                        </>
-                      ) : (
-                        <>
-                          <UserCheck className="h-4 w-4 mr-2" />
-                          Record Attendance ({selectedMembers.length})
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                <div className="min-w-0 sm:w-52">
+                  <Label htmlFor="cmp-service" className="app-overline">Service</Label>
+                  <Select value={serviceType} onValueChange={setServiceType}>
+                    <SelectTrigger id="cmp-service" className="mt-1 h-11 sm:h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {serviceTypes.map((service) => (
+                        <SelectItem key={service.value} value={service.value}>
+                          {service.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="col-span-2 min-w-0 sm:col-span-1 sm:w-48">
+                  <Label htmlFor="cmp-dept" className="app-overline">Department</Label>
+                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                    <SelectTrigger id="cmp-dept" className="mt-1 h-11 sm:h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All departments</SelectItem>
+                      {uniqueDepartments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="min-w-0 sm:w-32">
+                  <Label htmlFor="cmp-gender" className="app-overline">Gender</Label>
+                  <Select value={genderFilter} onValueChange={setGenderFilter}>
+                    <SelectTrigger id="cmp-gender" className="mt-1 h-11 sm:h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="min-w-0 sm:w-32">
+                  <Label htmlFor="cmp-age" className="app-overline">Age</Label>
+                  <Select value={ageFilter} onValueChange={setAgeFilter}>
+                    <SelectTrigger id="cmp-age" className="mt-1 h-11 sm:h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="adult">Adults</SelectItem>
+                      <SelectItem value="child">Children</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                <Input
+                  aria-label="Search members"
+                  placeholder="Search members"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-11 pl-10 sm:h-10"
+                  enterKeyHint="search"
+                />
+              </div>
+            </div>
 
-            {/* Members List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Members ({filteredMembers.length})</CardTitle>
-                <CardDescription>Select members to record attendance or mark as absent</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <LoadingSpinner />
-                  </div>
-                ) : filteredMembers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-slate-500">No members found</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredMembers.map((member) => (
-                      <div 
-                        key={member.id} 
-                        className={`border rounded-lg p-4 hover:bg-slate-50 transition-colors ${
-                          selectedMembers.includes(member.id) ? 'bg-slate-50 border-slate-200' : ''
-                        }`}
+            <section className="dashboard-panel overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-b border-neutral-200/80 px-4 py-2 dark:border-white/[0.06] sm:px-5">
+                <label className="flex min-h-11 cursor-pointer items-center gap-3">
+                  <Checkbox
+                    checked={allMembersSelected}
+                    onCheckedChange={handleSelectAllMembers}
+                    aria-label="Select all members"
+                  />
+                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Select all</span>
+                </label>
+                <p className="text-[13px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                  {selectedMembers.length} of {filteredMembers.length} selected
+                </p>
+              </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-10">
+                  <LoadingSpinner />
+                </div>
+              ) : filteredMembers.length === 0 ? (
+                <div className="px-4 py-10 text-center">
+                  <Users className="mx-auto mb-3 h-10 w-10 text-neutral-400 dark:text-neutral-500" />
+                  <p className="text-neutral-500 dark:text-neutral-400">No members match these filters</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+                  {filteredMembers.map((member) => {
+                    const selected = selectedMembers.includes(member.id)
+                    const age = getAgeCategory(member.dob)
+                    return (
+                      <li
+                        key={member.id}
+                        className={cn(
+                          'flex items-center gap-3 px-4 py-2 transition-colors sm:px-5',
+                          selected ? 'bg-brand-50/70 dark:bg-brand-400/10' : 'hover:bg-neutral-50 dark:hover:bg-white/[0.03]'
+                        )}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <Checkbox
-                              checked={selectedMembers.includes(member.id)}
-                              onCheckedChange={() => handleMemberSelect(member.id)}
-                            />
-                            
-                            <div>
-                              <h4 className="font-medium text-slate-900">{member.full_name}</h4>
-                              <p className="text-sm text-slate-500">{member.membership_id}</p>
-                              {member.departments && member.departments.length > 0 && (
-                                <div className="flex gap-1 mt-1">
-                                  {member.departments.map(dept => (
-                                    <Badge key={dept} variant="outline" className="text-xs">
-                                      {dept}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <div className="flex items-center gap-2">
-                                <Badge variant={member.gender === 'male' ? 'default' : 'secondary'}>
-                                  {member.gender || 'Unknown'}
-                                </Badge>
-                                <Badge variant={getAgeCategory(member.dob) === 'adult' ? 'default' : 'secondary'}>
-                                  {getAgeCategory(member.dob)}
-                                </Badge>
-                              </div>
-                              {member.phone && (
-                                <p className="text-sm text-slate-500 flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {member.phone}
-                                </p>
-                              )}
-                            </div>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMarkAbsentee(member.id)}
-                            >
-                              <UserX className="h-4 w-4 mr-1" />
-                              Mark Absent
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Absentees Tab */}
-          <TabsContent value="absentees" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Absentees ({absentees.length})</CardTitle>
-                    <CardDescription>Members who were absent and need follow-up</CardDescription>
-                  </div>
-                  <Button 
-                    onClick={handleSendAbsenteeSMS}
-                    disabled={selectedAbsentees.length === 0 || sendingSMS}
-                  >
-                    {sendingSMS ? (
-                      <>
-                        <LoadingSpinner className="h-4 w-4 mr-2" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Send SMS ({selectedAbsentees.length})
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {absentees.length === 0 ? (
-                  <div className="text-center py-8">
-                    <UserX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-slate-500">No absentees for this service</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {absentees.map((absentee) => (
-                      <div key={absentee.id} className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <Checkbox
-                              checked={selectedAbsentees.includes(absentee.id)}
-                              onCheckedChange={() => handleAbsenteeSelect(absentee.id)}
-                            />
-                            
-                            <div>
-                              <h4 className="font-medium text-slate-900">{absentee.full_name}</h4>
-                              <p className="text-sm text-slate-500">{absentee.membership_id}</p>
-                              {absentee.reason && (
-                                <p className="text-sm text-slate-600 mt-1">Reason: {absentee.reason}</p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <div className="flex items-center gap-2">
-                                <Badge variant={absentee.follow_up_completed ? 'default' : 'secondary'}>
-                                  {absentee.follow_up_completed ? 'Followed Up' : 'Pending'}
-                                </Badge>
-                                <Badge variant={absentee.sms_sent ? 'default' : 'secondary'}>
-                                  {absentee.sms_sent ? 'SMS Sent' : 'No SMS'}
-                                </Badge>
-                              </div>
-                              {absentee.phone && (
-                                <p className="text-sm text-slate-500 flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {absentee.phone}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {absentee.phone && !absentee.sms_sent && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => enhancedAttendanceService.sendAbsenteeSMS(absentee.id)}
-                                >
-                                  <MessageSquare className="h-4 w-4 mr-1" />
-                                  Send SMS
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Departments Tab */}
-          <TabsContent value="departments" className="space-y-6">
-            {stats?.department_stats && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Department Attendance</CardTitle>
-                    <CardDescription>Attendance by department</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {Object.entries(stats.department_stats).map(([dept, deptStats]) => {
-                        const percentage = deptStats.total > 0 ? (deptStats.present / deptStats.total) * 100 : 0
-                        return (
-                          <div key={dept} className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{dept}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold">{deptStats.present}/{deptStats.total}</span>
-                              <div className="w-20 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-primary h-2 rounded-full" 
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-                              <span className="text-sm text-slate-500 w-12 text-right">
-                                {percentage.toFixed(1)}%
+                        <label htmlFor={`cm-${member.id}`} className="flex min-h-14 min-w-0 flex-1 cursor-pointer items-center gap-3">
+                          <Checkbox
+                            id={`cm-${member.id}`}
+                            checked={selected}
+                            onCheckedChange={() => handleMemberSelect(member.id)}
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium text-neutral-900 dark:text-neutral-100">
+                              {displayName(member.full_name)}
+                            </span>
+                            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-neutral-500 dark:text-neutral-400">
+                              <span className="font-mono">{member.membership_id}</span>
+                              <span className="capitalize">
+                                {member.gender || 'Unknown'} · {age}
                               </span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
+                            </span>
+                            {member.departments && member.departments.length > 0 && (
+                              <span className="mt-1 flex flex-wrap gap-1">
+                                {member.departments.map((dept) => (
+                                  <Badge key={dept} variant="outline">
+                                    {dept}
+                                  </Badge>
+                                ))}
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                        {member.phone ? (
+                          <PhoneLink
+                            phone={member.phone}
+                            name={member.full_name}
+                            className="hidden text-[13px] text-neutral-600 dark:text-neutral-300 md:inline-flex"
+                          />
+                        ) : null}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={`Actions for ${member.full_name}`}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            {telHref(member.phone) ? (
+                              <DropdownMenuItem asChild className="min-h-11 gap-3">
+                                <a href={telHref(member.phone)!}>
+                                  <Phone className="h-4 w-4" /> Call
+                                </a>
+                              </DropdownMenuItem>
+                            ) : null}
+                            {whatsAppChatHref(member.phone) ? (
+                              <DropdownMenuItem asChild className="min-h-11 gap-3">
+                                <a href={whatsAppChatHref(member.phone)!} target="_blank" rel="noopener noreferrer">
+                                  <WhatsappLogo className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> WhatsApp
+                                </a>
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuItem className="min-h-11 gap-3" onSelect={() => handleMarkAbsentee(member.id)}>
+                              <UserX className="h-4 w-4" /> Mark absent
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+          </TabsContent>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Attendance Trends</CardTitle>
-                    <CardDescription>Recent attendance patterns</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Duplicate Prevention</span>
-                        <span className="text-sm font-bold text-green-600">
-                          {stats.duplicate_prevention.blocked_duplicates} blocked
+          <TabsContent value="absentees" className="space-y-4">
+            <section className="dashboard-panel overflow-hidden">
+              <div className="flex flex-col gap-3 border-b border-neutral-200/80 px-4 py-3 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div>
+                  <h2 className="app-section-title">Absentees</h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Missed this service and need a follow-up</p>
+                </div>
+                <Button
+                  className="h-11 w-full sm:h-10 sm:w-auto"
+                  onClick={handleSendAbsenteeSMS}
+                  disabled={selectedAbsentees.length === 0 || sendingSMS}
+                >
+                  {sendingSMS ? (
+                    <>
+                      <LoadingSpinner className="mr-2 h-4 w-4" />
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Send SMS ({selectedAbsentees.length})
+                    </>
+                  )}
+                </Button>
+              </div>
+              {absentees.length === 0 ? (
+                <div className="px-4 py-10 text-center">
+                  <UserX className="mx-auto mb-3 h-10 w-10 text-neutral-400 dark:text-neutral-500" />
+                  <p className="text-neutral-500 dark:text-neutral-400">No absentees for this service</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+                  {absentees.map((absentee) => (
+                    <li key={absentee.id} className="flex items-start gap-3 px-4 py-3 sm:px-5">
+                      <label htmlFor={`ab-${absentee.id}`} className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-start gap-3">
+                        <Checkbox
+                          id={`ab-${absentee.id}`}
+                          className="mt-1"
+                          checked={selectedAbsentees.includes(absentee.id)}
+                          onCheckedChange={() => handleAbsenteeSelect(absentee.id)}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-neutral-900 dark:text-neutral-100">
+                            {displayName(absentee.full_name)}
+                          </span>
+                          <span className="block font-mono text-[13px] text-neutral-500 dark:text-neutral-400">
+                            {absentee.membership_id}
+                          </span>
+                          {absentee.reason && (
+                            <span className="mt-1 block text-sm text-neutral-600 dark:text-neutral-300">
+                              Reason: {absentee.reason}
+                            </span>
+                          )}
+                          <span className="mt-1.5 flex flex-wrap gap-1.5">
+                            <Badge variant={absentee.follow_up_completed ? 'success' : 'warning'}>
+                              {absentee.follow_up_completed ? 'Followed up' : 'Follow-up pending'}
+                            </Badge>
+                            <Badge variant={absentee.sms_sent ? 'brand' : 'secondary'}>
+                              {absentee.sms_sent ? 'SMS sent' : 'No SMS'}
+                            </Badge>
+                          </span>
                         </span>
+                      </label>
+                      <div className="flex shrink-0 flex-col items-end gap-2">
+                        <QuickContactButtons phone={absentee.phone} name={absentee.full_name} />
+                        {absentee.phone ? (
+                          <PhoneLink
+                            phone={absentee.phone}
+                            name={absentee.full_name}
+                            className="hidden text-[13px] text-neutral-600 dark:text-neutral-300 sm:inline-flex"
+                          />
+                        ) : null}
+                        {absentee.phone && !absentee.sms_sent && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9"
+                            onClick={() => enhancedAttendanceService.sendAbsenteeSMS(absentee.id)}
+                          >
+                            <MessageSquare className="mr-1 h-4 w-4" />
+                            SMS
+                          </Button>
+                        )}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Sessions Monitored</span>
-                        <span className="text-sm font-bold text-primary">
-                          {stats.duplicate_prevention.sessions_checked}
-                        </span>
-                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </TabsContent>
+
+          <TabsContent value="departments" className="space-y-4">
+            {stats?.department_stats ? (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+                <section className="dashboard-panel p-4 sm:p-5">
+                  <h2 className="app-section-title">By department</h2>
+                  <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">Present out of members in each department</p>
+                  <ul className="space-y-4">
+                    {Object.entries(stats.department_stats).map(([dept, deptStats]) => {
+                      const percentage = deptStats.total > 0 ? (deptStats.present / deptStats.total) * 100 : 0
+                      return (
+                        <li key={dept} className="space-y-1.5">
+                          <div className="flex items-baseline justify-between gap-3 text-sm">
+                            <span className="min-w-0 truncate font-medium text-neutral-900 dark:text-neutral-100">{dept}</span>
+                            <span className="shrink-0 tabular-nums text-neutral-500 dark:text-neutral-400">
+                              {deptStats.present}/{deptStats.total} · {percentage.toFixed(0)}%
+                            </span>
+                          </div>
+                          <Meter value={deptStats.present} max={deptStats.total} label={`${dept} attendance`} />
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+
+                <section className="dashboard-panel p-4 sm:p-5">
+                  <h2 className="app-section-title mb-4">Duplicate prevention</h2>
+                  <dl className="space-y-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-neutral-600 dark:text-neutral-300">Duplicates blocked</dt>
+                      <dd className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+                        {stats.duplicate_prevention.blocked_duplicates}
+                      </dd>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-neutral-600 dark:text-neutral-300">Sessions monitored</dt>
+                      <dd className="font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+                        {stats.duplicate_prevention.sessions_checked}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              </div>
+            ) : (
+              <div className="dashboard-panel px-4 py-10 text-center text-neutral-500 dark:text-neutral-400">
+                No department data for this service yet.
               </div>
             )}
           </TabsContent>
 
-          {/* Activity Tab */}
-          <TabsContent value="activity" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest attendance activities and changes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recentActivity.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-slate-500">No recent activity</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
-                          {activity.type === 'check_in' && <UserCheck className="h-5 w-5 text-primary" />}
-                          {activity.type === 'bulk_attendance' && <Users className="h-5 w-5 text-green-600" />}
-                          {activity.type === 'absentee_marked' && <UserX className="h-5 w-5 text-red-600" />}
-                          {activity.type === 'follow_up' && <MessageSquare className="h-5 w-5 text-purple-600" />}
-                        </div>
-                        
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-900">{activity.description}</p>
-                          <div className="flex items-center gap-2 text-sm text-slate-500">
-                            <Calendar className="h-4 w-4" />
-                            <span>{activity.service_date}</span>
-                            <span>•</span>
-                            <span>{activity.service_type}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <p className="text-sm text-slate-500">
-                            {new Date(activity.created_at).toLocaleString()}
-                          </p>
-                        </div>
+          <TabsContent value="activity" className="space-y-4">
+            <section className="dashboard-panel overflow-hidden">
+              <h2 className="app-section-title border-b border-neutral-200/80 px-4 py-3 dark:border-white/[0.06] sm:px-5">
+                Recent activity
+              </h2>
+              {recentActivity.length === 0 ? (
+                <div className="px-4 py-10 text-center">
+                  <Activity className="mx-auto mb-3 h-10 w-10 text-neutral-400 dark:text-neutral-500" />
+                  <p className="text-neutral-500 dark:text-neutral-400">No recent activity</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+                  {recentActivity.map((activity) => (
+                    <li key={activity.id} className="flex items-start gap-3 px-4 py-3 sm:px-5">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 dark:bg-white/[0.06]">
+                        {activityIcon(activity.type)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words font-medium text-neutral-900 dark:text-neutral-100">{activity.description}</p>
+                        <p className="flex flex-wrap items-center gap-x-2 text-[13px] text-neutral-500 dark:text-neutral-400">
+                          <span>{activity.service_date}</span>
+                          <span aria-hidden>·</span>
+                          <span>{activity.service_type}</span>
+                          <span aria-hidden className="sm:hidden">·</span>
+                          <span className="tabular-nums sm:hidden">{new Date(activity.created_at).toLocaleTimeString()}</span>
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      <p className="hidden shrink-0 text-[13px] tabular-nums text-neutral-500 dark:text-neutral-400 sm:block">
+                        {new Date(activity.created_at).toLocaleString()}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </TabsContent>
         </Tabs>
+
+        {selectedMembers.length > 0 && (
+          <div className="fixed inset-x-3 bottom-20 z-30 lg:bottom-4 lg:left-1/2 lg:right-auto lg:w-[28rem] lg:-translate-x-1/2">
+            <div className="flex items-center gap-3 rounded-xl border border-neutral-200/80 bg-white p-2 pl-4 shadow-lg dark:border-white/10 dark:bg-neutral-800">
+              <p className="min-w-0 flex-1 text-sm font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
+                {selectedMembers.length} selected
+              </p>
+              <Button
+                variant="ghost"
+                className="h-11 shrink-0 px-3"
+                onClick={() => setSelectedMembers([])}
+                aria-label="Clear selection"
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
+              <Button onClick={handleBulkAttendance} disabled={recordingAttendance} className="h-11 shrink-0">
+                {recordingAttendance ? (
+                  <>
+                    <LoadingSpinner className="mr-2 h-4 w-4" />
+                    Recording…
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Record attendance
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )

@@ -13,6 +13,7 @@ import {
 import { getGroupTypeLabel } from '@/lib/constants/groups'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatCard } from '@/components/ui/stat-card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
@@ -73,21 +74,21 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
   }
 
   return (
-    <Card className="flex h-full flex-col border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <Card className="flex h-full flex-col border-neutral-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-neutral-800/60">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-2">
-            <CardTitle className="text-lg leading-tight">{group.name}</CardTitle>
+            <CardTitle className="break-words text-lg leading-tight">{group.name}</CardTitle>
             <Badge variant="secondary" className="capitalize">
               {getGroupTypeLabel(group.group_type)}
             </Badge>
           </div>
           {group.group_type === 'campus' ? (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300">
               <Building2 className="h-5 w-5" />
             </div>
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300">
               <Sparkles className="h-5 w-5" />
             </div>
           )}
@@ -105,27 +106,27 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
         ) : null}
 
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-lg bg-slate-50 px-3 py-2">
+          <div className="rounded-lg bg-neutral-50 px-3 py-2 dark:bg-white/[0.04]">
             <p className="text-xs text-muted-foreground">Members</p>
-            <p className="font-semibold text-slate-900">{group.memberCount}</p>
+            <p className="font-semibold text-neutral-900 dark:text-neutral-100">{group.memberCount}</p>
           </div>
-          <div className="rounded-lg bg-slate-50 px-3 py-2">
+          <div className="rounded-lg bg-neutral-50 px-3 py-2 dark:bg-white/[0.04]">
             <p className="text-xs text-muted-foreground">Leaders / exec</p>
-            <p className="font-semibold text-slate-900">
+            <p className="font-semibold text-neutral-900 dark:text-neutral-100">
               {group.leaderCount} / {group.executiveCount}
             </p>
           </div>
-          <div className="rounded-lg bg-slate-50 px-3 py-2">
+          <div className="rounded-lg bg-neutral-50 px-3 py-2 dark:bg-white/[0.04]">
             <p className="text-xs text-muted-foreground">Forms</p>
-            <p className="font-semibold text-slate-900">{group.formCount}</p>
+            <p className="font-semibold text-neutral-900 dark:text-neutral-100">{group.formCount}</p>
           </div>
-          <div className="rounded-lg bg-slate-50 px-3 py-2">
+          <div className="rounded-lg bg-neutral-50 px-3 py-2 dark:bg-white/[0.04]">
             <p className="text-xs text-muted-foreground">Published</p>
-            <p className="font-semibold text-slate-900">{group.publishedFormCount}</p>
+            <p className="font-semibold text-neutral-900 dark:text-neutral-100">{group.publishedFormCount}</p>
           </div>
         </div>
 
-        <div className="mt-auto grid gap-2">
+        <div className="mt-auto grid gap-2 [&_a]:h-10 [&_button]:h-10 sm:[&_a]:h-8 sm:[&_button]:h-8">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/groups/${group.id}`}>
               <Users className="mr-2 h-3.5 w-3.5" />
@@ -151,7 +152,7 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full border-slate-200 text-slate-900 hover:bg-slate-50"
+                className="w-full border-neutral-200 text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-100 dark:hover:bg-white/[0.06]"
                 disabled={settingUpStudentForm}
                 onClick={() => void createStudentForm()}
               >
@@ -160,7 +161,7 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full border-amber-200 text-amber-900 hover:bg-amber-50"
+                className="w-full border-amber-200 text-amber-900 hover:bg-amber-50 dark:border-amber-400/20 dark:text-amber-300 dark:hover:bg-amber-400/10"
                 disabled={settingUpRegistration}
                 onClick={() => void createRegistrationForm()}
               >
@@ -188,15 +189,15 @@ function Section({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <h2 className="app-section-title">{title}</h2>
+        <p className="app-meta">{description}</p>
       </div>
       {groups.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">{emptyHint}</CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
           {groups.map((group) => (
             <BoardGroupCard key={group.id} group={group} />
           ))}
@@ -260,76 +261,45 @@ export default function CampusActivitiesAdminPage() {
   const totals = board?.totals ?? { campuses: 0, activities: 0, members: 0, forms: 0 }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/30">
-      <div className="mx-auto max-w-7xl space-y-8 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-3">
-            <Button variant="ghost" onClick={() => router.push('/admin')}>
+    <div>
+      <div className="mx-auto w-full min-w-0 max-w-7xl space-y-6 sm:space-y-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 space-y-2">
+            <Button variant="ghost" className="-ml-2 h-11 px-2 sm:h-10" onClick={() => router.push('/admin')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Admin
             </Button>
             <div>
               <h1 className="app-page-title">Campus & Activities</h1>
-              <p className="mt-1 max-w-2xl text-muted-foreground">
+              <p className="app-page-description mt-1 max-w-2xl">
                 University fellowships and church-wide events in one place — members, leaders, executives, and scoped
                 forms.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 [&>*]:h-11 [&>*]:flex-1 sm:[&>*]:h-10 sm:[&>*]:flex-none">
             <Button variant="outline" asChild>
               <Link href="/admin/groups">All groups</Link>
             </Button>
             <Button asChild>
               <Link href="/admin/groups">
                 <Plus className="mr-2 h-4 w-4" />
-                Add campus / activity
+                <span className="sm:hidden">Add group</span>
+                <span className="hidden sm:inline">Add campus / activity</span>
               </Link>
             </Button>
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-brand-100 bg-white/80">
-            <CardContent className="flex items-center gap-3 p-5">
-              <Building2 className="h-8 w-8 text-brand-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Campuses</p>
-                <p className="text-2xl font-bold">{totals.campuses}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-amber-100 bg-white/80">
-            <CardContent className="flex items-center gap-3 p-5">
-              <CalendarDays className="h-8 w-8 text-amber-700" />
-              <div>
-                <p className="text-sm text-muted-foreground">Activities</p>
-                <p className="text-2xl font-bold">{totals.activities}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/80">
-            <CardContent className="flex items-center gap-3 p-5">
-              <Users className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total members</p>
-                <p className="text-2xl font-bold">{totals.members}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/80">
-            <CardContent className="flex items-center gap-3 p-5">
-              <ClipboardList className="h-8 w-8 text-emerald-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Scoped forms</p>
-                <p className="text-2xl font-bold">{totals.forms}</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <StatCard className="p-4 sm:p-5" label="Campuses" value={totals.campuses} icon={Building2} />
+          <StatCard className="p-4 sm:p-5" label="Activities" value={totals.activities} icon={CalendarDays} />
+          <StatCard className="p-4 sm:p-5" label="Total members" value={totals.members} icon={Users} />
+          <StatCard className="p-4 sm:p-5" label="Scoped forms" value={totals.forms} icon={ClipboardList} />
         </div>
 
         {board ? (
-          <div className="space-y-10">
+          <div className="space-y-8 sm:space-y-10">
             <Section
               title="Campus fellowships"
               description="University chapters — leaders, executives, and members per campus."
@@ -344,10 +314,10 @@ export default function CampusActivitiesAdminPage() {
             />
           </div>
         ) : (
-          <Card className="border-red-200 bg-red-50/50">
+          <Card className="border-red-200 bg-red-50/50 dark:border-red-400/20 dark:bg-red-400/10">
             <CardContent className="space-y-4 py-10 text-center">
-              <p className="font-medium text-red-900">Could not load board data</p>
-              <p className="text-sm text-red-800/90">
+              <p className="font-medium text-red-900 dark:text-red-300">Could not load board data</p>
+              <p className="text-sm text-red-800/90 dark:text-red-300">
                 {loadError ??
                   'Check NEXT_PUBLIC_CONVEX_URL and CAMP_CONVEX_SERVER_SECRET, then push Convex functions with `bunx convex dev --once`.'}
               </p>

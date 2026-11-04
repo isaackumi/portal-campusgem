@@ -131,7 +131,7 @@ export function AddToRlcDialog({
         <div className="max-h-[min(90vh,100dvh)] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 pr-8 text-left">
-              <Church className="h-5 w-5 shrink-0 text-rose-700" />
+              <Church className="h-5 w-5 shrink-0 text-brand-700 dark:text-brand-300" />
               Add to RLC
             </DialogTitle>
             <DialogDescription className="text-left">
@@ -154,7 +154,7 @@ export function AddToRlcDialog({
             {RLC_ROLES.map((role) => (
               <label
                 key={role}
-                className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 hover:bg-rose-50/50"
+                className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 hover:bg-brand-50/50 dark:hover:bg-brand-400/10"
               >
                 <Checkbox
                   checked={selectedRoles.includes(role)}
@@ -171,7 +171,7 @@ export function AddToRlcDialog({
             </Button>
             <Button
               type="button"
-              className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto"
+              className="w-full bg-brand-700 hover:bg-brand-800 sm:w-auto"
               disabled={submitting}
               onClick={() => void handleSubmit()}
             >

@@ -10,7 +10,6 @@ import { serviceSelectValueToLabel } from '@/lib/rlc/visitor-form'
 import type { CreateVisitorForm } from '@/lib/types'
 import { RlcVisitorForm } from '@/components/rlc/rlc-visitor-form'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { useClientOnly } from '@/lib/hooks/use-client-only'
 import { Church } from 'lucide-react'
@@ -74,42 +73,39 @@ export default function PublicRlcVisitPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50/80 via-white to-white">
-      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-800">
+    <div className="min-h-[100dvh] bg-gradient-to-b from-brand-50/80 via-white to-white dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-950">
+      <div className="mx-auto w-full max-w-lg px-3 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-4 sm:py-12">
+        <div className="mb-6 px-1 text-center sm:mb-8">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-brand-800 dark:bg-brand-400/10 dark:text-brand-300">
             <Church className="h-7 w-7" />
           </div>
-          <p className="app-overline text-rose-700/80">{RLC_NAME}</p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-900 sm:text-3xl">Welcome — first time here?</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="app-overline text-brand-700/80 dark:text-brand-300">{RLC_NAME}</p>
+          <h1 className="app-page-title mt-1">Welcome — first time here?</h1>
+          <p className="app-page-description mt-2">
             Register as a visitor so our team can follow up with you. Takes about 2 minutes.
           </p>
         </div>
 
-        <Card className="border-rose-100/80 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Visitor registration</CardTitle>
-            <CardDescription>Your information is kept private and used for church follow-up only.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <RlcVisitorForm form={form} onChange={setForm} publicMode />
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 sm:space-y-6 [&_button[role=combobox]]:h-11 [&_button[role=combobox]]:text-base [&_input:not([type=checkbox]):not([type=radio])]:h-11 [&_input]:text-base [&_textarea]:text-base sm:[&_button[role=combobox]]:text-sm sm:[&_input]:text-sm sm:[&_textarea]:text-sm"
+          aria-label="Visitor registration"
+        >
+          <p className="px-1 text-center text-xs text-muted-foreground">Your information is kept private and used for church follow-up only.</p>
+          <RlcVisitorForm form={form} onChange={setForm} publicMode />
 
-              <Button
-                type="submit"
-                disabled={loading}
-                className="h-11 w-full bg-rose-700 text-base hover:bg-rose-800"
-              >
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-white/10 dark:bg-neutral-950/95 sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none sm:dark:bg-transparent">
+            <div className="mx-auto max-w-lg">
+              <Button type="submit" disabled={loading} size="lg" className="h-12 w-full text-base">
                 {loading ? 'Submitting…' : 'Submit registration'}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           Already a member?{' '}
-          <Link href="/auth" className="text-rose-700 underline-offset-2 hover:underline">
+          <Link href="/auth" className="text-brand-700 underline-offset-2 hover:underline dark:text-brand-300">
             Sign in
           </Link>
         </p>

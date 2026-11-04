@@ -100,15 +100,15 @@ export function FamilyTree({
   const getRelationshipColor = (relationship: string) => {
     switch (relationship) {
       case 'child':
-        return 'bg-slate-100 text-slate-700'
+        return 'bg-brand-50 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300'
       case 'spouse':
-        return 'bg-pink-100 text-pink-700'
+        return 'bg-rose-50 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300'
       case 'sibling':
-        return 'bg-green-100 text-green-700'
+        return 'bg-teal-50 text-teal-700 dark:bg-teal-400/10 dark:text-teal-300'
       case 'parent':
-        return 'bg-purple-100 text-purple-700'
+        return 'bg-violet-50 text-violet-700 dark:bg-violet-400/10 dark:text-violet-300'
       default:
-        return 'bg-gray-100 text-slate-700'
+        return 'bg-neutral-100 text-neutral-700 dark:bg-white/[0.06] dark:text-neutral-300'
     }
   }
 
@@ -123,7 +123,7 @@ export function FamilyTree({
   return (
     <Card className="w-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center space-x-2">
               <Users className="h-5 w-5" />
@@ -207,8 +207,8 @@ export function FamilyTree({
       <CardContent>
         {dependants.length === 0 ? (
           <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-slate-500 mb-4">No family members added yet</p>
+            <Users className="h-12 w-12 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+            <p className="text-neutral-500 dark:text-neutral-400 mb-4">No family members added yet</p>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add First Member
@@ -218,19 +218,19 @@ export function FamilyTree({
           <div className="space-y-6">
             {Object.entries(groupedDependants).map(([relationship, members]) => (
               <div key={relationship}>
-                <h4 className="text-sm font-medium text-slate-700 mb-3 capitalize">
+                <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3 capitalize">
                   {relationship}s ({members.length})
                 </h4>
                 <div className="grid gap-3">
                   {members.map((dependant) => (
-                    <div key={dependant.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
+                    <div key={dependant.id} className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 p-3 dark:border-white/10">
+                      <div className="flex min-w-0 items-center space-x-3">
                         <div className={`p-2 rounded-full ${getRelationshipColor(dependant.relationship)}`}>
                           {getRelationshipIcon(dependant.relationship)}
                         </div>
                         <div>
                           <p className="font-medium">{dependant.first_name}</p>
-                          <div className="flex items-center space-x-4 text-sm text-slate-500">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-neutral-500 dark:text-neutral-400">
                             <span className="capitalize">{dependant.relationship}</span>
                             {dependant.dob && (
                               <span>Age {calculateAge(dependant.dob)}</span>
@@ -240,7 +240,7 @@ export function FamilyTree({
                             )}
                           </div>
                           {dependant.notes && (
-                            <p className="text-xs text-slate-500 mt-1">{dependant.notes}</p>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{dependant.notes}</p>
                           )}
                         </div>
                       </div>
@@ -248,6 +248,8 @@ export function FamilyTree({
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-11 w-11 px-0 sm:h-9 sm:w-9"
+                          aria-label={`Edit ${dependant.first_name}`}
                           onClick={() => setEditingDependant(dependant)}
                         >
                           <Edit className="h-4 w-4" />
@@ -256,7 +258,8 @@ export function FamilyTree({
                           variant="ghost"
                           size="sm"
                           onClick={() => onDeleteDependant(dependant.id)}
-                          className="text-red-600 hover:text-red-700"
+                          aria-label={`Remove ${dependant.first_name}`}
+                          className="h-11 w-11 px-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:h-9 sm:w-9"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

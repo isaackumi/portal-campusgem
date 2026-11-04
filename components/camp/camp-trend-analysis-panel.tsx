@@ -48,11 +48,11 @@ function TrendDelta({
   suffix?: string
   isPercentPoints?: boolean
 }) {
-  if (previous == null) return <span className="text-xs text-muted-foreground">First year baseline</span>
+  if (previous == null) return <span className="text-xs text-neutral-500 dark:text-neutral-400">First year baseline</span>
   const delta = current - previous
   if (delta === 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+      <span className="inline-flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
         <Minus className="h-3 w-3" /> No change vs prior year
       </span>
     )
@@ -60,7 +60,7 @@ function TrendDelta({
   const positive = delta > 0
   const display = isPercentPoints ? `${delta > 0 ? '+' : ''}${delta} pp` : `${delta > 0 ? '+' : ''}${delta.toLocaleString()}${suffix}`
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-medium ${positive ? 'text-emerald-700' : 'text-rose-700'}`}>
+    <span className={`inline-flex items-center gap-1 text-xs font-medium ${positive ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
       {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
       {display} vs prior year
     </span>
@@ -70,8 +70,8 @@ function TrendDelta({
 export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
   if (yearCount < 2) {
     return (
-      <Card className="border-2 border-dashed border-slate-200 bg-slate-50/40">
-        <CardContent className="py-8 text-center text-sm text-slate-600">
+      <Card className="border-dashed border-neutral-200 dark:border-white/10 bg-neutral-50/40 dark:bg-white/[0.03]">
+        <CardContent className="py-8 text-center text-sm text-neutral-600 dark:text-neutral-400">
           Add at least <strong>two camp years</strong> with registrations to unlock cross-year trend analysis.
         </CardContent>
       </Card>
@@ -83,24 +83,24 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50/80 via-white to-slate-100/50 p-4 sm:p-6">
+      <div className="dashboard-panel p-4 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="app-overline text-brand-700">Cross-year analysis</p>
-            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Camp meeting trends</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            <p className="app-overline text-brand-700 dark:text-brand-300">Cross-year analysis</p>
+            <h2 className="app-section-title">Camp meeting trends</h2>
+            <p className="mt-1 max-w-2xl text-sm text-neutral-500 dark:text-neutral-400">
               Track registration growth, operational health, and demographic shifts across {yearCount} camp years.
               Hover charts for exact values.
             </p>
           </div>
-          <div className="flex flex-col items-start gap-2 sm:items-end">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
             {latest ? (
-              <Badge variant="outline" className="w-fit shrink-0 border-brand-300 bg-white">
+              <Badge variant="brand" className="w-fit max-w-full shrink-0 truncate">
                 Latest: Camp {latest.year}
                 {latest.theme ? ` · ${latest.theme}` : ''}
               </Badge>
             ) : null}
-            <Button variant="outline" size="sm" className="w-fit shrink-0 bg-white" onClick={() => downloadCampTrendReportCsv(trends)}>
+            <Button variant="outline" size="sm" className="h-11 w-full shrink-0 sm:h-9 sm:w-fit" onClick={() => downloadCampTrendReportCsv(trends)}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Export trends CSV
             </Button>
@@ -108,16 +108,16 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
         </div>
 
         {latest ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
             {[
               { label: 'Registrations', value: latest.total.toLocaleString(), current: latest.total, previous: prior?.total ?? null },
               { label: 'Check-in rate', value: `${latest.checkInRate}%`, current: latest.checkInRate, previous: prior?.checkInRate ?? null, isPercentPoints: true },
               { label: 'Return rate', value: `${latest.returnRate}%`, current: latest.returnRate, previous: prior?.returnRate ?? null, isPercentPoints: true },
               { label: 'Data quality', value: `${latest.dataQualityScore}%`, current: latest.dataQualityScore, previous: prior?.dataQualityScore ?? null, isPercentPoints: true },
             ].map((tile) => (
-              <div key={tile.label} className="rounded-lg border border-white/80 bg-white/90 p-3 shadow-sm">
-                <p className="text-xs font-medium text-muted-foreground">{tile.label}</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">{tile.value}</p>
+              <div key={tile.label} className="min-w-0 rounded-lg border border-neutral-200/80 bg-neutral-50/60 p-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                <p className="app-stat-label">{tile.label}</p>
+                <p className="app-stat-value mt-1 text-neutral-900 dark:text-neutral-100">{tile.value}</p>
                 <TrendDelta
                   current={tile.current}
                   previous={tile.previous}
@@ -131,8 +131,8 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
       {trends.alerts.length > 0 ? (
         <div className="space-y-2">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
             Year-over-year alerts
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -141,14 +141,14 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
                 key={alert.id}
                 className={`rounded-lg border px-4 py-3 text-sm ${
                   alert.severity === 'warning'
-                    ? 'border-amber-200 bg-amber-50'
+                    ? 'border-amber-200 bg-amber-50 dark:border-amber-400/20 dark:bg-amber-400/10'
                     : alert.severity === 'success'
-                      ? 'border-emerald-200 bg-emerald-50'
-                      : 'border-slate-200 bg-slate-50'
+                      ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-400/20 dark:bg-emerald-400/10'
+                      : 'border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.04]'
                 }`}
               >
-                <p className="font-medium text-slate-900">{alert.title}</p>
-                <p className="mt-0.5 text-muted-foreground">{alert.detail}</p>
+                <p className="font-medium text-neutral-900 dark:text-neutral-100">{alert.title}</p>
+                <p className="mt-0.5 text-neutral-500 dark:text-neutral-400">{alert.detail}</p>
               </div>
             ))}
           </div>
@@ -179,57 +179,95 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
 
         <TabsContent value="performance" className="mt-0 space-y-6 focus-visible:outline-none">
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="border-2">
-              <CardHeader className="border-b bg-slate-50">
+            <Card>
+              <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp className="h-5 w-5 text-brand-600" />
+                  <TrendingUp className="h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
                   Registration growth
                 </CardTitle>
                 <CardDescription>Total sign-ups per year with year-on-year % change</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="p-4 pt-5 sm:p-6">
                 <AnalyticsRegistrationGrowthChart rows={trends.registrationGrowth} />
               </CardContent>
             </Card>
 
-            <Card className="border-2">
-              <CardHeader className="border-b bg-slate-50">
+            <Card>
+              <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <LineChart className="h-5 w-5 text-primary" />
                   KPI rate trends
                 </CardTitle>
                 <CardDescription>Check-in, retention, payments, data quality, and follow-up completion</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="p-4 pt-5 sm:p-6">
                 <AnalyticsMetricTrendChart series={trends.kpiRateSeries} height={300} />
               </CardContent>
             </Card>
           </div>
 
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Activity className="h-5 w-5 text-violet-600" />
+                <Activity className="h-5 w-5 text-violet-600 dark:text-violet-400" aria-hidden />
                 Funnel conversion over time
               </CardTitle>
               <CardDescription>
                 What % of registrants reach check-in, payment, and follow-up completion each year
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="p-4 pt-5 sm:p-6">
               <AnalyticsFunnelRateTrendChart rows={trends.funnelRates} />
             </CardContent>
           </Card>
 
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="text-base">Year-by-year KPI table</CardTitle>
               <CardDescription>Full metrics for planning and leadership reports</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto pt-4">
+            <CardContent className="p-4 sm:p-6">
+              <ul className="divide-y divide-neutral-200/80 md:hidden dark:divide-white/[0.06]">
+                {trends.kpiByYear.map((row) => (
+                  <li key={row.year} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="min-w-0 font-semibold text-neutral-900 dark:text-neutral-100">
+                        {row.year}
+                        {row.theme ? (
+                          <span className="mt-0.5 block truncate text-xs font-normal text-neutral-500 dark:text-neutral-400">{row.theme}</span>
+                        ) : null}
+                      </p>
+                      <div className="shrink-0 text-right">
+                        <p className="text-lg font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{row.total.toLocaleString()}</p>
+                        {row.growthPercent == null ? null : (
+                          <p className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
+                            {`${row.growthPercent >= 0 ? '+' : ''}${row.growthPercent}%`} growth
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <dl className="mt-2 grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+                      {[
+                        ['New', row.newCampers],
+                        ['Returning', row.returningCampers],
+                        ['Check-in', `${row.checkInRate}%`],
+                        ['Return', `${row.returnRate}%`],
+                        ['Collection', `${row.collectionRate}%`],
+                        ['Data', `${row.dataQualityScore}%`],
+                      ].map(([label, value]) => (
+                        <div key={String(label)} className="min-w-0">
+                          <dt className="text-neutral-500 dark:text-neutral-400">{label}</dt>
+                          <dd className="font-medium tabular-nums text-neutral-900 dark:text-neutral-100">{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
-                  <tr className="border-b text-left text-muted-foreground">
+                  <tr className="border-b border-neutral-200/80 dark:border-white/[0.06] text-left text-neutral-500 dark:text-neutral-400">
                     <th className="pb-2 pr-4 font-medium">Year</th>
                     <th className="pb-2 pr-4 font-medium">Total</th>
                     <th className="pb-2 pr-4 font-medium">Growth</th>
@@ -247,7 +285,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
                       <td className="py-3 pr-4 font-semibold">
                         {row.year}
                         {row.theme ? (
-                          <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{row.theme}</span>
+                          <span className="mt-0.5 block text-xs font-normal text-neutral-500 dark:text-neutral-400">{row.theme}</span>
                         ) : null}
                       </td>
                       <td className="py-3 pr-4 tabular-nums">{row.total.toLocaleString()}</td>
@@ -264,15 +302,16 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
                   ))}
                 </tbody>
               </table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="velocity" className="mt-0 space-y-6 focus-visible:outline-none">
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Zap className="h-5 w-5 text-amber-600" />
+                <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
                 Registration velocity overlay
               </CardTitle>
               <CardDescription>
@@ -280,30 +319,30 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
                 different years fill up
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="p-4 pt-5 sm:p-6">
               <AnalyticsVelocityOverlayChart series={trends.velocityOverlay} height={340} />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="cohorts" className="mt-0 space-y-6 focus-visible:outline-none">
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Users className="h-5 w-5 text-violet-600" />
+                <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" aria-hidden />
                 First-time camper cohort retention
               </CardTitle>
               <CardDescription>
                 For each camp year, track how many first-time registrants (by phone) return in later years
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-6 p-4 pt-5 sm:p-6">
               <AnalyticsCohortRetentionChart cohorts={trends.cohortRetention} height={300} />
-              <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full min-w-[560px] text-sm">
-                  <thead className="bg-slate-50">
-                    <tr className="text-left text-muted-foreground">
-                      <th className="px-3 py-2 font-medium">Cohort (first camp)</th>
+              <div className="overflow-x-auto rounded-lg border border-neutral-200/80 dark:border-white/[0.06]">
+                <table className="w-full text-sm sm:min-w-[560px]">
+                  <thead className="bg-neutral-50 dark:bg-white/[0.04]">
+                    <tr className="text-left text-neutral-500 dark:text-neutral-400">
+                      <th className="sticky left-0 bg-neutral-50 px-3 py-2 font-medium dark:bg-neutral-800">Cohort</th>
                       <th className="px-3 py-2 font-medium">Size</th>
                       {trends.cohortRetention[0]?.returnsByYear.map((r) => (
                         <th key={r.year} className="px-3 py-2 font-medium">
@@ -316,13 +355,13 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
                     {trends.cohortRetention
                       .filter((c) => c.cohortSize > 0)
                       .map((cohort) => (
-                        <tr key={cohort.cohortYear} className="border-t">
-                          <td className="px-3 py-2 font-semibold">{cohort.cohortYear}</td>
+                        <tr key={cohort.cohortYear} className="border-t border-neutral-200/80 dark:border-white/[0.06]">
+                          <td className="sticky left-0 bg-white px-3 py-2 font-semibold dark:bg-neutral-800">{cohort.cohortYear}</td>
                           <td className="px-3 py-2 tabular-nums">{cohort.cohortSize}</td>
                           {cohort.returnsByYear.map((ret) => (
-                            <td key={`${cohort.cohortYear}-${ret.year}`} className="px-3 py-2 text-slate-600">
+                            <td key={`${cohort.cohortYear}-${ret.year}`} className="whitespace-nowrap px-3 py-2 tabular-nums text-neutral-600 dark:text-neutral-400">
                               {ret.rate}%
-                              <span className="ml-1 text-xs text-muted-foreground">({ret.count})</span>
+                              <span className="ml-1 text-xs text-neutral-500 dark:text-neutral-400">({ret.count})</span>
                             </td>
                           ))}
                         </tr>
@@ -335,71 +374,71 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
         </TabsContent>
 
         <TabsContent value="operations" className="mt-0 space-y-6 focus-visible:outline-none">
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <BarChart3 className="h-5 w-5 text-teal-600" />
+                <BarChart3 className="h-5 w-5 text-teal-600 dark:text-teal-400" aria-hidden />
                 Operations & planning signals
               </CardTitle>
               <CardDescription>
                 NHIS coverage, health reporting, parent contacts, payments, and follow-up — tracked year over year
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="p-4 pt-5 sm:p-6">
               <AnalyticsMetricTrendChart series={trends.operationsSeries} height={320} />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="demographics" className="mt-0 space-y-8 focus-visible:outline-none">
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="text-base">Age bracket mix over time</CardTitle>
               <CardDescription>Share of each age group per camp year (% of that year&apos;s registrations)</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-6 p-4 pt-5 sm:p-6">
               <CampDemographicTrendTable title="Age bracket" rows={trends.demographicTrends.ageBracket} />
             </CardContent>
           </Card>
 
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="text-base">Gender mix over time</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-6 p-4 pt-5 sm:p-6">
               <CampDemographicTrendTable title="Gender" rows={trends.demographicTrends.gender} />
             </CardContent>
           </Card>
 
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="text-base">Education band over time</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-6 p-4 pt-5 sm:p-6">
               <CampDemographicTrendTable title="Education band" rows={trends.demographicTrends.educationBand} />
             </CardContent>
           </Card>
 
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <MapPin className="h-5 w-5 text-red-600" />
+                <MapPin className="h-5 w-5 text-red-600 dark:text-red-400" aria-hidden />
                 Top residence regions over time
               </CardTitle>
               <CardDescription>How geographic reach shifts season to season</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-6 p-4 pt-5 sm:p-6">
               <CampDemographicTrendTable title="Residence" rows={trends.demographicTrends.residence} />
             </CardContent>
           </Card>
 
           {trends.roleTrends.length > 0 ? (
-            <Card className="border-2">
-              <CardHeader className="border-b bg-slate-50">
+            <Card>
+              <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
                 <CardTitle className="text-base">Role mix over time</CardTitle>
                 <CardDescription>Participants, workers, volunteers, and other roles per camp year</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6 pt-6">
+              <CardContent className="space-y-6 p-4 pt-5 sm:p-6">
                 <CampDemographicTrendTable title="Role" rows={trends.roleTrends} />
               </CardContent>
             </Card>
@@ -407,21 +446,21 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
         </TabsContent>
 
         <TabsContent value="revenue" className="mt-0 space-y-6 focus-visible:outline-none">
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="text-base">Revenue collected vs pending</CardTitle>
               <CardDescription>Camp fee collection trend by year (₵)</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="p-4 pt-5 sm:p-6">
               <AnalyticsRevenueChart rows={revenue.byYear} height={300} />
             </CardContent>
           </Card>
 
-          <Card className="border-2">
-            <CardHeader className="border-b bg-slate-50">
+          <Card>
+            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="text-base">Collection rate trend</CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="p-4 pt-5 sm:p-6">
               <AnalyticsMetricTrendChart
                 height={260}
                 series={[

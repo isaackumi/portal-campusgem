@@ -58,7 +58,7 @@ export function SearchableFormSelect({
   const closedDisplay = showingOther ? FORM_OTHER_OPTION : value
 
   const classicInput =
-    'h-12 rounded-xl border-slate-200 bg-white text-base shadow-none focus-visible:ring-2 focus-visible:ring-offset-0'
+    'h-12 rounded-xl border-neutral-200 bg-white text-base shadow-none focus-visible:ring-2 focus-visible:ring-offset-0'
   const steppedInput =
     'h-14 rounded-none border-0 border-b-2 border-white/40 bg-transparent px-0 text-xl text-white shadow-none placeholder:text-white/45 focus-visible:border-white focus-visible:ring-0'
 
@@ -107,15 +107,15 @@ export function SearchableFormSelect({
             className={cn(
               'absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border shadow-lg',
               isStepped
-                ? 'border-white/30 bg-slate-900/95 text-white backdrop-blur'
-                : 'border-slate-200 bg-white text-slate-900'
+                ? 'border-white/30 bg-neutral-900/95 text-white backdrop-blur'
+                : 'border-neutral-200 bg-white text-neutral-900'
             )}
           >
             {filtered.length === 0 ? (
               <p
                 className={cn(
                   'px-4 py-3 text-sm',
-                  isStepped ? 'text-white/60' : 'text-slate-500'
+                  isStepped ? 'text-white/60' : 'text-neutral-500'
                 )}
               >
                 No matches — try another spelling, or choose Other
@@ -138,8 +138,8 @@ export function SearchableFormSelect({
                           ? 'bg-white/20'
                           : 'hover:bg-white/10'
                         : selected
-                          ? 'bg-slate-100 font-medium'
-                          : 'hover:bg-slate-50'
+                          ? 'bg-neutral-100 font-medium'
+                          : 'hover:bg-neutral-50'
                     )}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => selectOption(option)}
@@ -158,7 +158,7 @@ export function SearchableFormSelect({
           <label
             className={cn(
               'block text-sm',
-              isStepped ? 'text-white/80' : 'text-slate-600'
+              isStepped ? 'text-white/80' : 'text-neutral-600'
             )}
             htmlFor={id ? `${id}-other` : undefined}
           >

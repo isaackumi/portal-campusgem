@@ -51,13 +51,13 @@ function SteppedActions({
   hint?: boolean
 }) {
   return (
-    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <PublicFormPrimaryButton type="button" onClick={onContinue} className="h-12 min-w-[160px] px-8">
+    <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center sm:justify-between">
+      <PublicFormPrimaryButton type="button" onClick={onContinue} className="h-12 sm:h-12 sm:min-w-[160px] sm:px-8">
         {label}
         <ArrowRight className="ml-2 h-4 w-4" />
       </PublicFormPrimaryButton>
       {hint ? (
-        <p className="text-sm text-slate-500">
+        <p className="hidden text-sm text-slate-500 sm:block">
           Press <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-xs">Enter ↵</kbd>
         </p>
       ) : null}
@@ -270,7 +270,7 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
             type="button"
             variant="ghost"
             size="sm"
-            className="h-9 border border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+            className="h-11 border border-white/25 bg-white/10 px-3 text-white hover:bg-white/20 hover:text-white sm:h-9"
             onClick={goBack}
           >
             <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -429,7 +429,7 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
                 description="Check everything looks correct, then submit."
                 stepLabel="Final step"
               />
-              <div className="max-h-[40vh] space-y-3 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/80 p-4">
+              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3 sm:max-h-[40vh] sm:overflow-y-auto sm:p-4">
                 {reviewPhone && !controller.phoneField ? (
                   <ReviewLine label="Phone" value={reviewPhone} />
                 ) : null}
@@ -450,13 +450,13 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
                   />
                 ) : null}
               </div>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button type="button" variant="outline" className="h-11" onClick={goBack}>
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
+                <Button type="button" variant="outline" className="h-12 border-slate-300 bg-white text-base text-slate-900 hover:bg-slate-50 sm:h-11 sm:text-sm" onClick={goBack}>
                   Edit answers
                 </Button>
                 <PublicFormPrimaryButton
                   type="button"
-                  className="h-11 min-w-[160px]"
+                  className="sm:min-w-[160px]"
                   onClick={() => void submitFromReview()}
                   disabled={(alreadySubmitted && !previewMode) || submitting}
                 >
@@ -517,7 +517,7 @@ function ReviewLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="border-b border-slate-200 pb-3 last:border-0">
       <p className="text-sm font-medium text-slate-700">{label}</p>
-      <p className={cn('mt-1 text-base', empty ? 'italic text-slate-400' : 'text-slate-900')}>
+      <p className={cn('mt-1 whitespace-pre-wrap break-words text-base', empty ? 'italic text-slate-400' : 'text-slate-900')}>
         {empty ? 'No answer' : value}
       </p>
     </div>

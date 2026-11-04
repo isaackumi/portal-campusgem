@@ -8,6 +8,7 @@ import { formatResponseValue } from '@/lib/forms/analytics'
 import type { ChurchForm, ChurchFormField, ChurchFormResponse } from '@/lib/types'
 import { FormAnalyticsDashboard } from '@/components/forms/form-analytics-dashboard'
 import { Button } from '@/components/ui/button'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -70,9 +71,9 @@ export default function FormResponsesPage() {
 
   if (!form) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div>
         <div className="mx-auto max-w-lg space-y-6">
-          <Button variant="ghost" onClick={() => router.push('/admin/forms')}>
+          <Button variant="ghost" className="-ml-2 h-11 px-2 sm:h-10" onClick={() => router.push('/admin/forms')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to forms
           </Button>
@@ -88,21 +89,21 @@ export default function FormResponsesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50/30 to-slate-100/30">
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
-        <Button variant="ghost" onClick={() => router.push(`/admin/forms/${form.id}`)}>
+    <div>
+      <div className="mx-auto w-full min-w-0 max-w-7xl space-y-4 sm:space-y-6">
+        <Button variant="ghost" className="-ml-2 h-11 px-2 sm:h-10" onClick={() => router.push(`/admin/forms/${form.id}`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to editor
         </Button>
 
-        <Card className="border-slate-200/80 bg-gradient-to-r from-slate-50 to-white">
-          <CardHeader>
-            <CardTitle>{form.title} — Analytics</CardTitle>
-            <CardDescription>
-              {responses.length} submission{responses.length === 1 ? '' : 's'} from /f/{form.slug}
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="min-w-0">
+          <p className="app-overline">Responses</p>
+          <h1 className="app-page-title break-words">{form.title}</h1>
+          <p className="app-page-description mt-1">
+            {responses.length} submission{responses.length === 1 ? '' : 's'} from{' '}
+            <span className="font-mono text-xs">/f/{form.slug}</span>
+          </p>
+        </div>
 
         <FormAnalyticsDashboard fields={fields} responses={responses} />
 
@@ -115,7 +116,64 @@ export default function FormResponsesPage() {
             {responses.length === 0 ? (
               <p className="text-sm text-muted-foreground">No responses yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <ul className="-mx-2 space-y-3 md:hidden">
+                {responses.map((response) => {
+                  const location =
+                    response.respondent_location_label ??
+                    (response.respondent_latitude != null && response.respondent_longitude != null
+                      ? `${response.respondent_latitude.toFixed(4)}, ${response.respondent_longitude.toFixed(4)}`
+                      : null)
+                  const preview = fields.slice(0, 3)
+                  const rest = fields.slice(3)
+                  return (
+                    <li key={response.id} className="rounded-xl border border-neutral-200 p-3 dark:border-white/10">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 space-y-0.5">
+                          <p className="text-xs text-muted-foreground">{new Date(response.submitted_at).toLocaleString()}</p>
+                          {response.respondent_phone ? (
+                            <PhoneLink phone={response.respondent_phone} className="text-sm" />
+                          ) : null}
+                          {response.respondent_email ? (
+                            <p className="break-all text-sm text-neutral-600 dark:text-neutral-300">{response.respondent_email}</p>
+                          ) : null}
+                          {location ? <p className="text-xs text-muted-foreground">{location}</p> : null}
+                        </div>
+                        <QuickContactButtons phone={response.respondent_phone} />
+                      </div>
+                      <dl className="mt-3 space-y-2 border-t border-neutral-100 pt-3 text-sm dark:border-white/10">
+                        {preview.map((field) => (
+                          <div key={field.id} className="min-w-0">
+                            <dt className="text-xs text-muted-foreground">{field.label}</dt>
+                            <dd className="break-words text-neutral-900 dark:text-neutral-100">
+                              {formatResponseValue(response.values[field.id])}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                      {rest.length > 0 ? (
+                        <details className="group mt-2">
+                          <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium text-brand-700 dark:text-brand-300">
+                            <span className="group-open:hidden">Show all {fields.length} answers</span>
+                            <span className="hidden group-open:inline">Hide answers</span>
+                          </summary>
+                          <dl className="space-y-2 text-sm">
+                            {rest.map((field) => (
+                              <div key={field.id} className="min-w-0">
+                                <dt className="text-xs text-muted-foreground">{field.label}</dt>
+                                <dd className="break-words text-neutral-900 dark:text-neutral-100">
+                                  {formatResponseValue(response.values[field.id])}
+                                </dd>
+                              </div>
+                            ))}
+                          </dl>
+                        </details>
+                      ) : null}
+                    </li>
+                  )
+                })}
+              </ul>
+              <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -132,7 +190,9 @@ export default function FormResponsesPage() {
                     {responses.map((response) => (
                       <TableRow key={response.id}>
                         <TableCell>{new Date(response.submitted_at).toLocaleString()}</TableCell>
-                        <TableCell>{response.respondent_phone ?? '—'}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {response.respondent_phone ? <PhoneLink phone={response.respondent_phone} /> : '—'}
+                        </TableCell>
                         <TableCell>{response.respondent_email ?? '—'}</TableCell>
                         <TableCell>
                           {response.respondent_location_label ??
@@ -150,6 +210,7 @@ export default function FormResponsesPage() {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </CardContent>
         </Card>

@@ -52,13 +52,13 @@ function PrintSlipsContent() {
           .slip:last-child { page-break-after: auto; }
         }
       `}</style>
-      <div className="min-h-screen bg-white p-4">
+      <div className="rounded-lg bg-white p-4 text-neutral-900">
         <div className="no-print mb-6 text-center">
           <h1 className="text-xl font-bold">RLC visitor welcome slips</h1>
-          <p className="text-sm text-slate-600">{visitors.length} slip(s)</p>
+          <p className="text-sm text-neutral-600">{visitors.length} slip(s)</p>
           <button
             type="button"
-            className="mt-3 rounded bg-rose-700 px-4 py-2 text-white"
+            className="mt-3 inline-flex h-11 items-center rounded-lg bg-brand-600 px-6 font-medium text-white hover:bg-brand-700"
             onClick={() => window.print()}
           >
             Print

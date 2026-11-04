@@ -41,6 +41,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { StatCard } from '@/components/ui/stat-card'
 import Image from 'next/image'
 
 interface YearStats {
@@ -111,10 +112,10 @@ export default function CampYearsPage() {
 
     const gridClass =
         viewMode === 'grid'
-            ? 'grid gap-4 md:grid-cols-3 xl:grid-cols-4'
+            ? 'grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
             : viewMode === 'list'
               ? 'space-y-3'
-              : 'grid gap-6 md:grid-cols-2 lg:grid-cols-3'
+              : 'grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3'
 
     async function loadYears() {
         // Year edits can change the active year; drop the cached copy the header and dashboard share.
@@ -390,35 +391,31 @@ export default function CampYearsPage() {
     const totalCheckedIn = years.reduce((sum, y) => sum + (y.stats?.checkedIn || 0), 0)
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div>
+            <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
                 {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="min-w-0">
+                        <button
+                            type="button"
                             onClick={() => router.push('/admin/camp-meeting')}
+                            className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 sm:min-h-9"
                         >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            <ArrowLeft className="h-4 w-4" aria-hidden />
                             Back
-                        </Button>
-                        <div>
-                            <h1 className="app-page-title">
-                                Camp Years Management
-                            </h1>
-                            <p className="text-muted-foreground mt-1">
-                                Overview and management of all camp meeting years
-                            </p>
-                        </div>
+                        </button>
+                        <h1 className="app-page-title">Camp years</h1>
+                        <p className="app-page-description mt-1">
+                            Overview and management of all camp meeting years
+                        </p>
                     </div>
                     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button onClick={openCreateDialog} size="lg">
-                                <Plus className="mr-2 h-4 w-4" /> Create New Year
+                            <Button onClick={openCreateDialog} className="h-11 w-full sm:h-10 sm:w-auto">
+                                <Plus className="mr-2 h-4 w-4" /> Create new year
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>{editingYear ? 'Edit Camp Year' : 'Create New Camp Year'}</DialogTitle>
                                 <DialogDescription>
@@ -427,7 +424,7 @@ export default function CampYearsPage() {
                             </DialogHeader>
                             <form onSubmit={handleSubmit}>
                                 <div className="space-y-4 py-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="year">Year</Label>
                                             <Input
@@ -481,7 +478,7 @@ export default function CampYearsPage() {
                                         )}
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="start_date">Start Date</Label>
                                             <Input
@@ -532,11 +529,11 @@ export default function CampYearsPage() {
                                         />
                                     </div>
                                 </div>
-                                <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                                <DialogFooter className="gap-2">
+                                    <Button type="button" variant="outline" className="h-11 sm:h-10" onClick={() => setDialogOpen(false)}>
                                         Cancel
                                     </Button>
-                                    <Button type="submit">
+                                    <Button type="submit" className="h-11 sm:h-10">
                                         {editingYear ? 'Update' : 'Create'}
                                     </Button>
                                 </DialogFooter>
@@ -547,74 +544,41 @@ export default function CampYearsPage() {
 
                 {/* Overall Statistics */}
                 {activeYear ? (
-                    <Card className="border-2 border-slate-200 bg-slate-50/60">
-                        <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-slate-900">Active camp year</p>
-                                <p className="text-lg font-semibold text-slate-900">
+                    <Card>
+                        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                            <div className="min-w-0">
+                                <p className="app-overline">Active camp year</p>
+                                <p className="mt-1 break-words text-base font-semibold text-neutral-900 dark:text-neutral-100 sm:text-lg">
                                     {activeYear.year}
                                     {activeYear.theme ? ` · ${activeYear.theme}` : ''}
                                 </p>
                             </div>
-                            <Button variant="outline" className="border-amber-300 bg-white" onClick={() => deactivateYear(activeYear.id)}>
+                            <Button variant="outline" className="h-11 w-full shrink-0 border-amber-300 text-amber-800 hover:bg-amber-50 dark:border-amber-400/30 dark:text-amber-300 dark:hover:bg-amber-400/10 sm:h-10 sm:w-auto" onClick={() => deactivateYear(activeYear.id)}>
                                 Deactivate {activeYear.year}
                             </Button>
                         </CardContent>
                     </Card>
                 ) : null}
-                <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Total Years</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{totalYears}</div>
-                            <p className="text-xs text-muted-foreground mt-1">Camp years created</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Total Registrations</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{totalRegistrations}</div>
-                            <p className="text-xs text-muted-foreground mt-1">Across all years</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Total Checked In</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{totalCheckedIn}</div>
-                            <p className="text-xs text-muted-foreground mt-1">Participants attended</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Active Year</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{activeYear ? activeYear.year : 'None'}</div>
-                            <p className="text-xs text-muted-foreground mt-1">{activeYear?.theme || 'No active year'}</p>
-                        </CardContent>
-                    </Card>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    <StatCard label="Total years" value={totalYears} sub="Camp years created" icon={Calendar} />
+                    <StatCard label="Registrations" value={totalRegistrations} sub="Across all years" icon={Users} />
+                    <StatCard label="Checked in" value={totalCheckedIn} sub="Participants attended" tone="success" icon={CheckCircle} />
+                    <StatCard label="Active year" value={activeYear ? activeYear.year : 'None'} sub={<span className="line-clamp-1">{activeYear?.theme || 'No active year'}</span>} icon={Sparkles} />
                 </div>
 
-
                 <Card>
-                    <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <ArrowUpDown className="h-4 w-4" />
-                            Sort and view controls
+                    <CardContent className="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-4">
+                        <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                            <ArrowUpDown className="h-4 w-4" aria-hidden />
+                            Sort and view
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            <Button variant={sortBy === 'year' ? 'default' : 'outline'} size="sm" onClick={() => setSortBy('year')}>Year</Button>
-                            <Button variant={sortBy === 'registrations' ? 'default' : 'outline'} size="sm" onClick={() => setSortBy('registrations')}>Registrations</Button>
-                            <Button variant={sortBy === 'theme' ? 'default' : 'outline'} size="sm" onClick={() => setSortBy('theme')}>Theme</Button>
-                            <Button variant={viewMode === 'cards' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('cards')}>Cards</Button>
-                            <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('grid')}>Grid</Button>
-                            <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('list')}><List className="mr-2 h-4 w-4" />List</Button>
+                        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                            <Button className="h-11 sm:h-9" variant={sortBy === 'year' ? 'default' : 'outline'} size="sm" onClick={() => setSortBy('year')}>Year</Button>
+                            <Button className="h-11 sm:h-9" variant={sortBy === 'registrations' ? 'default' : 'outline'} size="sm" onClick={() => setSortBy('registrations')}>Registrations</Button>
+                            <Button className="h-11 sm:h-9" variant={sortBy === 'theme' ? 'default' : 'outline'} size="sm" onClick={() => setSortBy('theme')}>Theme</Button>
+                            <Button className="hidden sm:inline-flex sm:h-9" variant={viewMode === 'cards' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('cards')}>Cards</Button>
+                            <Button className="hidden sm:inline-flex sm:h-9" variant={viewMode === 'grid' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('grid')}>Grid</Button>
+                            <Button className="hidden sm:inline-flex sm:h-9" variant={viewMode === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('list')}><List className="mr-2 h-4 w-4" />List</Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -628,20 +592,18 @@ export default function CampYearsPage() {
                             <Card 
                                 key={year.id} 
                                 className={`relative overflow-hidden transition-all hover:shadow-lg cursor-pointer ${
-                                    year.is_active ? 'border-slate-900 border-2 shadow-md' : ''
+                                    year.is_active ? 'ring-2 ring-brand-500 dark:ring-brand-400' : ''
                                 }`}
                                 onClick={() => router.push(`/admin/camp-meeting/registrations?year=${year.id}`)}
                             >
                                 {year.is_active && (
-                                    <div className="absolute top-0 right-0 bg-primary text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
-                                        ACTIVE
-                                    </div>
+                                    <Badge variant="success" className="absolute right-3 top-3">Active</Badge>
                                 )}
                                 
                                 <CardHeader className="pb-3">
                                     <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <CardTitle className="text-2xl font-bold">Camp Meeting {year.year}</CardTitle>
+                                        <div className={`min-w-0 flex-1 ${year.is_active ? 'pr-16' : ''}`}>
+                                            <CardTitle className="app-section-title">Camp Meeting {year.year}</CardTitle>
                                             <CardDescription className="mt-2 line-clamp-2">{year.theme}</CardDescription>
                                         </div>
                                     </div>
@@ -649,25 +611,25 @@ export default function CampYearsPage() {
                                 
                                 <CardContent className="space-y-4">
                                     {/* Dates */}
-                                    <div className="flex items-center text-sm text-muted-foreground">
-                                        <Calendar className="mr-2 h-4 w-4" />
+                                    <div className="flex items-center text-sm text-neutral-500 dark:text-neutral-400">
+                                        <Calendar className="mr-2 h-4 w-4 shrink-0" aria-hidden />
                                         <span>
                                             {new Date(year.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(year.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </span>
                                     </div>
 
                                     {/* Registration Status */}
-                                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                                    <div className="flex items-center justify-between rounded-lg bg-neutral-50 p-2 dark:bg-white/[0.04]">
                                         <span className="text-sm font-medium">Registration:</span>
                                         <div className="flex items-center gap-2">
                                             {year.registration_open ? (
                                                 <>
-                                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                                    <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
                                                     <Badge variant="success">Open</Badge>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <XCircle className="h-4 w-4 text-red-600" />
+                                                    <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" aria-hidden />
                                                     <Badge variant="destructive">Closed</Badge>
                                                 </>
                                             )}
@@ -681,21 +643,21 @@ export default function CampYearsPage() {
                                         </div>
                                     ) : stats ? (
                                         <div className="grid grid-cols-2 gap-2 text-sm">
-                                            <div className="p-2 bg-slate-50 rounded">
-                                                <div className="font-semibold text-slate-900">{stats.totalRegistrations}</div>
-                                                <div className="text-xs text-slate-700">Total</div>
+                                            <div className="rounded p-2 bg-neutral-50 dark:bg-white/[0.04]">
+                                                <div className="font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{stats.totalRegistrations}</div>
+                                                <div className="text-xs text-neutral-600 dark:text-neutral-400">Total</div>
                                             </div>
-                                            <div className="p-2 bg-green-50 rounded">
-                                                <div className="font-semibold text-green-900">{stats.checkedIn}</div>
-                                                <div className="text-xs text-green-700">Checked In</div>
+                                            <div className="rounded p-2 bg-emerald-50 dark:bg-emerald-400/10">
+                                                <div className="font-semibold tabular-nums text-emerald-900 dark:text-emerald-200">{stats.checkedIn}</div>
+                                                <div className="text-xs text-emerald-700 dark:text-emerald-300">Checked In</div>
                                             </div>
-                                            <div className="p-2 bg-purple-50 rounded">
-                                                <div className="font-semibold text-purple-900">{stats.newRegistrants}</div>
-                                                <div className="text-xs text-purple-700">New</div>
+                                            <div className="rounded p-2 bg-violet-50 dark:bg-violet-400/10">
+                                                <div className="font-semibold tabular-nums text-violet-900 dark:text-violet-200">{stats.newRegistrants}</div>
+                                                <div className="text-xs text-violet-700 dark:text-violet-300">New</div>
                                             </div>
-                                            <div className="p-2 bg-orange-50 rounded">
-                                                <div className="font-semibold text-orange-900">{stats.returning}</div>
-                                                <div className="text-xs text-orange-700">Returning</div>
+                                            <div className="rounded p-2 bg-orange-50 dark:bg-orange-400/10">
+                                                <div className="font-semibold tabular-nums text-orange-900 dark:text-orange-200">{stats.returning}</div>
+                                                <div className="text-xs text-orange-700 dark:text-orange-300">Returning</div>
                                             </div>
                                         </div>
                                     ) : (
@@ -711,7 +673,7 @@ export default function CampYearsPage() {
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => router.push(`/admin/camp-meeting/registrations?year=${year.id}`)}
-                                                className="w-full"
+                                                className="h-11 w-full sm:h-9"
                                             >
                                                 <Users className="mr-2 h-3 w-3" />
                                                 View
@@ -720,7 +682,7 @@ export default function CampYearsPage() {
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => router.push(`/admin/camp-meeting/analytics?year=${year.id}`)}
-                                                className="w-full"
+                                                className="h-11 w-full sm:h-9"
                                             >
                                                 <BarChart3 className="mr-2 h-3 w-3" />
                                                 Analytics
@@ -730,7 +692,7 @@ export default function CampYearsPage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => router.push(`/admin/camp-meeting/import?year=${year.id}`)}
-                                            className="w-full"
+                                            className="h-11 w-full sm:h-9"
                                         >
                                             <Upload className="mr-2 h-3 w-3" />
                                             Import Data
@@ -739,7 +701,7 @@ export default function CampYearsPage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => router.push(`/admin/camp-meeting/years/${year.id}`)}
-                                            className="w-full"
+                                            className="h-11 w-full sm:h-9"
                                         >
                                             <Sparkles className="mr-2 h-3 w-3" />
                                             Year intelligence hub
@@ -751,7 +713,7 @@ export default function CampYearsPage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="flex-1"
+                                            className="h-11 flex-1 sm:h-9"
                                             onClick={() => openEditDialog(year)}
                                         >
                                             <Edit className="mr-2 h-3 w-3" /> Edit
@@ -759,7 +721,7 @@ export default function CampYearsPage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="flex-1"
+                                            className="h-11 flex-1 sm:h-9"
                                             onClick={() => toggleRegistration(year.id, year.registration_open)}
                                         >
                                             {year.registration_open ? (
@@ -779,7 +741,7 @@ export default function CampYearsPage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="w-full border-amber-300 text-amber-900 hover:bg-amber-50"
+                                            className="h-11 w-full border-amber-300 text-amber-900 hover:bg-amber-50 dark:border-amber-400/30 dark:text-amber-300 dark:hover:bg-amber-400/10 sm:h-9"
                                             onClick={() => deactivateYear(year.id)}
                                         >
                                             Deactivate year
@@ -788,7 +750,7 @@ export default function CampYearsPage() {
                                         <Button
                                             variant="default"
                                             size="sm"
-                                            className="w-full"
+                                            className="h-11 w-full sm:h-9"
                                             onClick={() => setActiveYear(year.id)}
                                         >
                                             <Settings className="mr-2 h-3 w-3" />
@@ -801,7 +763,7 @@ export default function CampYearsPage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="w-full border-red-200 text-red-700 hover:bg-red-50"
+                                            className="h-11 w-full border-red-200 text-red-700 hover:bg-red-50 dark:border-red-400/30 dark:text-red-300 dark:hover:bg-red-400/10 sm:h-9"
                                             onClick={() => openDeleteDialog(year)}
                                         >
                                             <Trash2 className="mr-2 h-3 w-3" />
@@ -849,10 +811,11 @@ export default function CampYearsPage() {
                                 placeholder={deleteTarget ? String(deleteTarget.year) : ''}
                             />
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="gap-2">
                             <Button
                                 type="button"
                                 variant="outline"
+                                className="h-11 sm:h-10"
                                 onClick={() => setDeleteTarget(null)}
                                 disabled={deleting}
                             >
@@ -861,6 +824,7 @@ export default function CampYearsPage() {
                             <Button
                                 type="button"
                                 variant="destructive"
+                                className="h-11 sm:h-10"
                                 onClick={() => void confirmDeleteYear()}
                                 disabled={
                                     deleting ||

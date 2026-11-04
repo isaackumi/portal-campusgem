@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
+import { StatCard } from '@/components/ui/stat-card'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import {
@@ -39,10 +40,10 @@ const ACTIVITY_TYPES = [
 ]
 
 const STATUS_COLORS = {
-    scheduled: 'bg-slate-100 text-slate-700 border-slate-300',
-    in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    completed: 'bg-green-100 text-green-800 border-green-300',
-    cancelled: 'bg-red-100 text-red-800 border-red-300',
+    scheduled: 'bg-neutral-100 text-neutral-700 border-neutral-300 dark:bg-white/5 dark:text-neutral-300 dark:border-white/10',
+    in_progress: 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400/20',
+    completed: 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-400/10 dark:text-emerald-300 dark:border-emerald-400/20',
+    cancelled: 'bg-red-50 text-red-800 border-red-300 dark:bg-red-400/10 dark:text-red-300 dark:border-red-400/20',
 }
 
 export default function CampActivitiesPage() {
@@ -222,7 +223,7 @@ export default function CampActivitiesPage() {
 
     if (!campYear) {
         return (
-            <div className="p-6 max-w-4xl mx-auto">
+            <div className="mx-auto max-w-4xl">
                 <Card>
                     <CardHeader>
                         <CardTitle>No Active Camp Year</CardTitle>
@@ -239,8 +240,8 @@ export default function CampActivitiesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div>
+            <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
                 <CampAdminPageHeader
                     title="Camp Activities"
                     campYear={campYear}
@@ -251,7 +252,7 @@ export default function CampActivitiesPage() {
                                 <Plus className="mr-2 h-4 w-4" /> Add Activity
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>
                                     {editingActivity ? 'Edit Activity' : 'Create New Activity'}
@@ -438,20 +439,21 @@ export default function CampActivitiesPage() {
                 />
 
                 {/* Filters */}
-                <Card className="border-2">
-                    <CardHeader>
-                        <div className="flex items-center gap-4">
-                            <div className="space-y-2 flex-1 max-w-xs">
+                <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+                            <div className="flex-1 space-y-2 sm:max-w-xs">
                                 <Label htmlFor="date_filter">Filter by Date</Label>
                                 <Input
                                     id="date_filter"
                                     type="date"
+                                    className="h-11 sm:h-10"
                                     value={dateFilter}
                                     onChange={e => setDateFilter(e.target.value)}
                                 />
                             </div>
                             {dateFilter && (
-                                <Button variant="outline" onClick={() => setDateFilter('')}>
+                                <Button variant="outline" className="h-11 sm:h-10" onClick={() => setDateFilter('')}>
                                     Clear Filter
                                 </Button>
                             )}
@@ -461,7 +463,7 @@ export default function CampActivitiesPage() {
 
                 {/* Activities List */}
                 {sortedDates.length === 0 ? (
-                    <Card className="border-2">
+                    <Card>
                         <CardContent className="py-12 text-center">
                             <p className="text-muted-foreground mb-4">
                                 {dateFilter ? 'No activities found for selected date' : 'No activities scheduled yet'}
@@ -472,11 +474,11 @@ export default function CampActivitiesPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                         {sortedDates.map(date => (
-                            <Card key={date} className="border-2">
-                                <CardHeader className="bg-slate-50 border-b">
-                                    <CardTitle className="flex items-center gap-2">
+                            <Card key={date}>
+                                <CardHeader className="border-b border-neutral-200/80 bg-neutral-50 p-4 dark:border-white/10 dark:bg-white/[0.03] sm:p-6">
+                                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                                         <Calendar className="h-5 w-5" />
                                         {new Date(date).toLocaleDateString('en-US', {
                                             weekday: 'long',
@@ -486,8 +488,8 @@ export default function CampActivitiesPage() {
                                         })}
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="pt-6">
-                                    <div className="space-y-4">
+                                <CardContent className="p-3 pt-3 sm:p-6 sm:pt-6">
+                                    <div className="space-y-3 sm:space-y-4">
                                         {groupedByDate[date]
                                             .sort((a, b) => a.start_time.localeCompare(b.start_time))
                                             .map(activity => {
@@ -495,33 +497,33 @@ export default function CampActivitiesPage() {
                                                 return (
                                                     <div
                                                         key={activity.id}
-                                                        className="p-4 border-2 rounded-lg hover:shadow-md transition-shadow bg-white"
+                                                        className="rounded-lg border border-neutral-200/80 bg-white p-3 transition-shadow hover:shadow-md dark:border-white/10 dark:bg-neutral-800/60 sm:p-4"
                                                     >
-                                                        <div className="flex items-start justify-between">
-                                                            <div className="flex-1">
-                                                                <div className="flex items-start gap-3 mb-3">
+                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-start gap-3">
                                                                     <div className={cn(
-                                                                        "p-2 rounded-lg",
-                                                                        activity.activity_type === 'worship' && "bg-purple-100 text-purple-600",
-                                                                        activity.activity_type === 'session' && "bg-slate-100 text-primary",
-                                                                        activity.activity_type === 'workshop' && "bg-green-100 text-green-600",
-                                                                        activity.activity_type === 'meal' && "bg-orange-100 text-orange-600",
-                                                                        activity.activity_type === 'break' && "bg-gray-100 text-slate-600",
-                                                                        activity.activity_type === 'prayer' && "bg-red-100 text-red-600",
-                                                                        !['worship', 'session', 'workshop', 'meal', 'break', 'prayer'].includes(activity.activity_type) && "bg-gray-100 text-slate-600"
+                                                                        "shrink-0 rounded-lg p-2",
+                                                                        activity.activity_type === 'worship' && "bg-violet-100 text-violet-600 dark:bg-violet-400/10 dark:text-violet-300",
+                                                                        activity.activity_type === 'session' && "bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300",
+                                                                        activity.activity_type === 'workshop' && "bg-teal-50 text-teal-600 dark:bg-teal-400/10 dark:text-teal-300",
+                                                                        activity.activity_type === 'meal' && "bg-orange-50 text-orange-600 dark:bg-orange-400/10 dark:text-orange-300",
+                                                                        activity.activity_type === 'break' && "bg-neutral-100 text-neutral-600 dark:bg-white/5 dark:text-neutral-300",
+                                                                        activity.activity_type === 'prayer' && "bg-pink-50 text-pink-600 dark:bg-pink-400/10 dark:text-pink-300",
+                                                                        !['worship', 'session', 'workshop', 'meal', 'break', 'prayer'].includes(activity.activity_type) && "bg-neutral-100 text-neutral-600 dark:bg-white/5 dark:text-neutral-300"
                                                                     )}>
                                                                         <TypeIcon className="h-5 w-5" />
                                                                     </div>
-                                                                    <div className="flex-1">
-                                                                        <div className="flex items-center gap-2 mb-1">
-                                                                            <h3 className="font-semibold text-lg text-slate-900">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                                                                            <h3 className="break-words text-base font-semibold text-neutral-900 dark:text-neutral-100 sm:text-lg">
                                                                                 {activity.title}
                                                                             </h3>
                                                                             <Badge variant="outline" className={cn(STATUS_COLORS[activity.status])}>
                                                                                 {activity.status.replace('_', ' ')}
                                                                             </Badge>
                                                                         </div>
-                                                                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 mt-2">
+                                                                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
                                                                             <div className="flex items-center gap-1">
                                                                                 <Clock className="h-4 w-4" />
                                                                                 <span>
@@ -540,7 +542,7 @@ export default function CampActivitiesPage() {
                                                                                 <div className="flex items-center gap-1">
                                                                                     <MapPin className="h-4 w-4" />
                                                                                     <span>{activity.location}</span>
-                                                                                    {activity.venue && <span className="text-gray-400">• {activity.venue}</span>}
+                                                                                    {activity.venue && <span className="text-neutral-400 dark:text-neutral-500">• {activity.venue}</span>}
                                                                                 </div>
                                                                             )}
                                                                             {activity.capacity && (
@@ -548,7 +550,7 @@ export default function CampActivitiesPage() {
                                                                                     <Users className="h-4 w-4" />
                                                                                     <span>Capacity: {activity.capacity}</span>
                                                                                     {activity.attendance_count !== undefined && (
-                                                                                        <span className="text-gray-400">
+                                                                                        <span className="text-neutral-400 dark:text-neutral-500">
                                                                                             ({activity.attendance_count} attended)
                                                                                         </span>
                                                                                     )}
@@ -562,30 +564,36 @@ export default function CampActivitiesPage() {
                                                                             )}
                                                                         </div>
                                                                         {activity.description && (
-                                                                            <p className="text-sm text-slate-700 mt-2">{activity.description}</p>
+                                                                            <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-300">{activity.description}</p>
                                                                         )}
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex items-center gap-2 ml-4">
+                                                            <div className="flex items-center gap-2 border-t border-neutral-100 pt-3 dark:border-white/5 sm:ml-4 sm:border-0 sm:pt-0">
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
+                                                                    className="h-11 flex-1 sm:h-9 sm:flex-none"
+                                                                    aria-label="Edit activity"
                                                                     onClick={() => openEditDialog(activity)}
                                                                 >
                                                                     <Edit className="h-4 w-4" />
+                                                                    <span className="sm:hidden">Edit</span>
                                                                 </Button>
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
+                                                                    className="h-11 flex-1 sm:h-9 sm:flex-none"
+                                                                    aria-label="Delete activity"
                                                                     onClick={() => handleDelete(activity.id)}
                                                                     disabled={deletingId === activity.id}
                                                                 >
                                                                     {deletingId === activity.id ? (
                                                                         <LoadingSpinner size="sm" />
                                                                     ) : (
-                                                                        <Trash2 className="h-4 w-4 text-red-600" />
+                                                                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                                                                     )}
+                                                                    <span className="sm:hidden">Delete</span>
                                                                 </Button>
                                                             </div>
                                                         </div>
@@ -600,53 +608,11 @@ export default function CampActivitiesPage() {
                 )}
 
                 {/* Stats Summary */}
-                <div className="grid gap-4 md:grid-cols-4">
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Total Activities
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{activities.length}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Scheduled
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-primary">
-                                {activities.filter(a => a.status === 'scheduled').length}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Completed
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-green-600">
-                                {activities.filter(a => a.status === 'completed').length}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Unique Dates
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-purple-600">
-                                {sortedDates.length}
-                            </div>
-                        </CardContent>
-                    </Card>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    <StatCard label="Total activities" value={activities.length} icon={Calendar} />
+                    <StatCard label="Scheduled" value={activities.filter(a => a.status === 'scheduled').length} icon={Clock} />
+                    <StatCard label="Completed" value={activities.filter(a => a.status === 'completed').length} tone="success" icon={CheckCircle2} />
+                    <StatCard label="Unique dates" value={sortedDates.length} />
                 </div>
             </div>
         </div>

@@ -13,7 +13,7 @@ export function ImportContactWarningsBadge({
   return (
     <Badge
       variant="outline"
-      className={`text-xs border-amber-300 bg-amber-50 text-amber-900 ${className ?? ''}`}
+      className={`text-xs border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 ${className ?? ''}`}
       title={warnings.join('; ')}
     >
       <AlertCircle className="h-3 w-3 mr-1" />
@@ -26,11 +26,11 @@ export function ImportContactWarningsList({ warnings }: { warnings?: string[] })
   if (!warnings?.length) return null
 
   return (
-    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
       <p className="font-medium mb-1">Import contact warnings</p>
       <ul className="list-disc pl-5 space-y-0.5">
         {warnings.map((warning) => (
-          <li key={warning}>{warning}</li>
+          <li key={warning} className="break-words">{warning}</li>
         ))}
       </ul>
     </div>

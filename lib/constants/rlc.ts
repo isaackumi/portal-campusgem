@@ -53,11 +53,11 @@ export const RLC_PIPELINE_LABELS: Record<RlcPipelineStatus, string> = {
 }
 
 export const RLC_PIPELINE_COLORS: Record<RlcPipelineStatus, string> = {
-  first_visit: 'bg-sky-100 text-sky-800',
-  follow_up: 'bg-amber-100 text-amber-800',
-  new_member: 'bg-emerald-100 text-emerald-800',
-  full_member: 'bg-indigo-100 text-indigo-800',
-  inactive: 'bg-slate-100 text-slate-600',
+  first_visit: 'border-transparent bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-600/20 dark:bg-sky-400/10 dark:text-sky-300 dark:ring-sky-400/20',
+  follow_up: 'border-transparent bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-400/10 dark:text-amber-300 dark:ring-amber-400/20',
+  new_member: 'border-transparent bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20',
+  full_member: 'border-transparent bg-brand-50 text-brand-800 ring-1 ring-inset ring-brand-600/20 dark:bg-brand-400/10 dark:text-brand-300 dark:ring-brand-400/20',
+  inactive: 'border-transparent bg-neutral-100 text-neutral-600 ring-1 ring-inset ring-neutral-500/10 dark:bg-white/[0.06] dark:text-neutral-300 dark:ring-white/10',
 }
 
 export const RLC_FOLLOW_UP_STATUSES: VisitorFollowUpStatus[] = ['pending', 'in_progress', 'completed']

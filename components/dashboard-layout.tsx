@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { AppHeader } from '@/components/app-header'
 import { Sidebar, MobileSidebar } from '@/components/sidebar'
+import { MobileTabBar } from '@/components/mobile-tab-bar'
 import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
@@ -39,14 +40,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <AppHeader
           collapsed={collapsed}
           onToggleSidebar={() => setCollapsed((value) => !value)}
-          onOpenMobile={() => setMobileOpen(true)}
         />
 
-        <main data-app-main className="px-2 pb-2 sm:px-3 sm:pb-3 lg:pl-0">
-          <div className="app-content-panel min-h-[calc(100dvh-4rem)] min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        {/* Phones: edge-to-edge content with room for the bottom tab bar. From lg: framed panel. */}
+        <main
+          data-app-main
+          className="pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-3 lg:pb-3 lg:pl-0"
+        >
+          <div className="app-content-panel min-h-[calc(100dvh-4rem)] min-w-0 px-4 pb-6 pt-4 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             {children}
           </div>
         </main>
+        <MobileTabBar onOpenMenu={() => setMobileOpen(true)} />
       </div>
     </div>
   )

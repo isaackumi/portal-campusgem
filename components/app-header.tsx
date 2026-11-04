@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { LogOut, Menu, PanelLeft, Search } from 'lucide-react'
+import { LogOut, PanelLeft, Search } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { BrandMark } from '@/components/brand-mark'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,11 +43,9 @@ function CampStatusChip() {
 export function AppHeader({
   collapsed,
   onToggleSidebar,
-  onOpenMobile,
 }: {
   collapsed: boolean
   onToggleSidebar: () => void
-  onOpenMobile: () => void
 }) {
   const { user, signOut } = useAuth()
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -72,15 +71,10 @@ export function AppHeader({
   const roleLabel = isUserRole(role) ? ROLE_LABELS[role] : 'Member'
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-x-3 bg-neutral-100/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-neutral-100/80 dark:bg-neutral-950/90 sm:gap-x-4 sm:px-4 lg:pl-3 lg:pr-4">
-      <button
-        type="button"
-        className="-m-2.5 p-2.5 text-neutral-700 dark:text-white lg:hidden"
-        onClick={onOpenMobile}
-      >
-        <span className="sr-only">Open sidebar</span>
-        <Menu className="h-6 w-6" aria-hidden />
-      </button>
+    <header className="sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] shrink-0 items-center gap-x-3 bg-neutral-100/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-neutral-100/80 dark:bg-neutral-950/90 sm:gap-x-4 sm:px-4 lg:pl-3 lg:pr-4">
+      <Link href="/dashboard" className="shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 lg:hidden" aria-label="Home">
+        <BrandMark size="sm" />
+      </Link>
 
       <button
         type="button"

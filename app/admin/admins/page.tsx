@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Copy, KeyRound, Link2, Lock, Phone, Search, ShieldCheck, UserPlus, Users } from 'lucide-react'
+import { Check, Copy, KeyRound, Link2, Lock, Search, ShieldCheck, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,6 +30,9 @@ import {
 } from '@/lib/auth/roles'
 import type { AppUser, UserRole } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { roleTone } from '@/lib/ui/chip-tones'
+import { PersonAvatar } from '@/components/ui/person'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { isValidPhone } from '@/lib/phone'
 
 const ROLE_SUMMARIES: Record<UserRole, string> = {
@@ -39,15 +42,6 @@ const ROLE_SUMMARIES: Record<UserRole, string> = {
   finance_officer: 'Finance, camp payments, read-only members and attendance.',
   member: 'Own dashboard, groups, attendance and celebrations.',
   visitor: 'Dashboard and attendance only.',
-}
-
-const ROLE_BADGE: Record<UserRole, string> = {
-  admin: 'bg-brand-100 text-brand-900 dark:bg-brand-900/40 dark:text-brand-200',
-  pastor: 'bg-violet-100 text-violet-900 dark:bg-violet-900/40 dark:text-violet-200',
-  elder: 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200',
-  finance_officer: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200',
-  member: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-200',
-  visitor: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300',
 }
 
 function hasElevatedAccess(user: AppUser): boolean {
@@ -125,19 +119,19 @@ export default function AccessManagementPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Access &amp; roles</h1>
-          <p className="mt-1 max-w-2xl text-sm text-neutral-600 dark:text-neutral-400">
+        <div className="min-w-0">
+          <h1 className="app-page-title">Access &amp; roles</h1>
+          <p className="app-page-description mt-1 max-w-2xl">
             Give people a role, then add individual permissions when someone needs a little more.
             Changes apply on their next page load — no need to sign out.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setNewPersonOpen(true)}>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <Button variant="outline" onClick={() => setNewPersonOpen(true)} className="h-11 sm:h-10">
             <UserPlus className="mr-2 h-4 w-4" />
             New person
           </Button>
-          <Button onClick={() => setPickerOpen(true)}>
+          <Button onClick={() => setPickerOpen(true)} className="h-11 sm:h-10">
             <KeyRound className="mr-2 h-4 w-4" />
             Grant access
           </Button>
@@ -153,7 +147,7 @@ export default function AccessManagementPage() {
         }}
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
         <RoleChip label="Everyone with access" active={roleFilter === 'all'} onClick={() => setRoleFilter('all')}
           count={Object.values(counts).reduce((a, b) => a + (b ?? 0), 0)} />
         {USER_ROLES.filter((r) => counts[r]).map((r) => (
@@ -162,72 +156,74 @@ export default function AccessManagementPage() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
-        <div className="border-b border-neutral-200 p-4 dark:border-neutral-700">
+      <div className="dashboard-panel overflow-hidden">
+        <div className="border-b border-neutral-200/80 p-3 dark:border-white/[0.06] sm:p-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-            <Input value={filter} onChange={(e) => setFilter(e.target.value)} className="pl-10"
-              placeholder="Filter by name, phone or membership ID" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+            <Input type="search" value={filter} onChange={(e) => setFilter(e.target.value)} className="h-11 pl-10 sm:h-10"
+              aria-label="Filter people with access"
+              placeholder="Name, phone or membership ID" />
           </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-16"><LoadingSpinner /></div>
         ) : error ? (
-          <p className="p-6 text-sm text-red-600">{error}</p>
+          <p className="p-6 text-sm text-red-600 dark:text-red-400">{error}</p>
         ) : staff.length === 0 ? (
-          <div className="py-16 text-center text-sm text-neutral-500">
-            <Users className="mx-auto mb-3 h-10 w-10 text-neutral-300" />
+          <div className="px-4 py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">
+            <Users className="mx-auto mb-3 h-10 w-10 text-neutral-300 dark:text-neutral-600" />
             No one matches. Use <strong>Grant access</strong> to give someone a role.
           </div>
         ) : (
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
+          <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
             {staff.map((person) => {
               const extra = person.permissions?.length ?? 0
               const locked = !canManageAdmins && person.role === 'admin'
               return (
-                <li key={person.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="truncate font-medium text-neutral-900 dark:text-white">{person.full_name}</span>
-                      {person.id === currentUser?.id && <Badge variant="outline">You</Badge>}
-                      <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', ROLE_BADGE[person.role])}>
-                        {ROLE_LABELS[person.role]}
-                      </span>
-                      {extra > 0 && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
-                          +{extra} extra
-                        </span>
-                      )}
-                      {person.phone && !isValidPhone(person.phone) && (
-                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/40 dark:text-red-200"
-                          title="This number is malformed, so signing in with the real number won't reach this account">
-                          Invalid phone
-                        </span>
-                      )}
-                      {!person.auth_uid && (
-                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/40 dark:text-red-200"
-                          title="Saving access will enable sign-in for this person">
-                          Can&apos;t sign in yet
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      {person.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{person.phone}</span>}
-                      {person.secondary_phone && (
-                        <span className="inline-flex items-center gap-1" title="Secondary phone — also works for sign-in">
-                          <Phone className="h-3 w-3" />{person.secondary_phone}
-                          <span className="app-overline">2nd</span>
-                        </span>
-                      )}
-                      {person.membership_id && <span className="font-mono">{person.membership_id}</span>}
+                <li key={person.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <PersonAvatar name={person.full_name} seed={person.id} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="min-w-0 truncate text-sm font-medium text-neutral-900 dark:text-white">{person.full_name}</span>
+                        {person.id === currentUser?.id && <Badge variant="outline">You</Badge>}
+                        <Badge variant={roleTone(person.role)}>{ROLE_LABELS[person.role]}</Badge>
+                        {extra > 0 && <Badge variant="warning">+{extra} extra</Badge>}
+                        {person.phone && !isValidPhone(person.phone) && (
+                          <Badge variant="danger" title="This number is malformed, so signing in with the real number won't reach this account">
+                            Invalid phone
+                          </Badge>
+                        )}
+                        {!person.auth_uid && (
+                          <Badge variant="danger" title="Saving access will enable sign-in for this person">
+                            Can&apos;t sign in yet
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
+                        {person.phone ? (
+                          <PhoneLink phone={person.phone} whatsapp={person.whatsapp} name={person.full_name} />
+                        ) : null}
+                        {person.secondary_phone && (
+                          <span className="inline-flex items-center gap-1" title="Secondary phone, also works for sign-in">
+                            <PhoneLink phone={person.secondary_phone} name={person.full_name} />
+                            <span className="app-overline">2nd</span>
+                          </span>
+                        )}
+                        {person.membership_id && <span className="font-mono">{person.membership_id}</span>}
+                      </div>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" disabled={locked} onClick={() => setEditing(person)}
-                    title={locked ? 'Only people who can manage administrators can edit an admin' : undefined}>
-                    {locked ? <Lock className="mr-2 h-3.5 w-3.5" /> : <ShieldCheck className="mr-2 h-3.5 w-3.5" />}
-                    Edit access
-                  </Button>
+                  <div className="flex items-center gap-2 pl-12 sm:pl-0">
+                    <QuickContactButtons phone={person.phone} whatsapp={person.whatsapp} name={person.full_name} />
+                    <Button variant="outline" disabled={locked} onClick={() => setEditing(person)}
+                      className="h-11 flex-1 sm:h-9 sm:flex-none"
+                      title={locked ? 'Only people who can manage administrators can edit an admin' : undefined}>
+                      {locked ? <Lock className="mr-2 h-3.5 w-3.5" /> : <ShieldCheck className="mr-2 h-3.5 w-3.5" />}
+                      Edit access
+                    </Button>
+                  </div>
                 </li>
               )
             })}
@@ -281,13 +277,14 @@ function RoleChip({ label, count, active, onClick }: { label: string; count: num
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-full border px-3 py-1.5 text-sm transition-colors',
+        'inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full border px-3.5 text-sm transition-colors sm:min-h-9',
         active
-          ? 'border-brand-600 bg-brand-600 text-white'
-          : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
+          ? 'border-brand-600 bg-brand-600 text-white dark:border-brand-500 dark:bg-brand-500'
+          : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:border-white/20'
       )}
+      aria-pressed={active}
     >
-      {label} <span className={cn('ml-1 tabular-nums', active ? 'text-white/80' : 'text-neutral-400')}>{count}</span>
+      {label} <span className={cn('ml-1.5 tabular-nums', active ? 'text-white/80' : 'text-neutral-400 dark:text-neutral-500')}>{count}</span>
     </button>
   )
 }
@@ -320,33 +317,31 @@ function PersonPicker({
           <DialogDescription>Find the person by name, phone number or membership ID.</DialogDescription>
         </DialogHeader>
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10"
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+          <Input autoFocus type="search" value={query} onChange={(e) => setQuery(e.target.value)} className="h-11 pl-10 sm:h-10"
             placeholder="e.g. Divine, 0541234567, CG-2024-0001" />
         </div>
-        <div className="max-h-80 overflow-y-auto">
+        <div className="max-h-[50vh] overflow-y-auto sm:max-h-80">
           {query.trim().length < 2 ? (
-            <p className="py-6 text-center text-sm text-neutral-500">Type at least two characters.</p>
+            <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">Type at least two characters.</p>
           ) : results.length === 0 ? (
-            <div className="py-6 text-center text-sm text-neutral-500">
+            <div className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
               No match.{' '}
-              <button type="button" className="font-medium text-brand-700 underline dark:text-brand-300" onClick={onCreateNew}>
+              <button type="button" className="inline-flex min-h-11 items-center font-medium text-brand-700 underline dark:text-brand-300" onClick={onCreateNew}>
                 Add them as a new person
               </button>
             </div>
           ) : (
-            <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
+            <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
               {results.map((u) => (
                 <li key={u.id}>
                   <button type="button" onClick={() => onPick(u)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700/50">
+                    className="flex min-h-14 w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700/50">
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-neutral-900 dark:text-white">{u.full_name}</span>
-                      <span className="block truncate text-xs text-neutral-500">{[u.phone, u.membership_id].filter(Boolean).join(' · ')}</span>
+                      <span className="block truncate font-mono text-xs text-neutral-500 dark:text-neutral-400">{[u.phone, u.membership_id].filter(Boolean).join(' · ')}</span>
                     </span>
-                    <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', ROLE_BADGE[u.role])}>
-                      {ROLE_LABELS[u.role]}
-                    </span>
+                    <Badge variant={roleTone(u.role)} className="shrink-0">{ROLE_LABELS[u.role]}</Badge>
                   </button>
                 </li>
               ))}
@@ -405,27 +400,27 @@ function NewPersonDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="np-name">Full name</Label>
-            <Input id="np-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <Input id="np-name" className="h-11 sm:h-10" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="np-phone">Phone number (used to sign in)</Label>
-            <Input id="np-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="024XXXXXXX" />
+            <Input id="np-phone" type="tel" inputMode="tel" className="h-11 sm:h-10" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="024XXXXXXX" />
           </div>
           <div className="space-y-2">
             <Label>Role</Label>
             <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-11 sm:h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {USER_ROLES.filter((r) => canManageAdmins || r !== 'admin').map((r) => (
                   <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-neutral-500">{ROLE_SUMMARIES[role]}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">{ROLE_SUMMARIES[role]}</p>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-            <Button onClick={submit} disabled={saving}>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving} className="h-11 sm:h-10">Cancel</Button>
+            <Button onClick={submit} disabled={saving} className="h-11 sm:h-10">
               {saving ? <LoadingSpinner size="sm" className="mr-2" /> : null}
               Add person
             </Button>
@@ -501,7 +496,7 @@ function AccessEditor({
             <Label>Main phone</Label>
             <p className="font-mono text-sm text-neutral-700 dark:text-neutral-300">
               {person.phone || '—'}
-              {person.phone && !isValidPhone(person.phone) && <span className="ml-2 font-sans text-xs text-red-600">invalid</span>}
+              {person.phone && !isValidPhone(person.phone) && <span className="ml-2 font-sans text-xs text-red-600 dark:text-red-400">invalid</span>}
             </p>
           </div>
           <div className="space-y-1">
@@ -509,6 +504,8 @@ function AccessEditor({
             <Input
               id="secondary-phone"
               type="tel"
+              inputMode="tel"
+              className="h-11 sm:h-10"
               value={secondaryPhone}
               onChange={(e) => setSecondaryPhone(e.target.value)}
               placeholder="e.g. a new number they changed to"
@@ -530,8 +527,8 @@ function AccessEditor({
                   className={cn(
                     'rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50',
                     role === r
-                      ? 'border-brand-600 bg-brand-50 ring-1 ring-brand-600 dark:bg-brand-900/30'
-                      : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700'
+                      ? 'border-brand-600 bg-brand-50 ring-1 ring-brand-600 dark:border-brand-400 dark:bg-brand-400/10 dark:ring-brand-400'
+                      : 'border-neutral-200 hover:border-neutral-300 dark:border-white/10 dark:hover:border-white/20'
                   )}
                 >
                   <span className="flex items-center justify-between text-sm font-medium text-neutral-900 dark:text-white">
@@ -544,39 +541,39 @@ function AccessEditor({
             })}
           </div>
           {isSelf && person.role === 'admin' && (
-            <p className="text-xs text-neutral-500">You can&apos;t remove your own administrator role.</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">You can&apos;t remove your own administrator role.</p>
           )}
         </section>
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
             <Label>Permissions</Label>
-            <span className="text-xs text-neutral-500">{total} of {Object.keys(PERMISSION_LABELS).length} allowed</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">{total} of {Object.keys(PERMISSION_LABELS).length} allowed</span>
           </div>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Greyed ticks come with the role. Tick anything else this person needs on top of it.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {PERMISSION_GROUPS.map((group) => (
-              <fieldset key={group.label} className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-700">
+              <fieldset key={group.label} className="rounded-xl border border-neutral-200 p-3 dark:border-white/10">
                 <legend className="px-1 app-overline">{group.label}</legend>
-                <div className="space-y-2">
+                <div className="space-y-0.5 sm:space-y-2">
                   {group.permissions.map((permission) => {
                     const inherited = fromRole.has(permission)
                     const locked = !canManageAdmins && adminOnly.includes(permission)
                     const checked = inherited || extra.includes(permission)
                     const id = `perm-${permission}`
                     return (
-                      <div key={permission} className="flex items-center gap-2">
+                      <div key={permission} className="flex min-h-11 items-center gap-2 sm:min-h-0">
                         <Checkbox
                           id={id}
                           checked={checked}
                           disabled={inherited || locked}
                           onCheckedChange={(v) => toggle(permission, v === true)}
                         />
-                        <label htmlFor={id} className={cn('text-sm', inherited ? 'text-neutral-500' : 'text-neutral-800 dark:text-neutral-200')}>
+                        <label htmlFor={id} className={cn('flex-1 py-1 text-sm', inherited ? 'text-neutral-500 dark:text-neutral-400' : 'text-neutral-800 dark:text-neutral-200')}>
                           {PERMISSION_LABELS[permission]}
-                          {inherited && <span className="ml-1 text-[11px] text-neutral-400">(role)</span>}
+                          {inherited && <span className="ml-1 text-[11px] text-neutral-400 dark:text-neutral-500">(role)</span>}
                         </label>
                       </div>
                     )
@@ -587,9 +584,9 @@ function AccessEditor({
           </div>
         </section>
 
-        <div className="flex justify-end gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-700">
-          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={save} disabled={saving}>
+        <div className="flex gap-2 border-t border-neutral-200 pt-4 dark:border-white/10 sm:justify-end">
+          <Button variant="outline" onClick={onClose} disabled={saving} className="h-11 flex-1 sm:h-10 sm:flex-none">Cancel</Button>
+          <Button onClick={save} disabled={saving} className="h-11 flex-1 sm:h-10 sm:flex-none">
             {saving ? <LoadingSpinner size="sm" className="mr-2" /> : null}
             Save access
           </Button>
@@ -658,10 +655,10 @@ function DuplicatePeoplePanel({
   const visible = expanded ? groups : groups.slice(0, 3)
 
   return (
-    <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/20 sm:p-5">
+    <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-400/20 dark:bg-amber-400/[0.06] sm:p-5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-        <h2 className="flex items-center gap-2 font-semibold text-neutral-900 dark:text-white">
-          <Copy className="h-4 w-4 text-amber-600" aria-hidden />
+        <h2 className="app-section-title flex items-center gap-2">
+          <Copy className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
           {groups.length} possible duplicate {groups.length === 1 ? 'person' : 'people'}
         </h2>
         <p className="text-xs text-neutral-600 dark:text-neutral-400">
@@ -674,7 +671,7 @@ function DuplicatePeoplePanel({
           const keepId = keepByGroup[group.key] ?? group.suggestedKeepId
           const keep = group.records.find((r) => r.id === keepId) ?? group.records[0]
           return (
-            <li key={group.key} className="rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-800">
+            <li key={group.key} className="rounded-xl border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-neutral-800">
               <p className="mb-2 text-sm font-medium text-neutral-900 dark:text-white">{group.name}</p>
               <div className="grid gap-2 md:grid-cols-2">
                 {group.records.map((record) => {
@@ -687,33 +684,31 @@ function DuplicatePeoplePanel({
                       className={cn(
                         'rounded-lg border p-3 text-sm',
                         isKeep
-                          ? 'border-brand-600 ring-1 ring-brand-600'
-                          : 'border-neutral-200 dark:border-neutral-700'
+                          ? 'border-brand-600 ring-1 ring-brand-600 dark:border-brand-400 dark:ring-brand-400'
+                          : 'border-neutral-200 dark:border-white/10'
                       )}
                     >
                       <label className="flex cursor-pointer items-start gap-2">
                         <input
                           type="radio"
                           name={`keep-${group.key}`}
-                          className="mt-1 accent-brand-600"
+                          className="mt-0.5 h-5 w-5 accent-brand-600"
                           checked={isKeep}
                           onChange={() => setKeepByGroup((prev) => ({ ...prev, [group.key]: record.id }))}
                         />
                         <span className="min-w-0 flex-1">
                           <span className="flex flex-wrap items-center gap-1.5">
-                            <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', ROLE_BADGE[record.role])}>
-                              {ROLE_LABELS[record.role]}
-                            </span>
+                            <Badge variant={roleTone(record.role)}>{ROLE_LABELS[record.role]}</Badge>
                             {isKeep && <span className="text-xs font-medium text-brand-700 dark:text-brand-300">Keep</span>}
                           </span>
                           <span className="mt-1 block font-mono text-xs text-neutral-600 dark:text-neutral-300">
                             {record.phone || 'No phone'}
-                            {record.phone && !phoneOk && <span className="ml-1 font-sans text-red-600">(invalid)</span>}
+                            {record.phone && !phoneOk && <span className="ml-1 font-sans text-red-600 dark:text-red-400">(invalid)</span>}
                           </span>
                           {record.secondary_phone && (
-                            <span className="block font-mono text-xs text-neutral-500">2nd: {record.secondary_phone}</span>
+                            <span className="block font-mono text-xs text-neutral-500 dark:text-neutral-400">2nd: {record.secondary_phone}</span>
                           )}
-                          <span className="block text-xs text-neutral-500">
+                          <span className="block text-xs text-neutral-500 dark:text-neutral-400">
                             {record.membership_id} · added {formatDay(record.created_at)}
                           </span>
                         </span>
@@ -722,7 +717,7 @@ function DuplicatePeoplePanel({
                         <Button
                           size="sm"
                           variant="outline"
-                          className="mt-3 w-full"
+                          className="mt-3 h-11 w-full sm:h-9"
                           disabled={!phoneOk || busy !== null || adminLocked}
                           title={
                             !phoneOk
@@ -747,7 +742,7 @@ function DuplicatePeoplePanel({
       </ul>
 
       {groups.length > 3 && (
-        <Button variant="ghost" size="sm" className="mt-3" onClick={() => setExpanded((v) => !v)}>
+        <Button variant="ghost" size="sm" className="mt-3 h-11 w-full sm:h-9 sm:w-auto" onClick={() => setExpanded((v) => !v)}>
           {expanded ? 'Show fewer' : `Show all ${groups.length}`}
         </Button>
       )}

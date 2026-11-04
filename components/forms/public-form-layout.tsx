@@ -82,7 +82,7 @@ function PublicFormTitleCard({
           <img src={coverUrl} alt="" className="h-full w-full object-cover" loading="eager" />
         </div>
       ) : null}
-      <div className="px-5 py-6 sm:px-8 sm:py-8">
+      <div className="px-4 py-5 sm:px-8 sm:py-8">
         <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-medium text-slate-500">
           <span className={cn('rounded-full px-2.5 py-0.5', theme.badge)}>
             {fillActive ? 'Step 1 of 2' : 'Step 2 of 2'}
@@ -161,7 +161,7 @@ export function PublicFormPhoneLookup({
   const theme = usePublicFormTheme()
 
   return (
-    <section className="rounded-lg border border-slate-200/80 bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+    <section className="rounded-lg border border-slate-200/80 bg-white px-4 py-5 shadow-sm sm:px-6 sm:py-6">
       <Label htmlFor="lookup-phone" className="text-base font-medium text-slate-900">
         {label}
         {required ? <span className="text-red-500"> *</span> : null}
@@ -171,7 +171,7 @@ export function PublicFormPhoneLookup({
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <Input
           id="lookup-phone"
-          className="h-11 flex-1 border-slate-300 bg-white text-base shadow-none"
+          className="h-12 flex-1 border-slate-300 bg-white text-base text-slate-900 shadow-none sm:h-11"
           inputMode="tel"
           autoComplete="tel"
           value={value}
@@ -182,7 +182,7 @@ export function PublicFormPhoneLookup({
           <Button
             type="button"
             variant="outline"
-            className="h-11 shrink-0 border-slate-300 px-5"
+            className="h-12 shrink-0 border-slate-300 bg-white px-5 text-base text-slate-900 hover:bg-slate-50 sm:h-11 sm:text-sm"
             onClick={onLookup}
             disabled={lookupLoading}
           >
@@ -227,7 +227,9 @@ export function PublicFormSubmitBar({
   return (
     <div
       className={cn(
-        'mt-4 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:items-center sm:justify-end',
+        // Phones: pinned to the bottom of the screen so Next/Submit is always under the thumb.
+        'sticky bottom-0 z-10 -mx-4 mt-4 flex items-center gap-2 border-t border-slate-200 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur',
+        'sm:static sm:mx-0 sm:mt-6 sm:justify-end sm:gap-3 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none',
         className
       )}
     >
@@ -246,7 +248,7 @@ export function PublicFormPrimaryButton({
     <Button
       {...props}
       className={cn(
-        'h-11 min-w-[140px] rounded-md px-8 text-sm font-medium text-white shadow-none',
+        'h-12 w-full flex-1 rounded-md px-6 text-base font-medium text-white shadow-none sm:h-11 sm:w-auto sm:min-w-[140px] sm:flex-none sm:px-8 sm:text-sm',
         theme.button,
         className
       )}
@@ -330,9 +332,9 @@ export function PublicFormSuccess({ title }: { title: string; form?: ChurchForm 
 export function PublicFormReviewRow({ label, value }: { label: string; value: string }) {
   const empty = value === '—' || !value.trim()
   return (
-    <section className="rounded-lg border border-slate-200/80 bg-white px-5 py-4 shadow-sm sm:px-6 sm:py-5">
+    <section className="rounded-lg border border-slate-200/80 bg-white px-4 py-4 shadow-sm sm:px-6 sm:py-5">
       <p className="text-sm font-medium text-slate-700">{label}</p>
-      <p className={cn('mt-2 text-base', empty ? 'italic text-slate-400' : 'text-slate-900')}>
+      <p className={cn('mt-2 whitespace-pre-wrap break-words text-base', empty ? 'italic text-slate-400' : 'text-slate-900')}>
         {empty ? 'No answer' : value}
       </p>
     </section>
@@ -344,15 +346,17 @@ export function PublicFormReviewActions({
   onSubmit,
   submitting,
   disabled,
+  className,
 }: {
   onEdit: () => void
   onSubmit: () => void
   submitting: boolean
   disabled: boolean
+  className?: string
 }) {
   return (
-    <PublicFormSubmitBar>
-      <Button type="button" variant="ghost" className="h-11" onClick={onEdit}>
+    <PublicFormSubmitBar className={className}>
+      <Button type="button" variant="ghost" className="h-12 shrink-0 px-4 text-base text-slate-700 hover:bg-slate-100 hover:text-slate-900 sm:h-11 sm:text-sm" onClick={onEdit}>
         Back
       </Button>
       <PublicFormPrimaryButton type="button" onClick={onSubmit} disabled={submitting || disabled}>

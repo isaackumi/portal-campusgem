@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { StatCard } from '@/components/ui/stat-card'
+import { PageHeader } from '@/components/layout/page-header'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +22,6 @@ import {
   Calendar,
   BarChart3,
   Plus,
-  Phone,
   Clock,
   CheckCircle,
   XCircle,
@@ -105,18 +106,18 @@ export default function SMSPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      sent: { color: 'bg-slate-100 text-slate-700', icon: Send },
-      delivered: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      failed: { color: 'bg-red-100 text-red-800', icon: XCircle }
+      pending: { variant: 'warning' as const, icon: Clock },
+      sent: { variant: 'secondary' as const, icon: Send },
+      delivered: { variant: 'success' as const, icon: CheckCircle },
+      failed: { variant: 'danger' as const, icon: XCircle }
     }
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
     const Icon = config.icon
 
     return (
-      <Badge className={`${config.color} flex items-center gap-1`}>
-        <Icon className="h-3 w-3" />
+      <Badge variant={config.variant}>
+        <Icon className="h-3 w-3" aria-hidden />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     )
@@ -124,19 +125,19 @@ export default function SMSPage() {
 
   const getTypeBadge = (type: string) => {
     const typeConfig = {
-      birthday: { color: 'bg-pink-100 text-pink-800', icon: Calendar },
-      anniversary: { color: 'bg-red-100 text-red-800', icon: Users },
-      group: { color: 'bg-purple-100 text-purple-800', icon: Users },
-      event: { color: 'bg-slate-100 text-slate-700', icon: Calendar },
-      custom: { color: 'bg-gray-100 text-gray-800', icon: MessageSquare }
+      birthday: { variant: 'brand' as const, icon: Calendar },
+      anniversary: { variant: 'brand' as const, icon: Users },
+      group: { variant: 'secondary' as const, icon: Users },
+      event: { variant: 'secondary' as const, icon: Calendar },
+      custom: { variant: 'outline' as const, icon: MessageSquare }
     }
 
     const config = typeConfig[type as keyof typeof typeConfig] || typeConfig.custom
     const Icon = config.icon
 
     return (
-      <Badge className={`${config.color} flex items-center gap-1`}>
-        <Icon className="h-3 w-3" />
+      <Badge variant={config.variant}>
+        <Icon className="h-3 w-3" aria-hidden />
         {type.charAt(0).toUpperCase() + type.slice(1)}
       </Badge>
     )
@@ -171,7 +172,7 @@ export default function SMSPage() {
           <Card>
             <CardContent className="p-8 text-center">
               <MessageSquare className="h-10 w-10 text-primary mx-auto mb-3" />
-              <p className="text-slate-700">Please sign in to manage SMS communications.</p>
+              <p className="text-neutral-700 dark:text-neutral-300">Please sign in to manage SMS communications.</p>
             </CardContent>
           </Card>
         </div>
@@ -183,12 +184,10 @@ export default function SMSPage() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="app-page-title mb-2">
-            SMS Management
-          </h1>
-          <p className="text-slate-600">Manage SMS communications for birthdays, anniversaries, groups, and events</p>
-        </div>
+        <PageHeader
+          title="SMS Management"
+          description="Manage SMS communications for birthdays, anniversaries, groups, and events"
+        />
 
         {error && (
           <ErrorDisplay
@@ -200,18 +199,18 @@ export default function SMSPage() {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard label="Total sent" value={stats.total_sent} />
-            <StatCard label="Delivered" value={stats.delivered} />
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
+            <StatCard className="p-4 sm:p-5" label="Total sent" value={stats.total_sent} />
+            <StatCard className="p-4 sm:p-5" label="Delivered" value={stats.delivered} />
 
-            <StatCard label="Pending" value={stats.pending} />
-            <StatCard label="This month" value={stats.this_month} />
+            <StatCard className="p-4 sm:p-5" label="Pending" value={stats.pending} />
+            <StatCard className="p-4 sm:p-5" label="This month" value={stats.this_month} />
           </div>
         )}
 
         {/* Main Content */}
         <Tabs defaultValue="messages" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-grid">
             <TabsTrigger value="messages">Messages</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -221,11 +220,12 @@ export default function SMSPage() {
           <TabsContent value="messages" className="space-y-6">
             {/* Filters */}
             <Card>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+                  <div className="relative col-span-2 md:col-span-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4 dark:text-neutral-400" />
                     <Input
+                      type="search"
                       placeholder="Search messages..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -260,7 +260,7 @@ export default function SMSPage() {
                     </SelectContent>
                   </Select>
 
-                  <Button onClick={handleSendTestMessage} variant="outline">
+                  <Button onClick={handleSendTestMessage} variant="outline" className="col-span-2 h-11 md:col-span-1 md:h-10">
                     <Send className="h-4 w-4 mr-2" />
                     Send Test
                   </Button>
@@ -281,33 +281,33 @@ export default function SMSPage() {
                   </div>
                 ) : filteredMessages.length === 0 ? (
                   <div className="text-center py-8">
-                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-slate-500">No messages found</p>
+                    <MessageSquare className="h-12 w-12 text-neutral-400 mx-auto mb-4 dark:text-neutral-400" />
+                    <p className="text-neutral-500 dark:text-neutral-400">No messages found</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {filteredMessages.map((message) => (
-                      <div key={message.id} className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-slate-900">{message.recipient.name}</h4>
-                              <Phone className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-slate-500">{message.recipient.phone}</span>
+                      <div key={message.id} className="rounded-lg border p-3 transition-colors hover:bg-neutral-50 dark:border-white/10 dark:hover:bg-white/[0.06] sm:p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <h4 className="min-w-0 break-words font-medium text-neutral-900 dark:text-neutral-100">{message.recipient.name}</h4>
+                              <PhoneLink phone={message.recipient.phone} name={message.recipient.name} className="text-sm text-neutral-500 dark:text-neutral-400" />
                               {message.recipient.membership_id && (
                                 <Badge variant="outline" className="text-xs">
                                   {message.recipient.membership_id}
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-slate-700 mb-3">{message.message}</p>
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <p className="mb-3 break-words text-neutral-700 dark:text-neutral-300">{message.message}</p>
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
                               {getStatusBadge(message.status)}
                               {getTypeBadge(message.type)}
                               <span>•</span>
                               <span>{new Date(message.created_at).toLocaleString()}</span>
                             </div>
                           </div>
+                          <QuickContactButtons phone={message.recipient.phone} name={message.recipient.name} />
                         </div>
                       </div>
                     ))}
@@ -321,12 +321,12 @@ export default function SMSPage() {
           <TabsContent value="templates" className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <CardTitle>SMS Templates</CardTitle>
                     <CardDescription>Manage SMS message templates</CardDescription>
                   </div>
-                  <Button>
+                  <Button className="h-11 w-full sm:h-10 sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Template
                   </Button>
@@ -335,29 +335,29 @@ export default function SMSPage() {
               <CardContent>
                 {templates.length === 0 ? (
                   <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-slate-500">No templates found</p>
+                    <FileText className="h-12 w-12 text-neutral-400 mx-auto mb-4 dark:text-neutral-400" />
+                    <p className="text-neutral-500 dark:text-neutral-400">No templates found</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {templates.map((template) => (
-                      <div key={template.id} className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                      <div key={template.id} className="rounded-lg border p-3 transition-colors hover:bg-neutral-50 dark:border-white/10 dark:hover:bg-white/[0.06] sm:p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-slate-900">{template.name}</h4>
+                              <h4 className="font-medium text-neutral-900 dark:text-neutral-100">{template.name}</h4>
                               {getTypeBadge(template.type)}
                             </div>
-                            <p className="text-slate-700 mb-3">{template.template}</p>
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <p className="mb-3 break-words text-neutral-700 dark:text-neutral-300">{template.template}</p>
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
                               <span>Variables: {template.variables.join(', ')}</span>
                               <span>•</span>
                               <span>Created: {new Date(template.created_at).toLocaleDateString()}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm">Edit</Button>
-                            <Button variant="outline" size="sm">Delete</Button>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" className="h-10 flex-1 sm:h-8 sm:flex-none">Edit</Button>
+                            <Button variant="outline" size="sm" className="h-10 flex-1 sm:h-8 sm:flex-none">Delete</Button>
                           </div>
                         </div>
                       </div>
@@ -389,13 +389,13 @@ export default function SMSPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{count}</span>
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
+                            <div className="h-2 w-16 rounded-full bg-neutral-200 dark:bg-white/10 sm:w-20">
                               <div
                                 className="bg-primary h-2 rounded-full"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            <span className="text-sm text-slate-500 w-12 text-right">
+                            <span className="text-sm text-neutral-500 w-12 text-right dark:text-neutral-400">
                               {percentage.toFixed(1)}%
                             </span>
                           </div>
@@ -414,9 +414,9 @@ export default function SMSPage() {
                 <CardContent>
                   <div className="space-y-4">
                     {[
-                      { status: 'delivered', label: 'Delivered', color: 'bg-green-600' },
+                      { status: 'delivered', label: 'Delivered', color: 'bg-emerald-600' },
                       { status: 'sent', label: 'Sent', color: 'bg-primary' },
-                      { status: 'pending', label: 'Pending', color: 'bg-yellow-600' },
+                      { status: 'pending', label: 'Pending', color: 'bg-amber-500' },
                       { status: 'failed', label: 'Failed', color: 'bg-red-600' }
                     ].map((item) => {
                       const count = messages.filter(m => m.status === item.status).length
@@ -429,13 +429,13 @@ export default function SMSPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{count}</span>
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
+                            <div className="h-2 w-16 rounded-full bg-neutral-200 dark:bg-white/10 sm:w-20">
                               <div
                                 className={`${item.color} h-2 rounded-full`}
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            <span className="text-sm text-slate-500 w-12 text-right">
+                            <span className="text-sm text-neutral-500 w-12 text-right dark:text-neutral-400">
                               {percentage.toFixed(1)}%
                             </span>
                           </div>

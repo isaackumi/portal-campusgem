@@ -80,7 +80,7 @@ export function FieldOptionsEditor({
       </div>
       <div className="space-y-2">
         {options.length === 0 ? (
-          <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-muted-foreground">
+          <p className="rounded-md border border-dashed border-neutral-200 bg-neutral-50/80 px-3 py-2 text-sm text-muted-foreground dark:border-white/10 dark:bg-white/[0.04]">
             No choices yet — add at least one option below.
           </p>
         ) : (

@@ -1,44 +1,34 @@
-'use client'
-
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CreditCard, ArrowLeft } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
 
 export default function FinancialPaymentsPage() {
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-3xl space-y-6 p-6">
-        <Button variant="ghost" asChild>
-          <Link href="/dashboard">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Dashboard
-          </Link>
-        </Button>
-        <Card className="border-sky-100 shadow-sm">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-6 w-6 text-sky-600" />
-              <CardTitle>Payments</CardTitle>
-            </div>
-            <CardDescription>
-              General church payments and reconciliation — separate from camp registration fees.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p>
-              For <strong>Camp Meeting</strong> fee tracking and QR check-in, use{' '}
-              <Link className="font-medium text-primary underline" href="/admin/camp-meeting/payments">
-                Admin → Camp → Payments
-              </Link>
-              .
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div>
+          <h1 className="app-page-title">Payments</h1>
+          <p className="app-page-description mt-1">General church payments and reconciliation.</p>
+        </div>
+        <section className="dashboard-panel p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 dark:bg-brand-400/10 dark:text-brand-300 dark:ring-brand-400/20">
+              <CreditCard className="h-4 w-4" aria-hidden />
+            </span>
+            <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+              General church payments are coming soon. Camp meeting fees, receipts and QR check-in are tracked under Camp payments.
             </p>
-            <Button asChild variant="outline">
-              <Link href="/admin/camp-meeting/payments">Open camp payments</Link>
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+          <Button asChild variant="outline" className="h-11 justify-start sm:h-10 sm:justify-center">
+            <Link href="/admin/camp-meeting/payments">
+              <CreditCard className="mr-2 h-4 w-4" aria-hidden />
+              Open camp payments
+            </Link>
+          </Button>
+          </div>
+        </section>
       </div>
     </DashboardLayout>
   )

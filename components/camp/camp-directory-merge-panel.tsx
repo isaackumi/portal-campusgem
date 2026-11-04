@@ -106,10 +106,10 @@ export function CampDirectoryMergePanel({ rows, onMerged }: CampDirectoryMergePa
           const mergeCount = registrationIdsToMerge(group, primaryPhoneKey).length
 
           return (
-            <div key={group.nameKey} className="rounded-lg border border-amber-200/80 bg-white p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-slate-900">{group.displayName}</p>
+            <div key={group.nameKey} className="rounded-lg border border-amber-200/80 bg-white p-3 dark:border-amber-400/20 dark:bg-neutral-900/40 sm:p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">{group.displayName}</p>
                   <p className="text-xs text-muted-foreground">
                     {group.rows.length} directory rows · {mergeCount} registration
                     {mergeCount === 1 ? '' : 's'} to reassign
@@ -117,7 +117,7 @@ export function CampDirectoryMergePanel({ rows, onMerged }: CampDirectoryMergePa
                 </div>
                 <Button
                   size="sm"
-                  className="bg-amber-800 hover:bg-amber-900"
+                  className="min-h-11 w-full bg-amber-800 text-white hover:bg-amber-900 dark:bg-amber-600 dark:hover:bg-amber-500 sm:min-h-9 sm:w-auto"
                   disabled={mergingKey === group.nameKey || mergeCount === 0}
                   onClick={() => void handleMerge(group)}
                 >
@@ -136,10 +136,10 @@ export function CampDirectoryMergePanel({ rows, onMerged }: CampDirectoryMergePa
                       key={row.phone_key}
                       type="button"
                       className={cn(
-                        'flex w-full items-start gap-3 rounded-md border px-3 py-2 text-left transition-colors',
+                        'flex min-h-11 w-full items-start gap-3 rounded-md border px-3 py-2 text-left transition-colors',
                         selected
-                          ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500/30'
-                          : 'border-slate-200 bg-white hover:bg-slate-50'
+                          ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500/30 dark:border-amber-400/60 dark:bg-amber-400/10'
+                          : 'border-neutral-200 bg-white hover:bg-neutral-50 dark:border-white/10 dark:bg-transparent dark:hover:bg-white/[0.03]'
                       )}
                       onClick={() =>
                         setPrimaryByGroup((current) => ({
@@ -151,14 +151,14 @@ export function CampDirectoryMergePanel({ rows, onMerged }: CampDirectoryMergePa
                       <span
                         className={cn(
                           'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
-                          selected ? 'border-amber-700 bg-amber-700 text-white' : 'border-slate-300'
+                          selected ? 'border-amber-700 bg-amber-700 text-white dark:border-amber-500 dark:bg-amber-500' : 'border-neutral-300 dark:border-white/20'
                         )}
                       >
                         {selected ? <Check className="h-3 w-3" /> : null}
                       </span>
-                      <span className="flex-1 space-y-1">
+                      <span className="min-w-0 flex-1 space-y-1">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{row.phone || 'No phone'}</span>
+                          <span className="font-mono font-medium">{row.phone || 'No phone'}</span>
                           {row.phone_key === group.suggestedPrimaryPhoneKey ? (
                             <Badge variant="outline" className="text-xs">
                               Suggested
@@ -170,7 +170,7 @@ export function CampDirectoryMergePanel({ rows, onMerged }: CampDirectoryMergePa
                             </Badge>
                           ) : null}
                         </span>
-                        <span className="block text-xs text-muted-foreground">
+                        <span className="block break-words text-xs text-muted-foreground">
                           {row.registration_count} registration{row.registration_count === 1 ? '' : 's'} ·{' '}
                           {row.years.map((y) => y.year).join(', ') || '—'}
                           {row.email?.trim() && row.email.trim() !== ' ' ? ` · ${row.email}` : ''}

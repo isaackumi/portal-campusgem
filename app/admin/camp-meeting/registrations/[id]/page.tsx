@@ -21,13 +21,20 @@ import {
     User, Phone, Mail, Calendar, MessageSquare, ArrowLeft, 
     Download, QrCode, CheckCircle2, XCircle, Edit, DollarSign,
     UserPlus, UserMinus, FileText, MapPin, GraduationCap,
-    Heart, Shield, Clock, CreditCard, Send, Cake, Sparkles, Pencil, ExternalLink
+    Heart, Shield, Clock, CreditCard, Send, Cake, Sparkles, Pencil, ExternalLink, MoreHorizontal
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { ImportContactWarningsBadge, ImportContactWarningsList } from '@/components/camp/import-contact-warnings'
 import { CampRegistrationRoomCard } from '@/components/camp/camp-registration-room-card'
 import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
 import { EditRegistrationDialog } from '@/components/camp/edit-registration-dialog'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
     memberDobIsoFromCampRegistration,
     MEMBER_DOB_PLACEHOLDER_YEAR,
@@ -561,34 +568,55 @@ export default function RegistrationDetailPage() {
     const qrScanValue = data.qr_code
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-neutral-950 dark:to-neutral-900">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div>
+            <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
                 {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="min-w-0">
+                        <button
+                            type="button"
                             onClick={() => router.push('/admin/camp-meeting/registrations')}
+                            className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 sm:min-h-9"
                         >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back to Registrations
-                        </Button>
-                        <div>
-                            <h1 className="app-page-title">
-                                Registration Details
-                            </h1>
-                            <p className="text-muted-foreground mt-1">{fullName}</p>
+                            <ArrowLeft className="h-4 w-4" aria-hidden />
+                            Registrations
+                        </button>
+                        <p className="app-overline">Camp registration</p>
+                        <div className="mt-1 flex items-center gap-3">
+                            <h1 className="app-page-title min-w-0 break-words">{fullName}</h1>
+                            <QuickContactButtons phone={data.phone} whatsapp={data.whatsapp} name={fullName} />
                         </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>button]:min-h-11 [&>button]:flex-1 sm:[&>button]:min-h-0 sm:[&>button]:flex-none">
                         {canEdit ? (
                             <Button onClick={() => setEditOpen(true)}>
                                 <Pencil className="mr-2 h-4 w-4" aria-hidden /> Edit details
                             </Button>
                         ) : null}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="sm:hidden">
+                                    <MoreHorizontal className="mr-2 h-4 w-4" aria-hidden /> More
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuItem className="min-h-11" onSelect={() => setStatusDialogOpen(true)}>
+                                    <Edit className="mr-2 h-4 w-4" aria-hidden /> Update status
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="min-h-11" onSelect={() => setRoleDialogOpen(true)}>
+                                    <User className="mr-2 h-4 w-4" aria-hidden /> Change role
+                                </DropdownMenuItem>
+                                {data.user_id ? (
+                                    <DropdownMenuItem asChild className="min-h-11">
+                                        <Link href={`/admin/users/${data.user_id}`}>
+                                            <ExternalLink className="mr-2 h-4 w-4" aria-hidden /> Open user profile
+                                        </Link>
+                                    </DropdownMenuItem>
+                                ) : null}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         {data.user_id ? (
-                            <Button variant="outline" asChild>
+                            <Button variant="outline" className="hidden sm:inline-flex" asChild>
                                 <Link href={`/admin/users/${data.user_id}`}>
                                     <ExternalLink className="mr-2 h-4 w-4" aria-hidden /> Open user profile
                                 </Link>
@@ -596,7 +624,7 @@ export default function RegistrationDetailPage() {
                         ) : null}
                         <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button variant="outline">
+                                <Button variant="outline" className="hidden sm:inline-flex">
                                     <User className="mr-2 h-4 w-4" /> Change role
                                 </Button>
                             </DialogTrigger>
@@ -649,8 +677,8 @@ export default function RegistrationDetailPage() {
                         </Dialog>
                         <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button variant="outline">
-                                    <Edit className="mr-2 h-4 w-4" /> Update Status
+                                <Button variant="outline" className="hidden sm:inline-flex">
+                                    <Edit className="mr-2 h-4 w-4" /> Update status
                                 </Button>
                             </DialogTrigger>
                             <DialogContent>
@@ -699,27 +727,21 @@ export default function RegistrationDetailPage() {
                     <div className="lg:col-span-2 space-y-6">
                         {/* Profile Information */}
                         <Card className="border-2">
-                            <CardHeader className="bg-slate-50 border-b">
+                            <CardHeader className="bg-neutral-50 dark:bg-white/[0.03] border-b">
                                 <div className="flex items-start justify-between">
-                                    <div>
-                                        <CardTitle className="text-2xl">{fullName}</CardTitle>
+                                    <div className="min-w-0">
+                                        <CardTitle className="app-section-title">Profile</CardTitle>
                                         <CardDescription className="flex flex-wrap items-center gap-2 mt-2">
-                                            <Badge
-                                                className={
-                                                    data.is_new_registrant
-                                                        ? 'border border-amber-200 bg-amber-50 text-amber-950 shadow-none'
-                                                        : 'border border-slate-200 bg-slate-100 text-slate-800 shadow-none'
-                                                }
-                                            >
+                                            <Badge variant={data.is_new_registrant ? 'warning' : 'secondary'}>
                                                 {data.is_new_registrant ? 'First timer' : 'Returning'}
                                             </Badge>
                                             <Badge
-                                                className={
+                                                variant={
                                                     data.status === 'checked_in'
-                                                        ? 'border border-emerald-200 bg-emerald-50 text-emerald-950 shadow-none'
+                                                        ? 'success'
                                                         : data.status === 'cancelled'
-                                                          ? 'border border-red-200 bg-red-50 text-red-900 shadow-none'
-                                                          : 'border border-slate-200 bg-slate-50 text-slate-900 shadow-none'
+                                                          ? 'danger'
+                                                          : 'secondary'
                                                 }
                                             >
                                                 {data.status === 'checked_in'
@@ -730,20 +752,21 @@ export default function RegistrationDetailPage() {
                                             </Badge>
                                             {data.payment_status && (
                                                 <Badge
-                                                    className={
+                                                    variant={
                                                         data.payment_status === 'paid' ||
                                                         data.payment_status === 'confirmed'
-                                                            ? 'border border-green-200 bg-green-50 text-green-900 shadow-none'
+                                                            ? 'success'
                                                             : data.payment_status === 'refunded'
-                                                              ? 'border border-violet-200 bg-violet-50 text-violet-900 shadow-none'
-                                                              : 'border border-orange-200 bg-orange-50 text-orange-950 shadow-none'
+                                                              ? 'secondary'
+                                                              : 'warning'
                                                     }
                                                 >
                                                     Payment: {data.payment_status}
                                                 </Badge>
                                             )}
                                             <Badge
-                                                className="cursor-pointer border border-slate-200 bg-slate-50 text-slate-950 shadow-none"
+                                                variant="outline"
+                                                className="cursor-pointer"
                                                 onClick={() => setRoleDialogOpen(true)}
                                                 title="Change camp role"
                                             >
@@ -758,30 +781,31 @@ export default function RegistrationDetailPage() {
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <div>
-                                            <Label className="text-xs text-slate-500 uppercase">Contact Information</Label>
+                                            <Label className="app-overline">Contact Information</Label>
                                             <ImportContactWarningsList warnings={data.import_warnings} />
                                             <div className="space-y-2 mt-2">
                                                 {data.email && (
-                                                    <div className="flex items-center text-sm">
-                                                        <Mail className="h-4 w-4 mr-3 text-gray-400" />
+                                                    <div className="flex min-w-0 items-center text-sm [overflow-wrap:anywhere]">
+                                                        <Mail className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500" />
                                                         <span>{data.email}</span>
                                                     </div>
                                                 )}
                                                 {data.phone && (
                                                     <div className="flex items-center text-sm">
-                                                        <Phone className="h-4 w-4 mr-3 text-gray-400" />
-                                                        <span>{data.phone}</span>
+                                                        <Phone className="h-4 w-4 mr-3 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden />
+                                                        <PhoneLink phone={data.phone} whatsapp={data.whatsapp} name={fullName} />
                                                     </div>
                                                 )}
-                                                {data.whatsapp ? (
+                                                {data.whatsapp && data.whatsapp !== data.phone ? (
                                                     <div className="flex items-center text-sm">
-                                                        <Phone className="h-4 w-4 mr-3 text-emerald-500" />
-                                                        <span>WhatsApp: {data.whatsapp}</span>
+                                                        <Phone className="h-4 w-4 mr-3 shrink-0 text-emerald-500 dark:text-emerald-400" aria-hidden />
+                                                        <span className="mr-1 text-neutral-500 dark:text-neutral-400">WhatsApp:</span>
+                                                        <PhoneLink phone={data.whatsapp} name={fullName} />
                                                     </div>
                                                 ) : null}
                                                 {data.facebook_username && (
                                                     <div className="flex items-center text-sm">
-                                                        <User className="h-4 w-4 mr-3 text-gray-400" />
+                                                        <User className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500" />
                                                         <span>@{data.facebook_username}</span>
                                                     </div>
                                                 )}
@@ -789,17 +813,17 @@ export default function RegistrationDetailPage() {
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs text-slate-500 uppercase">Registration</Label>
+                                            <Label className="app-overline">Registration</Label>
                                             <div className="space-y-2 mt-2">
                                                 <div className="flex items-start text-sm">
-                                                    <Calendar className="h-4 w-4 mr-3 mt-0.5 text-gray-400" />
+                                                    <Calendar className="h-4 w-4 mr-3 mt-0.5 text-neutral-400 dark:text-neutral-500" />
                                                     {(() => {
                                                         const when = formatRelativeWhen(data.created_at)
                                                         return (
                                                             <span title={when.absolute}>
                                                                 Registered: {when.absolute}
                                                                 {when.relative ? (
-                                                                    <span className="text-slate-500"> · {when.relative}</span>
+                                                                    <span className="text-neutral-500 dark:text-neutral-400"> · {when.relative}</span>
                                                                 ) : null}
                                                             </span>
                                                         )
@@ -807,7 +831,7 @@ export default function RegistrationDetailPage() {
                                                 </div>
                                                 {data.times_attended !== undefined && (
                                                     <div className="flex items-center text-sm">
-                                                        <Clock className="h-4 w-4 mr-3 text-gray-400" />
+                                                        <Clock className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500" />
                                                         <span>Times attended: {data.times_attended}</span>
                                                     </div>
                                                 )}
@@ -818,9 +842,9 @@ export default function RegistrationDetailPage() {
                                     <div className="space-y-4">
                                         {data.address_school_work && (
                                             <div>
-                                                <Label className="text-xs text-slate-500 uppercase">Address/School/Work</Label>
+                                                <Label className="app-overline">Address/School/Work</Label>
                                                 <div className="flex items-start text-sm mt-2">
-                                                    <MapPin className="h-4 w-4 mr-3 text-gray-400 mt-0.5" />
+                                                    <MapPin className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500 mt-0.5" />
                                                     <span>{data.address_school_work}</span>
                                                 </div>
                                             </div>
@@ -828,17 +852,17 @@ export default function RegistrationDetailPage() {
 
                                         {(data.education_level || data.highest_qualification) && (
                                             <div>
-                                                <Label className="text-xs text-slate-500 uppercase">Education</Label>
+                                                <Label className="app-overline">Education</Label>
                                                 <div className="space-y-2 mt-2">
                                                     {data.education_level && (
                                                         <div className="flex items-center text-sm">
-                                                            <GraduationCap className="h-4 w-4 mr-3 text-gray-400" />
+                                                            <GraduationCap className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500" />
                                                             <span>{data.education_level}</span>
                                                         </div>
                                                     )}
                                                     {data.highest_qualification && (
                                                         <div className="flex items-center text-sm">
-                                                            <FileText className="h-4 w-4 mr-3 text-gray-400" />
+                                                            <FileText className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500" />
                                                             <span>{data.highest_qualification}</span>
                                                         </div>
                                                     )}
@@ -848,9 +872,9 @@ export default function RegistrationDetailPage() {
 
                                         {data.residence && (
                                             <div>
-                                                <Label className="text-xs text-slate-500 uppercase">Residence</Label>
+                                                <Label className="app-overline">Residence</Label>
                                                 <div className="flex items-center text-sm mt-2">
-                                                    <MapPin className="h-4 w-4 mr-3 text-gray-400" />
+                                                    <MapPin className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500" />
                                                     <span>{data.residence}</span>
                                                 </div>
                                             </div>
@@ -858,9 +882,9 @@ export default function RegistrationDetailPage() {
 
                                         {data.camp_location ? (
                                             <div>
-                                                <Label className="text-xs text-slate-500 uppercase">Location note</Label>
+                                                <Label className="app-overline">Location note</Label>
                                                 <div className="flex items-start text-sm mt-2">
-                                                    <MapPin className="h-4 w-4 mr-3 text-gray-400 mt-0.5" />
+                                                    <MapPin className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500 mt-0.5" />
                                                     <span>{data.camp_location}</span>
                                                 </div>
                                             </div>
@@ -868,26 +892,31 @@ export default function RegistrationDetailPage() {
 
                                         {data.registration_notes ? (
                                             <div>
-                                                <Label className="text-xs text-slate-500 uppercase">Comments</Label>
+                                                <Label className="app-overline">Comments</Label>
                                                 <div className="flex items-start text-sm mt-2">
-                                                    <MessageSquare className="h-4 w-4 mr-3 text-gray-400 mt-0.5" />
+                                                    <MessageSquare className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500 mt-0.5" />
                                                     <span className="whitespace-pre-wrap">{data.registration_notes}</span>
                                                 </div>
                                             </div>
                                         ) : null}
 
-                                        {data.parent_name && (
+                                        {(data.parent_name || data.parent_contact) && (
                                             <div>
-                                                <Label className="text-xs text-slate-500 uppercase">Parent/Guardian</Label>
+                                                <Label className="app-overline">Parent/Guardian</Label>
                                                 <div className="space-y-2 mt-2">
-                                                    <div className="flex items-center text-sm">
-                                                        <User className="h-4 w-4 mr-3 text-gray-400" />
-                                                        <span>{data.parent_name}</span>
-                                                    </div>
-                                                    {data.parent_contact && (
+                                                    {data.parent_name ? (
                                                         <div className="flex items-center text-sm">
-                                                            <Phone className="h-4 w-4 mr-3 text-gray-400" />
-                                                            <span>{data.parent_contact}</span>
+                                                            <User className="h-4 w-4 mr-3 text-neutral-400 dark:text-neutral-500" />
+                                                            <span>{data.parent_name}</span>
+                                                        </div>
+                                                    ) : null}
+                                                    {data.parent_contact && (
+                                                        <div className="flex items-center justify-between gap-2 text-sm">
+                                                            <span className="flex min-w-0 items-center">
+                                                                <Phone className="h-4 w-4 mr-3 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden />
+                                                                <PhoneLink phone={data.parent_contact} name={data.parent_name || `${fullName}'s guardian`} />
+                                                            </span>
+                                                            <QuickContactButtons phone={data.parent_contact} name={data.parent_name || `${fullName}'s guardian`} />
                                                         </div>
                                                     )}
                                                 </div>
@@ -898,7 +927,7 @@ export default function RegistrationDetailPage() {
 
                                 {data.has_health_challenge && data.health_challenges && data.health_challenges.length > 0 && (
                                     <div className="mt-6 pt-6 border-t">
-                                        <Label className="text-xs text-slate-500 uppercase flex items-center gap-2">
+                                        <Label className="app-overline flex items-center gap-2">
                                             <Heart className="h-4 w-4" /> Health Information
                                         </Label>
                                         <div className="mt-2">
@@ -906,14 +935,14 @@ export default function RegistrationDetailPage() {
                                                 {data.health_challenges.map((challenge, idx) => (
                                                     <Badge
                                                         key={idx}
-                                                        className="text-xs border-rose-200 bg-rose-50 text-rose-900"
+                                                        className="text-xs border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300"
                                                     >
                                                         {challenge}
                                                     </Badge>
                                                 ))}
                                             </div>
                                             {data.has_nhis_card && (
-                                                <div className="mt-2 text-sm text-slate-600">
+                                                <div className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
                                                     <Shield className="h-4 w-4 inline mr-1" />
                                                     Has NHIS Card
                                                     {data.nhis_card_expiry_date && (
@@ -929,7 +958,7 @@ export default function RegistrationDetailPage() {
 
                         {/* Interactions & Notes */}
                         <Card className="border-2">
-                            <CardHeader className="bg-slate-50 border-b">
+                            <CardHeader className="bg-neutral-50 dark:bg-white/[0.03] border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <MessageSquare className="h-5 w-5" /> Engagement & Notes
                                 </CardTitle>
@@ -940,31 +969,31 @@ export default function RegistrationDetailPage() {
                                         data.interactions
                                             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                                             .map((interaction) => (
-                                                <div key={interaction.id} className="relative pl-6 border-l-2 border-slate-200">
-                                                    <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-gray-400" />
+                                                <div key={interaction.id} className="relative pl-6 border-l-2 border-neutral-200 dark:border-white/10">
+                                                    <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-neutral-400 dark:bg-neutral-500" />
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <Badge
                                                                 variant="outline"
-                                                                className="text-xs capitalize border-violet-200 bg-violet-50 text-violet-900"
+                                                                className="text-xs capitalize border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-300"
                                                             >
                                                                 {interaction.interaction_type}
                                                             </Badge>
-                                                            <span className="text-xs text-gray-400">
+                                                            <span className="text-xs text-neutral-400 dark:text-neutral-500">
                                                                 {new Date(interaction.created_at).toLocaleString()}
                                                             </span>
                                                         </div>
-                                                        <p className="text-sm text-gray-800 bg-slate-50 p-3 rounded-md">
+                                                        <p className="text-sm text-neutral-800 dark:text-neutral-200 bg-neutral-50 dark:bg-white/[0.03] p-3 rounded-md">
                                                             {interaction.notes}
                                                         </p>
-                                                        <p className="text-xs text-gray-400 mt-1">
+                                                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
                                                             By: {interaction.performer?.full_name || 'System'}
                                                         </p>
                                                     </div>
                                                 </div>
                                             ))
                                     ) : (
-                                        <p className="text-center text-gray-400 py-8">No interactions recorded yet.</p>
+                                        <p className="text-center text-neutral-400 dark:text-neutral-500 py-8">No interactions recorded yet.</p>
                                     )}
                                 </div>
 
@@ -1016,29 +1045,31 @@ export default function RegistrationDetailPage() {
                     <div className="space-y-6">
                         {/* QR Code */}
                         <Card className="border-2">
-                            <CardHeader className="bg-slate-50 border-b">
+                            <CardHeader className="bg-neutral-50 dark:bg-white/[0.03] border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <QrCode className="h-5 w-5" /> QR Code
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 <div className="flex flex-col items-center space-y-4">
-                                    <div className="bg-white p-4 rounded-lg border-2 border-dashed">
+                                    <div className="rounded-lg border-2 border-dashed bg-white p-4 dark:border-white/20 dark:bg-white">
                                         <QRCode
                                             id="qr-code-svg"
                                             value={qrScanValue}
-                                            size={200}
+                                            size={180}
                                             level="H"
                                         />
                                     </div>
-                                    <div className="w-full space-y-1 rounded bg-gray-100 p-3 text-center">
-                                        <p className="font-semibold text-slate-900">{fullName}</p>
+                                    <div className="w-full space-y-1 rounded bg-neutral-100 dark:bg-white/[0.06] p-3 text-center">
+                                        <p className="font-semibold text-neutral-900 dark:text-neutral-100">{fullName}</p>
                                         {data.phone?.trim() && data.phone !== 'N/A' ? (
-                                            <p className="text-base font-medium text-slate-800">{data.phone}</p>
+                                            <p className="text-base font-medium text-neutral-800 dark:text-neutral-200">
+                                                <PhoneLink phone={data.phone} whatsapp={data.whatsapp} name={fullName} />
+                                            </p>
                                         ) : null}
-                                        <p className="text-sm text-slate-600">{data.role || 'Participant'}</p>
+                                        <p className="text-sm text-neutral-600 dark:text-neutral-400">{data.role || 'Participant'}</p>
                                         {data.check_in_code ? (
-                                            <p className="font-mono text-lg font-bold tracking-wide text-slate-900">
+                                            <p className="font-mono text-lg font-bold tracking-wide text-neutral-900 dark:text-neutral-100">
                                                 {data.check_in_code}
                                             </p>
                                         ) : null}
@@ -1095,10 +1126,10 @@ export default function RegistrationDetailPage() {
                         />
 
                         {/* Directory & birthdays (member record for login + upcoming birthdays) */}
-                        <Card className="border-2 border-violet-100 bg-gradient-to-br from-violet-50/80 to-white shadow-sm">
-                            <CardHeader className="border-b border-violet-100 bg-violet-50/50">
+                        <Card>
+                            <CardHeader className="border-b border-neutral-200/80 dark:border-white/[0.06]">
                                 <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Sparkles className="h-5 w-5 text-violet-600" />
+                                    <Sparkles className="h-5 w-5 text-brand-600 dark:text-brand-300" />
                                     Church directory
                                 </CardTitle>
                                 <CardDescription>
@@ -1113,7 +1144,10 @@ export default function RegistrationDetailPage() {
                                         <p className="font-medium text-emerald-950 dark:text-emerald-200">Linked directory user</p>
                                         <p className="text-emerald-900 dark:text-emerald-300">{linkedUser.full_name}</p>
                                         <p className="text-xs text-emerald-800 dark:text-emerald-400">
-                                            {linkedUser.phone} · {linkedUser.membership_id} · {linkedUser.role}
+                                            {linkedUser.phone ? (
+                                                <PhoneLink phone={linkedUser.phone} name={linkedUser.full_name} />
+                                            ) : null}{' '}
+                                            · {linkedUser.membership_id} · {linkedUser.role}
                                         </p>
                                         <Link
                                             href={`/admin/users/${linkedUser.id}`}
@@ -1154,7 +1188,7 @@ export default function RegistrationDetailPage() {
                                 </div>
                                 <Button
                                     variant="outline"
-                                    className="w-full border-violet-200"
+                                    className="w-full"
                                     onClick={handleSaveRegistrationBirthday}
                                     disabled={savingBirth}
                                 >
@@ -1202,7 +1236,7 @@ export default function RegistrationDetailPage() {
 
                         {/* Assignment */}
                         <Card className="border-2">
-                            <CardHeader className="bg-slate-50 border-b">
+                            <CardHeader className="bg-neutral-50 dark:bg-white/[0.03] border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <UserPlus className="h-5 w-5" /> Follow-Up Assignment
                                 </CardTitle>
@@ -1214,13 +1248,13 @@ export default function RegistrationDetailPage() {
                             <CardContent className="pt-6">
                                 {data.assigned_user ? (
                                     <div className="space-y-4">
-                                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                                            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+                                        <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-white/[0.03] rounded-lg">
+                                            <div className="h-10 w-10 rounded-full flex shrink-0 items-center justify-center bg-brand-600 font-bold text-white dark:bg-brand-500">
                                                 {data.assigned_user.full_name.charAt(0).toUpperCase()}
                                             </div>
                                             <div className="flex-1">
-                                                <p className="font-medium text-slate-900">{data.assigned_user.full_name}</p>
-                                                <p className="text-xs text-slate-500">{data.assigned_user.role}</p>
+                                                <p className="font-medium text-neutral-900 dark:text-neutral-100">{data.assigned_user.full_name}</p>
+                                                <p className="text-xs text-neutral-500 dark:text-neutral-400">{data.assigned_user.role}</p>
                                             </div>
                                         </div>
                                         <Dialog open={assignmentDialogOpen} onOpenChange={setAssignmentDialogOpen}>
@@ -1302,7 +1336,7 @@ export default function RegistrationDetailPage() {
 
                         {/* Payment Information */}
                         <Card className="border-2">
-                            <CardHeader className="bg-slate-50 border-b">
+                            <CardHeader className="bg-neutral-50 dark:bg-white/[0.03] border-b">
                                 <CardTitle className="flex items-center gap-2">
                                     <CreditCard className="h-5 w-5" /> Payment Information
                                 </CardTitle>
@@ -1310,33 +1344,33 @@ export default function RegistrationDetailPage() {
                             <CardContent className="pt-6 space-y-4">
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-slate-600">Status:</span>
+                                        <span className="text-sm text-neutral-600 dark:text-neutral-400">Status:</span>
                                         <Badge
-                                            className={
+                                            variant={
                                                 data.payment_status === 'paid' ||
                                                 data.payment_status === 'confirmed'
-                                                    ? 'border border-green-200 bg-green-50 text-green-900 shadow-none'
+                                                    ? 'success'
                                                     : data.payment_status === 'refunded'
-                                                      ? 'border border-violet-200 bg-violet-50 text-violet-900 shadow-none'
-                                                      : 'border border-orange-200 bg-orange-50 text-orange-950 shadow-none'
+                                                      ? 'secondary'
+                                                      : 'warning'
                                             }
                                         >
                                             {data.payment_status || 'pending'}
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-slate-600">Amount:</span>
+                                        <span className="text-sm text-neutral-600 dark:text-neutral-400">Amount:</span>
                                         <span className="font-semibold">₵{data.payment_amount?.toFixed(2) || '30.00'}</span>
                                     </div>
                                     {data.payment_reference && (
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-slate-600">Reference:</span>
+                                            <span className="text-sm text-neutral-600 dark:text-neutral-400">Reference:</span>
                                             <span className="text-sm font-mono">{data.payment_reference}</span>
                                         </div>
                                     )}
                                     {data.payment_date && (
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-slate-600">Date:</span>
+                                            <span className="text-sm text-neutral-600 dark:text-neutral-400">Date:</span>
                                             <span className="text-sm">
                                                 {new Date(data.payment_date).toLocaleDateString()}
                                             </span>

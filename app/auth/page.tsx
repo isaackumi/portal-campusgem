@@ -108,7 +108,7 @@ function AuthPageContent() {
           </span>
         </div>
         <div>
-          <p className="max-w-md font-display text-[44px] leading-[1.05] tracking-[-0.01em]">Ministry management, without the <em className="text-brand-200">spreadsheet chase.</em></p>
+          <p className="max-w-md font-display text-[42px] font-bold leading-[1.08] tracking-[-0.03em]">Ministry management, without the <span className="bg-gradient-to-r from-brand-200 to-violet-200 bg-clip-text text-transparent">spreadsheet chase.</span></p>
           <ul className="mt-8 space-y-3 text-sm text-white/80">
             <li className="flex items-start gap-3">
               <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-[10px]">1</span>

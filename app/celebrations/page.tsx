@@ -4,37 +4,20 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { StatCard } from '@/components/ui/stat-card'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay } from '@/components/ui/error-display'
-import { 
-  Cake, 
-  Heart, 
-  MessageSquare, 
-  Send, 
-  Calendar,
-  Users,
-  Phone,
-  Mail,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Filter,
-  Search,
-  Plus,
-  Bell
-} from 'lucide-react'
+import { Cake, Heart, Send, Mail, Search } from 'lucide-react'
 import { dataService } from '@/lib/services/data-service'
 import { useQuery } from '@tanstack/react-query'
 import { smsService } from '@/lib/services/sms-service'
 import { useToast } from '@/hooks/use-toast'
-import { formatDateTime } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
 interface CelebrationMember {
   id: string
@@ -277,27 +260,29 @@ export default function CelebrationsPage() {
   if (!user) {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto py-12">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Cake className="h-10 w-10 text-pink-600 mx-auto mb-3" />
-              <p className="text-slate-700">Please sign in to view Birthdays & Anniversaries.</p>
-            </CardContent>
-          </Card>
+        <div className="mx-auto max-w-md py-12 text-center">
+          <Cake className="mx-auto mb-3 h-10 w-10 text-neutral-400 dark:text-neutral-500" />
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">Please sign in to view birthdays and anniversaries.</p>
         </div>
       </DashboardLayout>
     )
   }
 
+  const allSelected = filteredMembers.length > 0 && selectedMembers.length === filteredMembers.length
+  const timeTabs: { value: string; label: string }[] = [
+    { value: 'today', label: 'Today' },
+    { value: 'week', label: 'This week' },
+    { value: 'month', label: 'This month' },
+    { value: 'all', label: 'All' },
+  ]
+
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto max-w-7xl space-y-6 pb-24 lg:pb-0">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="app-page-title mb-2">
-            Birthdays & Anniversaries
-          </h1>
-          <p className="text-slate-600">Manage birthday and anniversary celebrations with SMS notifications</p>
+        <div>
+          <h1 className="app-page-title">Birthdays &amp; anniversaries</h1>
+          <p className="app-page-description mt-1">Celebrate your people and send greetings by SMS</p>
         </div>
 
         {error && (
@@ -308,193 +293,173 @@ export default function CelebrationsPage() {
           />
         )}
 
-        {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard label="Today’s birthdays" value={stats.today_birthdays} />
-            <StatCard label="Today’s anniversaries" value={stats.today_anniversaries} />
-
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard label="Birthdays today" value={stats.today_birthdays} />
+            <StatCard label="Anniversaries today" value={stats.today_anniversaries} />
             <StatCard label="This week" value={stats.this_week_birthdays + stats.this_week_anniversaries} />
             <StatCard label="This month" value={stats.this_month_birthdays + stats.this_month_anniversaries} />
           </div>
         )}
 
-        {/* Filters and Actions */}
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search members..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="birthday">Birthdays</SelectItem>
-                  <SelectItem value="anniversary">Anniversaries</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={timeFilter} onValueChange={setTimeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by time" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="all">All Time</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button 
-                onClick={handleSendSMS} 
-                disabled={selectedMembers.length === 0 || sendingSMS}
-                className="w-full"
-              >
-                {sendingSMS ? (
-                  <>
-                    <LoadingSpinner className="h-4 w-4 mr-2" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Send SMS ({selectedMembers.length})
-                  </>
+        {/* Filters */}
+        <div className="space-y-3">
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Period">
+            {timeTabs.map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                aria-selected={timeFilter === tab.value}
+                onClick={() => setTimeFilter(tab.value)}
+                className={cn(
+                  'inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors',
+                  timeFilter === tab.value
+                    ? 'border-brand-600 bg-brand-600 text-white dark:border-brand-500 dark:bg-brand-500'
+                    : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:border-white/20'
                 )}
-              </Button>
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+              <Input
+                type="search"
+                placeholder="Search name or membership ID"
+                aria-label="Search celebrations"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-11 pl-10 sm:h-10"
+              />
             </div>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-11 sm:h-10 sm:w-44" aria-label="Filter by type">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Birthdays and anniversaries</SelectItem>
+                <SelectItem value="birthday">Birthdays</SelectItem>
+                <SelectItem value="anniversary">Anniversaries</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleSendSMS}
+              disabled={selectedMembers.length === 0 || sendingSMS}
+              className="hidden sm:inline-flex"
+            >
+              {sendingSMS ? <LoadingSpinner size="sm" className="mr-2" /> : <Send className="mr-2 h-4 w-4" />}
+              {sendingSMS ? 'Sending…' : `Send SMS (${selectedMembers.length})`}
+            </Button>
+          </div>
+        </div>
 
-            {selectedMembers.length > 0 && (
-              <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
-                <p className="text-sm text-slate-700">
-                  {selectedMembers.length} member{selectedMembers.length !== 1 ? 's' : ''} selected
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setSelectedMembers([])}
-                >
-                  Clear Selection
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Members List */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Celebrations</CardTitle>
-                <CardDescription>Birthdays and anniversaries for the selected period</CardDescription>
-              </div>
-              <Button variant="outline" onClick={handleSelectAll}>
-                {selectedMembers.length === filteredMembers.length ? 'Deselect All' : 'Select All'}
+        {/* List */}
+        <section className="dashboard-panel overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-neutral-200/80 px-4 py-2 dark:border-white/[0.06] sm:px-5">
+            <h2 className="app-section-title">
+              Celebrations <span className="tabular-nums text-neutral-500 dark:text-neutral-400">({filteredMembers.length})</span>
+            </h2>
+            {filteredMembers.length > 0 ? (
+              <Button variant="ghost" size="sm" onClick={handleSelectAll} className="h-11 sm:h-9">
+                {allSelected ? 'Deselect all' : 'Select all'}
               </Button>
+            ) : null}
+          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <LoadingSpinner />
             </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner />
-              </div>
-            ) : filteredMembers.length === 0 ? (
-              <div className="text-center py-8">
-                <Cake className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-slate-500">No celebrations found for the selected period</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredMembers.map((member) => (
-                  <div 
-                    key={member.id} 
-                    className={`border rounded-lg p-4 hover:bg-slate-50 transition-colors ${
-                      selectedMembers.includes(member.id) ? 'bg-slate-50 border-slate-200' : ''
-                    }`}
+          ) : filteredMembers.length === 0 ? (
+            <div className="px-4 py-10 text-center">
+              <Cake className="mx-auto mb-3 h-10 w-10 text-neutral-300 dark:text-neutral-600" />
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">No celebrations in this period</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+              {filteredMembers.map((member) => {
+                const selected = selectedMembers.includes(member.id)
+                const checkboxId = `celebration-${member.id}`
+                return (
+                  <li
+                    key={member.id}
+                    className={cn(
+                      'flex items-start gap-3 px-4 py-3 transition-colors sm:items-center sm:px-5',
+                      selected && 'bg-brand-50/50 dark:bg-brand-400/[0.06]'
+                    )}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedMembers.includes(member.id)}
-                          onChange={() => handleSelectMember(member.id)}
-                          className="h-4 w-4 text-primary rounded"
-                        />
-                        
-                        <div className="flex items-center gap-3">
-                          {member.type === 'birthday' ? (
-                            <Cake className="h-6 w-6 text-pink-600" />
-                          ) : (
-                            <Heart className="h-6 w-6 text-red-600" />
-                          )}
-                          
-                          <div>
-                            <h4 className="font-medium text-slate-900">{member.name}</h4>
-                            <p className="text-sm text-slate-500">{member.membership_id}</p>
-                            {member.type === 'anniversary' && member.spouse_name && (
-                              <p className="text-sm text-slate-500">& {member.spouse_name}</p>
-                            )}
-                          </div>
-                        </div>
+                    <label htmlFor={checkboxId} className="-m-2 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:m-0 sm:h-auto sm:w-auto">
+                      <Checkbox
+                        id={checkboxId}
+                        checked={selected}
+                        onCheckedChange={() => handleSelectMember(member.id)}
+                        aria-label={`Select ${member.name}`}
+                      />
+                    </label>
+                    <span
+                      className={cn(
+                        'hidden h-9 w-9 shrink-0 items-center justify-center rounded-full sm:flex',
+                        member.type === 'birthday'
+                          ? 'bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300'
+                          : 'bg-rose-50 text-rose-600 dark:bg-rose-400/10 dark:text-rose-300'
+                      )}
+                      aria-hidden
+                    >
+                      {member.type === 'birthday' ? <Cake className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="min-w-0 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {member.name}
+                          {member.type === 'anniversary' && member.spouse_name ? (
+                            <span className="font-normal text-neutral-500 dark:text-neutral-400"> &amp; {member.spouse_name}</span>
+                          ) : null}
+                        </p>
+                        <Badge variant={member.type === 'birthday' ? 'brand' : 'secondary'}>
+                          {member.type === 'birthday' ? 'Birthday' : 'Anniversary'}
+                        </Badge>
                       </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="font-medium text-slate-900">
-                            {new Date(member.celebration_date).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
-                          </p>
-                          <p className="text-sm text-slate-500">
-                            {member.type === 'birthday' 
-                              ? `${member.age} years old`
-                              : `${member.years_married} years married`
-                            }
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {member.phone && (
-                            <div className="flex items-center gap-1 text-sm text-slate-500">
-                              <Phone className="h-4 w-4" />
-                              <span>{member.phone}</span>
-                            </div>
-                          )}
-                          
-                          {member.email && (
-                            <div className="flex items-center gap-1 text-sm text-slate-500">
-                              <Mail className="h-4 w-4" />
-                              <span>{member.email}</span>
-                            </div>
-                          )}
-
-                          <Badge variant={member.type === 'birthday' ? 'default' : 'secondary'}>
-                            {member.type === 'birthday' ? 'Birthday' : 'Anniversary'}
-                          </Badge>
-                        </div>
+                      <p className="mt-0.5 text-[13px] text-neutral-600 dark:text-neutral-400">
+                        {new Date(member.celebration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {' · '}
+                        {member.type === 'birthday'
+                          ? `turning ${member.age}`
+                          : `${member.years_married} years married`}
+                      </p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
+                        {member.phone ? <PhoneLink phone={member.phone} name={member.name} /> : null}
+                        {member.membership_id ? <span className="font-mono">{member.membership_id}</span> : null}
+                        {member.email ? (
+                          <span className="hidden min-w-0 items-center gap-1 md:inline-flex">
+                            <Mail className="h-3 w-3 shrink-0" aria-hidden />
+                            <span className="truncate">{member.email}</span>
+                          </span>
+                        ) : null}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    <QuickContactButtons phone={member.phone} name={member.name} className="shrink-0" />
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* Phone: selection bar above the bottom tab bar */}
+        {selectedMembers.length > 0 ? (
+          <div className="fixed inset-x-4 bottom-20 z-30 flex items-center gap-2 rounded-xl border border-neutral-200/80 bg-white/95 p-2 shadow-lg backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 sm:hidden">
+            <Button variant="ghost" onClick={() => setSelectedMembers([])} className="h-11 px-3">
+              Clear
+            </Button>
+            <Button onClick={handleSendSMS} disabled={sendingSMS} className="h-11 flex-1">
+              {sendingSMS ? <LoadingSpinner size="sm" className="mr-2" /> : <Send className="mr-2 h-4 w-4" />}
+              {sendingSMS ? 'Sending…' : `Send SMS (${selectedMembers.length})`}
+            </Button>
+          </div>
+        ) : null}
       </div>
     </DashboardLayout>
   )
 }
-

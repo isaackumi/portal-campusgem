@@ -9,6 +9,7 @@ import { PersonAvatar } from '@/components/ui/person'
 import { cn } from '@/lib/utils'
 import { CALL_OUTCOMES, effectiveOutcome, type CallOutcome } from '@/lib/camp/call-campaign'
 import { OUTCOME_ICON, OutcomeBadge } from '@/components/camp/call-outcome'
+import { PhoneLink } from '@/components/contact/phone-link'
 
 const OUTCOME_BUTTON: Record<Exclude<CallOutcome, 'unconfirmed'>, string> = {
   confirmed:
@@ -85,7 +86,7 @@ export function CallCard({
             <OutcomeBadge outcome={outcome} />
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
-            <span className="font-mono text-neutral-700 dark:text-neutral-200">{registration.phone || 'No phone'}</span>
+            <PhoneLink className="text-neutral-700 dark:text-neutral-200" phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} />
             {registration.residence ? (
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-3 w-3" aria-hidden />
@@ -110,13 +111,13 @@ export function CallCard({
       <div className="flex flex-wrap gap-2">
         {registration.phone ? (
           <>
-            <Button asChild size="sm" className="flex-1 sm:flex-none">
+            <Button asChild size="sm" className="h-11 flex-1 sm:h-8 sm:flex-none">
               <a href={telHref(registration.phone)}>
                 <Phone className="mr-1.5 h-4 w-4" aria-hidden />
                 Call
               </a>
             </Button>
-            <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-none">
+            <Button asChild size="sm" variant="outline" className="h-11 flex-1 sm:h-8 sm:flex-none">
               <a href={whatsappHref(registration.whatsapp || registration.phone)} target="_blank" rel="noreferrer">
                 <MessageCircle className="mr-1.5 h-4 w-4" aria-hidden />
                 WhatsApp
@@ -129,7 +130,7 @@ export function CallCard({
           variant="ghost"
           onClick={() => setNoteOpen((v) => !v)}
           aria-expanded={noteOpen}
-          className="flex-1 sm:flex-none"
+          className="h-11 w-full sm:h-8 sm:w-auto"
         >
           <StickyNote className="mr-1.5 h-4 w-4" aria-hidden />
           {noteOpen ? 'Hide note' : 'Add note'}
@@ -166,7 +167,7 @@ export function CallCard({
                   setNoteOpen(false)
                 }}
                 className={cn(
-                  'inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border bg-transparent px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 disabled:opacity-50',
+                  'inline-flex h-11 items-center justify-center gap-1.5 whitespace-nowrap sm:h-10 rounded-lg border bg-transparent px-2 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 disabled:opacity-50',
                   OUTCOME_BUTTON[o.id as Exclude<CallOutcome, 'unconfirmed'>]
                 )}
               >

@@ -43,12 +43,9 @@ export class ServiceTypeMapper {
    * Maps any service type input to the correct database enum value
    */
   static toEnum(input: string): ServiceType {
-    console.log('🔍 ServiceTypeMapper.toEnum input:', input)
-    console.log('🔍 SERVICE_TYPES values:', Object.values(SERVICE_TYPES))
     
     // If already a valid enum value, return it
     if (Object.values(SERVICE_TYPES).includes(input as ServiceType)) {
-      console.log('🔍 Input is already enum value, returning:', input)
       return input as ServiceType
     }
     
@@ -63,7 +60,6 @@ export class ServiceTypeMapper {
     }
     
     const result = labelToEnum[input] || SERVICE_TYPES.SUNDAY_SERVICE
-    console.log('🔍 Mapped result:', result)
     return result
   }
   

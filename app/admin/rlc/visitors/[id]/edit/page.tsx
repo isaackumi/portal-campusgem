@@ -11,6 +11,7 @@ import { RlcVisitorForm } from '@/components/rlc/rlc-visitor-form'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Button } from '@/components/ui/button'
+import { FormActionBar } from '@/components/admin/form-action-bar'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 
@@ -91,14 +92,14 @@ export default function EditRlcVisitorPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <RlcVisitorForm form={form} onChange={setForm} showPipelineFields />
 
-        <div className="flex justify-end gap-2">
+        <FormActionBar>
           <Button type="button" variant="outline" onClick={() => router.push(`/admin/rlc/visitors/${id}`)}>
             Cancel
           </Button>
-          <Button type="submit" disabled={saving} className="bg-rose-700 hover:bg-rose-800">
+          <Button type="submit" disabled={saving}>
             {saving ? 'Saving…' : 'Save changes'}
           </Button>
-        </div>
+        </FormActionBar>
       </form>
     </PageContainer>
   )

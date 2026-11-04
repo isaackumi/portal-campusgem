@@ -63,18 +63,18 @@ export function CampFunnelSteps({ steps }: { steps: FunnelStep[] }) {
   return (
     <div className="space-y-4">
       <AnalyticsHorizontalBarChart data={data} barColor="#6366f1" />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {steps.map((step, index) => (
-          <div key={step.label} className="rounded-lg border bg-slate-50 p-4">
+          <div key={step.label} className="min-w-0 rounded-lg border border-neutral-200/80 bg-neutral-50 p-3 dark:border-white/[0.06] dark:bg-white/[0.04] sm:p-4">
             <p className="app-overline">{step.label}</p>
-            <p className="mt-1 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{step.count.toLocaleString()}</p>
-            <p className="text-sm text-slate-600">{step.percent}% of registered</p>
+            <p className="app-stat-value mt-1 text-neutral-900 dark:text-neutral-100">{step.count.toLocaleString()}</p>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400 sm:text-sm">{step.percent}% of registered</p>
             {step.dropOffPercent != null && step.dropOffPercent > 0 ? (
-              <p className="mt-1 text-xs text-rose-600">{step.dropOffPercent}% drop from previous step</p>
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{step.dropOffPercent}% drop from previous step</p>
             ) : null}
             {index < steps.length - 1 ? (
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white">
-                <div className="h-full rounded-full bg-slate-800" style={{ width: `${step.percent}%` }} />
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white dark:bg-white/10">
+                <div className="h-full rounded-full bg-neutral-800 dark:bg-neutral-200" style={{ width: `${step.percent}%` }} />
               </div>
             ) : null}
           </div>
@@ -97,13 +97,13 @@ export function CampDemographicTrendTable({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{title}</h3>
       <AnalyticsDemographicTrendChart rows={rows} height={280} />
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full min-w-[480px] text-sm">
-          <thead className="bg-slate-50">
-            <tr className="text-left text-muted-foreground">
-              <th className="px-3 py-2 font-medium">{title}</th>
+      <div className="overflow-x-auto rounded-lg border border-neutral-200/80 dark:border-white/[0.06]">
+        <table className="w-full text-sm sm:min-w-[480px]">
+          <thead className="bg-neutral-50 dark:bg-white/[0.04]">
+            <tr className="text-left text-neutral-500 dark:text-neutral-400">
+              <th className="sticky left-0 bg-neutral-50 px-3 py-2 font-medium dark:bg-neutral-800">{title}</th>
               {years.map((year) => (
                 <th key={year} className="px-3 py-2 font-medium">
                   {year}
@@ -113,11 +113,11 @@ export function CampDemographicTrendTable({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-t">
-                <td className="px-3 py-2 font-medium text-slate-800">{row.label}</td>
+              <tr key={row.label} className="border-t border-neutral-200/80 dark:border-white/[0.06]">
+                <td className="sticky left-0 bg-white px-3 py-2 font-medium text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">{row.label}</td>
                 {row.values.map((value) => (
-                  <td key={`${row.label}-${value.year}`} className="px-3 py-2 text-slate-600">
-                    {value.percent}% <span className="text-xs text-muted-foreground">({value.count})</span>
+                  <td key={`${row.label}-${value.year}`} className="whitespace-nowrap px-3 py-2 tabular-nums text-neutral-600 dark:text-neutral-400">
+                    {value.percent}% <span className="text-xs text-neutral-500 dark:text-neutral-400">({value.count})</span>
                   </td>
                 ))}
               </tr>

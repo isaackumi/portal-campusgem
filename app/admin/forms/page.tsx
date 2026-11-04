@@ -37,6 +37,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { StatCard } from '@/components/ui/stat-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
 import {
@@ -87,7 +88,7 @@ function FormsHubGridSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-56 animate-pulse rounded-lg border border-slate-200 bg-white" />
+        <div key={i} className="h-56 animate-pulse rounded-lg border border-neutral-200 bg-white dark:border-white/10 dark:bg-neutral-800/60" />
       ))}
     </div>
   )
@@ -471,22 +472,22 @@ function FormsAdminContent() {
   const showGridSkeleton = isLoading && scopedForms.length === 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/40">
-      <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:space-y-8 sm:p-6">
-        <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-3">
-            <Button variant="ghost" className="-ml-2 min-h-10 w-fit" onClick={() => router.push(backHref)}>
+    <div>
+      <div className="mx-auto w-full min-w-0 max-w-7xl space-y-6 sm:space-y-8">
+        <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 space-y-2">
+            <Button variant="ghost" className="-ml-2 h-11 w-fit px-2 sm:h-10" onClick={() => router.push(backHref)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               {activeModule ? `Back to ${moduleLabel}` : 'Back to Admin'}
             </Button>
             <div>
-              <p className="app-overline text-brand-600">
+              <p className="app-overline">
                 {activeModule ? `${moduleLabel} forms` : 'Forms & Outreach'}
               </p>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              <h1 className="app-page-title">
                 {activeModule ? `${moduleLabel} Forms` : 'Forms Hub'}
               </h1>
-              <p className="mt-2 max-w-2xl text-muted-foreground">
+              <p className="app-page-description mt-2 max-w-2xl">
                 {activeModule === 'rlc'
                   ? 'Dedicated forms for Redemption Light Chapel — visitor intake, ministry sign-ups, and more.'
                   : activeModule === 'camp_meeting'
@@ -495,9 +496,9 @@ function FormsAdminContent() {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             {!activeModule ? (
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="h-11 sm:h-10" asChild>
                 <Link href="/admin/campus-activities">
                   <Building2 className="mr-2 h-4 w-4" />
                   Campus board
@@ -506,7 +507,7 @@ function FormsAdminContent() {
             ) : null}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-brand-600 hover:bg-brand-700">
+                <Button className="h-11 sm:h-10">
                   <Plus className="mr-2 h-4 w-4" />
                   New form
                 </Button>
@@ -563,7 +564,7 @@ function FormsAdminContent() {
                   <div className="space-y-2">
                     <Label>{activeModule === 'rlc' ? 'RLC group' : 'Campus / Activity'}</Label>
                     {activeModule === 'rlc' ? (
-                      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                      <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-800 dark:border-white/10 dark:bg-white/[0.04] dark:text-neutral-100">
                         Redemption Light Chapel
                       </div>
                     ) : (
@@ -584,7 +585,7 @@ function FormsAdminContent() {
                     {activeModule === 'rlc' ? (
                       <p className="text-sm text-muted-foreground">
                         Forms are assigned to{' '}
-                        <span className="font-medium text-slate-800">Redemption Light Chapel</span>.
+                        <span className="font-medium text-neutral-800 dark:text-neutral-100">Redemption Light Chapel</span>.
                       </p>
                     ) : null}
                     {templateId === 'camp_meeting_registration' ||
@@ -592,7 +593,7 @@ function FormsAdminContent() {
                       <>
                         <p className="text-sm text-muted-foreground">
                           Camp meeting forms are assigned to{' '}
-                          <span className="font-medium text-slate-800">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span>.
+                          <span className="font-medium text-neutral-800 dark:text-neutral-100">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span>.
                         </p>
                         <div className="space-y-2 pt-2">
                           <Label>Camp year</Label>
@@ -646,50 +647,18 @@ function FormsAdminContent() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-brand-100 bg-white/90 shadow-sm">
-            <CardContent className="flex items-center gap-3 p-5">
-              <FileText className="h-8 w-8 text-brand-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total forms</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/90 shadow-sm">
-            <CardContent className="flex items-center gap-3 p-5">
-              <ExternalLink className="h-8 w-8 text-emerald-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Published</p>
-                <p className="text-2xl font-bold">{stats.published}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/90 shadow-sm">
-            <CardContent className="flex items-center gap-3 p-5">
-              <BarChart3 className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total responses</p>
-                <p className="text-2xl font-bold">{stats.responses}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/90 shadow-sm">
-            <CardContent className="flex items-center gap-3 p-5">
-              <Building2 className="h-8 w-8 text-violet-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Campus forms</p>
-                <p className="text-2xl font-bold">{stats.campusForms}</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <StatCard className="p-4 sm:p-5" label="Total forms" value={stats.total} icon={FileText} />
+          <StatCard className="p-4 sm:p-5" label="Published" value={stats.published} icon={ExternalLink} tone="success" />
+          <StatCard className="p-4 sm:p-5" label="Total responses" value={stats.responses} icon={BarChart3} />
+          <StatCard className="p-4 sm:p-5" label="Campus forms" value={stats.campusForms} icon={Building2} />
         </div>
 
         {!activeModule ? (
-        <Card className="border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50/50 shadow-sm">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-amber-700" />
+              <Sparkles className="h-5 w-5 text-amber-700 dark:text-amber-300" />
               Campus member registration
             </CardTitle>
             <CardDescription>
@@ -711,8 +680,8 @@ function FormsAdminContent() {
               />
             </div>
             <Button
-              variant="secondary"
-              className="border-amber-300 bg-white hover:bg-amber-50"
+              variant="outline"
+              className="h-11 sm:h-10"
               disabled={creatingTemplate}
               onClick={() => void handleCreateCampusRegistrationTemplate()}
             >
@@ -723,15 +692,15 @@ function FormsAdminContent() {
         ) : null}
 
         {!activeModule || activeModule === 'camp_meeting' ? (
-        <Card className="border-slate-200/80 bg-gradient-to-r from-slate-50 to-slate-100/50 shadow-sm">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <ClipboardList className="h-5 w-5 text-brand-700" />
+              <ClipboardList className="h-5 w-5 text-brand-700 dark:text-brand-300" />
               Eagles camp meeting registration
             </CardTitle>
             <CardDescription>
               One camp meeting sign-up form per year under{' '}
-              <span className="font-medium text-slate-800">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span>.
+              <span className="font-medium text-neutral-800 dark:text-neutral-100">{DEFAULT_EAGLES_CAMP_MEETING_GROUP_NAME}</span>.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
@@ -752,8 +721,8 @@ function FormsAdminContent() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
-                variant="secondary"
-                className="min-h-11 border-brand-300 bg-white hover:bg-slate-50"
+                variant="outline"
+                className="min-h-11 sm:min-h-10"
                 disabled={creatingCampMeetingTemplate}
                 onClick={() => void handleCreateCampMeetingRegistrationTemplate()}
               >
@@ -761,7 +730,7 @@ function FormsAdminContent() {
               </Button>
               <Button
                 variant="outline"
-                className="min-h-11"
+                className="min-h-11 sm:min-h-10"
                 disabled={creatingCampMeetingFeedback}
                 onClick={() => void handleCreateCampMeetingFeedbackTemplate()}
               >
@@ -773,10 +742,10 @@ function FormsAdminContent() {
         ) : null}
 
         {activeModule === 'rlc' ? (
-          <Card className="border-rose-200/80 bg-gradient-to-r from-rose-50 to-rose-100/40 shadow-sm">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Church className="h-5 w-5 text-rose-700" />
+                <Church className="h-5 w-5 text-brand-700 dark:text-brand-300" />
                 Redemption Light forms
               </CardTitle>
               <CardDescription>
@@ -784,7 +753,7 @@ function FormsAdminContent() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="bg-rose-700 hover:bg-rose-800" onClick={() => setCreateOpen(true)}>
+              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 New RLC form
               </Button>
@@ -792,7 +761,7 @@ function FormsAdminContent() {
           </Card>
         ) : null}
 
-        <div className="flex flex-col gap-4 rounded-xl border bg-white/90 p-4 shadow-sm sm:flex-row sm:items-center">
+        <div className="dashboard-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
           <div className="flex-1 space-y-2">
             <Label className="app-overline">Filter by group</Label>
             <FormGroupSelect
@@ -806,6 +775,7 @@ function FormsAdminContent() {
           <div className="flex-1 space-y-2">
             <Label className="app-overline">Search</Label>
             <Input
+              type="search"
               placeholder="Search by title, slug, or group..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -818,8 +788,8 @@ function FormsAdminContent() {
         ) : filteredForms.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <ClipboardList className="mb-4 h-12 w-12 text-slate-300" />
-              <h3 className="text-lg font-semibold text-slate-900">
+              <ClipboardList className="mb-4 h-12 w-12 text-neutral-300 dark:text-neutral-600" />
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                 {scopedForms.length === 0 ? 'No forms yet' : 'No matching forms'}
               </h3>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
@@ -858,9 +828,9 @@ function FormsAdminContent() {
               return (
                 <Card
                   key={form.id}
-                  className="flex flex-col overflow-hidden border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  className="flex flex-col overflow-hidden border-neutral-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-neutral-800/60"
                 >
-                  <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-3">
+                  <CardHeader className="border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-white/10 dark:bg-white/[0.04]">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="line-clamp-2 text-base leading-snug">{form.title}</CardTitle>
                       <Badge variant={statusTone(form.status)} className="shrink-0 capitalize">
@@ -878,16 +848,14 @@ function FormsAdminContent() {
                           Member registration
                         </Badge>
                       ) : isCampMeeting ? (
-                        <Badge className="bg-brand-100 font-normal text-slate-900 hover:bg-brand-100">
-                          Camp meeting
-                        </Badge>
+                        <Badge variant="brand">Camp meeting</Badge>
                       ) : form.category ? (
                         <Badge variant="outline" className="font-normal">
                           {form.category}
                         </Badge>
                       ) : null}
                       {!activeModule && formModule !== 'outreach' ? (
-                        <Badge variant="outline" className="border-rose-200 font-normal text-rose-800">
+                        <Badge variant="brand">
                           {FORM_MODULE_LABELS[formModule]}
                         </Badge>
                       ) : null}
@@ -905,50 +873,45 @@ function FormsAdminContent() {
                       <p className="flex items-center gap-1.5">
                         <UserRound className="h-3.5 w-3.5 shrink-0" />
                         <span>
-                          By <span className="font-medium text-slate-700">{creatorName}</span>
+                          By <span className="font-medium text-neutral-700 dark:text-neutral-300">{creatorName}</span>
                         </span>
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                      <div className="rounded-lg bg-neutral-50 px-3 py-2 dark:bg-white/[0.04]">
                         <p className="text-xs text-muted-foreground">Responses</p>
                         <p className="font-semibold">{form.response_count ?? 0}</p>
                       </div>
-                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                      <div className="rounded-lg bg-neutral-50 px-3 py-2 dark:bg-white/[0.04]">
                         <p className="text-xs text-muted-foreground">Scope</p>
                         <p className="truncate font-semibold">
                           {group ? getGroupTypeLabel(group.group_type) : 'Unassigned'}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 truncate text-xs">
+                    <div className="flex min-w-0 items-center gap-1 truncate text-xs">
                       <Link2 className="h-3 w-3 shrink-0 text-muted-foreground" />
                       <FormPublicLink slug={form.slug} showPathOnly />
                     </div>
-                    <div className="mt-auto grid grid-cols-2 gap-2">
+                    <div className="mt-auto grid grid-cols-2 gap-2 [&>button]:h-10 sm:[&>button]:h-8">
+                      <Button size="sm" onClick={() => router.push(`/admin/forms/${form.id}`)}>
+                        Edit
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => router.push(`/admin/forms/${form.id}/responses`)}>
+                        Responses
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => copyFormLink(form.slug)}>
                         <Copy className="mr-1 h-3.5 w-3.5" />
                         Copy link
                       </Button>
-                      <Button size="sm" onClick={() => router.push(`/admin/forms/${form.id}`)}>
-                        Edit
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="col-span-2"
-                        onClick={() => router.push(`/admin/forms/${form.id}/responses`)}
-                      >
-                        View responses
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="col-span-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-300 dark:hover:bg-red-400/10"
                         onClick={() => setFormToDelete(form)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
-                        Delete form
+                        Delete
                       </Button>
                     </div>
                   </CardContent>

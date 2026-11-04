@@ -98,7 +98,7 @@ function Kpi({
         <p className="app-stat-label">{label}</p>
         <Icon className="h-4 w-4 text-neutral-400 transition-colors group-hover:text-brand-600 dark:text-neutral-500 dark:group-hover:text-brand-400" aria-hidden />
       </div>
-      <p className="app-stat-value">{value}</p>
+      <p className="app-stat-value max-sm:text-[24px]">{value}</p>
       {children}
       {sub ? (
         <p
@@ -115,9 +115,9 @@ function Kpi({
     </>
   )
   const cls =
-    'dashboard-panel group flex flex-col gap-3 p-5 text-left transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40'
+    'dashboard-panel group flex min-w-0 flex-col gap-2.5 p-4 text-left transition-[border-color,box-shadow] sm:gap-3 sm:p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40'
   return href ? (
-    <Link href={href} className={cn(cls, 'hover:border-neutral-300 hover:shadow-sm dark:hover:border-neutral-600')}>
+    <Link href={href} className={cn(cls, 'hover:border-neutral-300 hover:shadow-card-hover dark:hover:border-white/[0.12]')}>
       {body}
     </Link>
   ) : (
@@ -267,7 +267,7 @@ export default function CampAdminDashboard() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       {/* Hero */}
-      <header className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white px-6 py-6 dark:border-neutral-700 dark:bg-neutral-800 sm:px-8 sm:py-7">
+      <header className="dashboard-panel relative overflow-hidden rounded-2xl px-5 py-5 sm:px-8 sm:py-7">
         <div
           className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl dark:bg-brand-500/15"
           aria-hidden
@@ -295,25 +295,25 @@ export default function CampAdminDashboard() {
               ) : null}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => void handleRefresh()} disabled={refreshing}>
-              <RefreshCw className={cn('mr-2 h-4 w-4', refreshing && 'animate-spin')} aria-hidden />
-              Refresh
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => void handleRefresh()} disabled={refreshing} aria-label="Refresh">
+              <RefreshCw className={cn('h-4 w-4 sm:mr-2', refreshing && 'animate-spin')} aria-hidden />
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button variant="outline" onClick={() => router.push('/admin/camp-meeting/registrations')}>
+            <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => router.push('/admin/camp-meeting/registrations')}>
               <ClipboardList className="mr-2 h-4 w-4" aria-hidden />
               Registrations
             </Button>
-            <Button onClick={() => router.push('/admin/camp-meeting/scan')}>
+            <Button className="flex-1 sm:flex-none" onClick={() => router.push('/admin/camp-meeting/scan')}>
               <QrCode className="mr-2 h-4 w-4" aria-hidden />
-              Check-in hub
+              Check-in
             </Button>
           </div>
         </div>
       </header>
 
       {/* Headline numbers */}
-      <section aria-label="Camp totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Camp totals" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Kpi
           href="/admin/camp-meeting/registrations"
           label="Registered"
@@ -348,7 +348,7 @@ export default function CampAdminDashboard() {
           value={
             <>
               {allocation.occupied}
-              <span className="text-lg font-medium text-neutral-400 dark:text-neutral-500"> / {allocation.capacity}</span>
+              <span className="text-base font-medium text-neutral-400 dark:text-neutral-500 sm:text-lg"> / {allocation.capacity}</span>
             </>
           }
           icon={BedDouble}
@@ -542,7 +542,7 @@ export default function CampAdminDashboard() {
             </div>
           </Panel>
 
-          <nav aria-label="Camp tools" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <nav aria-label="Camp tools" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
             {QUICK_LINKS.filter((q) => !q.permission || can(q.permission)).map((q) => {
               const Icon = q.icon
               return (

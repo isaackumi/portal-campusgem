@@ -157,10 +157,10 @@ export function RlcCampBulkImportPanel() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-rose-100/80">
+      <Card className="border-brand-100/80 dark:border-brand-400/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-rose-700" />
+            <Upload className="h-5 w-5 text-brand-700 dark:text-brand-300" />
             Bulk import from Camp Meeting
           </CardTitle>
           <CardDescription>
@@ -193,13 +193,13 @@ export function RlcCampBulkImportPanel() {
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-2xl font-bold text-emerald-700">{stats.available}</p>
+              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{stats.available}</p>
               <p className="text-sm text-muted-foreground">Ready to import</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-2xl font-bold text-slate-600">{stats.inRlc}</p>
+              <p className="text-2xl font-bold text-neutral-600 dark:text-neutral-300">{stats.inRlc}</p>
               <p className="text-sm text-muted-foreground">Already in RLC</p>
             </CardContent>
           </Card>
@@ -213,21 +213,22 @@ export function RlcCampBulkImportPanel() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9"
+                type="search"
                 placeholder="Search name, phone, role…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex min-h-11 items-center gap-2 text-sm">
               <Checkbox checked={onlyAvailable} onCheckedChange={(v) => setOnlyAvailable(v === true)} />
               Show only contacts not yet in RLC
             </label>
           </div>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="space-y-2">
               <Label>Import as</Label>
               <Select value={importMode} onValueChange={(v) => setImportMode(v as 'visitor' | 'member')}>
-                <SelectTrigger className="w-[220px]">
+                <SelectTrigger className="w-full sm:w-[220px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -237,7 +238,7 @@ export function RlcCampBulkImportPanel() {
               </Select>
             </div>
             <Button
-              className="bg-rose-700 hover:bg-rose-800"
+              className="h-11 sm:h-10"
               disabled={importing || selectedIds.size === 0}
               onClick={() => void runBulkImport()}
             >
@@ -274,7 +275,7 @@ export function RlcCampBulkImportPanel() {
             </p>
           ) : (
             <div className="space-y-2">
-              <div className="flex items-center gap-3 rounded-lg border bg-slate-50 px-3 py-2 text-sm">
+              <div className="flex items-center gap-3 rounded-lg border bg-neutral-50 px-3 py-2 text-sm dark:bg-white/[0.04]">
                 <Checkbox
                   checked={allVisibleSelected}
                   onCheckedChange={(checked) => toggleAllVisible(checked === true)}
@@ -284,14 +285,14 @@ export function RlcCampBulkImportPanel() {
                 </span>
               </div>
 
-              <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+              <div className="space-y-2 sm:max-h-[28rem] sm:overflow-y-auto sm:pr-1">
                 {visibleRows.map((row) => {
                   const reg = row.registration
                   const checked = selectedIds.has(reg.id)
                   return (
                     <div
                       key={reg.id}
-                      className="flex items-start gap-3 rounded-lg border px-3 py-2 text-sm"
+                      className="flex min-h-14 items-start gap-3 rounded-lg border px-3 py-2.5 text-sm"
                     >
                       <Checkbox
                         className="mt-1"

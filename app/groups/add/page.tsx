@@ -30,8 +30,7 @@ import {
   Target,
   Plus,
   X,
-  Save,
-  Eye
+  Save
 } from 'lucide-react'
 
 interface GroupFormData {
@@ -234,18 +233,16 @@ export default function CreateGroupPage() {
   // Show loading state
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div className="space-y-6">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded"></div>
-              ))}
-            </div>
+      <DashboardLayout>
+        <div className="mx-auto max-w-4xl animate-pulse">
+          <div className="mb-6 h-8 w-1/2 rounded bg-neutral-200 dark:bg-neutral-700 sm:w-1/4"></div>
+          <div className="space-y-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-32 rounded-xl bg-neutral-200 dark:bg-neutral-800"></div>
+            ))}
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
@@ -256,45 +253,30 @@ export default function CreateGroupPage() {
 
   return (
     <DashboardLayout>
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-4xl mx-auto">
+    <div>
+      <div className="mx-auto max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center mb-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/groups')}
-                className="mr-3 text-slate-600 hover:text-slate-900"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Groups
-              </Button>
-            </div>
-            <h1 className="app-page-title mb-2">
-              Create New Group
-            </h1>
-            <p className="text-slate-600">Set up a new church group, ministry, or fellowship</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/groups')}
-              disabled={saving}
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-          </div>
+        <div className="mb-6 sm:mb-8">
+          <button
+            type="button"
+            onClick={() => router.push('/groups')}
+            className="-ml-1 mb-3 inline-flex min-h-11 items-center gap-2 rounded-md px-1 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 sm:min-h-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to groups
+          </button>
+          <h1 className="app-page-title">
+            Create new group
+          </h1>
+          <p className="app-page-description mt-1">Set up a new church group, ministry, or fellowship</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Basic Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2 text-primary" />
+              <CardTitle className="app-section-title flex items-center gap-2">
+                <Users className="h-4 w-4 text-brand-600 dark:text-brand-300" />
                 Basic Information
               </CardTitle>
             </CardHeader>
@@ -313,7 +295,7 @@ export default function CreateGroupPage() {
                 <div className="space-y-2">
                   <Label htmlFor="group_type">Group Type *</Label>
                   <Select value={formData.group_type} onValueChange={(value) => handleInputChange('group_type', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 sm:h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -377,7 +359,7 @@ export default function CreateGroupPage() {
                 <div className="space-y-2">
                   <Label>Group Settings</Label>
                   <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex min-h-11 items-center gap-3">
                       <Checkbox
                         id="is_open"
                         checked={formData.is_open}
@@ -385,7 +367,7 @@ export default function CreateGroupPage() {
                       />
                       <Label htmlFor="is_open" className="text-sm">Open for new members</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex min-h-11 items-center gap-3">
                       <Checkbox
                         id="requires_approval"
                         checked={formData.requires_approval}
@@ -402,8 +384,8 @@ export default function CreateGroupPage() {
           {/* Leadership */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Crown className="h-5 w-5 mr-2 text-yellow-600" />
+              <CardTitle className="app-section-title flex items-center gap-2">
+                <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 Leadership
               </CardTitle>
             </CardHeader>
@@ -412,7 +394,7 @@ export default function CreateGroupPage() {
                 <div className="space-y-2">
                   <Label htmlFor="leader">Group Leader *</Label>
                   <Select value={formData.leader_id} onValueChange={(value) => handleInputChange('leader_id', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 sm:h-10">
                       <SelectValue placeholder="Select a leader" />
                     </SelectTrigger>
                     <SelectContent>
@@ -421,7 +403,7 @@ export default function CreateGroupPage() {
                           <div className="flex items-center">
                             <div className="flex-1">
                               <p className="font-medium">{member.full_name}</p>
-                              <p className="text-xs text-slate-500">{member.membership_id} • {member.role}</p>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400"><span className="font-mono">{member.membership_id}</span> · {member.role}</p>
                             </div>
                           </div>
                         </SelectItem>
@@ -432,7 +414,7 @@ export default function CreateGroupPage() {
                 <div className="space-y-2">
                   <Label htmlFor="co_leader">Co-Leader (Optional)</Label>
                   <Select value={formData.co_leader_id || 'none'} onValueChange={(value) => handleInputChange('co_leader_id', value === 'none' ? null : value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 sm:h-10">
                       <SelectValue placeholder="Select a co-leader" />
                     </SelectTrigger>
                     <SelectContent>
@@ -442,7 +424,7 @@ export default function CreateGroupPage() {
                           <div className="flex items-center">
                             <div className="flex-1">
                               <p className="font-medium">{member.full_name}</p>
-                              <p className="text-xs text-slate-500">{member.membership_id} • {member.role}</p>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400"><span className="font-mono">{member.membership_id}</span> · {member.role}</p>
                             </div>
                           </div>
                         </SelectItem>
@@ -457,8 +439,8 @@ export default function CreateGroupPage() {
           {/* Meeting Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-green-600" />
+              <CardTitle className="app-section-title flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 Meeting Information
               </CardTitle>
             </CardHeader>
@@ -489,16 +471,16 @@ export default function CreateGroupPage() {
           {/* Permissions */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Shield className="h-5 w-5 mr-2 text-red-600" />
+              <CardTitle className="app-section-title flex items-center gap-2">
+                <Shield className="h-4 w-4 text-red-600 dark:text-red-400" />
                 Group Permissions
               </CardTitle>
-              <p className="text-sm text-slate-600">Set what group members can do</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Set what group members can do</p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
+              <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
+                <div>
+                  <div className="flex min-h-11 items-center gap-3">
                     <Checkbox
                       id="can_add_members"
                       checked={formData.permissions.can_add_members}
@@ -506,7 +488,7 @@ export default function CreateGroupPage() {
                     />
                     <Label htmlFor="can_add_members" className="text-sm">Add new members</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex min-h-11 items-center gap-3">
                     <Checkbox
                       id="can_remove_members"
                       checked={formData.permissions.can_remove_members}
@@ -514,7 +496,7 @@ export default function CreateGroupPage() {
                     />
                     <Label htmlFor="can_remove_members" className="text-sm">Remove members</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex min-h-11 items-center gap-3">
                     <Checkbox
                       id="can_send_messages"
                       checked={formData.permissions.can_send_messages}
@@ -523,8 +505,8 @@ export default function CreateGroupPage() {
                     <Label htmlFor="can_send_messages" className="text-sm">Send messages</Label>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
+                <div>
+                  <div className="flex min-h-11 items-center gap-3">
                     <Checkbox
                       id="can_schedule_events"
                       checked={formData.permissions.can_schedule_events}
@@ -532,7 +514,7 @@ export default function CreateGroupPage() {
                     />
                     <Label htmlFor="can_schedule_events" className="text-sm">Schedule events</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex min-h-11 items-center gap-3">
                     <Checkbox
                       id="can_view_attendance"
                       checked={formData.permissions.can_view_attendance}
@@ -540,7 +522,7 @@ export default function CreateGroupPage() {
                     />
                     <Label htmlFor="can_view_attendance" className="text-sm">View attendance</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex min-h-11 items-center gap-3">
                     <Checkbox
                       id="can_manage_finances"
                       checked={formData.permissions.can_manage_finances}
@@ -556,8 +538,8 @@ export default function CreateGroupPage() {
           {/* Contact Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Phone className="h-5 w-5 mr-2 text-primary" />
+              <CardTitle className="app-section-title flex items-center gap-2">
+                <Phone className="h-4 w-4 text-brand-600 dark:text-brand-300" />
                 Contact Information
               </CardTitle>
             </CardHeader>
@@ -598,21 +580,22 @@ export default function CreateGroupPage() {
           {/* Tags */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Target className="h-5 w-5 mr-2 text-purple-600" />
+              <CardTitle className="app-section-title flex items-center gap-2">
+                <Target className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                 Tags
               </CardTitle>
-              <p className="text-sm text-slate-600">Add tags to help categorize this group</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Add tags to help categorize this group</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex space-x-2">
+              <div className="flex gap-2">
                 <Input
+                  className="h-11 sm:h-10"
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   placeholder="Add a tag..."
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 />
-                <Button type="button" onClick={addTag} variant="outline">
+                <Button type="button" onClick={addTag} variant="outline" className="h-11 w-11 shrink-0 p-0 sm:h-10 sm:w-10" aria-label="Add tag">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -624,7 +607,8 @@ export default function CreateGroupPage() {
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="ml-1 hover:text-red-600"
+                        aria-label={`Remove tag ${tag}`}
+                        className="-my-1 -mr-1 ml-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full hover:text-red-600 dark:hover:text-red-400"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -636,10 +620,11 @@ export default function CreateGroupPage() {
           </Card>
 
           {/* Submit Button */}
-          <div className="flex justify-end space-x-3">
+          <div className="sticky bottom-20 z-10 -mx-4 flex gap-3 border-t border-neutral-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-white/[0.06] dark:bg-neutral-900/95 sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none sm:dark:bg-transparent">
             <Button
               type="button"
               variant="outline"
+              className="h-11 flex-1 sm:h-10 sm:flex-none"
               onClick={() => router.push('/groups')}
               disabled={saving}
             >
@@ -648,17 +633,17 @@ export default function CreateGroupPage() {
             <Button
               type="submit"
               disabled={saving || !formData.name.trim() || !formData.leader_id}
-              className=""
+              className="h-11 flex-1 sm:h-10 sm:flex-none"
             >
               {saving ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current"></div>
                   Creating...
                 </div>
               ) : (
                 <div className="flex items-center">
                   <Save className="h-4 w-4 mr-2" />
-                  Create Group
+                  Create group
                 </div>
               )}
             </Button>

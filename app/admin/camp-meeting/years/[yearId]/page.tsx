@@ -27,6 +27,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
+import { StatCard } from '@/components/ui/stat-card'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   ArrowLeft,
   BarChart3,
@@ -36,6 +44,7 @@ import {
   Sparkles,
   Phone,
   Mail,
+  MoreHorizontal,
 } from 'lucide-react'
 
 type Segment = 'all' | 'new' | 'returning' | 'unassigned' | 'no_follow_up'
@@ -308,57 +317,88 @@ export default function CampYearHubPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:px-0 sm:py-0">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-2">
-          <Button variant="ghost" onClick={() => router.push('/admin/camp-meeting/years')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
+    <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <button
+            type="button"
+            onClick={() => router.push('/admin/camp-meeting/years')}
+            className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 sm:min-h-9"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
             Camp years
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-primary p-3 text-white shadow-lg shadow-slate-900/20">
-              <Sparkles className="h-6 w-6" />
+          </button>
+          <div className="flex items-start gap-3">
+            <div className="hidden shrink-0 rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 p-3 text-white shadow-sm sm:block">
+              <Sparkles className="h-6 w-6" aria-hidden />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Camp {campYear.year} intelligence hub</h1>
-              <p className="text-muted-foreground">{campYear.theme}</p>
+            <div className="min-w-0">
+              <h1 className="app-page-title">Camp {campYear.year} intelligence hub</h1>
+              {campYear.theme ? <p className="app-page-description mt-1 break-words">{campYear.theme}</p> : null}
+              <div className="mt-2">
+                {campYear.is_active ? <Badge variant="success">Active season</Badge> : <Badge variant="secondary">Historical season</Badge>}
+              </div>
             </div>
-            {campYear.is_active ? <Badge>Active season</Badge> : <Badge variant="secondary">Historical season</Badge>}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full gap-2 sm:w-auto sm:flex-wrap">
           {campYear.is_active ? (
-            <Button variant="outline" disabled={seasonBusy} onClick={() => void deactivateSeason()}>
+            <Button variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none" disabled={seasonBusy} onClick={() => void deactivateSeason()}>
               Deactivate season
             </Button>
           ) : (
-            <Button disabled={seasonBusy} onClick={() => void setAsActiveSeason()}>
+            <Button className="h-11 flex-1 sm:h-10 sm:flex-none" disabled={seasonBusy} onClick={() => void setAsActiveSeason()}>
               Set as active season
             </Button>
           )}
-          <Button variant="outline" asChild>
+          <Button variant="outline" className="hidden sm:inline-flex" asChild>
             <Link href={`/admin/camp-meeting/registrations?year=${campYear.id}`}>Registrations</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" className="hidden sm:inline-flex" asChild>
             <Link href={`/admin/camp-meeting/rooms?year=${campYear.id}`}>Rooms</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" className="hidden sm:inline-flex" asChild>
             <Link href={`/admin/camp-meeting/follow-up?year=${campYear.id}`}>Assignments</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" className="hidden sm:inline-flex" asChild>
             <Link href={`/admin/camp-meeting/analytics?year=${campYear.id}`}>Analytics</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" className="hidden sm:inline-flex" asChild>
             <Link href={`/admin/camp-meeting/import?year=${campYear.id}`}>Import</Link>
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-11 shrink-0 sm:hidden">
+                <MoreHorizontal className="mr-2 h-4 w-4" aria-hidden />
+                More
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem asChild className="min-h-11">
+                <Link href={`/admin/camp-meeting/registrations?year=${campYear.id}`}>Registrations</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11">
+                <Link href={`/admin/camp-meeting/rooms?year=${campYear.id}`}>Rooms</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11">
+                <Link href={`/admin/camp-meeting/follow-up?year=${campYear.id}`}>Assignments</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11">
+                <Link href={`/admin/camp-meeting/analytics?year=${campYear.id}`}>Analytics</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11">
+                <Link href={`/admin/camp-meeting/import?year=${campYear.id}`}>Import</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card><CardHeader className="pb-2"><CardDescription>Registrations</CardDescription><CardTitle className="text-3xl">{insights.total}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Checked in</CardDescription><CardTitle className="text-3xl">{insights.checkedIn}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Needs follow-up</CardDescription><CardTitle className="text-3xl">{insights.pendingFollowUp}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Unassigned</CardDescription><CardTitle className="text-3xl">{insights.unassigned}</CardTitle></CardHeader></Card>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard label="Registrations" value={insights.total} icon={Users} />
+        <StatCard label="Checked in" value={insights.checkedIn} tone="success" icon={UserCheck} />
+        <StatCard label="Needs follow-up" value={insights.pendingFollowUp} tone={insights.pendingFollowUp > 0 ? 'warning' : 'default'} icon={MessageSquare} />
+        <StatCard label="Unassigned" value={insights.unassigned} icon={Users} />
       </div>
 
       <Tabs defaultValue="analysis" className="space-y-4">
@@ -384,9 +424,9 @@ export default function CampYearHubPage() {
               <CardContent className="space-y-3">
                 {Object.entries(insights.byRole).map(([role, count]) => (
                   <div key={role}>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span>{role}</span>
-                      <span>{count}</span>
+                    <div className="mb-1 flex justify-between gap-2 text-sm">
+                      <span className="min-w-0 truncate capitalize">{role}</span>
+                      <span className="tabular-nums">{count}</span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
                       <div
@@ -400,11 +440,11 @@ export default function CampYearHubPage() {
             </Card>
             <Card>
               <CardHeader><CardTitle>Reachability</CardTitle></CardHeader>
-              <CardContent className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl bg-slate-50 p-4"><Phone className="mb-2 h-5 w-5 text-primary" /><p className="text-2xl font-bold">{insights.withPhone}</p><p className="text-sm text-muted-foreground">With phone</p></div>
-                <div className="rounded-xl bg-slate-50 p-4"><Mail className="mb-2 h-5 w-5 text-brand-600" /><p className="text-2xl font-bold">{insights.withEmail}</p><p className="text-sm text-muted-foreground">With email</p></div>
-                <div className="rounded-xl bg-emerald-50 p-4"><Users className="mb-2 h-5 w-5 text-emerald-600" /><p className="text-2xl font-bold">{insights.newRegistrants}</p><p className="text-sm text-muted-foreground">First-time campers</p></div>
-                <div className="rounded-xl bg-amber-50 p-4"><Users className="mb-2 h-5 w-5 text-amber-600" /><p className="text-2xl font-bold">{insights.returning}</p><p className="text-sm text-muted-foreground">Returning campers</p></div>
+              <CardContent className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-neutral-50 p-3 dark:bg-white/[0.04] sm:p-4"><Phone className="mb-2 h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden /><p className="app-stat-value">{insights.withPhone}</p><p className="text-sm text-neutral-500 dark:text-neutral-400">With phone</p></div>
+                <div className="rounded-xl bg-neutral-50 p-3 dark:bg-white/[0.04] sm:p-4"><Mail className="mb-2 h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden /><p className="app-stat-value">{insights.withEmail}</p><p className="text-sm text-neutral-500 dark:text-neutral-400">With email</p></div>
+                <div className="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-400/10 sm:p-4"><Users className="mb-2 h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden /><p className="app-stat-value">{insights.newRegistrants}</p><p className="text-sm text-neutral-500 dark:text-neutral-400">First-time campers</p></div>
+                <div className="rounded-xl bg-amber-50 p-3 dark:bg-amber-400/10 sm:p-4"><Users className="mb-2 h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden /><p className="app-stat-value">{insights.returning}</p><p className="text-sm text-neutral-500 dark:text-neutral-400">Returning campers</p></div>
               </CardContent>
             </Card>
           </div>
@@ -418,7 +458,7 @@ export default function CampYearHubPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea value={smsBody} onChange={(event) => setSmsBody(event.target.value)} rows={5} placeholder="Hi {{name}}, thank you for joining Camp..." />
-              <Button onClick={openBulkSmsReview} disabled={working || selectedRows.length === 0 || !smsBody.trim()}>
+              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={openBulkSmsReview} disabled={working || selectedRows.length === 0 || !smsBody.trim()}>
                 Review & send SMS to {selectedRows.length} selected
               </Button>
             </CardContent>
@@ -440,7 +480,7 @@ export default function CampYearHubPage() {
               <div className="space-y-2">
                 <Label>Assignee</Label>
                 <Select value={assigneeId} onValueChange={setAssigneeId} disabled={roundRobin}>
-                  <SelectTrigger><SelectValue placeholder="Choose staff member" /></SelectTrigger>
+                  <SelectTrigger className="h-11 sm:h-10"><SelectValue placeholder="Choose staff member" /></SelectTrigger>
                   <SelectContent>
                     {staff.map((member) => (
                       <SelectItem key={member.id} value={member.id}>{member.full_name}</SelectItem>
@@ -451,7 +491,7 @@ export default function CampYearHubPage() {
               <div className="space-y-2">
                 <Label>Follow-up status</Label>
                 <Select value={followUpStatus} onValueChange={(value) => setFollowUpStatus(value as typeof followUpStatus)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 sm:h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="in_progress">In progress</SelectItem>
@@ -459,11 +499,11 @@ export default function CampYearHubPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2 md:col-span-2">
+              <div className="flex min-h-11 items-center gap-2 md:col-span-2">
                 <Checkbox checked={roundRobin} onCheckedChange={(checked) => setRoundRobin(checked === true)} id="round-robin" />
                 <Label htmlFor="round-robin">Distribute evenly across selected staff</Label>
               </div>
-              <Button className="md:col-span-2" onClick={handleBulkAssign} disabled={working || selectedRows.length === 0}>
+              <Button className="h-11 md:col-span-2" onClick={handleBulkAssign} disabled={working || selectedRows.length === 0}>
                 Assign {selectedRows.length} selected campers
               </Button>
             </CardContent>
@@ -477,10 +517,10 @@ export default function CampYearHubPage() {
           <CardDescription>Filter, select, then run SMS or assignment actions above.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, phone, or email" className="max-w-sm" />
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, phone, or email" className="col-span-2 h-11 sm:h-10 sm:max-w-sm" />
             <Select value={segment} onValueChange={(value) => setSegment(value as Segment)}>
-              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="col-span-2 h-11 sm:h-10 sm:w-48"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All campers</SelectItem>
                 <SelectItem value="new">First-time</SelectItem>
@@ -489,13 +529,13 @@ export default function CampYearHubPage() {
                 <SelectItem value="no_follow_up">Needs follow-up</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => toggleAll(true)}>Select visible</Button>
-            <Button variant="outline" onClick={() => toggleAll(false)}>Clear</Button>
+            <Button variant="outline" className="h-11 sm:h-10" onClick={() => toggleAll(true)}>Select visible</Button>
+            <Button variant="outline" className="h-11 sm:h-10" onClick={() => toggleAll(false)}>Clear</Button>
           </div>
-          <div className="max-h-[420px] space-y-2 overflow-y-auto">
+          <div className="space-y-2 md:max-h-[420px] md:overflow-y-auto">
             {filtered.map((row) => (
-              <label key={row.id} className="flex cursor-pointer items-center justify-between rounded-lg border p-3 hover:bg-muted/40">
-                <div className="flex items-center gap-3">
+              <div key={row.id} className="flex min-h-11 items-center gap-2 rounded-lg border border-neutral-200/80 p-3 hover:bg-neutral-50 dark:border-white/[0.06] dark:hover:bg-white/[0.04]">
+                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                   <Checkbox
                     checked={selectedIds.has(row.id)}
                     onCheckedChange={(checked) => {
@@ -505,13 +545,20 @@ export default function CampYearHubPage() {
                       setSelectedIds(next)
                     }}
                   />
-                  <div>
-                    <p className="font-medium">{row.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{row.phone || 'No phone'} · {row.role}</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{row.full_name}</p>
+                    <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+                      <PhoneLink phone={row.phone} whatsapp={row.whatsapp} name={row.full_name} />
+                      <span aria-hidden>·</span>
+                      <span className="capitalize">{row.role}</span>
+                      <span className="sm:hidden" aria-hidden>·</span>
+                      <span className="capitalize sm:hidden">{(row.follow_up_status || 'pending').replace('_', ' ')}</span>
+                    </p>
                   </div>
-                </div>
-                <Badge variant="outline">{row.follow_up_status || 'pending'}</Badge>
-              </label>
+                </label>
+                <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">{row.follow_up_status || 'pending'}</Badge>
+                <QuickContactButtons phone={row.phone} whatsapp={row.whatsapp} name={row.full_name} />
+              </div>
             ))}
           </div>
         </CardContent>

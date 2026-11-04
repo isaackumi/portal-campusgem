@@ -63,14 +63,21 @@ function PublicFormSteppedShellInner({
         }}
       />
 
-      <div className="relative h-1.5 w-full bg-black/20">
+      <div
+        className="sticky top-0 z-20 h-1.5 w-full bg-black/20"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(Math.min(100, Math.max(0, progress)))}
+        aria-label="Form progress"
+      >
         <div
           className="h-full bg-white shadow-sm transition-all duration-500 ease-out"
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
+      <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
         {children}
         <footer className="mt-auto pt-6 text-center">
           <p className="text-xs font-medium text-white/70">Campus Gem Ministries</p>
@@ -86,7 +93,7 @@ export function SteppedQuestionCard({ children }: { children: ReactNode }) {
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-white/20 bg-white text-slate-900 shadow-2xl shadow-black/25">
       <div className="h-1.5 w-full" style={{ backgroundColor: theme.accentHex }} />
-      <div className="px-5 py-7 sm:px-8 sm:py-9">{children}</div>
+      <div className="px-4 py-6 sm:px-8 sm:py-9">{children}</div>
     </div>
   )
 }

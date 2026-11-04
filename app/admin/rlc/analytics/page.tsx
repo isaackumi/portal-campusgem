@@ -13,6 +13,7 @@ import {
 import { RLC_SOURCE_LABELS } from '@/lib/constants/rlc'
 import type { RlcStats, Visitor } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
+import { StatCard } from '@/components/ui/stat-card'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -68,26 +69,21 @@ export default function RlcAnalyticsPage() {
     <PageContainer>
       <RlcPageHeader title="RLC Analytics" subtitle="Conversion funnel, sources, visitor trends, and follow-up health." />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[
           ['Total visitors', stats.total_visitors],
           ['Active pipeline', stats.active_visitors],
           ['Converted', stats.converted_visitors],
           ['Conversion %', `${stats.conversion_rate}%`],
         ].map(([label, value]) => (
-          <Card key={label}>
-            <CardHeader className="pb-2">
-              <CardDescription>{label}</CardDescription>
-              <p className="app-stat-value">{value}</p>
-            </CardHeader>
-          </Card>
+          <StatCard key={label} className="p-4 sm:p-5" label={String(label)} value={value} />
         ))}
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LineChart className="h-5 w-5 text-rose-600" />
+            <LineChart className="h-5 w-5 text-brand-600 dark:text-brand-300" />
             Visitor arrivals over time
           </CardTitle>
           <CardDescription>Daily first visits and cumulative RLC visitors.</CardDescription>
@@ -97,24 +93,24 @@ export default function RlcAnalyticsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-rose-600" />
+              <BarChart3 className="h-5 w-5 text-brand-600 dark:text-brand-300" />
               Pipeline funnel
             </CardTitle>
             <CardDescription>Stage counts across the RLC membership journey.</CardDescription>
           </CardHeader>
           <CardContent>
-            <AnalyticsHorizontalBarChart data={funnelData} barColor="#e11d48" />
+            <AnalyticsHorizontalBarChart data={funnelData} barColor="#4f46e5" />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5 text-violet-600" />
+              <PieChartIcon className="h-5 w-5 text-violet-600 dark:text-violet-300" />
               Visitor sources
             </CardTitle>
             <CardDescription>Where RLC visitors heard about the church.</CardDescription>
@@ -141,7 +137,7 @@ export default function RlcAnalyticsPage() {
                 name: row.label,
                 value: row.count,
               }))}
-              barColor="#8b5cf6"
+              barColor="#4f46e5"
             />
           </CardContent>
         </Card>
@@ -152,7 +148,7 @@ export default function RlcAnalyticsPage() {
           <CardTitle>Insights</CardTitle>
           <CardDescription>
             Follow-up queue: {stats.pending_follow_up} pending ·{' '}
-            <Link href={rlcFollowUpHref({ sla: 'overdue' })} className="text-rose-700 underline">
+            <Link href={rlcFollowUpHref({ sla: 'overdue' })} className="text-brand-700 underline dark:text-brand-300">
               review overdue
             </Link>
           </CardDescription>
@@ -161,12 +157,12 @@ export default function RlcAnalyticsPage() {
           {insights.map((i) => (
             <div
               key={i.id}
-              className={`rounded-lg border px-4 py-3 text-sm ${
+              className={`rounded-lg border px-3 py-3 text-sm sm:px-4 ${
                 i.severity === 'warning'
-                  ? 'border-amber-200 bg-amber-50'
+                  ? 'border-amber-200 bg-amber-50 dark:border-amber-400/20 dark:bg-amber-400/10'
                   : i.severity === 'success'
-                    ? 'border-emerald-200 bg-emerald-50'
-                    : 'border-slate-200 bg-slate-50'
+                    ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-400/20 dark:bg-emerald-400/10'
+                    : 'border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-white/[0.04]'
               }`}
             >
               <p className="font-medium">{i.title}</p>

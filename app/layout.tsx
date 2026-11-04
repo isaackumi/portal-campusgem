@@ -1,32 +1,25 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
+import { JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/toaster'
 
 /*
- * Type pairing — each family has one job:
- *   display  Instrument Serif   greetings and page titles, 24px and up only
- *   sans     Geist              all UI: body, labels, buttons, cards, numbers
- *   mono     Geist Mono         IDs, codes, keyboard shortcuts
+ * Type system: one family for the whole interface, one for codes.
+ *   sans / display  Plus Jakarta Sans   UI, headings (semibold, tight tracking) and numbers
+ *   mono            JetBrains Mono      membership IDs, check-in codes, shortcuts
  */
-const display = Instrument_Serif({
+const sans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   display: 'swap',
-  weight: '400',
-  style: ['normal', 'italic'],
-  variable: '--font-display',
-})
-
-const sans = Geist({
-  subsets: ['latin'],
-  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans',
 })
 
-const mono = Geist_Mono({
+const mono = JetBrains_Mono({
   subsets: ['latin'],
   display: 'swap',
+  weight: ['400', '500'],
   variable: '--font-mono',
 })
 
@@ -60,11 +53,11 @@ export const metadata: Metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch-zoom stays on (accessibility); inputs are 16px on phones so iOS doesn't auto-zoom.
+  viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f5f5f5' },
-    { media: '(prefers-color-scheme: dark)', color: '#171717' },
+    { media: '(prefers-color-scheme: light)', color: '#f1f5f9' },
+    { media: '(prefers-color-scheme: dark)', color: '#020617' },
   ],
 }
 
@@ -134,7 +127,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <DevAssetRecoveryScript />
         <meta name="mobile-web-app-capable" content="yes" />

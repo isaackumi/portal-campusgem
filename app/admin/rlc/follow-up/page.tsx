@@ -21,7 +21,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { AlertCircle, Eye, MessageCircle } from 'lucide-react'
+import { AlertCircle, Eye } from 'lucide-react'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 
 const SLA_FILTERS = ['all', 'overdue', 'due_soon', 'healthy'] as const
 
@@ -66,11 +67,11 @@ function FollowUpContent() {
     })
   }, [visitors, statusFilter, slaFilter, assignedFilter])
 
-  function slaBadge(bucket: RlcFollowUpSlaBucket) {
-    if (bucket === 'overdue') return 'bg-red-100 text-red-800'
-    if (bucket === 'due_soon') return 'bg-amber-100 text-amber-800'
-    if (bucket === 'healthy') return 'bg-emerald-100 text-emerald-800'
-    return 'bg-slate-100 text-slate-600'
+  function slaVariant(bucket: RlcFollowUpSlaBucket) {
+    if (bucket === 'overdue') return 'danger' as const
+    if (bucket === 'due_soon') return 'warning' as const
+    if (bucket === 'healthy') return 'success' as const
+    return 'secondary' as const
   }
 
   if (loading) {
@@ -88,9 +89,9 @@ function FollowUpContent() {
         subtitle="Assign members, track SLA, and move visitors toward membership."
       />
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -103,7 +104,7 @@ function FollowUpContent() {
           </SelectContent>
         </Select>
         <Select value={slaFilter} onValueChange={setSlaFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="SLA" />
           </SelectTrigger>
           <SelectContent>
@@ -115,7 +116,7 @@ function FollowUpContent() {
           </SelectContent>
         </Select>
         <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-          <SelectTrigger className="w-52">
+          <SelectTrigger className="col-span-2 w-full sm:w-52">
             <SelectValue placeholder="Assignee" />
           </SelectTrigger>
           <SelectContent>
@@ -129,44 +130,54 @@ function FollowUpContent() {
         </Select>
       </div>
 
+      <p className="app-meta">
+        {filtered.length} visitor{filtered.length === 1 ? '' : 's'}
+      </p>
+
       <div className="space-y-3">
+        {filtered.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              No visitors match these filters.
+            </CardContent>
+          </Card>
+        ) : null}
         {filtered.map((v) => {
           const sla = classifyRlcFollowUpSla(v)
           const pipeline = v.pipeline_status ?? 'first_visit'
+          const name = [v.first_name, v.last_name].filter(Boolean).join(' ')
           return (
-            <Card key={v.id} className={cn('border-rose-100/80', sla === 'overdue' && 'border-red-200')}>
-              <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold">
-                      {v.first_name} {v.last_name}
-                    </span>
-                    <Badge className={RLC_PIPELINE_COLORS[pipeline]}>{RLC_PIPELINE_LABELS[pipeline]}</Badge>
-                    <Badge className={slaBadge(sla)}>{sla.replace('_', ' ')}</Badge>
-                    {sla === 'overdue' ? <AlertCircle className="h-4 w-4 text-red-600" /> : null}
+            <Card key={v.id} className={cn(sla === 'overdue' && 'border-red-200 dark:border-red-400/30')}>
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={`/admin/rlc/visitors/${v.id}`}
+                      className="min-w-0 break-words font-semibold text-neutral-900 hover:text-brand-700 dark:text-neutral-100 dark:hover:text-brand-300"
+                    >
+                      {name}
+                    </Link>
+                    <QuickContactButtons phone={v.phone} name={name} className="-mt-1 sm:hidden" />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {v.phone ?? 'No phone'} · Visit {v.visit_date}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant={slaVariant(sla)}>
+                      {sla === 'overdue' ? <AlertCircle className="h-3 w-3" aria-hidden /> : null}
+                      {sla.replace('_', ' ')}
+                    </Badge>
+                    <Badge className={RLC_PIPELINE_COLORS[pipeline]}>{RLC_PIPELINE_LABELS[pipeline]}</Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-2 text-sm text-neutral-600 dark:text-neutral-400">
+                    <PhoneLink phone={v.phone} name={name} />
+                    <span>· Visit {v.visit_date}</span>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Follow-up: {v.assigned_follow_up?.user?.full_name ?? 'Unassigned'} ·{' '}
                     {RLC_FOLLOW_UP_LABELS[v.follow_up_status ?? 'pending']}
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-2">
-                  {v.phone ? (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={`https://wa.me/${v.phone.replace(/\D/g, '').replace(/^0/, '233')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        WhatsApp
-                      </a>
-                    </Button>
-                  ) : null}
-                  <Button variant="outline" size="sm" asChild>
+                <div className="flex shrink-0 items-center gap-2">
+                  <QuickContactButtons phone={v.phone} name={name} className="hidden sm:inline-flex" />
+                  <Button variant="outline" size="sm" className="h-10 flex-1 sm:h-8 sm:flex-none" asChild>
                     <Link href={`/admin/rlc/visitors/${v.id}`}>
                       <Eye className="mr-2 h-4 w-4" />
                       Open

@@ -39,6 +39,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
+import { PhoneLink } from '@/components/contact/phone-link'
 import { useAuth } from '@/components/providers'
 import { useBackgroundJobs } from '@/components/background-jobs'
 import { Check as CheckIcon } from 'lucide-react'
@@ -589,7 +590,7 @@ export default function BulkCommunicationsPage() {
 
     if (!campYear) {
         return (
-            <div className="p-6 max-w-4xl mx-auto">
+            <div className="mx-auto max-w-4xl">
                 <Card>
                     <CardContent className="py-12 text-center">
                         <p className="text-muted-foreground mb-4">No active camp year found.</p>
@@ -603,8 +604,8 @@ export default function BulkCommunicationsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:p-6">
+        <div>
+            <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
                 <CampAdminPageHeader title="Bulk Communications" campYear={campYear} />
 
                 <SmsProviderBanner
@@ -630,21 +631,21 @@ export default function BulkCommunicationsPage() {
 
                     {/* Send Messages Tab */}
                     <TabsContent value="send" className="space-y-6">
-                        <Card className="border border-slate-200 shadow-sm">
+                        <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Users className="h-5 w-5 text-slate-600" aria-hidden />
+                                    <Users className="h-5 w-5 text-neutral-600 dark:text-neutral-300" aria-hidden />
                                     Audience
                                 </CardTitle>
                                 <CardDescription>
                                     Message people already registered, or invite those who have not signed up yet.
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="flex flex-wrap gap-2">
+                            <CardContent className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                                 <Button
                                     type="button"
                                     variant={audienceMode === 'registered' ? 'default' : 'outline'}
-                                    className="min-h-11 cursor-pointer"
+                                    className="min-h-11 cursor-pointer px-3"
                                     aria-pressed={audienceMode === 'registered'}
                                     onClick={() => {
                                         setAudienceMode('registered')
@@ -657,7 +658,7 @@ export default function BulkCommunicationsPage() {
                                 <Button
                                     type="button"
                                     variant={audienceMode === 'unregistered' ? 'default' : 'outline'}
-                                    className="min-h-11 cursor-pointer"
+                                    className="min-h-11 cursor-pointer px-3"
                                     aria-pressed={audienceMode === 'unregistered'}
                                     onClick={() => {
                                         setAudienceMode('unregistered')
@@ -671,7 +672,7 @@ export default function BulkCommunicationsPage() {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="min-h-11 cursor-pointer"
+                                        className="col-span-2 min-h-11 cursor-pointer"
                                         disabled={inviteLoading}
                                         onClick={() => void loadUnregisteredAudience()}
                                     >
@@ -686,10 +687,10 @@ export default function BulkCommunicationsPage() {
                         </Card>
 
                         {/* Filters */}
-                        <Card className="border border-slate-200 shadow-sm">
+                        <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Filter className="h-5 w-5 text-slate-600" aria-hidden />
+                                    <Filter className="h-5 w-5 text-neutral-600 dark:text-neutral-300" aria-hidden />
                                     Filter Recipients
                                 </CardTitle>
                                 <CardDescription>
@@ -701,7 +702,7 @@ export default function BulkCommunicationsPage() {
                             <CardContent>
                                 <div
                                     className={cn(
-                                        'grid gap-4 md:grid-cols-2',
+                                        'grid grid-cols-1 gap-4 sm:grid-cols-2',
                                         audienceMode === 'registered' && 'lg:grid-cols-5'
                                     )}
                                 >
@@ -783,9 +784,9 @@ export default function BulkCommunicationsPage() {
                                     ) : null}
                                 </div>
 
-                                <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="mt-4 flex flex-col gap-3 border-t border-neutral-200 dark:border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <p className="text-sm font-medium text-slate-800">
+                                        <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                             {selectableRows.length} match
                                             {selectedIds.size > 0 ? ` · ${selectedIds.size} selected` : ''}
                                             {audienceMode === 'unregistered' && inviteLoading ? ' · loading…' : ''}
@@ -807,10 +808,10 @@ export default function BulkCommunicationsPage() {
 
                         {/* Recipients List */}
                         {selectableRows.length > 0 && (
-                            <Card className="border border-slate-200 shadow-sm">
+                            <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
-                                        <Users className="h-5 w-5 text-slate-600" aria-hidden />
+                                        <Users className="h-5 w-5 text-neutral-600 dark:text-neutral-300" aria-hidden />
                                         Select Recipients
                                     </CardTitle>
                                     <CardDescription>
@@ -842,8 +843,8 @@ export default function BulkCommunicationsPage() {
                                                           className={cn(
                                                               'flex min-h-14 w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
                                                               selected
-                                                                  ? 'border-emerald-300 bg-emerald-50/80'
-                                                                  : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                                  ? 'border-emerald-300 dark:border-emerald-400/40 bg-emerald-50/80 dark:bg-emerald-400/10'
+                                                                  : 'border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-800/60 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-neutral-50 dark:hover:bg-white/5'
                                                           )}
                                                       >
                                                           {/* The row is the control (role=option); a real checkbox here would nest a button in a button. */}
@@ -857,10 +858,10 @@ export default function BulkCommunicationsPage() {
                                                               {selected ? <CheckIcon className="h-3 w-3" /> : null}
                                                           </span>
                                                           <div className="min-w-0 flex-1">
-                                                              <p className="truncate font-medium text-slate-900">
+                                                              <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">
                                                                   {label}
                                                               </p>
-                                                              <p className="truncate text-xs text-slate-500">
+                                                              <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">
                                                                   {row.phone}
                                                                   {row.email ? ` · ${row.email}` : ''}
                                                               </p>
@@ -887,8 +888,8 @@ export default function BulkCommunicationsPage() {
                                                 className={cn(
                                                     'flex min-h-14 w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
                                                     selected
-                                                        ? 'border-emerald-300 bg-emerald-50/80'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                        ? 'border-emerald-300 dark:border-emerald-400/40 bg-emerald-50/80 dark:bg-emerald-400/10'
+                                                        : 'border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-800/60 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-neutral-50 dark:hover:bg-white/5'
                                                 )}
                                             >
                                                 <span
@@ -901,10 +902,10 @@ export default function BulkCommunicationsPage() {
                                                     {selected ? <CheckIcon className="h-3 w-3" /> : null}
                                                 </span>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="truncate font-medium text-slate-900">
+                                                    <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">
                                                         {label}
                                                     </p>
-                                                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                                                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-600 dark:text-neutral-300">
                                                         {reg.email ? (
                                                             <span className="inline-flex items-center gap-1 truncate">
                                                                 <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -931,13 +932,13 @@ export default function BulkCommunicationsPage() {
                         )}
 
                         {/* Message Form */}
-                        <Card className="border border-slate-200 shadow-sm">
+                        <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     {communicationType === 'email' ? (
-                                        <Mail className="h-5 w-5 text-slate-600" aria-hidden />
+                                        <Mail className="h-5 w-5 text-neutral-600 dark:text-neutral-300" aria-hidden />
                                     ) : (
-                                        <MessageSquare className="h-5 w-5 text-emerald-600" aria-hidden />
+                                        <MessageSquare className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
                                     )}
                                     Compose Message
                                 </CardTitle>
@@ -951,7 +952,7 @@ export default function BulkCommunicationsPage() {
                                 <div className="space-y-2">
                                     <Label id="camp-comms-channel-label">Channel</Label>
                                     <div
-                                        className="flex flex-wrap gap-2"
+                                        className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
                                         role="group"
                                         aria-labelledby="camp-comms-channel-label"
                                     >
@@ -988,7 +989,7 @@ export default function BulkCommunicationsPage() {
                                         </Button>
                                     </div>
                                     {audienceMode === 'unregistered' ? (
-                                        <p className="text-xs text-slate-500">
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                             Invite audience is SMS-only so the registration link reaches phones quickly.
                                         </p>
                                     ) : null}
@@ -1006,7 +1007,7 @@ export default function BulkCommunicationsPage() {
                                             onChange={(e) => setRegistrationLink(e.target.value)}
                                             placeholder="https://…/camp-meeting/register"
                                         />
-                                        <p className="text-xs text-slate-500">
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                             Inserted wherever the message uses {'{{registrationLink}}'}.
                                         </p>
                                     </div>
@@ -1014,7 +1015,7 @@ export default function BulkCommunicationsPage() {
 
                                 <div className="space-y-2">
                                     <Label className="flex items-center gap-2">
-                                        <LayoutTemplate className="h-4 w-4 text-slate-500" aria-hidden />
+                                        <LayoutTemplate className="h-4 w-4 text-neutral-500 dark:text-neutral-400" aria-hidden />
                                         Message template
                                     </Label>
                                     <div
@@ -1031,14 +1032,14 @@ export default function BulkCommunicationsPage() {
                                                 'min-h-14 cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
                                                 templateId === 'custom'
                                                     ? 'border-brand-700 bg-brand-600 text-white'
-                                                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                    : 'border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-800/60 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-neutral-50 dark:hover:bg-white/5'
                                             )}
                                         >
                                             <p className="text-sm font-medium">Custom message</p>
                                             <p
                                                 className={cn(
                                                     'mt-0.5 text-xs',
-                                                    templateId === 'custom' ? 'text-slate-300' : 'text-slate-500'
+                                                    templateId === 'custom' ? 'text-white/75' : 'text-neutral-500 dark:text-neutral-400'
                                                 )}
                                             >
                                                 Write freely or start from a preset
@@ -1058,12 +1059,12 @@ export default function BulkCommunicationsPage() {
                                                     className={cn(
                                                         'min-h-14 cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-colors duration-200',
                                                         active
-                                                            ? 'border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600/30'
-                                                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                            ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-400/10 ring-1 ring-emerald-600/30'
+                                                            : 'border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-800/60 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-neutral-50 dark:hover:bg-white/5'
                                                     )}
                                                 >
-                                                    <p className="text-sm font-medium text-slate-900">{t.label}</p>
-                                                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                                                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{t.label}</p>
+                                                    <p className="mt-0.5 line-clamp-2 text-xs text-neutral-500 dark:text-neutral-400">
                                                         {t.description}
                                                     </p>
                                                 </button>
@@ -1109,13 +1110,13 @@ export default function BulkCommunicationsPage() {
                                         className="min-h-[140px] resize-y"
                                     />
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-medium text-slate-600">Insert:</span>
+                                        <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">Insert:</span>
                                         {CAMP_TEMPLATE_VARIABLE_CHIPS.map((chip) => (
                                             <button
                                                 key={chip.key}
                                                 type="button"
                                                 onClick={() => insertVariable(chip.key)}
-                                                className="inline-flex min-h-9 cursor-pointer items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                                className="inline-flex min-h-10 cursor-pointer items-center rounded-md border sm:min-h-9 border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-800/60 px-2.5 text-xs font-medium text-neutral-700 dark:text-neutral-200 transition-colors duration-150 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-neutral-50 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                                                 aria-label={`Insert ${chip.label} variable`}
                                             >
                                                 {chip.label}
@@ -1125,7 +1126,7 @@ export default function BulkCommunicationsPage() {
                                             <span
                                                 className={cn(
                                                     'ml-auto text-xs tabular-nums',
-                                                    messageBody.length > 160 ? 'font-medium text-amber-700' : 'text-slate-500'
+                                                    messageBody.length > 160 ? 'font-medium text-amber-700 dark:text-amber-300' : 'text-neutral-500 dark:text-neutral-400'
                                                 )}
                                             >
                                                 {messageBody.length} chars
@@ -1137,58 +1138,58 @@ export default function BulkCommunicationsPage() {
 
                                 {messageBody.trim() && smsPreviewRecipient ? (
                                     <div
-                                        className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4"
+                                        className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-white/[0.03]"
                                         aria-live="polite"
                                     >
-                                        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900">
-                                            <Eye className="h-4 w-4 text-slate-500" aria-hidden />
+                                        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                                            <Eye className="h-4 w-4 text-neutral-500 dark:text-neutral-400" aria-hidden />
                                             Live preview
-                                            <span className="font-normal text-slate-500">
+                                            <span className="font-normal text-neutral-500 dark:text-neutral-400">
                                                 ({smsPreviewRecipient.full_name || 'sample'})
                                             </span>
                                         </div>
                                         {communicationType === 'email' && subject.trim() ? (
-                                            <p className="mb-2 text-sm font-semibold text-slate-800">
+                                            <p className="mb-2 text-sm font-semibold text-neutral-800 dark:text-neutral-100">
                                                 {replaceTemplateVariables(subject, smsPreviewRecipient)}
                                             </p>
                                         ) : null}
-                                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-700 dark:text-neutral-200">
                                             {replaceTemplateVariables(messageBody, smsPreviewRecipient)}
                                         </p>
                                     </div>
                                 ) : null}
 
                                 {selectedIds.size > 0 ? (
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
-                                        <p className="mb-2 text-sm font-medium text-slate-900">
+                                    <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/[0.03] p-4">
+                                        <p className="mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">
                                             Delivery check · {selectedIds.size} selected
                                         </p>
-                                        <div className="space-y-1.5 text-sm text-slate-700">
+                                        <div className="space-y-1.5 text-sm text-neutral-700 dark:text-neutral-200">
                                             {communicationType === 'email' ? (
                                                 <p>{canSendEmail} have an email address</p>
                                             ) : (
                                                 <p>{canSendSMS} have a valid Ghana mobile number</p>
                                             )}
                                             {communicationType === 'sms' && missingSmsPhones > 0 ? (
-                                                <p className="flex items-start gap-2 text-amber-800">
+                                                <p className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
                                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                                                     {missingSmsPhones} missing phone — will be skipped
                                                 </p>
                                             ) : null}
                                             {communicationType === 'sms' && invalidSmsPhones > 0 ? (
-                                                <p className="flex items-start gap-2 text-amber-800">
+                                                <p className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
                                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                                                     {invalidSmsPhones} invalid phone format — will be skipped
                                                 </p>
                                             ) : null}
                                             {communicationType === 'email' && canSendEmail < selectedIds.size ? (
-                                                <p className="flex items-start gap-2 text-amber-800">
+                                                <p className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
                                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                                                     {selectedIds.size - canSendEmail} without email — will be skipped
                                                 </p>
                                             ) : null}
                                             {communicationType === 'sms' && canSendSMS < selectedIds.size ? (
-                                                <p className="flex items-start gap-2 text-amber-800">
+                                                <p className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
                                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                                                     {selectedIds.size - canSendSMS} missing or invalid phone — will be
                                                     skipped
@@ -1230,11 +1231,11 @@ export default function BulkCommunicationsPage() {
 
                     {/* Communication History Tab */}
                     <TabsContent value="history" className="space-y-6">
-                        <Card className="border border-slate-200 shadow-sm">
-                            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
-                                        <FileText className="h-5 w-5 text-slate-600" aria-hidden />
+                                        <FileText className="h-5 w-5 text-neutral-600 dark:text-neutral-300" aria-hidden />
                                         Communication History
                                     </CardTitle>
                                     <CardDescription>
@@ -1245,20 +1246,20 @@ export default function BulkCommunicationsPage() {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="min-h-10 cursor-pointer"
+                                    className="min-h-11 shrink-0 cursor-pointer sm:min-h-10"
                                     onClick={loadCommunications}
                                     aria-label="Refresh communication history"
                                 >
-                                    <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
-                                    Refresh
+                                    <RefreshCw className="h-4 w-4 sm:mr-2" aria-hidden />
+                                    <span className="hidden sm:inline">Refresh</span>
                                 </Button>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                    <div className="relative sm:col-span-2 lg:col-span-1">
-                                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+                                    <div className="relative col-span-2 lg:col-span-1">
+                                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
                                         <Input
-                                            className="min-h-10 pl-9"
+                                            className="min-h-11 pl-9 sm:min-h-10"
                                             placeholder="Filter by name, phone, message…"
                                             value={historySearch}
                                             onChange={(e) => setHistorySearch(e.target.value)}
@@ -1269,7 +1270,7 @@ export default function BulkCommunicationsPage() {
                                         value={historyTypeFilter}
                                         onValueChange={(v) => setHistoryTypeFilter(v as typeof historyTypeFilter)}
                                     >
-                                        <SelectTrigger className="min-h-10">
+                                        <SelectTrigger className="min-h-11 sm:min-h-10">
                                             <SelectValue placeholder="Type" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -1282,7 +1283,7 @@ export default function BulkCommunicationsPage() {
                                         value={historyStatusFilter}
                                         onValueChange={(v) => setHistoryStatusFilter(v as typeof historyStatusFilter)}
                                     >
-                                        <SelectTrigger className="min-h-10">
+                                        <SelectTrigger className="min-h-11 sm:min-h-10">
                                             <SelectValue placeholder="Status" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -1298,7 +1299,7 @@ export default function BulkCommunicationsPage() {
                                         value={historyTimeFilter}
                                         onValueChange={(v) => setHistoryTimeFilter(v as typeof historyTimeFilter)}
                                     >
-                                        <SelectTrigger className="min-h-10">
+                                        <SelectTrigger className="min-h-11 sm:min-h-10">
                                             <SelectValue placeholder="Time" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -1311,12 +1312,12 @@ export default function BulkCommunicationsPage() {
                                 </div>
 
                                 {communications.length === 0 ? (
-                                    <div className="text-center py-12 text-slate-500">
-                                        <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                    <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">
+                                        <FileText className="h-12 w-12 mx-auto mb-4 text-neutral-300 dark:text-neutral-600" />
                                         <p>No communications sent yet</p>
                                     </div>
                                 ) : filteredCommunications.length === 0 ? (
-                                    <div className="rounded-lg border border-dashed border-slate-200 py-10 text-center text-slate-500">
+                                    <div className="rounded-lg border border-dashed border-neutral-200 dark:border-white/10 py-10 text-center text-neutral-500 dark:text-neutral-400">
                                         <p>No messages match these filters</p>
                                         <Button
                                             type="button"
@@ -1345,21 +1346,21 @@ export default function BulkCommunicationsPage() {
                                             return (
                                             <div
                                                 key={comm.id}
-                                                className="rounded-lg border border-slate-200 bg-white p-4 transition-shadow duration-200 hover:shadow-sm"
+                                                className="rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-800/60 p-3 transition-shadow duration-200 hover:shadow-sm sm:p-4"
                                             >
-                                                <div className="mb-3 flex items-start justify-between">
-                                                    <div className="flex items-center gap-3">
+                                                <div className="mb-3 flex items-start justify-between gap-3">
+                                                    <div className="flex min-w-0 items-start gap-3">
                                                         {comm.communication_type === 'email' ? (
-                                                            <div className="rounded-lg bg-slate-100 p-2">
-                                                                <Mail className="h-5 w-5 text-primary" />
+                                                            <div className="shrink-0 rounded-lg bg-neutral-100 dark:bg-white/5 p-2">
+                                                                <Mail className="h-5 w-5 text-brand-600 dark:text-brand-300" />
                                                             </div>
                                                         ) : (
-                                                            <div className="rounded-lg bg-green-100 p-2">
-                                                                <MessageSquare className="h-5 w-5 text-green-600" />
+                                                            <div className="shrink-0 rounded-lg bg-emerald-100 dark:bg-emerald-400/10 p-2">
+                                                                <MessageSquare className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                                                             </div>
                                                         )}
-                                                        <div>
-                                                            <p className="font-semibold text-slate-900">
+                                                        <div className="min-w-0">
+                                                            <p className="break-words font-semibold text-neutral-900 dark:text-neutral-100">
                                                                 {recipientName ||
                                                                     (comm.communication_type === 'email'
                                                                         ? comm.recipient_email || 'Bulk Email'
@@ -1368,14 +1369,19 @@ export default function BulkCommunicationsPage() {
                                                             {(recipientName ||
                                                                 comm.recipient_phone ||
                                                                 comm.recipient_email) && (
-                                                                <p className="mt-0.5 font-mono text-xs text-slate-500">
-                                                                    {comm.communication_type === 'email'
-                                                                        ? comm.recipient_email
-                                                                        : comm.recipient_phone}
+                                                                <p className="mt-0.5 break-all text-xs text-neutral-500 dark:text-neutral-400">
+                                                                    {comm.communication_type === 'email' ? (
+                                                                        <span className="font-mono">{comm.recipient_email}</span>
+                                                                    ) : comm.recipient_phone ? (
+                                                                        <PhoneLink
+                                                                            phone={comm.recipient_phone}
+                                                                            name={recipientName}
+                                                                        />
+                                                                    ) : null}
                                                                 </p>
                                                             )}
                                                             {comm.subject ? (
-                                                                <p className="mt-1 text-sm text-slate-600">{comm.subject}</p>
+                                                                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{comm.subject}</p>
                                                             ) : null}
                                                             <div className="mt-1 flex flex-wrap gap-1">
                                                               {commsMetaBadge(comm.metadata).provider ? (
@@ -1397,20 +1403,21 @@ export default function BulkCommunicationsPage() {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex flex-col items-end gap-1">
+                                                    <div className="flex shrink-0 flex-col items-end gap-1">
                                                       <Badge
                                                           variant={
                                                               comm.status === 'sent' || comm.status === 'delivered'
-                                                                  ? 'default'
+                                                                  ? 'success'
                                                                   : comm.status === 'failed' || comm.status === 'bounced'
-                                                                  ? 'destructive'
+                                                                  ? 'danger'
                                                                   : 'outline'
                                                           }
+                                                          className="capitalize"
                                                       >
                                                           {comm.status}
                                                       </Badge>
-                                                      <div className="text-right text-[11px] text-slate-500" title={when.absolute}>
-                                                          <span className="font-medium text-slate-700">{when.relative}</span>
+                                                      <div className="text-right text-[11px] text-neutral-500 dark:text-neutral-400" title={when.absolute}>
+                                                          <span className="font-medium text-neutral-700 dark:text-neutral-200">{when.relative}</span>
                                                           {when.relative !== when.absolute ? (
                                                               <span className="mt-0.5 block">{when.absolute}</span>
                                                           ) : null}
@@ -1418,20 +1425,20 @@ export default function BulkCommunicationsPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="mb-3 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+                                                <div className="mb-3 whitespace-pre-wrap break-words rounded-md bg-neutral-50 dark:bg-white/[0.03] p-3 text-sm text-neutral-700 dark:text-neutral-200">
                                                     {comm.message_body}
                                                 </div>
                                                 {comm.provider_message_id ? (
-                                                  <p className="mb-2 font-mono text-[11px] text-slate-500">
+                                                  <p className="mb-2 break-all font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
                                                     id {comm.provider_message_id}
                                                   </p>
                                                 ) : null}
                                                 {comm.error_message ? (
-                                                  <p className="mb-2 text-xs text-red-600">{comm.error_message}</p>
+                                                  <p className="mb-2 break-words text-xs text-red-600 dark:text-red-400">{comm.error_message}</p>
                                                 ) : null}
 
-                                                <div className="flex items-center justify-between text-xs text-slate-500">
-                                                    <div className="flex items-center gap-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                                    <div className="flex min-w-0 items-center gap-4">
                                                         {comm.sender ? (
                                                             <div className="flex items-center gap-1">
                                                                 <Eye className="h-3 w-3" />
@@ -1451,7 +1458,7 @@ export default function BulkCommunicationsPage() {
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="sm"
-                                                                className="min-h-10 cursor-pointer"
+                                                                className="min-h-11 cursor-pointer sm:min-h-10"
                                                                 disabled={resendingId === comm.id}
                                                                 aria-label={`Resend ${comm.communication_type} to ${
                                                                     comm.recipient_phone ||
@@ -1488,7 +1495,7 @@ export default function BulkCommunicationsPage() {
                     if (!sending) setSmsReviewOpen(open)
                 }}
             >
-                <DialogContent className="max-w-xl">
+                <DialogContent className="max-h-[90dvh] max-w-xl overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Review SMS before sending</DialogTitle>
                         <DialogDescription>
@@ -1508,7 +1515,7 @@ export default function BulkCommunicationsPage() {
                         </div>
 
                         {(missingSmsPhones > 0 || invalidSmsPhones > 0) && (
-                            <p className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                            <p className="flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-400/20 bg-amber-50 dark:bg-amber-400/10 px-3 py-2 text-amber-900 dark:text-amber-200">
                                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                                 {[
                                     missingSmsPhones > 0 ? `${missingSmsPhones} missing phone` : null,
@@ -1520,17 +1527,17 @@ export default function BulkCommunicationsPage() {
                             </p>
                         )}
 
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.03] p-3">
                             <p className="mb-1 app-overline">
                                 Sample message
                                 {smsPreviewRecipient?.full_name
                                     ? ` · ${smsPreviewRecipient.full_name}`
                                     : ''}
                             </p>
-                            <p className="whitespace-pre-wrap leading-relaxed text-slate-900">
+                            <p className="whitespace-pre-wrap break-words leading-relaxed text-neutral-900 dark:text-neutral-100">
                                 {smsPreviewBody || '—'}
                             </p>
-                            <p className="mt-2 text-xs tabular-nums text-slate-500">
+                            <p className="mt-2 text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
                                 {smsPreviewBody.length} characters
                                 {smsPreviewBody.length > 160 ? ' · may split into multiple SMS' : ''}
                             </p>
@@ -1541,22 +1548,22 @@ export default function BulkCommunicationsPage() {
                                 Recipients
                             </p>
                             {smsRecipientPreview.length === 0 ? (
-                                <p className="text-slate-500">No valid phone numbers in this selection.</p>
+                                <p className="text-neutral-500 dark:text-neutral-400">No valid phone numbers in this selection.</p>
                             ) : (
-                                <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3">
+                                <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-800/60 p-3">
                                     {smsRecipientPreview.map((r) => (
                                         <li
                                             key={r.id}
-                                            className="flex items-center justify-between gap-3 text-slate-700"
+                                            className="flex items-center justify-between gap-3 text-neutral-700 dark:text-neutral-200"
                                         >
                                             <span className="truncate font-medium">{r.full_name}</span>
-                                            <span className="shrink-0 font-mono text-xs text-slate-500">
+                                            <span className="shrink-0 font-mono text-xs text-neutral-500 dark:text-neutral-400">
                                                 {r.phone}
                                             </span>
                                         </li>
                                     ))}
                                     {canSendSMS > smsRecipientPreview.length ? (
-                                        <li className="pt-1 text-xs text-slate-500">
+                                        <li className="pt-1 text-xs text-neutral-500 dark:text-neutral-400">
                                             +{canSendSMS - smsRecipientPreview.length} more
                                         </li>
                                     ) : null}

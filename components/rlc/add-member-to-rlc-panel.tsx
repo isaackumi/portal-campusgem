@@ -36,10 +36,10 @@ export function AddMemberToRlcPanel({ onAdded }: Props) {
 
   return (
     <>
-      <Card className="border-rose-100/80">
+      <Card className="border-brand-100/80 dark:border-brand-400/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Church className="h-5 w-5 text-rose-700" />
+            <Church className="h-5 w-5 text-brand-700 dark:text-brand-300" />
             Link existing person
           </CardTitle>
           <CardDescription>
@@ -57,7 +57,7 @@ export function AddMemberToRlcPanel({ onAdded }: Props) {
             />
             <Button
               type="button"
-              className="shrink-0 bg-rose-700 hover:bg-rose-800 sm:w-auto"
+              className="shrink-0 bg-brand-700 hover:bg-brand-800 sm:w-auto"
               disabled={searching}
               onClick={() => void search()}
             >
@@ -66,12 +66,12 @@ export function AddMemberToRlcPanel({ onAdded }: Props) {
             </Button>
           </div>
           {results.length > 0 ? (
-            <ul className="divide-y rounded-md border bg-white">
+            <ul className="divide-y rounded-md border bg-white dark:bg-neutral-800/60">
               {results.map((m) => (
                 <li key={m.id}>
                   <button
                     type="button"
-                    className="flex w-full flex-col gap-0.5 px-3 py-3 text-left hover:bg-rose-50/50 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex w-full flex-col gap-0.5 px-3 py-3 text-left hover:bg-brand-50/50 sm:flex-row sm:items-center sm:justify-between dark:hover:bg-brand-400/10"
                     onClick={() => openForMember(m)}
                   >
                     <span className="font-medium">{m.user?.full_name ?? 'Member'}</span>

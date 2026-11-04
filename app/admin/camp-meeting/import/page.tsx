@@ -9,6 +9,7 @@ import { importCampRegistrations, parseExcelFile } from '@/lib/actions/camp-impo
 import { CampYear, CampRegistrationForm } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -342,28 +343,23 @@ function CampImportPageContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div>
+            <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
                 {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/admin/camp-meeting')}
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back
-                        </Button>
-                        <div>
-                            <h1 className="app-page-title">
-                                Import Historical Camp Data
-                            </h1>
-                            <p className="text-muted-foreground mt-1">
-                                Import registrations from Excel files for previous camp years
-                            </p>
-                        </div>
-                    </div>
+                <div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="-ml-2 mb-2 min-h-11 sm:min-h-9"
+                        onClick={() => router.push('/admin/camp-meeting')}
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back
+                    </Button>
+                    <h1 className="app-page-title">Import Historical Camp Data</h1>
+                    <p className="app-page-description mt-1">
+                        Import registrations from Excel files for previous camp years
+                    </p>
                 </div>
 
                 {/* Step 1: Select Camp Year */}
@@ -379,7 +375,7 @@ function CampImportPageContent() {
                             <div className="space-y-2">
                                 <Label>Camp Year</Label>
                                 <Select value={selectedYear?.id || ''} onValueChange={handleYearChange}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="min-h-11 sm:min-h-10">
                                         <SelectValue placeholder="Select a camp year" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -415,8 +411,8 @@ function CampImportPageContent() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                                <FileSpreadsheet className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                            <div className="rounded-lg border-2 border-dashed border-neutral-300 p-5 text-center dark:border-white/10 sm:p-8">
+                                <FileSpreadsheet className="mx-auto mb-4 h-12 w-12 text-neutral-400 dark:text-neutral-500" />
                                 <input
                                     ref={fileInputRef}
                                     type="file"
@@ -427,12 +423,13 @@ function CampImportPageContent() {
                                 <Button
                                     onClick={() => fileInputRef.current?.click()}
                                     variant="outline"
+                                    className="h-11 w-full sm:h-10 sm:w-auto"
                                 >
                                     <Upload className="h-4 w-4 mr-2" />
                                     Choose File
                                 </Button>
                                 {file && (
-                                    <p className="mt-2 text-sm text-slate-600">
+                                    <p className="mt-2 break-all text-sm text-neutral-600 dark:text-neutral-300">
                                         Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
                                     </p>
                                 )}
@@ -452,17 +449,17 @@ function CampImportPageContent() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     {Object.keys(parsedData[0] || {}).filter(key => key !== '_rowIndex' && key !== '_errors').map(excelCol => (
                                         <div key={excelCol} className="space-y-2">
-                                            <Label>Excel Column: {excelCol}</Label>
+                                            <Label className="block break-words">Excel Column: {excelCol}</Label>
                                             <Select
                                                 value={columnMapping[excelCol] || IGNORE_GOOGLE_FORM_IMPORT_FIELD}
                                                 onValueChange={(value) => {
                                                     setColumnMapping({ ...columnMapping, [excelCol]: value })
                                                 }}
                                             >
-                                                <SelectTrigger>
+                                                <SelectTrigger className="min-h-11 sm:min-h-10">
                                                     <SelectValue placeholder="Select field" />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -487,7 +484,7 @@ function CampImportPageContent() {
                                         </div>
                                     ))}
                                 </div>
-                                <Button onClick={validateAllRows} variant="outline">
+                                <Button onClick={validateAllRows} variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
                                     Validate All Rows
                                 </Button>
                             </div>
@@ -505,7 +502,56 @@ function CampImportPageContent() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="overflow-x-auto">
+                            <ul className="space-y-2 md:hidden">
+                                {previewData.map((row, idx) => {
+                                    const mapped = getMappedRow(row)
+                                    const hasErrors = row._errors && row._errors.length > 0
+                                    const hasWarnings = row._warnings && row._warnings.length > 0
+                                    const name = [mapped.first_name, mapped.last_name].filter(Boolean).join(' ') || 'No name'
+                                    return (
+                                        <li
+                                            key={idx}
+                                            className={cn(
+                                                'rounded-lg border p-3 text-sm',
+                                                hasErrors
+                                                    ? 'border-red-200 bg-red-50 dark:border-red-400/20 dark:bg-red-400/10'
+                                                    : hasWarnings
+                                                      ? 'border-amber-200 bg-amber-50 dark:border-amber-400/20 dark:bg-amber-400/10'
+                                                      : 'border-neutral-200/80 dark:border-white/[0.06]'
+                                            )}
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{name}</p>
+                                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                                        Row {row._rowIndex}{mapped.role ? ` · ${mapped.role}` : ''}
+                                                    </p>
+                                                </div>
+                                                {hasErrors ? (
+                                                    <Badge variant="destructive" className="shrink-0">{row._errors?.length} error(s)</Badge>
+                                                ) : hasWarnings ? (
+                                                    <Badge variant="warning" className="shrink-0">{row._warnings?.length} warning(s)</Badge>
+                                                ) : (
+                                                    <Badge variant="success" className="shrink-0">Valid</Badge>
+                                                )}
+                                            </div>
+                                            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+                                                <dt className="text-neutral-500 dark:text-neutral-400">Phone</dt>
+                                                <dd className="truncate font-mono text-neutral-800 dark:text-neutral-200">{mapped.phone || 'N/A'}</dd>
+                                                <dt className="text-neutral-500 dark:text-neutral-400">Email</dt>
+                                                <dd className="truncate text-neutral-800 dark:text-neutral-200">{mapped.email || 'N/A'}</dd>
+                                                {mapped.parent_name ? (
+                                                    <>
+                                                        <dt className="text-neutral-500 dark:text-neutral-400">Parent</dt>
+                                                        <dd className="truncate text-neutral-800 dark:text-neutral-200">{mapped.parent_name}</dd>
+                                                    </>
+                                                ) : null}
+                                            </dl>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                            <div className="hidden overflow-x-auto md:block">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -529,9 +575,9 @@ function CampImportPageContent() {
                                                     key={idx}
                                                     className={
                                                         hasErrors
-                                                            ? 'bg-red-50'
+                                                            ? 'bg-red-50 dark:bg-red-400/10'
                                                             : hasWarnings
-                                                              ? 'bg-amber-50'
+                                                              ? 'bg-amber-50 dark:bg-amber-400/10'
                                                               : ''
                                                     }
                                                 >
@@ -610,26 +656,26 @@ function CampImportPageContent() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-                                    <div className="text-center p-4 bg-slate-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-primary">{importResult.total}</div>
-                                        <div className="text-sm text-slate-600">Total Rows</div>
+                                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
+                                    <div className="col-span-2 rounded-lg bg-neutral-50 p-3 text-center dark:bg-white/[0.03] sm:p-4 md:col-span-1">
+                                        <div className="text-2xl font-bold text-brand-600 dark:text-brand-300">{importResult.total}</div>
+                                        <div className="text-xs text-neutral-600 dark:text-neutral-300 sm:text-sm">Total Rows</div>
                                     </div>
-                                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-green-600">{importResult.successful}</div>
-                                        <div className="text-sm text-slate-600">Imported</div>
+                                    <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-400/10 sm:p-4">
+                                        <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{importResult.successful}</div>
+                                        <div className="text-xs text-neutral-600 dark:text-neutral-300 sm:text-sm">Imported</div>
                                     </div>
-                                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-yellow-700">{importResult.warned}</div>
-                                        <div className="text-sm text-slate-600">Invalid Contact</div>
+                                    <div className="rounded-lg bg-amber-50 p-3 text-center dark:bg-amber-400/10 sm:p-4">
+                                        <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{importResult.warned}</div>
+                                        <div className="text-xs text-neutral-600 dark:text-neutral-300 sm:text-sm">Invalid Contact</div>
                                     </div>
-                                    <div className="text-center p-4 bg-amber-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-amber-600">{importResult.skipped}</div>
-                                        <div className="text-sm text-slate-600">Skipped Duplicates</div>
+                                    <div className="rounded-lg bg-amber-50 p-3 text-center dark:bg-amber-400/10 sm:p-4">
+                                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{importResult.skipped}</div>
+                                        <div className="text-xs text-neutral-600 dark:text-neutral-300 sm:text-sm">Skipped Duplicates</div>
                                     </div>
-                                    <div className="text-center p-4 bg-red-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-red-600">{importResult.failed}</div>
-                                        <div className="text-sm text-slate-600">Failed</div>
+                                    <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-400/10 sm:p-4">
+                                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">{importResult.failed}</div>
+                                        <div className="text-xs text-neutral-600 dark:text-neutral-300 sm:text-sm">Failed</div>
                                     </div>
                                 </div>
 
@@ -638,7 +684,7 @@ function CampImportPageContent() {
                                         <h4 className="font-semibold">Skipped duplicates:</h4>
                                         <div className="max-h-60 overflow-y-auto space-y-1">
                                             {importResult.skipped_rows.map((skippedRow, idx) => (
-                                                <div key={idx} className="text-sm p-2 bg-amber-50 rounded border border-amber-200">
+                                                <div key={idx} className="break-words rounded border border-amber-200 bg-amber-50 p-2 text-sm dark:border-amber-400/20 dark:bg-amber-400/10">
                                                     <strong>Row {skippedRow.row}:</strong> {skippedRow.reason}
                                                 </div>
                                             ))}
@@ -651,7 +697,7 @@ function CampImportPageContent() {
                                         <h4 className="font-semibold">Errors:</h4>
                                         <div className="max-h-60 overflow-y-auto space-y-1">
                                             {importResult.errors.map((error, idx) => (
-                                                <div key={idx} className="text-sm p-2 bg-red-50 rounded border border-red-200">
+                                                <div key={idx} className="break-words rounded border border-red-200 bg-red-50 p-2 text-sm dark:border-red-400/20 dark:bg-red-400/10">
                                                     <strong>Row {error.row}:</strong> {error.errors.join(', ')}
                                                 </div>
                                             ))}

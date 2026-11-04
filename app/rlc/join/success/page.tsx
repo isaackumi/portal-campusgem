@@ -15,28 +15,28 @@ function SuccessContent() {
   const code = searchParams.get('code')
 
   return (
-    <Card className="w-full max-w-md border-rose-100/80 text-center shadow-md">
+    <Card className="w-full max-w-md border-brand-100/80 text-center shadow-md dark:border-brand-400/20">
       <CardHeader>
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
-          <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-400/10">
+          <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-300" />
         </div>
-        <CardTitle className="text-2xl text-emerald-800">Welcome, {name}!</CardTitle>
+        <CardTitle className="text-2xl text-emerald-800 dark:text-emerald-300">Welcome, {name}!</CardTitle>
         <CardDescription className="text-base">
           You&apos;re registered as a member of {RLC_NAME}. Our team will be in touch.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {code ? (
-          <p className="rounded-lg bg-rose-50 px-3 py-2 font-mono text-sm font-semibold text-rose-900">
+          <p className="rounded-lg bg-brand-50 px-3 py-2 font-mono text-sm font-semibold text-brand-900 dark:bg-brand-400/10 dark:text-brand-300">
             Check-in code: {code}
           </p>
         ) : null}
         {id ? (
-          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-muted-foreground">
+          <p className="rounded-lg bg-neutral-50 px-3 py-2 text-xs text-muted-foreground dark:bg-white/[0.04]">
             Reference: <span className="font-mono">{id.slice(-8)}</span>
           </p>
         ) : null}
-        <Button asChild variant="outline" className="w-full">
+        <Button asChild variant="outline" className="h-12 w-full text-base">
           <Link href="/">
             <Home className="mr-2 h-4 w-4" />
             Done
@@ -49,8 +49,8 @@ function SuccessContent() {
 
 export default function PublicRlcJoinSuccessPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-rose-50/80 via-white to-white px-4 py-12">
-      <div className="mb-6 flex items-center gap-2 text-rose-800">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-gradient-to-b from-brand-50/80 via-white to-white px-4 py-12 dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-950">
+      <div className="mb-6 flex items-center gap-2 text-brand-800 dark:text-brand-300">
         <Church className="h-5 w-5" />
         <span className="text-sm font-medium">{RLC_NAME}</span>
       </div>

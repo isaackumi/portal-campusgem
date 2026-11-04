@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers'
 import { importToRlcAction, searchRlcImportAction } from '@/lib/actions/rlc'
 import type { RlcImportSearchResult } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
+import { PhoneLink } from '@/components/contact/phone-link'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -131,14 +132,15 @@ function RlcImportContent() {
           <CardTitle>Search directory</CardTitle>
           <CardDescription>Name, phone, email, or membership ID</CardDescription>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="flex flex-col gap-2 sm:flex-row">
           <Input
+            type="search"
             placeholder="e.g. Kwame, 024, CG-…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && search()}
           />
-          <Button onClick={search} disabled={searching}>
+          <Button className="h-11 sm:h-10" onClick={search} disabled={searching}>
             <Search className="mr-2 h-4 w-4" />
             Search
           </Button>
@@ -156,26 +158,28 @@ function RlcImportContent() {
               : null
           return (
             <Card key={key}>
-              <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold">{row.full_name}</p>
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="break-words font-semibold">{row.full_name}</p>
                     <Badge variant="outline">
                       {row.type === 'campus_member' ? 'Campus Gem' : 'Camp registration'}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {[row.phone, row.email, row.membership_id].filter(Boolean).join(' · ')}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+                    {row.phone ? <PhoneLink phone={row.phone} name={row.full_name} /> : null}
+                    {row.email ? <span className="break-all">{row.email}</span> : null}
+                    {row.membership_id ? <span className="font-mono text-xs">{row.membership_id}</span> : null}
+                  </div>
                   {campYearLabel ? (
                     <p className="mt-1 text-xs text-muted-foreground">{campYearLabel}</p>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   {canImportAsMember(row) ? (
                     <Button
                       size="sm"
-                      className="bg-rose-700 hover:bg-rose-800"
+                      className="h-10 sm:h-8"
                       disabled={importing === `${key}-member`}
                       onClick={() => importRow(row, true)}
                     >
@@ -187,6 +191,7 @@ function RlcImportContent() {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-10 sm:h-8"
                       disabled={importing === `${key}-visitor`}
                       onClick={() => importRow(row, false)}
                     >

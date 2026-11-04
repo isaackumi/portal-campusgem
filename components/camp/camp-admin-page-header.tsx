@@ -42,7 +42,7 @@ export function CampAdminPageHeader({
         <button
           type="button"
           onClick={() => router.push(backHref)}
-          className="mb-4 inline-flex items-center gap-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+          className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm sm:mb-3 sm:min-h-9 text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -71,9 +71,13 @@ export function CampAdminPageHeader({
             {campYear.registration_open ? <Badge variant="success">Registration open</Badge> : null}
           </div>
         ) : null}
-          {children ? <div className="mt-2 flex flex-wrap items-center gap-2">{children}</div> : null}
+        {children ? <div className="mt-2 flex flex-wrap items-center gap-2">{children}</div> : null}
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 [&>*]:min-h-11 [&>*]:flex-1 sm:[&>*]:min-h-0 sm:[&>*]:flex-none">
+          {actions}
+        </div>
+      ) : null}
     </div>
   )
 }

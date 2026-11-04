@@ -16,6 +16,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
+import { StatCard } from '@/components/ui/stat-card'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { useToast } from '@/hooks/use-toast'
 import {
     ArrowLeft, DollarSign, CheckCircle2, XCircle, Clock, Download,
@@ -246,7 +248,7 @@ export default function PaymentManagementPage() {
 
     if (!campYear) {
         return (
-            <div className="p-6 max-w-4xl mx-auto">
+            <div className="mx-auto max-w-4xl">
                 <Card>
                     <CardContent className="py-12 text-center">
                         <p className="text-muted-foreground mb-4">No active camp year found.</p>
@@ -260,105 +262,47 @@ export default function PaymentManagementPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div>
+            <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
                 <CampAdminPageHeader
                     title="Payment Management"
                     campYear={campYear}
                     actions={
-                        <Button variant="outline" onClick={exportPayments}>
+                        <Button variant="outline" onClick={exportPayments} className="h-11 sm:h-10">
                             <Download className="mr-2 h-4 w-4" /> Export CSV
                         </Button>
                     }
                 />
 
-                {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-5">
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Total Registrations
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                Paid
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-green-600">{stats.paid}</div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                ₵{stats.paidAmount.toFixed(2)}
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-yellow-600" />
-                                Pending
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                ₵{stats.pendingAmount.toFixed(2)}
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <DollarSign className="h-4 w-4 text-primary" />
-                                Total Revenue
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-primary">₵{stats.totalAmount.toFixed(2)}</div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                Expected total
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-purple-600" />
-                                Collection Rate
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-purple-600">
-                                {stats.totalAmount > 0 ? Math.round((stats.paidAmount / stats.totalAmount) * 100) : 0}%
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                {stats.paidAmount.toFixed(2)} / {stats.totalAmount.toFixed(2)}
-                            </p>
-                        </CardContent>
-                    </Card>
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+                    <StatCard label="Registrations" value={stats.total} icon={CreditCard} className="col-span-2 lg:col-span-1" />
+                    <StatCard label="Paid" value={stats.paid} sub={`₵${stats.paidAmount.toFixed(2)}`} tone="success" icon={CheckCircle2} />
+                    <StatCard label="Pending" value={stats.pending} sub={`₵${stats.pendingAmount.toFixed(2)}`} tone="warning" icon={Clock} />
+                    <StatCard label="Expected" value={`₵${stats.totalAmount.toFixed(2)}`} sub="Expected total" icon={DollarSign} />
+                    <StatCard
+                        label="Collected"
+                        value={`${stats.totalAmount > 0 ? Math.round((stats.paidAmount / stats.totalAmount) * 100) : 0}%`}
+                        sub={`₵${stats.paidAmount.toFixed(2)} of ₵${stats.totalAmount.toFixed(2)}`}
+                        icon={TrendingUp}
+                    />
                 </div>
 
                 {/* Filters and Bulk Actions */}
-                <Card className="border-2">
-                    <CardHeader>
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+                            <div className="relative flex-1 md:max-w-md">
+                                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     placeholder="Search name, email, phone..."
-                                    className="pl-8"
+                                    className="h-11 pl-8 md:h-10"
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
                                 />
                             </div>
                             <Select value={paymentFilter} onValueChange={(v: any) => setPaymentFilter(v)}>
-                                <SelectTrigger className="w-[180px]">
+                                <SelectTrigger className="h-11 w-full md:h-10 md:w-[180px]">
                                     <SelectValue placeholder="Payment Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -372,13 +316,13 @@ export default function PaymentManagementPage() {
                         </div>
 
                         {selectedIds.size > 0 && (
-                            <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                                <span className="text-sm font-medium text-slate-700">
+                            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-neutral-200/80 pt-4 dark:border-white/10">
+                                <span className="w-full text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:w-auto">
                                     {selectedIds.size} selected
                                 </span>
                                 <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
                                     <DialogTrigger asChild>
-                                        <Button size="sm" variant="outline">
+                                        <Button size="sm" variant="outline" className="h-11 flex-1 sm:h-9 sm:flex-none">
                                             <Edit className="h-4 w-4 mr-1" />
                                             Bulk Update
                                         </Button>
@@ -447,6 +391,7 @@ export default function PaymentManagementPage() {
                                 <Button
                                     size="sm"
                                     variant="outline"
+                                    className="h-11 flex-1 sm:h-9 sm:flex-none"
                                     onClick={() => setSelectedIds(new Set())}
                                 >
                                     Clear Selection
@@ -454,12 +399,83 @@ export default function PaymentManagementPage() {
                             </div>
                         )}
                     </CardHeader>
-                    <CardContent>
-                        <div className="rounded-md border overflow-hidden">
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                        {/* Mobile: card list */}
+                        <div className="space-y-2 md:hidden">
+                            {filteredRegistrations.length > 0 ? (
+                                <label className="flex min-h-11 items-center gap-3 px-1 text-sm text-neutral-600 dark:text-neutral-400">
+                                    <Checkbox
+                                        checked={selectedIds.size > 0 && selectedIds.size === filteredRegistrations.length}
+                                        onCheckedChange={(c) => handleSelectAll(c === true)}
+                                    />
+                                    Select all ({filteredRegistrations.length})
+                                </label>
+                            ) : (
+                                <p className="py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">No registrations found.</p>
+                            )}
+                            {filteredRegistrations.map(reg => {
+                                const name = reg.full_name || `${reg.first_name} ${reg.last_name}`
+                                const paid = reg.payment_status === 'paid' || reg.payment_status === 'confirmed'
+                                return (
+                                    <div
+                                        key={reg.id}
+                                        className={cn(
+                                            'rounded-xl border border-neutral-200/80 bg-white p-3 dark:border-white/10 dark:bg-neutral-800/60',
+                                            selectedIds.has(reg.id) && 'ring-2 ring-brand-500/40'
+                                        )}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <Checkbox
+                                                className="mt-1"
+                                                aria-label={`Select ${name}`}
+                                                checked={selectedIds.has(reg.id)}
+                                                onCheckedChange={(checked) => handleSelectOne(reg.id, checked === true)}
+                                            />
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{name}</p>
+                                                    {reg.is_new_registrant && <Badge variant="secondary" className="shrink-0">New</Badge>}
+                                                </div>
+                                                <div className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
+                                                    <PhoneLink phone={reg.phone} whatsapp={reg.whatsapp} name={name} />
+                                                </div>
+                                            </div>
+                                            <QuickContactButtons phone={reg.phone} whatsapp={reg.whatsapp} name={name} />
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap items-center gap-2 pl-7">
+                                            <Badge variant={paid ? 'success' : reg.payment_status === 'refunded' ? 'danger' : 'warning'}>
+                                                {reg.payment_status || 'pending'}
+                                            </Badge>
+                                            <span className="font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+                                                ₵{(reg.payment_amount || 0).toFixed(2)}
+                                            </span>
+                                            {reg.role ? <Badge variant="outline">{reg.role}</Badge> : null}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="ml-auto h-11 min-w-11"
+                                                onClick={() => openUpdateDialog(reg)}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                                Update
+                                            </Button>
+                                        </div>
+                                        {(reg.payment_reference || reg.payment_date) && (
+                                            <p className="mt-2 pl-7 text-xs text-neutral-500 dark:text-neutral-400">
+                                                {reg.payment_reference ? <span className="font-mono">{reg.payment_reference}</span> : null}
+                                                {reg.payment_reference && reg.payment_date ? ' · ' : ''}
+                                                {reg.payment_date ? new Date(reg.payment_date).toLocaleDateString() : ''}
+                                            </p>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="hidden overflow-hidden rounded-md border border-neutral-200/80 dark:border-white/10 md:block">
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-slate-50">
+                                        <TableRow className="bg-neutral-50 dark:bg-white/[0.03]">
                                             <TableHead className="w-12">
                                                 <Checkbox
                                                     checked={selectedIds.size > 0 && selectedIds.size === filteredRegistrations.length}
@@ -488,8 +504,8 @@ export default function PaymentManagementPage() {
                                                 <TableRow
                                                     key={reg.id}
                                                     className={cn(
-                                                        "hover:bg-slate-50 transition-colors",
-                                                        selectedIds.has(reg.id) && "bg-slate-50"
+                                                        "transition-colors hover:bg-neutral-50 dark:hover:bg-white/[0.03]",
+                                                        selectedIds.has(reg.id) && "bg-neutral-50 dark:bg-white/[0.03]"
                                                     )}
                                                 >
                                                     <TableCell onClick={(e) => e.stopPropagation()}>
@@ -499,7 +515,7 @@ export default function PaymentManagementPage() {
                                                         />
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="font-medium text-slate-900">
+                                                        <div className="font-medium text-neutral-900 dark:text-neutral-100">
                                                             {reg.full_name || `${reg.first_name} ${reg.last_name}`}
                                                         </div>
                                                         {reg.is_new_registrant && (
@@ -509,12 +525,13 @@ export default function PaymentManagementPage() {
                                                         )}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="space-y-1">
-                                                            {reg.email && (
-                                                                <div className="text-sm text-slate-600">{reg.email}</div>
-                                                            )}
+                                                        <div className="space-y-1 text-sm text-neutral-600 dark:text-neutral-400">
+                                                            {reg.email && <div>{reg.email}</div>}
                                                             {reg.phone && (
-                                                                <div className="text-sm text-slate-600">{reg.phone}</div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <PhoneLink phone={reg.phone} whatsapp={reg.whatsapp} name={reg.full_name || reg.first_name} />
+                                                                    <QuickContactButtons phone={reg.phone} whatsapp={reg.whatsapp} name={reg.full_name || reg.first_name} />
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </TableCell>
@@ -543,7 +560,7 @@ export default function PaymentManagementPage() {
                                                     <TableCell className="text-xs font-mono">
                                                         {reg.payment_reference || '-'}
                                                     </TableCell>
-                                                    <TableCell className="text-xs text-slate-600">
+                                                    <TableCell className="text-xs text-neutral-600 dark:text-neutral-400">
                                                         {reg.payment_date
                                                             ? new Date(reg.payment_date).toLocaleDateString()
                                                             : '-'}
@@ -552,6 +569,7 @@ export default function PaymentManagementPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
+                                                            aria-label="Update payment"
                                                             onClick={() => openUpdateDialog(reg)}
                                                         >
                                                             <Edit className="h-4 w-4" />

@@ -812,28 +812,28 @@ export function EditUserDialog({ open, onOpenChange, userId, onSaved }: EditUser
           )}
         </div>
 
-        <div className="border-t border-neutral-200 bg-white px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800 sm:px-6">
+        <div className="border-t border-neutral-200 bg-white px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 dark:border-neutral-700 dark:bg-neutral-800 sm:px-6 sm:pb-3">
           {confirmDiscard ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="flex items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
                 <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
                 Discard {dirtyCount} unsaved change{dirtyCount === 1 ? '' : 's'}?
               </p>
-              <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                <Button variant="outline" onClick={() => setConfirmDiscard(false)}>Keep editing</Button>
-                <Button variant="destructive" onClick={() => requestClose(false)}>Discard changes</Button>
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <Button variant="outline" className="h-11 sm:h-10" onClick={() => setConfirmDiscard(false)}>Keep editing</Button>
+                <Button variant="destructive" className="h-11 sm:h-10" onClick={() => requestClose(false)}>Discard</Button>
               </div>
             </div>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-h-5 text-sm text-neutral-500 dark:text-neutral-400">
+              <div className={cn('min-h-5 text-sm text-neutral-500 dark:text-neutral-400', !isDirty && 'hidden sm:block')}>
                 {isDirty ? (
                   <Badge variant="brand">{dirtyCount} unsaved change{dirtyCount === 1 ? '' : 's'}</Badge>
                 ) : form ? 'No changes yet' : null}
               </div>
-              <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                <Button variant="outline" onClick={() => requestClose(false)} disabled={saving}>Cancel</Button>
-                <Button onClick={() => void handleSave()} disabled={!isDirty || saving || !form}>
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <Button variant="outline" className="h-11 sm:h-10" onClick={() => requestClose(false)} disabled={saving}>Cancel</Button>
+                <Button className="h-11 sm:h-10" onClick={() => void handleSave()} disabled={!isDirty || saving || !form}>
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />

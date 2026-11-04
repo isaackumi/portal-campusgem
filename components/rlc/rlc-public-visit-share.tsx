@@ -33,7 +33,7 @@ export function RlcPublicVisitShare({ className, kind = 'visit' }: Props) {
   }
 
   return (
-    <Card className={className ?? 'border-sky-100 bg-sky-50/40'}>
+    <Card className={className ?? 'border-sky-100 bg-sky-50/40 dark:border-sky-400/20 dark:bg-sky-400/10'}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">{isJoin ? 'Share member form' : 'Share with guests'}</CardTitle>
         <CardDescription>
@@ -43,13 +43,13 @@ export function RlcPublicVisitShare({ className, kind = 'visit' }: Props) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <p className="min-w-0 flex-1 break-all text-sm text-muted-foreground">{visitUrl}</p>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={copyLink}>
+        <p className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground sm:text-sm">{visitUrl}</p>
+        <div className="flex shrink-0 gap-2">
+          <Button type="button" variant="outline" size="sm" className="h-10 flex-1 sm:h-8 sm:flex-none" onClick={copyLink}>
             <Copy className="mr-2 h-4 w-4" />
             Copy link
           </Button>
-          <Button type="button" variant="outline" size="sm" asChild>
+          <Button type="button" variant="outline" size="sm" className="h-10 flex-1 sm:h-8 sm:flex-none" asChild>
             <Link href={path} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-2 h-4 w-4" />
               Open form

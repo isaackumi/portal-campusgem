@@ -134,7 +134,7 @@ export function RlcSponsorMultiSelect({
           {selected.map((s) => (
             <Badge key={s.id} variant="secondary" className="gap-1 pr-1">
               {s.label}
-              <button type="button" onClick={() => remove(s.id)} className="rounded p-0.5 hover:bg-slate-200">
+              <button type="button" onClick={() => remove(s.id)} className="rounded p-0.5 hover:bg-neutral-200 dark:hover:bg-white/[0.06]">
                 <X className="h-3 w-3" />
               </button>
             </Badge>
@@ -156,12 +156,12 @@ export function RlcSponsorMultiSelect({
         </p>
       ) : null}
       {suggestions.length > 0 ? (
-        <div className="rounded-md border bg-white shadow-sm">
+        <div className="rounded-md border bg-white shadow-sm dark:bg-neutral-800/60">
           {suggestions.map((s) => (
             <button
               key={s.key}
               type="button"
-              className="flex w-full items-start justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-rose-50/60"
+              className="flex min-h-11 w-full items-start justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-brand-50/60 dark:hover:bg-brand-400/10"
               disabled={resolving}
               onClick={() => void add(s)}
             >

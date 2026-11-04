@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PhoneLink } from '@/components/contact/phone-link'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -221,7 +222,7 @@ export default function NotificationSettingsPage() {
 
     if (!campYear) {
         return (
-            <div className="p-6 max-w-4xl mx-auto">
+            <div className="mx-auto max-w-4xl">
                 <Card>
                     <CardContent className="py-12 text-center">
                         <p className="text-muted-foreground mb-4">No active camp year found.</p>
@@ -235,8 +236,8 @@ export default function NotificationSettingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="mx-auto max-w-6xl space-y-6 px-3 py-4 sm:p-6">
+        <div>
+            <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
                 <CampAdminPageHeader title="Notification Settings" campYear={campYear} />
 
                 <Tabs defaultValue="email" className="space-y-6">
@@ -253,9 +254,9 @@ export default function NotificationSettingsPage() {
 
                     {/* Email Configuration */}
                     <TabsContent value="email" className="space-y-6">
-                        <Card className="border-2">
-                            <CardHeader className="bg-slate-50 border-b">
-                                <CardTitle className="flex items-center gap-2">
+                        <Card>
+                            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
+                                <CardTitle className="app-section-title flex items-center gap-2">
                                     <Mail className="h-5 w-5" />
                                     Email Notification Settings
                                 </CardTitle>
@@ -263,9 +264,9 @@ export default function NotificationSettingsPage() {
                                     Configure email notifications for new camp registrations
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="pt-6 space-y-6">
-                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-                                    <div className="flex items-center gap-3">
+                            <CardContent className="space-y-6 p-4 pt-5 sm:p-6">
+                                <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-start gap-3">
                                         <Checkbox
                                             id="email_enabled"
                                             checked={emailConfig.enabled}
@@ -277,12 +278,12 @@ export default function NotificationSettingsPage() {
                                             <Label htmlFor="email_enabled" className="text-base font-semibold cursor-pointer">
                                                 Enable Email Notifications
                                             </Label>
-                                            <p className="text-sm text-slate-600 mt-1">
+                                            <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
                                                 Send email notifications when new registrations are received
                                             </p>
                                         </div>
                                     </div>
-                                    <Badge variant={emailConfig.enabled ? 'default' : 'outline'}>
+                                    <Badge className="self-start sm:self-auto" variant={emailConfig.enabled ? 'success' : 'outline'}>
                                         {emailConfig.enabled ? 'Enabled' : 'Disabled'}
                                     </Badge>
                                 </div>
@@ -292,10 +293,10 @@ export default function NotificationSettingsPage() {
                                         <Label className="text-base font-semibold mb-3 block">
                                             Recipient Email Addresses
                                         </Label>
-                                        <p className="text-sm text-slate-600 mb-3">
+                                        <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-3">
                                             Add email addresses that should receive notification emails
                                         </p>
-                                        <div className="flex gap-2 mb-3">
+                                        <div className="mb-3 flex flex-col gap-2 sm:flex-row">
                                             <Input
                                                 type="email"
                                                 placeholder="admin@example.com"
@@ -307,9 +308,9 @@ export default function NotificationSettingsPage() {
                                                         addEmail()
                                                     }
                                                 }}
-                                                className="flex-1"
+                                                className="h-11 flex-1 sm:h-10"
                                             />
-                                            <Button type="button" onClick={addEmail} variant="outline">
+                                            <Button type="button" onClick={addEmail} variant="outline" className="h-11 sm:h-10">
                                                 <Plus className="mr-2 h-4 w-4" />
                                                 Add
                                             </Button>
@@ -319,25 +320,27 @@ export default function NotificationSettingsPage() {
                                                 {emailConfig.recipient_emails!.map((email, idx) => (
                                                     <div
                                                         key={idx}
-                                                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+                                                        className="flex min-h-11 items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-neutral-50 py-1.5 pl-3 pr-1.5 dark:border-white/[0.06] dark:bg-white/[0.03]"
                                                     >
-                                                        <div className="flex items-center gap-2">
-                                                            <Mail className="h-4 w-4 text-gray-400" />
-                                                            <span className="text-sm font-medium">{email}</span>
+                                                        <div className="flex min-w-0 items-center gap-2">
+                                                            <Mail className="h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
+                                                            <span className="truncate text-sm font-medium">{email}</span>
                                                         </div>
                                                         <Button
                                                             type="button"
                                                             variant="ghost"
-                                                            size="sm"
+                                                            size="icon"
+                                                            className="h-10 w-10 shrink-0"
+                                                            aria-label={`Remove ${email}`}
                                                             onClick={() => removeEmail(email)}
                                                         >
-                                                            <X className="h-4 w-4 text-red-600" />
+                                                            <X className="h-4 w-4 text-red-600 dark:text-red-400" />
                                                         </Button>
                                                     </div>
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-slate-500 italic">
+                                            <p className="text-sm text-neutral-500 dark:text-neutral-400 italic">
                                                 No email addresses added yet. Add at least one to receive notifications.
                                             </p>
                                         )}
@@ -353,7 +356,7 @@ export default function NotificationSettingsPage() {
                                             }
                                             placeholder="New Camp Registration - {{name}}"
                                         />
-                                        <p className="text-xs text-slate-500">
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                             Template variables: {`{{name}}`}, {`{{role}}`}, {`{{campYear}}`}
                                         </p>
                                     </div>
@@ -369,7 +372,7 @@ export default function NotificationSettingsPage() {
                                             placeholder="Email message template..."
                                             rows={8}
                                         />
-                                        <p className="text-xs text-slate-500">
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                             Template variables: {`{{name}}`}, {`{{firstName}}`}, {`{{lastName}}`}, {`{{role}}`}, {`{{campYear}}`}, {`{{phone}}`}, {`{{email}}`}, {`{{qrCode}}`}
                                         </p>
                                     </div>
@@ -399,9 +402,9 @@ export default function NotificationSettingsPage() {
 
                     {/* SMS Configuration */}
                     <TabsContent value="sms" className="space-y-6">
-                        <Card className="border-2">
-                            <CardHeader className="bg-slate-50 border-b">
-                                <CardTitle className="flex items-center gap-2">
+                        <Card>
+                            <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
+                                <CardTitle className="app-section-title flex items-center gap-2">
                                     <MessageSquare className="h-5 w-5" />
                                     SMS Notification Settings
                                 </CardTitle>
@@ -409,9 +412,9 @@ export default function NotificationSettingsPage() {
                                     Configure SMS notifications for new camp registrations
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="pt-6 space-y-6">
-                                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                                    <div className="flex items-center gap-3">
+                            <CardContent className="space-y-6 p-4 pt-5 sm:p-6">
+                                <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-400/20 dark:bg-emerald-400/10 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-start gap-3">
                                         <Checkbox
                                             id="sms_enabled"
                                             checked={smsConfig.enabled}
@@ -423,12 +426,12 @@ export default function NotificationSettingsPage() {
                                             <Label htmlFor="sms_enabled" className="text-base font-semibold cursor-pointer">
                                                 Enable SMS Notifications
                                             </Label>
-                                            <p className="text-sm text-slate-600 mt-1">
+                                            <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
                                                 Send SMS notifications when new registrations are received
                                             </p>
                                         </div>
                                     </div>
-                                    <Badge variant={smsConfig.enabled ? 'default' : 'outline'}>
+                                    <Badge className="self-start sm:self-auto" variant={smsConfig.enabled ? 'success' : 'outline'}>
                                         {smsConfig.enabled ? 'Enabled' : 'Disabled'}
                                     </Badge>
                                 </div>
@@ -438,10 +441,10 @@ export default function NotificationSettingsPage() {
                                         <Label className="text-base font-semibold mb-3 block">
                                             Recipient Phone Numbers
                                         </Label>
-                                        <p className="text-sm text-slate-600 mb-3">
+                                        <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-3">
                                             Add phone numbers (Ghana format: 0241234567 or +233241234567) that should receive SMS notifications
                                         </p>
-                                        <div className="flex gap-2 mb-3">
+                                        <div className="mb-3 flex flex-col gap-2 sm:flex-row">
                                             <Input
                                                 type="tel"
                                                 placeholder="0241234567 or +233241234567"
@@ -453,9 +456,9 @@ export default function NotificationSettingsPage() {
                                                         addPhone()
                                                     }
                                                 }}
-                                                className="flex-1"
+                                                className="h-11 flex-1 sm:h-10"
                                             />
-                                            <Button type="button" onClick={addPhone} variant="outline">
+                                            <Button type="button" onClick={addPhone} variant="outline" className="h-11 sm:h-10">
                                                 <Plus className="mr-2 h-4 w-4" />
                                                 Add
                                             </Button>
@@ -465,25 +468,27 @@ export default function NotificationSettingsPage() {
                                                 {smsConfig.recipient_phones!.map((phone, idx) => (
                                                     <div
                                                         key={idx}
-                                                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+                                                        className="flex min-h-11 items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-neutral-50 py-1.5 pl-3 pr-1.5 dark:border-white/[0.06] dark:bg-white/[0.03]"
                                                     >
-                                                        <div className="flex items-center gap-2">
-                                                            <MessageSquare className="h-4 w-4 text-gray-400" />
-                                                            <span className="text-sm font-medium">{phone}</span>
+                                                        <div className="flex min-w-0 items-center gap-2">
+                                                            <MessageSquare className="h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
+                                                            <PhoneLink phone={phone} className="text-sm font-medium" />
                                                         </div>
                                                         <Button
                                                             type="button"
                                                             variant="ghost"
-                                                            size="sm"
+                                                            size="icon"
+                                                            className="h-10 w-10 shrink-0"
+                                                            aria-label={`Remove ${phone}`}
                                                             onClick={() => removePhone(phone)}
                                                         >
-                                                            <X className="h-4 w-4 text-red-600" />
+                                                            <X className="h-4 w-4 text-red-600 dark:text-red-400" />
                                                         </Button>
                                                     </div>
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-slate-500 italic">
+                                            <p className="text-sm text-neutral-500 dark:text-neutral-400 italic">
                                                 No phone numbers added yet. Add at least one to receive SMS notifications.
                                             </p>
                                         )}
@@ -501,11 +506,11 @@ export default function NotificationSettingsPage() {
                                             rows={6}
                                             maxLength={1600}
                                         />
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-xs text-slate-500">
+                                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                                 Template variables: {`{{name}}`}, {`{{role}}`}, {`{{campYear}}`}, {`{{phone}}`}, {`{{qrCode}}`}
                                             </p>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                                 {smsConfig.template_body.length} / 160 characters
                                             </p>
                                         </div>

@@ -1,19 +1,34 @@
 import type { Config } from 'tailwindcss'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
-/* True gray, matching Trovesuite Accounting's neutral scale. */
+/* Cool slate greys: every grey utility (neutral, slate, gray) resolves here. */
 const neutralScale = {
-  50: '#fafafa',
-  100: '#f5f5f5',
-  200: '#e5e5e5',
-  300: '#d4d4d4',
-  400: '#a3a3a3',
-  500: '#737373',
-  600: '#525252',
-  700: '#404040',
-  800: '#262626',
-  900: '#171717',
-  950: '#0a0a0a',
+  50: '#f8fafc',
+  100: '#f1f5f9',
+  200: '#e2e8f0',
+  300: '#cbd5e1',
+  400: '#94a3b8',
+  500: '#64748b',
+  600: '#475569',
+  700: '#334155',
+  800: '#1e293b',
+  900: '#0f172a',
+  950: '#020617',
+}
+
+/* Brand: deep indigo. */
+const brandScale = {
+  50: '#eef2ff',
+  100: '#e0e7ff',
+  200: '#c7d2fe',
+  300: '#a5b4fc',
+  400: '#818cf8',
+  500: '#6366f1',
+  600: '#4f46e5',
+  700: '#4338ca',
+  800: '#3730a3',
+  900: '#312e81',
+  950: '#1e1b4b',
 }
 
 const config: Config = {
@@ -22,6 +37,7 @@ const config: Config = {
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
+    './lib/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
   theme: {
@@ -34,13 +50,14 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        display: ['var(--font-display)', ...defaultTheme.fontFamily.serif],
+        display: ['var(--font-sans)', ...defaultTheme.fontFamily.sans],
         sans: ['var(--font-sans)', ...defaultTheme.fontFamily.sans],
         mono: ['var(--font-mono)', ...defaultTheme.fontFamily.mono],
       },
       colors: {
         /* One grey everywhere: slate and gray resolve to the neutral scale, so old
            screens match new ones in both themes. */
+        neutral: neutralScale,
         slate: neutralScale,
         gray: neutralScale,
         border: "hsl(var(--border))",
@@ -69,17 +86,7 @@ const config: Config = {
           foreground: "hsl(var(--accent-foreground))",
         },
         brand: {
-          50: '#fff1f3',
-          100: '#ffe0e6',
-          200: '#ffc6d1',
-          300: '#ff9cb0',
-          400: '#fb6485',
-          500: '#ec3560',
-          600: '#ce1440',
-          700: '#ad0e36',
-          800: '#8f1033',
-          900: '#7a1231',
-          950: '#440416',
+          ...brandScale,
           accent: "hsl(var(--brand-accent))",
           surface: "hsl(var(--brand-surface))",
           muted: "hsl(var(--brand-muted))",
@@ -92,6 +99,11 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+      },
+      boxShadow: {
+        card: '0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.04)',
+        'card-hover': '0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05)',
+        pop: '0 16px 40px -12px rgb(15 23 42 / 0.25), 0 4px 12px -4px rgb(15 23 42 / 0.1)',
       },
       borderRadius: {
         lg: "var(--radius)",

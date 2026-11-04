@@ -26,12 +26,12 @@ export function RlcPageHeader({
   const router = useRouter()
 
   return (
-    <div className={cn('mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between', className)}>
+    <div className={cn('mb-5 flex flex-col gap-4 sm:mb-6 lg:flex-row lg:items-end lg:justify-between', className)}>
       <div className="min-w-0 flex-1">
         <button
           type="button"
           onClick={() => router.push(backHref)}
-          className="mb-4 inline-flex items-center gap-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+          className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -41,15 +41,15 @@ export function RlcPageHeader({
             <Church className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <p className="app-overliner text-neutral-400">{RLC_NAME}</p>
-            <h1 className="app-page-title">{title}</h1>
+            <p className="app-overline">{RLC_NAME}</p>
+            <h1 className="app-page-title break-words">{title}</h1>
             {subtitle ? <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{subtitle}</p> : null}
           </div>
         </div>
         {children}
       </div>
       {actions ? (
-        <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
+        <div className="flex w-full shrink-0 flex-wrap gap-2 [&>*]:min-h-11 [&>*]:flex-1 sm:[&>*]:min-h-0 sm:[&>*]:flex-none lg:w-auto lg:justify-end">
           {actions}
         </div>
       ) : null}

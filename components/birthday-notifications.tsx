@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useClientOnly } from '@/lib/hooks/use-client-only'
 import { Badge } from '@/components/ui/badge'
 import { PersonAvatar, displayName } from '@/components/ui/person'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import { MessageSquare } from 'lucide-react'
 import { ageTurningOnNextBirthday, daysUntilNextBirthday } from '@/lib/birthdays/upcoming-birthdays'
 
 interface BirthdayPerson {
@@ -26,32 +28,39 @@ interface BirthdayNotificationsProps {
 }
 
 function PersonRow({ person, meta, onSend }: { person: BirthdayPerson; meta: string; onSend: () => void }) {
+  const name = displayName(person.name)
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-neutral-100 dark:border-neutral-800 py-3 last:border-0">
-      <div className="flex min-w-0 items-center gap-3">
-        <PersonAvatar name={person.name} seed={person.id} />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-              {displayName(person.name)}
-            </p>
-            {person.role ? (
-              <Badge variant="outline" className="capitalize">
-                {person.role.replace(/_/g, ' ')}
-              </Badge>
-            ) : null}
-          </div>
-          <p className="mt-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">{meta}</p>
-          {person.phone || person.email ? (
-            <p className="mt-0.5 truncate text-xs text-neutral-400">
-              {[person.phone, person.email].filter(Boolean).join(' · ')}
-            </p>
+    <div className="flex min-h-14 items-center gap-3 border-b border-neutral-100 py-3 last:border-0 dark:border-white/[0.06]">
+      <PersonAvatar name={person.name} seed={person.id} />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="min-w-0 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{name}</p>
+          {person.role ? (
+            <Badge variant="outline" className="hidden capitalize sm:inline-flex">
+              {person.role.replace(/_/g, ' ')}
+            </Badge>
           ) : null}
         </div>
+        {meta ? <p className="mt-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">{meta}</p> : null}
+        {person.phone ? (
+          <div className="mt-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
+            <PhoneLink phone={person.phone} name={name} />
+          </div>
+        ) : null}
       </div>
-      <Button size="sm" variant="outline" onClick={onSend} className="shrink-0">
-        Message
-      </Button>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <QuickContactButtons phone={person.phone} name={name} />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onSend}
+          className="h-10 w-10 shrink-0 rounded-full px-0 sm:h-9 sm:w-auto sm:rounded-md sm:px-3"
+          aria-label={`Send birthday message to ${name}`}
+        >
+          <MessageSquare className="h-4 w-4 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden />
+          <span className="hidden sm:inline">Message</span>
+        </Button>
+      </div>
     </div>
   )
 }
@@ -112,7 +121,7 @@ export function BirthdayNotifications({
         <section className="dashboard-panel overflow-hidden">
           <button
             type="button"
-            className="flex w-full cursor-pointer items-start justify-between gap-3 border-b border-neutral-100 dark:border-neutral-800 px-5 py-3 text-left"
+            className="flex w-full cursor-pointer items-start justify-between gap-3 min-h-14 border-b border-neutral-100 px-4 py-3 text-left dark:border-white/[0.06] sm:px-5"
             onClick={() => setIsTodayExpanded((v) => !v)}
             aria-expanded={isTodayExpanded}
           >
@@ -123,18 +132,18 @@ export function BirthdayNotifications({
               </p>
             </div>
             {isTodayExpanded ? (
-              <ChevronUpIcon className="mt-1 h-4 w-4 shrink-0 text-neutral-400" />
+              <ChevronUpIcon className="mt-1 h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
             ) : (
-              <ChevronDownIcon className="mt-1 h-4 w-4 shrink-0 text-neutral-400" />
+              <ChevronDownIcon className="mt-1 h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
             )}
           </button>
 
           {isTodayExpanded ? (
-            <div className="px-5 py-2">
+            <div className="px-4 py-2 sm:px-5">
               <div className="mb-2 flex justify-end">
                 <Button
                   size="sm"
-                  className="min-h-9 cursor-pointer bg-brand-600 text-white hover:bg-brand-700"
+                  className="h-11 w-full sm:h-9 sm:w-auto"
                   onClick={() => handleSendBulkMessage(todayBirthdays)}
                 >
                   Message all
@@ -157,7 +166,7 @@ export function BirthdayNotifications({
         <section className="dashboard-panel overflow-hidden">
           <button
             type="button"
-            className="flex w-full cursor-pointer items-start justify-between gap-3 border-b border-neutral-100 dark:border-neutral-800 px-5 py-3 text-left"
+            className="flex w-full cursor-pointer items-start justify-between gap-3 min-h-14 border-b border-neutral-100 px-4 py-3 text-left dark:border-white/[0.06] sm:px-5"
             onClick={() => setIsUpcomingExpanded((v) => !v)}
             aria-expanded={isUpcomingExpanded}
           >
@@ -168,16 +177,16 @@ export function BirthdayNotifications({
               </p>
             </div>
             {isUpcomingExpanded ? (
-              <ChevronUpIcon className="mt-1 h-4 w-4 shrink-0 text-neutral-400" />
+              <ChevronUpIcon className="mt-1 h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
             ) : (
-              <ChevronDownIcon className="mt-1 h-4 w-4 shrink-0 text-neutral-400" />
+              <ChevronDownIcon className="mt-1 h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
             )}
           </button>
 
           {isUpcomingExpanded ? (
-            <div className="px-5 py-2">
+            <div className="px-4 py-2 sm:px-5">
               <div className="mb-2 flex justify-end">
-                <Button size="sm" variant="outline" onClick={() => handleSendBulkMessage(upcomingBirthdays)}>
+                <Button size="sm" variant="outline" className="h-11 w-full sm:h-9 sm:w-auto" onClick={() => handleSendBulkMessage(upcomingBirthdays)}>
                   Message all
                 </Button>
               </div>

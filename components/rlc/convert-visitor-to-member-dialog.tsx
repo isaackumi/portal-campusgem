@@ -70,7 +70,7 @@ export function ConvertVisitorToMemberDialog({ open, onOpenChange, visitor, onSu
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-rose-700" />
+            <UserCheck className="h-5 w-5 text-brand-700 dark:text-brand-300" />
             Import visitor as member
           </DialogTitle>
           <DialogDescription>
@@ -105,7 +105,7 @@ export function ConvertVisitorToMemberDialog({ open, onOpenChange, visitor, onSu
           </Button>
           <Button
             type="button"
-            className="bg-rose-700 hover:bg-rose-800"
+            className="bg-brand-700 hover:bg-brand-800"
             disabled={submitting || !visitor}
             onClick={() => void handleConvert()}
           >

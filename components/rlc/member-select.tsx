@@ -131,7 +131,7 @@ export function MemberMultiSelect({
           {selected.map((m) => (
             <Badge key={m.id} variant="secondary" className="gap-1 pr-1">
               {memberLabel(m)}
-              <button type="button" onClick={() => remove(m.id)} className="rounded p-0.5 hover:bg-slate-200">
+              <button type="button" onClick={() => remove(m.id)} className="rounded p-0.5 hover:bg-neutral-200 dark:hover:bg-white/[0.06]">
                 <X className="h-3 w-3" />
               </button>
             </Badge>
@@ -142,12 +142,12 @@ export function MemberMultiSelect({
       {searching ? <p className="text-xs text-muted-foreground">Searching…</p> : null}
       {showEmpty ? <p className="text-xs text-muted-foreground">No members match your search.</p> : null}
       {suggestions.length > 0 ? (
-        <div className="rounded-md border bg-white shadow-sm">
+        <div className="rounded-md border bg-white shadow-sm dark:bg-neutral-800/60">
           {suggestions.map((m) => (
             <button
               key={m.id}
               type="button"
-              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+              className="flex min-h-11 w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-white/[0.06]"
               onClick={() => add(m.id)}
             >
               <span>{memberLabel(m)}</span>
@@ -202,12 +202,12 @@ export function MemberSingleSelect({
           {searching ? <p className="text-xs text-muted-foreground">Searching…</p> : null}
           {showEmpty ? <p className="text-xs text-muted-foreground">No members match your search.</p> : null}
           {suggestions.length > 0 ? (
-            <div className="rounded-md border bg-white shadow-sm">
+            <div className="rounded-md border bg-white shadow-sm dark:bg-neutral-800/60">
               {suggestions.map((m) => (
                 <button
                   key={m.id}
                   type="button"
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+                  className="flex min-h-11 w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-white/[0.06]"
                   onClick={() => {
                     onChange(m.id)
                     setQuery('')

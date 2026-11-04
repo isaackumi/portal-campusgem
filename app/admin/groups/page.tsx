@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { 
   Plus, 
   Search, 
@@ -292,8 +294,8 @@ export default function GroupsManagementPage() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading groups...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-neutral-900 dark:border-neutral-100"></div>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">Loading groups...</p>
         </div>
       </div>
     )
@@ -304,10 +306,10 @@ export default function GroupsManagementPage() {
       <div className="flex min-h-[50vh] items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
-            <Users className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">Error Loading Groups</h2>
-            <p className="text-slate-600 mb-4">{error}</p>
-            <Button onClick={() => refetch()}>
+            <Users className="mx-auto mb-4 h-12 w-12 text-red-500 dark:text-red-400" />
+            <h2 className="app-section-title mb-2">Couldn&apos;t load groups</h2>
+            <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-400">{error}</p>
+            <Button className="h-11 sm:h-10" onClick={() => refetch()}>
               Try Again
             </Button>
           </CardContent>
@@ -317,22 +319,22 @@ export default function GroupsManagementPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="app-page-title">Group Management</h1>
-              <p className="text-slate-600 mt-2">Manage campus fellowships, event activities, and ministry groups</p>
+        <div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <h1 className="app-page-title">Group management</h1>
+              <p className="app-page-description mt-2">Manage campus fellowships, event activities, and ministry groups</p>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button className="">
+                <Button className="h-11 w-full sm:h-10 sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Group
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Group</DialogTitle>
                   <DialogDescription>
@@ -340,7 +342,7 @@ export default function GroupsManagementPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="name">Group Name *</Label>
                       <Input
@@ -378,7 +380,7 @@ export default function GroupsManagementPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="location">Location</Label>
                       <Input
@@ -399,7 +401,7 @@ export default function GroupsManagementPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="max_members">Max Members</Label>
                       <Input
@@ -410,24 +412,24 @@ export default function GroupsManagementPage() {
                         placeholder="Maximum number of members"
                       />
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex min-h-11 items-center gap-3 sm:mt-6">
                       <input
                         type="checkbox"
                         id="is_active"
                         checked={formData.is_active}
                         onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
-                        className="rounded"
+                        className="h-5 w-5 rounded border-neutral-300 text-brand-600 dark:border-neutral-600 dark:bg-neutral-800"
                       />
                       <Label htmlFor="is_active">Active Group</Label>
                     </div>
                   </div>
 
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <Button variant="outline" className="h-11 sm:h-10" onClick={() => setShowCreateDialog(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleCreateGroup} disabled={creating}>
-                      {creating ? 'Creating...' : 'Create Group'}
+                    <Button className="h-11 sm:h-10" onClick={handleCreateGroup} disabled={creating}>
+                      {creating ? 'Creating...' : 'Create group'}
                     </Button>
                   </div>
                 </div>
@@ -437,35 +439,36 @@ export default function GroupsManagementPage() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
           <StatCard label="Total groups" value={stats.total} />
           <StatCard label="Campuses" value={stats.campuses} />
           
           <StatCard label="Activities" value={stats.activities} />
           <StatCard label="Fellowships" value={stats.fellowships} />
           
-          <StatCard label="Other" value={stats.other} />
+          <StatCard label="Other" value={stats.other} className="col-span-2 md:col-span-1" />
         </div>
 
         {/* Search and Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
+        <div>
+          <div>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
                   <Input
-                    placeholder="Search groups by name, description, or location..."
+                    type="search"
+                    placeholder="Search name, description or location..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="h-11 w-full pl-10 sm:h-10"
                   />
                 </div>
               </div>
               
               <div className="flex gap-2">
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="h-11 w-full sm:h-10 sm:w-40" aria-label="Filter by type">
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -479,101 +482,103 @@ export default function GroupsManagementPage() {
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Groups List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Groups ({filteredGroups.length})</CardTitle>
-            <CardDescription>
-              Manage campus fellowships, activities, and ministry structures
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <section aria-labelledby="groups-heading">
+          <div className="mb-3 flex items-baseline justify-between gap-2">
+            <h2 id="groups-heading" className="app-section-title">Groups</h2>
+            <span className="text-sm tabular-nums text-neutral-500 dark:text-neutral-400">{filteredGroups.length} shown</span>
+          </div>
             {filteredGroups.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-2">No groups found</h3>
-                <p className="text-slate-600">Try adjusting your search or filters.</p>
+              <div className="dashboard-panel py-12 text-center">
+                <Users className="mx-auto mb-4 h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+                <h3 className="app-section-title mb-1">No groups found</h3>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">Try adjusting your search or filters.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
                 {filteredGroups.map((group) => (
-                  <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                  <Card key={group.id} className="flex flex-col transition-shadow hover:shadow-lg">
+                    <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-700/60 dark:text-neutral-300">
                             {getGroupTypeIcon(group.group_type || '')}
                           </div>
-                          <div>
-                            <CardTitle className="text-lg">{group.name}</CardTitle>
-                            <Badge variant="secondary" className="capitalize">
+                          <div className="min-w-0">
+                            <CardTitle className="break-words text-base font-semibold">{group.name}</CardTitle>
+                            <Badge variant="secondary" className="mt-1 capitalize">
                               {getGroupTypeLabel(group.group_type)}
                             </Badge>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openMembersDialog(group)}
-                          >
-                            <Users className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(group)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteGroup(group.id, group.name || 'Group')}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-10 w-10 shrink-0 p-0" aria-label={`Actions for ${group.name}`}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem className="min-h-11 gap-2" onSelect={() => openEditDialog(group)}>
+                              <Edit className="h-4 w-4" />
+                              Edit group
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="min-h-11 gap-2 text-red-600 focus:text-red-700 dark:text-red-400 dark:focus:text-red-300"
+                              onSelect={() => handleDeleteGroup(group.id, group.name || 'Group')}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete group
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex flex-1 flex-col p-4 pt-0 sm:p-6 sm:pt-0">
                       {group.description && (
-                        <p className="text-slate-600 text-sm mb-4">{group.description}</p>
+                        <p className="mb-3 line-clamp-3 text-sm text-neutral-600 dark:text-neutral-400">{group.description}</p>
                       )}
                       
-                      <div className="space-y-2 text-sm text-slate-500">
+                      <div className="space-y-2 text-sm text-neutral-500 dark:text-neutral-400">
                         {group.meeting_location && (
-                          <div className="flex items-center">
-                            <MapPin className="h-3 w-3 mr-2" />
-                            {group.meeting_location}
+                          <div className="flex items-start gap-2">
+                            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                            <span className="min-w-0 break-words">{group.meeting_location}</span>
                           </div>
                         )}
                         {group.meeting_schedule && (
-                          <div className="flex items-center">
-                            <Calendar className="h-3 w-3 mr-2" />
-                            {group.meeting_schedule}
+                          <div className="flex items-start gap-2">
+                            <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                            <span className="min-w-0 break-words">{group.meeting_schedule}</span>
                           </div>
                         )}
                         {group.max_members && (
-                          <div className="flex items-center">
-                            <Users className="h-3 w-3 mr-2" />
-                            Max: {group.max_members} members
+                          <div className="flex items-center gap-2">
+                            <Users className="h-3.5 w-3.5 shrink-0" />
+                            Max {group.max_members} members
                           </div>
                         )}
                       </div>
-                      <div className="mt-4">
+                      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full"
+                          className="h-11 sm:h-9"
+                          onClick={() => openMembersDialog(group)}
+                        >
+                          <Users className="mr-2 h-3.5 w-3.5" />
+                          Members
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-11 sm:h-9"
                           onClick={() => router.push(`/admin/forms?group=${encodeURIComponent(group.id)}`)}
                         >
                           <Plus className="mr-2 h-3.5 w-3.5" />
-                          Create scoped form
+                          Scoped form
                         </Button>
                       </div>
                     </CardContent>
@@ -581,12 +586,11 @@ export default function GroupsManagementPage() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+        </section>
 
         {/* Edit Group Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Group</DialogTitle>
               <DialogDescription>
@@ -594,7 +598,7 @@ export default function GroupsManagementPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="edit_name">Group Name *</Label>
                   <Input
@@ -632,11 +636,11 @@ export default function GroupsManagementPage() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button variant="outline" className="h-11 sm:h-10" onClick={() => setShowEditDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleUpdateGroup} disabled={updating}>
+                <Button className="h-11 sm:h-10" onClick={handleUpdateGroup} disabled={updating}>
                   {updating ? 'Updating...' : 'Update Group'}
                 </Button>
               </div>
@@ -646,52 +650,63 @@ export default function GroupsManagementPage() {
 
         {/* Group Members Dialog */}
         <Dialog open={showMembersDialog} onOpenChange={setShowMembersDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Group Members - {selectedGroup?.name}</DialogTitle>
+              <DialogTitle className="break-words">{selectedGroup?.name} members</DialogTitle>
               <DialogDescription>
                 Manage group members and their roles.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-slate-600">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
                   {selectedGroup?.members?.length || 0} members
                 </p>
-                <Button onClick={() => setShowAddMemberDialog(true)}>
+                <Button className="h-11 sm:h-10" onClick={() => setShowAddMemberDialog(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add Member
                 </Button>
               </div>
               
               {selectedGroup?.members && selectedGroup.members.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedGroup.members.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-primary" />
+                <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200/80 dark:divide-white/[0.06] dark:border-white/[0.08]">
+                  {selectedGroup.members.map((member) => {
+                    const person = member.member?.user
+                    const name = person?.full_name || 'Unknown'
+                    return (
+                    <li key={member.id} className="flex min-h-14 items-center gap-3 px-3 py-2">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+                          <User className="h-4 w-4" />
                         </div>
-                        <div>
-                          <p className="font-medium">{member.member?.user?.full_name || 'Unknown'}</p>
-                          <p className="text-sm text-slate-500">{member.role}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{name}</p>
+                          <p className="flex flex-wrap items-center gap-x-2 text-xs capitalize text-neutral-500 dark:text-neutral-400">
+                            {member.role.replace('_', ' ')}
+                            {person?.phone ? (
+                              <span className="normal-case">
+                                <PhoneLink phone={person.phone} whatsapp={person.whatsapp} name={name} />
+                              </span>
+                            ) : null}
+                          </p>
                         </div>
-                      </div>
+                      <QuickContactButtons phone={person?.phone} whatsapp={person?.whatsapp} name={name} />
                       <Button
                         variant="outline"
                         size="sm"
+                        aria-label={`Remove ${name} from group`}
                         onClick={() => handleRemoveMemberFromGroup(member.member_id, member.member?.user?.full_name || 'Member')}
-                        className="text-red-600 hover:text-red-700"
+                        className="h-10 w-10 shrink-0 p-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:h-9 sm:w-9"
                       >
                         <UserMinus className="h-4 w-4" />
                       </Button>
-                    </div>
-                  ))}
-                </div>
+                    </li>
+                    )
+                  })}
+                </ul>
               ) : (
                 <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-slate-600">No members in this group yet.</p>
+                  <Users className="mx-auto mb-4 h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">No members in this group yet.</p>
                 </div>
               )}
             </div>
@@ -714,7 +729,7 @@ export default function GroupsManagementPage() {
                   value={selectedMembershipRole}
                   onValueChange={(value) => setSelectedMembershipRole(value as 'leader' | 'co_leader' | 'executive' | 'member' | 'volunteer')}
                 >
-                  <SelectTrigger id="membership-role">
+                  <SelectTrigger id="membership-role" className="h-11 sm:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -727,20 +742,21 @@ export default function GroupsManagementPage() {
                 </Select>
               </div>
               {users && users.length > 0 ? (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                <div className="max-h-[50vh] space-y-2 overflow-y-auto sm:max-h-60">
                   {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-primary" />
+                    <div key={user.id} className="flex min-h-14 items-center justify-between gap-3 rounded-lg border border-neutral-200/80 p-3 hover:bg-neutral-50 dark:border-white/[0.08] dark:hover:bg-white/[0.04]">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+                          <User className="h-4 w-4" />
                         </div>
-                        <div>
-                          <p className="font-medium">{user.full_name}</p>
-                          <p className="text-sm text-slate-500">{user.role}</p>
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{user.full_name}</p>
+                          <p className="text-sm capitalize text-neutral-500 dark:text-neutral-400">{user.role}</p>
                         </div>
                       </div>
                       <Button
                         size="sm"
+                        className="h-10 shrink-0 sm:h-9"
                         onClick={() => handleAddMemberToGroup(user.id, selectedMembershipRole)}
                         disabled={addingMember}
                       >
@@ -751,8 +767,8 @@ export default function GroupsManagementPage() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-slate-600">No users available.</p>
+                  <User className="mx-auto mb-4 h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">No users available.</p>
                 </div>
               )}
             </div>

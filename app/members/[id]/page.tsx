@@ -1,9 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useState, useEffect, type ReactNode } from 'react'
+import Link from 'next/link'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DashboardLayout } from '@/components/dashboard-layout'
+import { LoadingSpinner } from '@/components/ui/loading'
+import { Meter } from '@/components/ui/meter'
+import { PersonAvatar } from '@/components/ui/person'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { memberStatusTone, roleTone } from '@/lib/ui/chip-tones'
@@ -14,26 +19,24 @@ import { useToast } from '@/hooks/use-toast'
 import { dataService } from '@/lib/services/data-service'
 import { useQuery } from '@tanstack/react-query'
 import { Member, AppUser, Dependant, GroupMembership, Attendance } from '@/lib/types'
-import { formatDate } from '@/lib/utils'
-import { calculateProfileCompletion, getCompletionColor, getCompletionMessage, getNextSteps } from '@/lib/profile-completion'
+import { cn, formatDate } from '@/lib/utils'
+import { calculateProfileCompletion, getCompletionMessage } from '@/lib/profile-completion'
 import { 
-  ArrowLeft, 
-  User, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Calendar, 
-  Briefcase, 
+  ArrowLeft,
+  User,
+  Phone,
+  Calendar,
+  Briefcase,
   Heart,
   Users,
   Edit,
-  Camera,
   CheckCircle,
   Circle,
-  Droplets,
   Church,
   Star,
-  FileText
+  FileText,
+  Copy,
+  type LucideIcon,
 } from 'lucide-react'
 
 interface MemberWithDetails extends Member {
@@ -46,6 +49,7 @@ export default function MemberProfilePage() {
   const { user, loading: authLoading, can } = useAuth()
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const [attendanceHistory, setAttendanceHistory] = useState<Attendance[]>([])
@@ -194,6 +198,14 @@ export default function MemberProfilePage() {
     }
   }, [memberQuery.data])
 
+  // "Edit profile" from the members list links here with ?edit=true
+  useEffect(() => {
+    if (searchParams.get('edit') === 'true' && memberQuery.data?.data && can('members.manage')) {
+      setIsEditing(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, memberQuery.data?.data])
+
   useEffect(() => {
     if (attendanceQuery.data?.data) setAttendanceHistory(attendanceQuery.data.data as Attendance[])
   }, [attendanceQuery.data])
@@ -216,9 +228,11 @@ export default function MemberProfilePage() {
 
   if (authLoading || memberQuery.isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
-        <div className="animate-pulse text-primary text-lg">Loading...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </DashboardLayout>
     )
   }
 
@@ -228,673 +242,615 @@ export default function MemberProfilePage() {
 
   if (!member) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center py-12">
-            <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">Member not found</h3>
-            <p className="text-slate-500 mb-4">The member you're looking for doesn't exist.</p>
-            <Button onClick={() => router.push('/members')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Members
-            </Button>
-          </div>
+      <DashboardLayout>
+        <div className="mx-auto max-w-md py-12 text-center">
+          <User className="mx-auto mb-4 h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+          <h2 className="app-section-title mb-2">Member not found</h2>
+          <p className="mb-6 text-sm text-neutral-500 dark:text-neutral-400">
+            The member you&apos;re looking for doesn&apos;t exist.
+          </p>
+          <Button onClick={() => router.push('/members')} className="h-11 w-full sm:h-10 sm:w-auto">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to members
+          </Button>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => router.push('/members')}
-              className="mr-3 text-slate-600 hover:text-slate-900"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Members
-            </Button>
-            <div>
-              <h1 className="app-page-title">
-                Member Profile
-              </h1>
-              <p className="text-slate-600">{member.user?.full_name}</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            {can('members.manage') && (
-              <Button 
-                variant="outline" 
-                onClick={isEditing ? handleSaveEdit : handleEdit}
-                disabled={loading}
-              >
-                {isEditing ? (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </>
-                ) : (
-                  <>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Profile
-                  </>
-                )}
-              </Button>
-            )}
-            {isEditing && (
-              <Button variant="outline" onClick={handleCancelEdit}>
-                Cancel
-              </Button>
-            )}
-            <Button variant="outline">
-              <Camera className="h-4 w-4 mr-2" />
-              Change Photo
-            </Button>
-          </div>
-        </div>
+  const fullName = member.user?.full_name || 'Member'
+  const completionTone = (pct: number) =>
+    pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger'
+  const weeklyAverage = Math.round(
+    (attendanceHistory.length /
+      Math.max(1, Math.floor((Date.now() - new Date(member?.created_at || '').getTime()) / (7 * 24 * 60 * 60 * 1000)))) *
+      100
+  )
+  const last30 = attendanceHistory.filter(
+    (a) => new Date(a.service_date) >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  ).length
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Profile Info */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Profile Card */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-slate-800 to-slate-950 rounded-full flex items-center justify-center mx-auto mb-4">
-                    {member.profile_photo_url ? (
-                      <img 
-                        src={member.profile_photo_url} 
-                        alt={member.user?.full_name}
-                        className="w-24 h-24 rounded-full object-cover"
+  return (
+    <DashboardLayout>
+      <div className="mx-auto max-w-6xl space-y-6 pb-24 lg:pb-0">
+        <Link
+          href="/members"
+          className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 sm:min-h-9"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Members
+        </Link>
+
+        {/* Identity header */}
+        <section className="dashboard-panel p-4 sm:p-5">
+          <div className="flex items-start gap-4">
+            {member.profile_photo_url ? (
+              <img
+                src={member.profile_photo_url}
+                alt={fullName}
+                className="h-16 w-16 shrink-0 rounded-full object-cover sm:h-20 sm:w-20"
+              />
+            ) : (
+              <PersonAvatar name={fullName} seed={member.id} size="lg" className="h-16 w-16 text-lg sm:h-20 sm:w-20" />
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="app-page-title break-words">{fullName}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Badge variant={roleTone(member.user?.role || 'member')} className="capitalize">
+                  {(member.user?.role || 'member').replace(/_/g, ' ')}
+                </Badge>
+                <Badge variant={memberStatusTone(member.status || 'active')} className="capitalize">
+                  {member.status}
+                </Badge>
+              </div>
+              {member.user?.membership_id ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(member.user!.membership_id!)
+                    toast({ title: 'Copied', description: 'Membership ID copied to clipboard' })
+                  }}
+                  className="mt-1 inline-flex min-h-9 items-center gap-1.5 font-mono text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+                  aria-label="Copy membership ID"
+                >
+                  {member.user.membership_id}
+                  <Copy className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+            {can('members.manage') && !isEditing ? (
+              <Button variant="outline" onClick={handleEdit} className="hidden shrink-0 sm:inline-flex">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit profile
+              </Button>
+            ) : null}
+          </div>
+
+          {member.user?.phone || member.user?.email ? (
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-neutral-200/80 pt-4 dark:border-white/[0.06]">
+              <QuickContactButtons
+                phone={member.user?.phone}
+                whatsapp={member.user?.whatsapp}
+                name={fullName}
+              />
+              <div className="flex min-w-0 flex-col gap-0.5 text-sm text-neutral-700 dark:text-neutral-300">
+                {member.user?.phone ? (
+                  <PhoneLink phone={member.user.phone} whatsapp={member.user.whatsapp} name={fullName} />
+                ) : null}
+                {member.user?.email ? (
+                  <a
+                    href={`mailto:${member.user.email}`}
+                    className="truncate text-neutral-600 hover:text-brand-600 dark:text-neutral-400 dark:hover:text-brand-300"
+                  >
+                    {member.user.email}
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        {/* Mobile edit bar (sits above the bottom tab bar) */}
+        {can('members.manage') ? (
+          <div className="fixed inset-x-4 bottom-20 z-30 flex gap-2 rounded-xl border border-neutral-200/80 bg-white/95 p-2 shadow-lg backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 sm:hidden">
+            {isEditing ? (
+              <>
+                <Button variant="outline" onClick={handleCancelEdit} className="h-11 flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveEdit} disabled={loading} className="h-11 flex-1">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Save
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={handleEdit} className="h-11 flex-1">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit profile
+              </Button>
+            )}
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Side column */}
+          <div className="space-y-6 lg:col-span-1">
+            {profileCompletion && (
+              <section className="dashboard-panel p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="app-section-title">Profile completion</h2>
+                  <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-white">
+                    {profileCompletion.percentage}%
+                  </span>
+                </div>
+                <Meter
+                  value={profileCompletion.percentage}
+                  max={100}
+                  tone={completionTone(profileCompletion.percentage)}
+                  label="Profile completion"
+                  className="mt-3"
+                />
+                <p className="mt-2 text-[13px] text-neutral-500 dark:text-neutral-400">
+                  {getCompletionMessage(profileCompletion.percentage)}
+                </p>
+                <dl className="mt-4 space-y-1.5 border-t border-neutral-200/80 pt-3 text-[13px] dark:border-white/[0.06]">
+                  {Object.entries(profileCompletion.details).map(([section, data]) => (
+                    <div key={section} className="flex items-center justify-between">
+                      <dt className="capitalize text-neutral-600 dark:text-neutral-400">{section.replace('_', ' ')}</dt>
+                      <dd className="tabular-nums text-neutral-500 dark:text-neutral-400">
+                        {data.completed}/{data.total}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
+
+            {/* Attendance summary */}
+            <section className="dashboard-panel p-4 sm:p-5">
+              <h2 className="app-section-title">Attendance</h2>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div>
+                  <p className="app-stat-value">{attendanceHistory.length}</p>
+                  <p className="app-stat-label mt-0.5">Services</p>
+                </div>
+                <div>
+                  <p className="app-stat-value">{weeklyAverage}%</p>
+                  <p className="app-stat-label mt-0.5">Weekly avg</p>
+                </div>
+                <div>
+                  <p className="app-stat-value">{last30}</p>
+                  <p className="app-stat-label mt-0.5">Last 30 days</p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Main column */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Contact information */}
+            <Section icon={Phone} title="Contact">
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <EditField label="Full name" id="full_name">
+                      <Input
+                        id="full_name"
+                        className="h-11 sm:h-10"
+                        value={editForm.full_name}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
                       />
-                    ) : (
-                      <User className="h-12 w-12 text-white" />
-                    )}
+                    </EditField>
+                    <EditField label="Role" id="role">
+                      <Select value={editForm.role} onValueChange={(value) => setEditForm(prev => ({ ...prev, role: value }))}>
+                        <SelectTrigger id="role" className="h-11 sm:h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="pastor">Pastor</SelectItem>
+                          <SelectItem value="elder">Elder</SelectItem>
+                          <SelectItem value="finance_officer">Finance officer</SelectItem>
+                          <SelectItem value="member">Member</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </EditField>
+                    <EditField label="Primary phone" id="phone">
+                      <Input
+                        id="phone"
+                        type="tel"
+                        inputMode="tel"
+                        className="h-11 sm:h-10"
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                      />
+                    </EditField>
+                    <EditField label="Email" id="email">
+                      <Input
+                        id="email"
+                        type="email"
+                        inputMode="email"
+                        className="h-11 sm:h-10"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                      />
+                    </EditField>
+                    <EditField label="Address" id="address">
+                      <Input
+                        id="address"
+                        className="h-11 sm:h-10"
+                        value={editForm.address}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))}
+                      />
+                    </EditField>
+                    <EditField label="Occupation" id="occupation">
+                      <Input
+                        id="occupation"
+                        className="h-11 sm:h-10"
+                        value={editForm.occupation}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, occupation: e.target.value }))}
+                      />
+                    </EditField>
+                    <EditField label="Place of work" id="place_of_work">
+                      <Input
+                        id="place_of_work"
+                        className="h-11 sm:h-10"
+                        value={editForm.place_of_work}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, place_of_work: e.target.value }))}
+                      />
+                    </EditField>
+                    <EditField label="Marital status" id="marital_status">
+                      <Select value={editForm.marital_status} onValueChange={(value) => setEditForm(prev => ({ ...prev, marital_status: value }))}>
+                        <SelectTrigger id="marital_status" className="h-11 sm:h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="single">Single</SelectItem>
+                          <SelectItem value="married">Married</SelectItem>
+                          <SelectItem value="divorced">Divorced</SelectItem>
+                          <SelectItem value="widowed">Widowed</SelectItem>
+                          <SelectItem value="separated">Separated</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </EditField>
+                    <EditField label="Spouse name" id="spouse_name">
+                      <Input
+                        id="spouse_name"
+                        className="h-11 sm:h-10"
+                        value={editForm.spouse_name}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, spouse_name: e.target.value }))}
+                      />
+                    </EditField>
+                    <EditField label="Children" id="children_count">
+                      <Input
+                        id="children_count"
+                        type="number"
+                        inputMode="numeric"
+                        className="h-11 sm:h-10"
+                        value={editForm.children_count}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, children_count: parseInt(e.target.value) || 0 }))}
+                      />
+                    </EditField>
                   </div>
-                  <h2 className="text-xl font-bold text-slate-900 mb-2">
-                    {member.user?.full_name}
-                  </h2>
-                  <div className="flex items-center justify-center space-x-2 mb-3">
-                    <Badge variant={roleTone(member.user?.role || 'member')} className="capitalize">
-                      {member.user?.role}
-                    </Badge>
-                    <Badge variant={memberStatusTone(member.status || 'active')} className="capitalize">
-                      {member.status}
-                    </Badge>
+                  <div className="border-t border-neutral-200/80 pt-4 dark:border-white/[0.06]">
+                    <h3 className="app-overline mb-3">Emergency contact</h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <EditField label="Name" id="emergency_contact_name">
+                        <Input
+                          id="emergency_contact_name"
+                          className="h-11 sm:h-10"
+                          value={editForm.emergency_contact_name}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                        />
+                      </EditField>
+                      <EditField label="Phone" id="emergency_contact_phone">
+                        <Input
+                          id="emergency_contact_phone"
+                          type="tel"
+                          inputMode="tel"
+                          className="h-11 sm:h-10"
+                          value={editForm.emergency_contact_phone}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                        />
+                      </EditField>
+                      <EditField label="Relationship" id="emergency_contact_relation">
+                        <Input
+                          id="emergency_contact_relation"
+                          className="h-11 sm:h-10"
+                          value={editForm.emergency_contact_relation}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, emergency_contact_relation: e.target.value }))}
+                        />
+                      </EditField>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-center space-x-2 mb-4">
-                    <p className="text-sm text-slate-500">
-                      ID: <span className="font-mono text-primary font-semibold">{member.user?.membership_id}</span>
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (member.user?.membership_id) {
-                          navigator.clipboard.writeText(member.user.membership_id)
-                          toast({
-                            title: "Copied!",
-                            description: "Membership ID copied to clipboard",
-                          })
-                        }
-                      }}
-                      className="p-1 h-6 w-6"
-                    >
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
+                  <div className="hidden justify-end gap-2 sm:flex">
+                    <Button variant="outline" onClick={handleCancelEdit}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveEdit} disabled={loading}>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Save changes
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Profile Completion */}
-{profileCompletion && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  Profile Completion
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Overall Progress</span>
-                    <span className={`text-sm font-bold ${getCompletionColor(profileCompletion.percentage)}`}>
-                      {profileCompletion.percentage}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-primary h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${profileCompletion.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {getCompletionMessage(profileCompletion.percentage)}
-                  </div>
-                  
-                  {/* Detailed Breakdown */}
-                  <div className="space-y-2 pt-2 border-t border-slate-100">
-                    <div className="text-xs font-medium text-slate-600">Progress by Section:</div>
-                    {Object.entries(profileCompletion.details).map(([section, data]) => (
-                      <div key={section} className="flex items-center justify-between text-xs">
-                        <span className="capitalize text-slate-600">{section.replace('_', ' ')}</span>
-                        <span className="text-slate-500">{data.completed}/{data.total}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            )}
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  View Attendance
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Heart className="h-4 w-4 mr-2" />
-                  Add Dependant
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Users className="h-4 w-4 mr-2" />
-                  Join Group
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <FileText className="h-4 w-4 mr-2" />
-                  View Documents
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Detailed Information */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Personal Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">First Name</label>
-                    <p className="text-slate-900">{member.user?.first_name || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Middle Name</label>
-                    <p className="text-slate-900">{member.user?.middle_name || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Last Name</label>
-                    <p className="text-slate-900">{member.user?.last_name || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Gender</label>
-                    <p className="text-slate-900 capitalize">{member.gender || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Date of Birth</label>
-                    <p className="text-slate-900">{member.dob ? formatDate(member.dob) : 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Marital Status</label>
-                    <p className="text-slate-900 capitalize">{member.user?.marital_status || 'Not provided'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Contact Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <Phone className="h-5 w-5 mr-2" />
-                  Contact Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="full_name">Full Name</Label>
-                        <Input
-                          id="full_name"
-                          value={editForm.full_name}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="role">Role</Label>
-                        <Select value={editForm.role} onValueChange={(value) => setEditForm(prev => ({ ...prev, role: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="pastor">Pastor</SelectItem>
-                            <SelectItem value="elder">Elder</SelectItem>
-                            <SelectItem value="finance_officer">Finance Officer</SelectItem>
-                            <SelectItem value="member">Member</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="phone">Primary Phone</Label>
-                        <Input
-                          id="phone"
-                          value={editForm.phone}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={editForm.email}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="address">Address</Label>
-                        <Input
-                          id="address"
-                          value={editForm.address}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="occupation">Occupation</Label>
-                        <Input
-                          id="occupation"
-                          value={editForm.occupation}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, occupation: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="place_of_work">Place of Work</Label>
-                        <Input
-                          id="place_of_work"
-                          value={editForm.place_of_work}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, place_of_work: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="marital_status">Marital Status</Label>
-                        <Select value={editForm.marital_status} onValueChange={(value) => setEditForm(prev => ({ ...prev, marital_status: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="single">Single</SelectItem>
-                            <SelectItem value="married">Married</SelectItem>
-                            <SelectItem value="divorced">Divorced</SelectItem>
-                            <SelectItem value="widowed">Widowed</SelectItem>
-                            <SelectItem value="separated">Separated</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="spouse_name">Spouse Name</Label>
-                        <Input
-                          id="spouse_name"
-                          value={editForm.spouse_name}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, spouse_name: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="children_count">Children Count</Label>
-                        <Input
-                          id="children_count"
-                          type="number"
-                          value={editForm.children_count}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, children_count: parseInt(e.target.value) || 0 }))}
-                        />
-                      </div>
-                    </div>
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium text-slate-900 mb-3">Emergency Contact</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <Label htmlFor="emergency_contact_name">Contact Name</Label>
-                          <Input
-                            id="emergency_contact_name"
-                            value={editForm.emergency_contact_name}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
-                          />
+              ) : (
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Primary phone">
+                    {member.user?.phone ? (
+                      <PhoneLink phone={member.user.phone} whatsapp={member.user.whatsapp} name={fullName} />
+                    ) : null}
+                  </Field>
+                  <Field label="Secondary phone">
+                    {member.user?.secondary_phone ? (
+                      <PhoneLink phone={member.user.secondary_phone} name={fullName} />
+                    ) : null}
+                  </Field>
+                  {member.user?.whatsapp && member.user.whatsapp !== member.user.phone ? (
+                    <Field label="WhatsApp">
+                      <PhoneLink phone={member.user.whatsapp} whatsapp={member.user.whatsapp} name={fullName} />
+                    </Field>
+                  ) : null}
+                  <Field label="Email">
+                    {member.user?.email ? <span className="break-all">{member.user.email}</span> : null}
+                  </Field>
+                  <Field label="Address">{member.address}</Field>
+                  <Field label="Emergency contact" className="sm:col-span-2">
+                    {member.user?.emergency_contact_name || member.user?.emergency_contact_phone ? (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p>
+                            {member.user?.emergency_contact_name || 'Unnamed'}
+                            {member.user?.emergency_contact_relation ? (
+                              <span className="text-neutral-500 dark:text-neutral-400">
+                                {' '}· {member.user.emergency_contact_relation}
+                              </span>
+                            ) : null}
+                          </p>
+                          {member.user?.emergency_contact_phone ? (
+                            <PhoneLink
+                              phone={member.user.emergency_contact_phone}
+                              name={member.user.emergency_contact_name}
+                              className="text-sm"
+                            />
+                          ) : null}
                         </div>
-                        <div>
-                          <Label htmlFor="emergency_contact_phone">Contact Phone</Label>
-                          <Input
-                            id="emergency_contact_phone"
-                            value={editForm.emergency_contact_phone}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
-                          />
+                        <QuickContactButtons
+                          phone={member.user?.emergency_contact_phone}
+                          name={member.user?.emergency_contact_name}
+                        />
+                      </div>
+                    ) : null}
+                  </Field>
+                  {member.emergency_contacts?.filter((c) => c?.name || c?.phone).map((contact, i) => (
+                    <Field key={`${contact.phone}-${i}`} label="Other emergency contact" className="sm:col-span-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p>
+                            {contact.name}
+                            {contact.relation ? (
+                              <span className="text-neutral-500 dark:text-neutral-400"> · {contact.relation}</span>
+                            ) : null}
+                          </p>
+                          <PhoneLink phone={contact.phone} name={contact.name} className="text-sm" />
                         </div>
-                        <div>
-                          <Label htmlFor="emergency_contact_relation">Relationship</Label>
-                          <Input
-                            id="emergency_contact_relation"
-                            value={editForm.emergency_contact_relation}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, emergency_contact_relation: e.target.value }))}
-                          />
-                        </div>
+                        <QuickContactButtons phone={contact.phone} name={contact.name} />
+                      </div>
+                    </Field>
+                  ))}
+                </dl>
+              )}
+            </Section>
+
+            <Section icon={User} title="Personal">
+              <dl className="grid grid-cols-2 gap-4">
+                <Field label="First name">{member.user?.first_name}</Field>
+                <Field label="Middle name">{member.user?.middle_name}</Field>
+                <Field label="Last name">{member.user?.last_name}</Field>
+                <Field label="Gender" capitalize>{member.gender}</Field>
+                <Field label="Date of birth">{member.dob ? formatDate(member.dob) : null}</Field>
+                <Field label="Marital status" capitalize>{member.user?.marital_status}</Field>
+              </dl>
+            </Section>
+
+            <Section icon={Briefcase} title="Work and family">
+              <dl className="grid grid-cols-2 gap-4">
+                <Field label="Occupation">{member.user?.occupation}</Field>
+                <Field label="Place of work">{member.user?.place_of_work}</Field>
+                <Field label="Spouse">{member.user?.spouse_name}</Field>
+                <Field label="Children">{String(member.user?.children_count || 0)}</Field>
+              </dl>
+            </Section>
+
+            <Section icon={Church} title="Spiritual">
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Date of baptism">
+                  {member.date_of_baptism ? formatDate(member.date_of_baptism) : null}
+                </Field>
+                <Field label="Holy Ghost baptism">
+                  <span className="inline-flex items-center gap-1.5">
+                    {member.holy_ghost_baptism ? (
+                      <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                    ) : (
+                      <Circle className="h-4 w-4 text-neutral-400 dark:text-neutral-500" aria-hidden />
+                    )}
+                    {member.holy_ghost_baptism ? 'Yes' : 'No'}
+                  </span>
+                </Field>
+                <Field label="Date of Holy Ghost baptism">
+                  {member.date_of_holy_ghost_baptism ? formatDate(member.date_of_holy_ghost_baptism) : null}
+                </Field>
+                <Field label="Previous church">{member.previous_church}</Field>
+                <Field label="Reason for leaving previous church" className="sm:col-span-2">
+                  {member.reason_for_leaving}
+                </Field>
+              </dl>
+            </Section>
+
+            {member.special_skills?.length || member.interests?.length ? (
+              <Section icon={Star} title="Skills and interests">
+                <div className="space-y-4">
+                  {member.special_skills?.length ? (
+                    <div>
+                      <p className="app-stat-label">Special skills</p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {member.special_skills.map((skill, index) => (
+                          <Badge key={index} variant="secondary">{skill}</Badge>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  ) : null}
+                  {member.interests?.length ? (
                     <div>
-                      <label className="text-sm font-medium text-slate-500">Primary Phone</label>
-                      <p className="text-slate-900">{member.user?.phone || 'Not provided'}</p>
+                      <p className="app-stat-label">Interests</p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {member.interests.map((interest, index) => (
+                          <Badge key={index} variant="outline">{interest}</Badge>
+                        ))}
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-500">Secondary Phone</label>
-                      <p className="text-slate-900">{member.user?.secondary_phone || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-500">Email</label>
-                      <p className="text-slate-900">{member.user?.email || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-500">Address</label>
-                      <p className="text-slate-900">{member.address || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-500">Emergency Contact</label>
-                      <p className="text-slate-900">
-                        {member.user?.emergency_contact_name 
-                          ? `${member.user.emergency_contact_name} (${member.user.emergency_contact_relation}) - ${member.user.emergency_contact_phone}`
-                          : 'Not provided'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Professional Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <Briefcase className="h-5 w-5 mr-2" />
-                  Professional Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Occupation</label>
-                    <p className="text-slate-900">{member.user?.occupation || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Place of Work</label>
-                    <p className="text-slate-900">{member.user?.place_of_work || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Spouse Name</label>
-                    <p className="text-slate-900">{member.user?.spouse_name || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Number of Children</label>
-                    <p className="text-slate-900">{member.user?.children_count || 0}</p>
-                  </div>
+                  ) : null}
                 </div>
-              </CardContent>
-            </Card>
+              </Section>
+            ) : null}
 
-            {/* Spiritual Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <Church className="h-5 w-5 mr-2" />
-                  Spiritual Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Date of Baptism</label>
-                    <p className="text-slate-900">{member.date_of_baptism ? formatDate(member.date_of_baptism) : 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Holy Ghost Baptism</label>
-                    <div className="flex items-center">
-                      {member.holy_ghost_baptism ? (
-                        <CheckCircle className="h-4 w-4 text-green-600 mr-1" />
-                      ) : (
-                        <Circle className="h-4 w-4 text-gray-400 mr-1" />
-                      )}
-                      <span className="text-slate-900">
-                        {member.holy_ghost_baptism ? 'Yes' : 'No'}
+            {member.group_memberships?.length ? (
+              <Section icon={Users} title="Groups">
+                <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+                  {member.group_memberships.map((membership) => (
+                    <li key={membership.id} className="flex min-h-11 items-center justify-between gap-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {membership.group?.name || 'Unknown group'}
+                        </p>
+                        <p className="text-[13px] capitalize text-neutral-500 dark:text-neutral-400">
+                          {membership.group?.group_type || 'Unknown type'}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="shrink-0 capitalize">{membership.role}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            ) : null}
+
+            {member.dependants?.length ? (
+              <Section icon={Heart} title={`Dependants (${member.dependants.length})`}>
+                <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+                  {member.dependants.map((dependant) => (
+                    <li key={dependant.id} className="flex min-h-11 items-center justify-between gap-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {dependant.first_name} {dependant.last_name}
+                        </p>
+                        <p className="text-[13px] capitalize text-neutral-500 dark:text-neutral-400">
+                          {dependant.relationship} · {dependant.dob ? formatDate(dependant.dob) : 'No date of birth'}
+                        </p>
+                      </div>
+                      {dependant.is_member && <Badge variant="secondary">Member</Badge>}
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            ) : null}
+
+            <Section icon={Calendar} title="Attendance history">
+              {attendanceHistory.length === 0 ? (
+                <div className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                  <Calendar className="mx-auto mb-3 h-10 w-10 text-neutral-300 dark:text-neutral-600" />
+                  No attendance records yet
+                </div>
+              ) : (
+                <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+                  {attendanceHistory.map((attendance) => (
+                    <li key={attendance.id} className="flex min-h-11 items-center gap-3 py-2.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-400/10">
+                        <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
                       </span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Date of Holy Ghost Baptism</label>
-                    <p className="text-slate-900">
-                      {member.date_of_holy_ghost_baptism ? formatDate(member.date_of_holy_ghost_baptism) : 'Not provided'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-500">Previous Church</label>
-                    <p className="text-slate-900">{member.previous_church || 'Not provided'}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-slate-500">Reason for Leaving Previous Church</label>
-                    <p className="text-slate-900">{member.reason_for_leaving || 'Not provided'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Skills & Interests */}
-            {(member.special_skills?.length || member.interests?.length) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <Star className="h-5 w-5 mr-2" />
-                    Skills & Interests
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {member.special_skills?.length && (
-                      <div>
-                        <label className="text-sm font-medium text-slate-500">Special Skills</label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {member.special_skills.map((skill, index) => (
-                            <Badge key={index} variant="secondary">
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {member.interests?.length && (
-                      <div>
-                        <label className="text-sm font-medium text-slate-500">Interests</label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {member.interests.map((interest, index) => (
-                            <Badge key={index} variant="outline">
-                              {interest}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Group Memberships */}
-            {member.group_memberships?.length && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <Users className="h-5 w-5 mr-2" />
-                    Group Memberships
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {member.group_memberships.map((membership) => (
-                      <div key={membership.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-slate-900">{membership.group?.name || 'Unknown Group'}</p>
-                          <p className="text-sm text-slate-500 capitalize">{membership.group?.group_type || 'Unknown Type'}</p>
-                        </div>
-                        <Badge variant="outline">{membership.role}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Attendance History */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Attendance History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {attendanceHistory.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>No attendance records found</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {attendanceHistory.map((attendance) => (
-                      <div key={attendance.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-slate-900">
-                              {formatDate(attendance.service_date)}
-                            </p>
-                            <p className="text-sm text-slate-500 capitalize">
-                              {attendance.service_type?.replace('_', ' ')} • {attendance.method}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-slate-600">
-                            {new Date(attendance.check_in_time).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                          <Badge variant="outline" className="mt-1">
-                            {attendance.method}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Attendance Stats */}
-                {attendanceHistory.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-slate-200">
-                    <h4 className="font-medium text-slate-900 mb-4">Attendance Summary</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-primary">{attendanceHistory.length}</p>
-                        <p className="text-sm text-slate-500">Total Services</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">
-                          {Math.round((attendanceHistory.length / Math.max(1, Math.floor((Date.now() - new Date(member?.created_at || '').getTime()) / (7 * 24 * 60 * 60 * 1000)))) * 100)}%
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {formatDate(attendance.service_date)}
                         </p>
-                        <p className="text-sm text-slate-500">Weekly Average</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-purple-600">
-                          {attendanceHistory.filter(a => new Date(a.service_date) >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}
+                        <p className="truncate text-[13px] capitalize text-neutral-500 dark:text-neutral-400">
+                          {attendance.service_type?.replace(/_/g, ' ')} · {attendance.method}
                         </p>
-                        <p className="text-sm text-slate-500">Last 30 Days</p>
                       </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      <span className="shrink-0 text-[13px] tabular-nums text-neutral-600 dark:text-neutral-400">
+                        {new Date(attendance.check_in_time).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Section>
 
-            {/* Dependants */}
-            {member.dependants?.length && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <Heart className="h-5 w-5 mr-2" />
-                    Dependants ({member.dependants.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {member.dependants.map((dependant) => (
-                      <div key={dependant.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {dependant.first_name} {dependant.last_name}
-                          </p>
-                          <p className="text-sm text-slate-500 capitalize">
-                            {dependant.relationship} • {dependant.dob ? formatDate(dependant.dob) : 'No DOB'}
-                          </p>
-                        </div>
-                        {dependant.is_member && (
-                          <Badge variant="secondary">Member</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Notes */}
             {member.notes && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    Notes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-900 whitespace-pre-wrap">{member.notes}</p>
-                </CardContent>
-              </Card>
+              <Section icon={FileText} title="Notes">
+                <p className="whitespace-pre-wrap text-sm text-neutral-700 dark:text-neutral-300">{member.notes}</p>
+              </Section>
             )}
           </div>
         </div>
       </div>
+    </DashboardLayout>
+  )
+}
+
+function Section({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: LucideIcon
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <section className="dashboard-panel p-4 sm:p-5">
+      <h2 className="app-section-title mb-4 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-neutral-500 dark:text-neutral-400" aria-hidden />
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+function Field({
+  label,
+  children,
+  className,
+  capitalize,
+}: {
+  label: string
+  children?: ReactNode
+  className?: string
+  capitalize?: boolean
+}) {
+  const empty = children === null || children === undefined || children === ''
+  return (
+    <div className={cn('min-w-0', className)}>
+      <dt className="app-stat-label">{label}</dt>
+      <dd
+        className={cn(
+          'mt-0.5 break-words text-sm',
+          empty ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-neutral-100',
+          capitalize && 'capitalize'
+        )}
+      >
+        {empty ? 'Not provided' : children}
+      </dd>
+    </div>
+  )
+}
+
+function EditField({ label, id, children }: { label: string; id: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      {children}
     </div>
   )
 }

@@ -44,7 +44,7 @@ export function ContactActions({
         <Button
           variant="outline"
           size={size}
-          className="min-h-9 gap-1.5 border-emerald-200 text-emerald-800 hover:bg-emerald-50"
+          className="min-h-9 gap-1.5 border-emerald-200 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-400/30 dark:text-emerald-300 dark:hover:bg-emerald-400/10"
           asChild
         >
           <a href={wa} target="_blank" rel="noopener noreferrer">

@@ -18,47 +18,47 @@ export function CampActiveYearEmpty({
 }: CampActiveYearEmptyProps) {
   return (
     <div className="mx-auto max-w-4xl">
-      <Card className="overflow-hidden border-slate-200 bg-gradient-to-br from-white via-slate-50/40 to-slate-100/60 shadow-sm">
-        <CardHeader className="space-y-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-slate-900/20">
-            <Sparkles className="h-6 w-6" />
+      <Card className="overflow-hidden">
+        <CardHeader className="space-y-4 p-5 sm:p-6">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-sm">
+            <Sparkles className="h-6 w-6" aria-hidden />
           </div>
           <div>
-            <CardTitle className="text-2xl">{title}</CardTitle>
-            <CardDescription className="mt-2 text-base leading-relaxed">
+            <CardTitle className="app-section-title">{title}</CardTitle>
+            <CardDescription className="mt-2 text-sm leading-relaxed sm:text-base">
               {error ?? description}
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 p-5 pt-0 sm:p-6 sm:pt-0">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/80 bg-white/80 p-4">
-              <Calendar className="mb-2 h-5 w-5 text-primary" />
-              <p className="text-sm font-medium text-slate-900">Set an active year</p>
-              <p className="mt-1 text-xs text-muted-foreground">
+            <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+              <Calendar className="mb-2 h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
+              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Set an active year</p>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                 One active year powers admin dashboards and follow-up.
               </p>
             </div>
-            <div className="rounded-xl border border-white/80 bg-white/80 p-4">
-              <Upload className="mb-2 h-5 w-5 text-primary" />
-              <p className="text-sm font-medium text-slate-900">Import history</p>
-              <p className="mt-1 text-xs text-muted-foreground">
+            <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+              <Upload className="mb-2 h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
+              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Import history</p>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                 Bring in past Google Form or Excel registrations by year.
               </p>
             </div>
-            <div className="rounded-xl border border-white/80 bg-white/80 p-4">
-              <ArrowRight className="mb-2 h-5 w-5 text-primary" />
-              <p className="text-sm font-medium text-slate-900">Review past seasons</p>
-              <p className="mt-1 text-xs text-muted-foreground">
+            <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+              <ArrowRight className="mb-2 h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
+              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Review past seasons</p>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                 Open any year hub for analytics, SMS, and outreach assignments.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+            <Button asChild className="h-11 sm:h-10">
               <Link href="/admin/camp-meeting/years">Manage camp years</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="h-11 sm:h-10">
               <Link href="/admin/camp-meeting/import">Import historical data</Link>
             </Button>
           </div>

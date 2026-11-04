@@ -22,6 +22,14 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
 import { EditRegistrationDialog } from '@/components/camp/edit-registration-dialog'
+import { StatCard } from '@/components/ui/stat-card'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { 
     Download, 
     Search, 
@@ -42,7 +50,9 @@ import {
     QrCode,
     Printer,
     MessageSquare,
-    BedDouble
+    BedDouble,
+    MoreHorizontal,
+    ChevronRight
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -396,18 +406,18 @@ function RegistrationsPageContent() {
 
     return (
         <>
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div>
+            <div className="mx-auto max-w-7xl space-y-4 pb-28 sm:space-y-6 lg:pb-6">
                 <CampAdminPageHeader
                     title="Camp Registrations"
                     campYear={campYear}
                     actions={
                         <>
-                            <Button onClick={() => printQRCodes('slips')} variant="outline" className="shadow-sm">
+                            <Button onClick={() => printQRCodes('slips')} variant="outline" className="hidden shadow-sm sm:inline-flex">
                                 <Printer className="mr-2 h-4 w-4" />
                                 Print QR slips
                             </Button>
-                            <Button onClick={() => printQRCodes('sheet')} variant="outline" className="shadow-sm">
+                            <Button onClick={() => printQRCodes('sheet')} variant="outline" className="hidden shadow-sm sm:inline-flex">
                                 <Printer className="mr-2 h-4 w-4" />
                                 Print QR sheet
                             </Button>
@@ -415,10 +425,38 @@ function RegistrationsPageContent() {
                                 <Download className="mr-2 h-4 w-4" />
                                 Export CSV
                             </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="shadow-sm sm:hidden">
+                                        <MoreHorizontal className="mr-2 h-4 w-4" aria-hidden />
+                                        More
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuItem className="min-h-11" onSelect={() => printQRCodes('slips')}>
+                                        <Printer className="mr-2 h-4 w-4" aria-hidden />
+                                        Print QR slips
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="min-h-11" onSelect={() => printQRCodes('sheet')}>
+                                        <Printer className="mr-2 h-4 w-4" aria-hidden />
+                                        Print QR sheet
+                                    </DropdownMenuItem>
+                                    {missingCheckInCodes > 0 ? (
+                                        <DropdownMenuItem
+                                            className="min-h-11"
+                                            disabled={backfillingCodes}
+                                            onSelect={() => void assignMissingCheckInCodes()}
+                                        >
+                                            <QrCode className="mr-2 h-4 w-4" aria-hidden />
+                                            {backfillingCodes ? 'Assigning codes…' : `Assign camp codes (${missingCheckInCodes})`}
+                                        </DropdownMenuItem>
+                                    ) : null}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             {missingCheckInCodes > 0 ? (
                                 <Button
                                     variant="secondary"
-                                    className="shadow-sm"
+                                    className="hidden shadow-sm sm:inline-flex"
                                     disabled={backfillingCodes}
                                     onClick={() => void assignMissingCheckInCodes()}
                                 >
@@ -432,67 +470,35 @@ function RegistrationsPageContent() {
                 />
 
                 {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-4">
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Total Registrations
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Checked In
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-green-600">{stats.checkedIn}</div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                {stats.total > 0 ? Math.round((stats.checkedIn / stats.total) * 100) : 0}% of total
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                New Registrants
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-primary">{stats.newRegistrants}</div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                {stats.total > 0 ? Math.round((stats.newRegistrants / stats.total) * 100) : 0}% of total
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Paid
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-purple-600">{stats.paid}</div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                {stats.total > 0 ? Math.round((stats.paid / stats.total) * 100) : 0}% of total
-                            </p>
-                        </CardContent>
-                    </Card>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    <StatCard label="Registrations" value={stats.total} />
+                    <StatCard
+                        label="Checked in"
+                        value={stats.checkedIn}
+                        tone="success"
+                        sub={`${stats.total > 0 ? Math.round((stats.checkedIn / stats.total) * 100) : 0}% of total`}
+                    />
+                    <StatCard
+                        label="New registrants"
+                        value={stats.newRegistrants}
+                        sub={`${stats.total > 0 ? Math.round((stats.newRegistrants / stats.total) * 100) : 0}% of total`}
+                    />
+                    <StatCard
+                        label="Paid"
+                        value={stats.paid}
+                        sub={`${stats.total > 0 ? Math.round((stats.paid / stats.total) * 100) : 0}% of total`}
+                    />
                 </div>
 
                 {/* Filters and Bulk Actions */}
-                <Card className="border-2">
-                    <CardHeader>
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+                            <div className="relative w-full flex-1 md:max-w-md">
+                                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     placeholder="Search name, email, phone, QR code..."
-                                    className="pl-8"
+                                    className="h-11 pl-8 md:h-10"
                                     value={search}
                                     onChange={e => {
                                         setSearch(e.target.value)
@@ -500,9 +506,9 @@ function RegistrationsPageContent() {
                                     }}
                                 />
                             </div>
-                            <div className="flex gap-2 flex-wrap">
+                            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                                 <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setCurrentPage(1) }}>
-                                    <SelectTrigger className="w-[140px]">
+                                    <SelectTrigger className="h-11 w-full sm:h-10 sm:w-[140px]">
                                         <SelectValue placeholder="Role" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -513,7 +519,7 @@ function RegistrationsPageContent() {
                                     </SelectContent>
                                 </Select>
                                 <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1) }}>
-                                    <SelectTrigger className="w-[140px]">
+                                    <SelectTrigger className="h-11 w-full sm:h-10 sm:w-[140px]">
                                         <SelectValue placeholder="Status" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -524,7 +530,7 @@ function RegistrationsPageContent() {
                                     </SelectContent>
                                 </Select>
                                 <Select value={paymentFilter} onValueChange={(v) => { setPaymentFilter(v); setCurrentPage(1) }}>
-                                    <SelectTrigger className="w-[140px]">
+                                    <SelectTrigger className="h-11 w-full sm:h-10 sm:w-[140px]">
                                         <SelectValue placeholder="Payment" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -536,7 +542,7 @@ function RegistrationsPageContent() {
                                     </SelectContent>
                                 </Select>
                                 <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1) }}>
-                                    <SelectTrigger className="w-[140px]">
+                                    <SelectTrigger className="h-11 w-full sm:h-10 sm:w-[140px]">
                                         <SelectValue placeholder="Type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -548,58 +554,74 @@ function RegistrationsPageContent() {
                             </div>
                         </div>
                         
-                        {selectedIds.size > 0 && (
-                            <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:flex-wrap sm:items-center">
-                                <span className="text-sm font-medium text-slate-700">
-                                    {selectedIds.size} selected
-                                </span>
-                                <div className="flex flex-wrap gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="min-h-10 cursor-pointer"
-                                        onClick={() => handleBulkStatusUpdate('checked_in')}
-                                    >
-                                        <CheckCircle2 className="mr-1 h-4 w-4" aria-hidden />
-                                        Mark Checked In
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        className="min-h-10 cursor-pointer"
-                                        disabled={sendingBulkSms}
-                                        onClick={() => openBulkSmsReview('registration_confirmation')}
-                                    >
-                                        <MessageSquare className="mr-1 h-4 w-4" aria-hidden />
-                                        {sendingBulkSms ? 'Sending…' : 'SMS confirmation'}
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="min-h-10 cursor-pointer"
-                                        disabled={sendingBulkSms}
-                                        onClick={() => openBulkSmsReview('room_allocation')}
-                                    >
-                                        <BedDouble className="mr-1 h-4 w-4" aria-hidden />
-                                        SMS room
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="min-h-10 cursor-pointer"
-                                        onClick={() => setSelectedIds(new Set())}
-                                    >
-                                        Clear Selection
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
                     </CardHeader>
-                    <CardContent>
-                        <div className="rounded-md border overflow-hidden">
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                        <div className="md:hidden">
+                            {paginated.length > 0 ? (
+                                <label className="mb-2 flex min-h-11 items-center gap-3 px-1 text-sm text-neutral-600 dark:text-neutral-400">
+                                    <Checkbox
+                                        checked={selectedIds.size > 0 && selectedIds.size === paginated.length}
+                                        onCheckedChange={handleSelectAll}
+                                    />
+                                    Select all on this page
+                                </label>
+                            ) : null}
+                            <ul className="divide-y divide-neutral-200/80 rounded-xl border border-neutral-200/80 dark:divide-white/[0.06] dark:border-white/10">
+                                {paginated.length === 0 ? (
+                                    <li className="p-6 text-center text-sm text-neutral-500 dark:text-neutral-400">No registrations found.</li>
+                                ) : (
+                                    paginated.map(reg => {
+                                        const name = reg.full_name || `${reg.first_name} ${reg.last_name}`
+                                        return (
+                                            <li
+                                                key={reg.id}
+                                                className={cn(
+                                                    'flex min-h-11 items-start gap-3 p-3',
+                                                    selectedIds.has(reg.id) && 'bg-brand-50/60 dark:bg-brand-400/10'
+                                                )}
+                                            >
+                                                <div className="flex h-10 items-center">
+                                                    <Checkbox
+                                                        aria-label={`Select ${name}`}
+                                                        checked={selectedIds.has(reg.id)}
+                                                        onCheckedChange={(checked) => handleSelectOne(reg.id, checked === true)}
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="min-w-0 flex-1 text-left"
+                                                    onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
+                                                >
+                                                    <span className="block truncate font-medium text-neutral-900 dark:text-neutral-100">{name}</span>
+                                                    <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">
+                                                        {[reg.role, reg.phone].filter(Boolean).join(' · ')}
+                                                    </span>
+                                                    <span className="mt-1.5 flex flex-wrap gap-1">
+                                                        <Badge variant={reg.status === 'checked_in' ? 'success' : 'outline'} className="text-xs">
+                                                            {reg.status === 'checked_in' ? 'Checked in' : reg.status}
+                                                        </Badge>
+                                                        <Badge
+                                                            variant={reg.payment_status === 'paid' || reg.payment_status === 'confirmed' ? 'success' : 'outline'}
+                                                            className="text-xs"
+                                                        >
+                                                            {reg.payment_status || 'pending'}
+                                                        </Badge>
+                                                        {reg.is_new_registrant ? <Badge variant="brand" className="text-xs">New</Badge> : null}
+                                                    </span>
+                                                    <ImportContactWarningsBadge warnings={reg.import_warnings} className="mt-1" />
+                                                </button>
+                                                <QuickContactButtons phone={reg.phone} whatsapp={reg.whatsapp} name={name} className="pt-0.5" />
+                                            </li>
+                                        )
+                                    })
+                                )}
+                            </ul>
+                        </div>
+                        <div className="hidden overflow-hidden rounded-md border md:block">
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-slate-50">
+                                        <TableRow className="bg-neutral-50 dark:bg-white/[0.03]">
                                             <TableHead className="w-12">
                                                 <Checkbox
                                                     checked={selectedIds.size > 0 && selectedIds.size === paginated.length}
@@ -609,7 +631,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('full_name')}
-                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
                                                 >
                                                     Name
                                                     {getSortIcon('full_name')}
@@ -618,7 +640,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('email')}
-                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
                                                 >
                                                     Contact
                                                     {getSortIcon('email')}
@@ -627,7 +649,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('role')}
-                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
                                                 >
                                                     Role
                                                     {getSortIcon('role')}
@@ -636,7 +658,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('status')}
-                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
                                                 >
                                                     Status
                                                     {getSortIcon('status')}
@@ -645,7 +667,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('payment_status')}
-                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
                                                 >
                                                     Payment
                                                     {getSortIcon('payment_status')}
@@ -654,7 +676,7 @@ function RegistrationsPageContent() {
                                             <TableHead>
                                                 <button
                                                     onClick={() => handleSort('is_new_registrant')}
-                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
                                                 >
                                                     Type
                                                     {getSortIcon('is_new_registrant')}
@@ -663,7 +685,7 @@ function RegistrationsPageContent() {
                                                     <TableHead>
                                                 <button
                                                     onClick={() => handleSort('created_at')}
-                                                    className="flex items-center font-semibold text-sm hover:text-slate-900 transition-colors"
+                                                    className="flex items-center font-semibold text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
                                                 >
                                                     Registered
                                                     {getSortIcon('created_at')}
@@ -684,8 +706,8 @@ function RegistrationsPageContent() {
                                                 <TableRow 
                                                     key={reg.id}
                                                     className={cn(
-                                                        "hover:bg-slate-50 cursor-pointer transition-colors",
-                                                        selectedIds.has(reg.id) && "bg-slate-50"
+                                                        "cursor-pointer transition-colors hover:bg-neutral-50 dark:hover:bg-white/[0.03]",
+                                                        selectedIds.has(reg.id) && "bg-neutral-50 dark:bg-white/[0.03]"
                                                     )}
                                                     onClick={() => router.push(`/admin/camp-meeting/registrations/${reg.id}`)}
                                                 >
@@ -696,7 +718,7 @@ function RegistrationsPageContent() {
                                                         />
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="font-medium text-slate-900">
+                                                        <div className="font-medium text-neutral-900 dark:text-neutral-100">
                                                             {reg.full_name || `${reg.first_name} ${reg.last_name}`}
                                                         </div>
                                                         {reg.is_new_registrant && (
@@ -712,15 +734,19 @@ function RegistrationsPageContent() {
                                                     <TableCell>
                                                         <div className="space-y-1">
                                                             {reg.email && (
-                                                                <div className="flex items-center text-sm text-slate-600">
+                                                                <div className="flex items-center text-sm text-neutral-600 dark:text-neutral-400">
                                                                     <Mail className="h-3 w-3 mr-1" />
                                                                     {reg.email}
                                                                 </div>
                                                             )}
                                                             {reg.phone && (
-                                                                <div className="flex items-center text-sm text-slate-600">
-                                                                    <Phone className="h-3 w-3 mr-1" />
-                                                                    {reg.phone}
+                                                                <div className="flex items-center text-sm text-neutral-600 dark:text-neutral-400">
+                                                                    <Phone className="h-3 w-3 mr-1" aria-hidden />
+                                                                    <PhoneLink
+                                                                        phone={reg.phone}
+                                                                        whatsapp={reg.whatsapp}
+                                                                        name={reg.full_name || `${reg.first_name} ${reg.last_name}`}
+                                                                    />
                                                                 </div>
                                                             )}
                                                         </div>
@@ -754,18 +780,18 @@ function RegistrationsPageContent() {
                                                         {reg.is_new_registrant ? (
                                                             <Badge variant="secondary" className="text-xs">New</Badge>
                                                         ) : (
-                                                            <span className="text-xs text-slate-600">Returning</span>
+                                                            <span className="text-xs text-neutral-600 dark:text-neutral-400">Returning</span>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="text-sm text-slate-600">
+                                                    <TableCell className="text-sm text-neutral-600 dark:text-neutral-400">
                                                         {(() => {
                                                             const when = formatRelativeWhen(reg.created_at)
                                                             return (
                                                                 <div title={when.absolute}>
-                                                                    <div className="font-medium text-slate-800">
+                                                                    <div className="font-medium text-neutral-800 dark:text-neutral-200">
                                                                         {when.absoluteDate}
                                                                     </div>
-                                                                    <div className="text-xs tabular-nums text-slate-500">
+                                                                    <div className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
                                                                         {when.absoluteTime}
                                                                         {when.relative ? ` · ${when.relative}` : ''}
                                                                     </div>
@@ -807,20 +833,21 @@ function RegistrationsPageContent() {
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                                <div className="text-sm text-slate-600">
+                            <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="text-sm text-neutral-600 dark:text-neutral-400">
                                     Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, sorted.length)} of {sorted.length} registrations
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex items-center justify-between gap-2 sm:justify-start">
                                     <Button
                                         variant="outline"
                                         size="sm"
+                                        className="min-h-11 sm:min-h-9"
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                         disabled={currentPage === 1}
                                     >
                                         Previous
                                     </Button>
-                                    <div className="flex items-center gap-1">
+                                    <div className="hidden items-center gap-1 sm:flex">
                                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                             let pageNum: number
                                             if (totalPages <= 5) {
@@ -845,9 +872,13 @@ function RegistrationsPageContent() {
                                             )
                                         })}
                                     </div>
+                                    <span className="text-sm tabular-nums text-neutral-600 dark:text-neutral-400 sm:hidden">
+                                        {currentPage} / {totalPages}
+                                    </span>
                                     <Button
                                         variant="outline"
                                         size="sm"
+                                        className="min-h-11 sm:min-h-9"
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
                                     >
@@ -860,6 +891,54 @@ function RegistrationsPageContent() {
                 </Card>
             </div>
             </div>
+
+            {selectedIds.size > 0 && (
+                <div className="fixed inset-x-3 bottom-20 z-40 mx-auto max-w-3xl rounded-2xl border border-neutral-200/80 bg-white p-3 shadow-lg dark:border-white/10 dark:bg-neutral-900 lg:bottom-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            {selectedIds.size} selected
+                        </span>
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="min-h-11 cursor-pointer sm:min-h-9"
+                                onClick={() => handleBulkStatusUpdate('checked_in')}
+                            >
+                                <CheckCircle2 className="mr-1 h-4 w-4" aria-hidden />
+                                Check in
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="min-h-11 cursor-pointer sm:min-h-9"
+                                disabled={sendingBulkSms}
+                                onClick={() => openBulkSmsReview('registration_confirmation')}
+                            >
+                                <MessageSquare className="mr-1 h-4 w-4" aria-hidden />
+                                {sendingBulkSms ? 'Sending…' : 'SMS confirmation'}
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                className="min-h-11 cursor-pointer sm:min-h-9"
+                                disabled={sendingBulkSms}
+                                onClick={() => openBulkSmsReview('room_allocation')}
+                            >
+                                <BedDouble className="mr-1 h-4 w-4" aria-hidden />
+                                SMS room
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="min-h-11 cursor-pointer sm:min-h-9"
+                                onClick={() => setSelectedIds(new Set())}
+                            >
+                                Clear
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <EditRegistrationDialog
                 open={Boolean(editingRegistration)}

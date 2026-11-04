@@ -122,16 +122,16 @@ export function AddToGroupDialog({
         <DialogHeader>
           <DialogTitle>Add to group</DialogTitle>
           <DialogDescription>
-            Assign <span className="font-medium text-foreground">{contactName}</span> to a campus fellowship or
+            Assign <span className="font-medium text-neutral-900 dark:text-neutral-100">{contactName}</span> to a campus fellowship or
             activity with a role.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>Group</Label>
-            {groupsLoading ? <p className="text-xs text-muted-foreground">Loading groups…</p> : null}
+            {groupsLoading ? <p className="text-xs text-neutral-500 dark:text-neutral-400">Loading groups…</p> : null}
             {groupsError ? (
-              <p className="text-xs text-destructive">Could not load groups: {groupsError}</p>
+              <p className="text-xs text-red-600 dark:text-red-400">Could not load groups: {groupsError}</p>
             ) : null}
             <FormGroupSelect
               groups={groups ?? []}
@@ -140,15 +140,15 @@ export function AddToGroupDialog({
               placeholder="Select campus or activity"
             />
             {!groupsLoading && (groups?.length ?? 0) === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No groups yet. Create one in Admin → Group Management.
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                No groups yet. Create one in Admin → Group management.
               </p>
             ) : null}
           </div>
           <div className="space-y-2">
-            <Label>Role in group</Label>
+            <Label htmlFor="add-to-group-role">Role in group</Label>
             <Select value={role} onValueChange={(value) => setRole(value as GroupMembership['role'])}>
-              <SelectTrigger>
+              <SelectTrigger id="add-to-group-role" className="h-11 sm:h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -161,11 +161,11 @@ export function AddToGroupDialog({
             </Select>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" className="h-11 sm:h-10" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => void handleSubmit()} disabled={loading || ensuringProfile}>
+          <Button className="h-11 sm:h-10" onClick={() => void handleSubmit()} disabled={loading || ensuringProfile}>
             {ensuringProfile ? 'Preparing profile...' : loading ? 'Adding...' : 'Add to group'}
           </Button>
         </DialogFooter>

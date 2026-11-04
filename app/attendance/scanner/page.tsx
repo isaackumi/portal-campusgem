@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { QRScanner } from '@/components/qr-scanner'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/page-header'
+import { PersonAvatar, displayName } from '@/components/ui/person'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
@@ -182,203 +184,131 @@ export default function ScannerPage() {
     setCheckInResult(null)
   }
 
+  const serviceLabel = (value: string) => serviceTypes.find((s) => s.value === value)?.label ?? value
+
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="app-page-title mb-2">
-                Attendance Scanner
-              </h1>
-              <p className="text-slate-600">Scan member QR codes to check them in for service</p>
-            </div>
-            <Button variant="outline" onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+      <div className="mx-auto max-w-4xl">
+        <PageHeader
+          title="Scanner"
+          description="Scan member QR codes to check them in"
+          className="mb-4 sm:mb-6"
+          actions={
+            <Button variant="outline" className="hidden sm:inline-flex" onClick={() => router.push('/attendance')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Attendance
             </Button>
-          </div>
+          }
+        />
 
-          {/* Service Type Selection */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Service Type</CardTitle>
-              <CardDescription>Select the type of service for attendance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Select value={serviceType} onValueChange={setServiceType}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select service type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {serviceTypes.map((service) => (
-                    <SelectItem key={service.value} value={service.value}>
-                      {service.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+        <div className="mb-4">
+          <Select value={serviceType} onValueChange={setServiceType}>
+            <SelectTrigger className="h-11 w-full sm:max-w-xs" aria-label="Service type">
+              <SelectValue placeholder="Select service type" />
+            </SelectTrigger>
+            <SelectContent>
+              {serviceTypes.map((service) => (
+                <SelectItem key={service.value} value={service.value}>
+                  {service.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Scanner */}
-          <div>
-            <QRScanner 
-              onScanSuccess={handleScanSuccess}
-              onScanError={handleScanError}
-            />
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <div className="min-w-0">
+            <QRScanner onScanSuccess={handleScanSuccess} onScanError={handleScanError} />
           </div>
 
-          {/* Check-in Result */}
-          <div>
+          <div className="min-w-0" aria-live="polite">
             {checkInResult ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-green-600">
-                    <CheckCircle className="h-5 w-5" />
-                    <span>Check-in Successful</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Member has been checked in for today's service.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Member Info */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <User className="h-6 w-6 text-green-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-lg">{checkInResult.member.full_name}</h3>
-                        <p className="text-sm text-slate-600">
-                          {formatMembershipIdForDisplay(checkInResult.member.membership_id)}
-                        </p>
-                        {checkInResult.member.phone && (
-                          <p className="text-sm text-slate-600">
-                            {checkInResult.member.phone}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+              <div className="dashboard-panel space-y-4 p-4 sm:p-5">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                  <CheckCircle className="h-5 w-5" />
+                  <h2 className="app-section-title text-emerald-700 dark:text-emerald-300">Checked in</h2>
+                </div>
 
-                  {/* Service Details */}
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm font-medium">Service:</span>
-                      <span className="text-sm">{checkInResult.service_type}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm font-medium">Time:</span>
-                      <span className="text-sm">{formatDateTime(checkInResult.timestamp)}</span>
-                    </div>
+                <div className="flex items-center gap-3 rounded-lg bg-emerald-50 p-3 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-400/10 dark:ring-emerald-400/20">
+                  <PersonAvatar name={checkInResult.member.full_name} seed={checkInResult.member.id} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">
+                      {displayName(checkInResult.member.full_name)}
+                    </p>
+                    <p className="truncate font-mono text-[13px] text-neutral-600 dark:text-neutral-300">
+                      {formatMembershipIdForDisplay(checkInResult.member.membership_id)}
+                    </p>
+                    {checkInResult.member.phone ? (
+                      <PhoneLink
+                        phone={checkInResult.member.phone}
+                        name={checkInResult.member.full_name}
+                        className="text-[13px] text-neutral-600 dark:text-neutral-300"
+                      />
+                    ) : null}
                   </div>
+                  <QuickContactButtons phone={checkInResult.member.phone} name={checkInResult.member.full_name} />
+                </div>
 
-                  {/* Dependants */}
-                  {checkInResult.dependants && checkInResult.dependants.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4 text-slate-500" />
-                        <span className="text-sm font-medium">Family Members:</span>
-                      </div>
-                      <div className="space-y-1">
-                        {checkInResult.dependants.map((dependant) => (
-                          <div key={dependant.id} className="text-sm text-slate-600 ml-6">
-                            • {dependant.name} ({dependant.relationship})
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
+                  <dt className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
+                    <Calendar className="h-4 w-4" /> Service
+                  </dt>
+                  <dd className="text-neutral-900 dark:text-neutral-100">{serviceLabel(checkInResult.service_type)}</dd>
+                  <dt className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
+                    <Clock className="h-4 w-4" /> Time
+                  </dt>
+                  <dd className="tabular-nums text-neutral-900 dark:text-neutral-100">{formatDateTime(checkInResult.timestamp)}</dd>
+                </dl>
 
-                  {/* Action Buttons */}
-                  <div className="pt-4 border-t">
-                    <div className="flex space-x-2">
-                      <Button onClick={handleNewScan} className="flex-1">
-                        <QrCode className="h-4 w-4 mr-2" />
-                        Scan Another
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => router.push('/attendance')}
-                        className="flex-1"
-                      >
-                        View Attendance
-                      </Button>
-                    </div>
+                {checkInResult.dependants && checkInResult.dependants.length > 0 && (
+                  <div>
+                    <p className="app-overline mb-2 flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5" /> Family
+                    </p>
+                    <ul className="space-y-1 text-sm text-neutral-700 dark:text-neutral-300">
+                      {checkInResult.dependants.map((dependant) => (
+                        <li key={dependant.id} className="truncate">
+                          {dependant.name} <span className="text-neutral-500 dark:text-neutral-400">({dependant.relationship})</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </CardContent>
-              </Card>
+                )}
+
+                <div className="flex flex-col gap-2 border-t border-neutral-200/80 pt-4 dark:border-white/[0.06] sm:flex-row">
+                  <Button onClick={handleNewScan} className="h-11 flex-1">
+                    <QrCode className="mr-2 h-4 w-4" />
+                    Scan another
+                  </Button>
+                  <Button variant="outline" onClick={() => router.push('/attendance')} className="h-11 flex-1">
+                    View attendance
+                  </Button>
+                </div>
+              </div>
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ready to Scan</CardTitle>
-                  <CardDescription>
-                    Position the QR code within the scanner view to check in a member.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center space-y-4">
-                    <QrCode className="h-16 w-16 text-gray-400 mx-auto" />
-                    <div className="space-y-2">
-                      <p className="text-slate-600">
-                        {loading ? 'Processing QR code...' : 'Waiting for QR code...'}
-                      </p>
-                      {loading && (
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900 mx-auto"></div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="dashboard-panel flex items-center gap-4 p-4 sm:flex-col sm:p-6 sm:text-center">
+                <QrCode className="h-10 w-10 shrink-0 text-neutral-400 dark:text-neutral-500 sm:h-16 sm:w-16" />
+                <div className="min-w-0">
+                  <h2 className="app-section-title">{loading ? 'Processing…' : 'Ready to scan'}</h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    {loading ? 'Looking up the member.' : 'Hold the QR code inside the scanner view.'}
+                  </p>
+                </div>
+                {loading && <LoadingSpinner />}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Alternative ways to manage attendance.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push('/attendance/kiosk')}
-                  className="h-20 flex-col space-y-2"
-                >
-                  <Users className="h-6 w-6" />
-                  <span>Kiosk Mode</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push('/attendance')}
-                  className="h-20 flex-col space-y-2"
-                >
-                  <Calendar className="h-6 w-6" />
-                  <span>View Attendance</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push('/dashboard')}
-                  className="h-20 flex-col space-y-2"
-                >
-                  <ArrowLeft className="h-6 w-6" />
-                  <span>Dashboard</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <Button variant="outline" onClick={() => router.push('/attendance/kiosk')} className="h-12">
+            <Users className="mr-2 h-4 w-4" />
+            Kiosk mode
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/attendance/manual')} className="h-12">
+            <User className="mr-2 h-4 w-4" />
+            Manual check-in
+          </Button>
         </div>
       </div>
     </DashboardLayout>

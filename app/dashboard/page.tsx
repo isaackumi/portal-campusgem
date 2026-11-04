@@ -32,15 +32,24 @@ import {
   Cake,
   CalendarClock,
   ClipboardCheck,
+  Contact,
   HeartHandshake,
+  PhoneCall,
   QrCode,
   Send,
+  ShieldCheck,
+  Tent,
   UserCheck,
   UserPlus,
   Users,
 } from 'lucide-react'
 import { canAccessPath } from '@/lib/auth/roles'
-import { DashboardHero, type StickyNoteAction } from '@/components/dashboard/dashboard-hero'
+import { DashboardHeader, type QuickAction } from '@/components/dashboard/dashboard-header'
+import { RegistrationTrendChart } from '@/components/camp/registration-trend-chart'
+import { SegmentedBar } from '@/components/ui/meter'
+import { outcomeSegments } from '@/components/camp/call-outcome'
+import { summarizeCallCampaign } from '@/lib/camp/call-campaign'
+import { registrationsPerDay } from '@/lib/camp/room-allocation'
 import { CustomiseCardsButton, useDashboardLayout } from '@/components/dashboard/customise-cards'
 import { TodoCard, type TodoItem } from '@/components/dashboard/todo-card'
 import { DashboardPanel, PanelList } from '@/components/dashboard/panel'
@@ -71,13 +80,14 @@ const CAMP_CARDS: DashboardCardId[] = ['sla', 'staff', 'mix', 'myfollow', 'conta
 /** Cards that need the full width of the grid. */
 const WIDE_CARDS: DashboardCardId[] = ['contacts']
 
-const STICKY_NOTES: Array<StickyNoteAction & { permission: Permission }> = [
-  { permission: 'members.manage', href: '/members/add', lines: ['Add a', 'member'], icon: UserPlus, tone: 'rose' },
-  { permission: 'attendance.record', href: '/attendance/manual', lines: ['Take', 'attendance'], icon: ClipboardCheck, tone: 'sage' },
-  { permission: 'camp.manage', href: '/admin/camp-meeting/scan', lines: ['Camp', 'check-in'], icon: QrCode, tone: 'apricot' },
-  { permission: 'sms.send', href: '/admin/communications', lines: ['Send a', 'message'], icon: Send, tone: 'sky' },
-  { permission: 'rlc.manage', href: '/admin/rlc/visitors/add', lines: ['Welcome a', 'visitor'], icon: HeartHandshake, tone: 'lemon' },
-  { permission: 'celebrations.view', href: '/celebrations', lines: ['Celebrate', 'birthdays'], icon: Cake, tone: 'lilac' },
+const QUICK_ACTIONS: Array<QuickAction & { permission: Permission }> = [
+  { permission: 'members.manage', href: '/members/add', label: 'Add member', hint: 'New directory record', icon: UserPlus },
+  { permission: 'attendance.record', href: '/attendance/manual', label: 'Take attendance', hint: 'Mark who is here', icon: ClipboardCheck },
+  { permission: 'camp.manage', href: '/admin/camp-meeting/scan', label: 'Camp check-in', hint: 'Scan or search', icon: QrCode },
+  { permission: 'camp.calls', href: '/admin/camp-meeting/calls', label: 'Confirmation calls', hint: 'Who is still coming', icon: PhoneCall },
+  { permission: 'sms.send', href: '/admin/communications', label: 'Send message', hint: 'SMS or email', icon: Send },
+  { permission: 'rlc.manage', href: '/admin/rlc/visitors/add', label: 'Welcome visitor', hint: 'Log a first-timer', icon: HeartHandshake },
+  { permission: 'celebrations.view', href: '/celebrations', label: 'Celebrations', hint: 'Birthdays this week', icon: Cake },
 ]
 
 const SHORTCUTS = [
@@ -306,6 +316,21 @@ function DashboardContent() {
     return trend
   }, [activeYearRegistrations])
 
+  const callSummary = useMemo(() => summarizeCallCampaign(activeYearRegistrations), [activeYearRegistrations])
+  const trend30 = useMemo(() => registrationsPerDay(activeYearRegistrations, 30), [activeYearRegistrations])
+  /** This week vs the previous week, in percent (null when there's nothing to compare). */
+  const registrationTrend = useMemo(() => {
+    const now = Date.now()
+    let thisWeek = 0
+    let lastWeek = 0
+    for (const reg of activeYearRegistrations) {
+      const age = (now - new Date(reg.created_at).getTime()) / DAY_MS
+      if (age <= 7) thisWeek += 1
+      else if (age <= 14) lastWeek += 1
+    }
+    return lastWeek > 0 ? ((thisWeek - lastWeek) / lastWeek) * 100 : null
+  }, [activeYearRegistrations])
+
   const totalAdmins = useMemo(
     () => (allUsers ?? []).filter((item) => item.role === 'admin').length,
     [allUsers]
@@ -326,30 +351,55 @@ function DashboardContent() {
   const yearId = campYear?.id
   const pending = (value: number) => (registrationsLoading ? '…' : value)
 
-  const stickyNotes = STICKY_NOTES.filter((note) => can(note.permission)).slice(0, 5)
+  const quickActions = QUICK_ACTIONS.filter((action) => can(action.permission)).slice(0, 5)
 
-  const kpis: Array<{ label: string; value: ReactNode; sub: string; tone?: 'default' | 'warning' | 'success' }> = canSeeCamp
+  const kpis: Array<{
+    label: string
+    value: ReactNode
+    sub: string
+    tone?: 'default' | 'warning' | 'success'
+    icon: typeof Users
+    href?: string
+    trend?: number | null
+  }> = canSeeCamp
     ? [
-        { label: 'Camp registrations', value: pending(activeYearRegistrations.length), sub: 'Active camp year' },
-        { label: 'Camp contacts', value: campLoading ? '…' : campRows.length, sub: `${linkedContacts} linked to members` },
         {
-          label: 'Overdue follow-ups',
-          value: pending(followUpSla.overdue),
-          sub: followUpSla.overdue > 0 ? 'Past their follow-up window' : 'Queue is healthy',
-          tone: followUpSla.overdue > 0 ? 'warning' : 'success',
+          label: 'Camp registrations',
+          value: pending(activeYearRegistrations.length),
+          sub: campYear ? `Camp ${campYear.year} · ${contactTrend.new7 + contactTrend.returning7} this week` : 'Active camp year',
+          icon: Tent,
+          href: can('camp.manage') ? '/admin/camp-meeting' : undefined,
+          trend: registrationTrend,
+        },
+        {
+          label: 'Camp contacts',
+          value: campLoading ? '…' : campRows.length,
+          sub: `${linkedContacts} linked to members`,
+          icon: Contact,
+          href: can('camp.manage') ? '/admin/camp-meeting/directory' : undefined,
+        },
+        {
+          label: 'Confirmed coming',
+          value: pending(callSummary.expected),
+          sub: callSummary.open > 0 ? `${callSummary.open} still to reach` : 'Everyone reached',
+          tone: callSummary.open > 0 ? 'warning' : 'success',
+          icon: PhoneCall,
+          href: can('camp.calls') ? '/admin/camp-meeting/calls' : undefined,
         },
         {
           label: 'My follow-ups',
           value: pending(myPendingFollowUps),
-          sub: 'Pending, assigned to you',
-          tone: myPendingFollowUps > 0 ? 'warning' : 'default',
+          sub: myPendingFollowUps > 0 ? 'Pending, assigned to you' : 'Nothing waiting on you',
+          tone: myPendingFollowUps > 0 ? 'warning' : 'success',
+          icon: UserCheck,
+          href: can('camp.calls') ? '/admin/camp-meeting/calls' : undefined,
         },
       ]
     : [
-        { label: 'People', value: usersLoading ? '…' : (allUsers ?? []).length, sub: 'In the church directory' },
-        { label: 'Administrators', value: usersLoading ? '…' : totalAdmins, sub: 'Accounts with admin access' },
-        { label: 'Birthdays today', value: todayBirthdays.length, sub: 'Members celebrating today' },
-        { label: 'Birthdays this week', value: upcomingBirthdays.length, sub: 'Next 7 days' },
+        { label: 'People', value: usersLoading ? '…' : (allUsers ?? []).length, sub: 'In the church directory', icon: Users, href: can('members.view') ? '/members' : undefined },
+        { label: 'Administrators', value: usersLoading ? '…' : totalAdmins, sub: 'Accounts with admin access', icon: ShieldCheck },
+        { label: 'Birthdays today', value: todayBirthdays.length, sub: 'Members celebrating today', icon: Cake, href: can('celebrations.view') ? '/celebrations' : undefined },
+        { label: 'Birthdays this week', value: upcomingBirthdays.length, sub: 'Next 7 days', icon: CalendarClock, href: can('celebrations.view') ? '/celebrations' : undefined },
       ]
 
   const unassignedCount = activeYearRegistrations.filter(
@@ -563,9 +613,14 @@ function DashboardContent() {
   return (
     <DashboardLayout>
       <div className="dashboard-shell">
-        <DashboardHero
+        <DashboardHeader
           firstName={greetingName}
-          notes={stickyNotes}
+          quickActions={quickActions}
+          subtitle={
+            todoItems.length > 0
+              ? `You have ${plural(todoItems.length, 'thing')} that need${todoItems.length === 1 ? 's' : ''} attention today.`
+              : "You're all caught up. Here's how things look."
+          }
           actions={
             <CustomiseCardsButton
               options={DASHBOARD_CARDS.filter((card) => available.includes(card.id))}
@@ -580,9 +635,59 @@ function DashboardContent() {
 
         <section aria-label="Key figures" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           {kpis.map((kpi) => (
-            <StatCard key={kpi.label} label={kpi.label} value={kpi.value} sub={kpi.sub} tone={kpi.tone} />
+            <StatCard
+              key={kpi.label}
+              label={kpi.label}
+              value={kpi.value}
+              sub={kpi.sub}
+              tone={kpi.tone}
+              icon={kpi.icon}
+              href={kpi.href}
+              trend={kpi.trend}
+            />
           ))}
         </section>
+
+        {canSeeCamp && campYear ? (
+          <section aria-label="Camp at a glance" className="grid gap-4 lg:grid-cols-3">
+            <div className="dashboard-panel p-5 lg:col-span-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="app-section-title">Camp {campYear.year} registrations</h2>
+                  <p className="mt-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">Daily sign-ups, last 30 days</p>
+                </div>
+                {can('camp.manage') ? (
+                  <Link href="/admin/camp-meeting" className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-brand-600 hover:underline dark:text-brand-300">
+                    Camp overview <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                  </Link>
+                ) : null}
+              </div>
+              <div className="mt-4">
+                <RegistrationTrendChart data={trend30} />
+              </div>
+            </div>
+            <div className="dashboard-panel flex flex-col p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="app-section-title">Attendance confirmations</h2>
+                  <p className="mt-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
+                    {callSummary.called} of {callSummary.total} reached by phone
+                  </p>
+                </div>
+                {can('camp.calls') ? (
+                  <Link href="/admin/camp-meeting/calls" className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-brand-600 hover:underline dark:text-brand-300">
+                    Open <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                  </Link>
+                ) : null}
+              </div>
+              <div className="mt-5 flex items-baseline gap-2">
+                <span className="app-stat-value">{Math.round(callSummary.settledRate * 100)}%</span>
+                <span className="text-[13px] text-neutral-500 dark:text-neutral-400">have a firm answer</span>
+              </div>
+              <SegmentedBar className="mt-4" label="Call outcomes" segments={outcomeSegments(callSummary)} />
+            </div>
+          </section>
+        ) : null}
 
         <TodoCard items={todoItems} loading={campLoading || registrationsLoading} />
 

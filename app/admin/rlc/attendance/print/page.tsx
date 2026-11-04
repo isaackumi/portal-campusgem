@@ -222,7 +222,7 @@ function PrintContent() {
         }
       `}</style>
 
-      <div className="no-print mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-4">
+      <div className="no-print mx-auto flex max-w-3xl items-center justify-between gap-2 py-4 [&>*]:h-11 [&>*]:flex-1 sm:px-4 sm:[&>*]:h-10 sm:[&>*]:flex-none">
         <Button variant="outline" asChild>
           <Link href={`/admin/rlc/attendance`}>Back to attendance</Link>
         </Button>
@@ -232,9 +232,9 @@ function PrintContent() {
         </Button>
       </div>
 
-      <div className="mx-auto max-w-3xl bg-white px-6 py-8 text-slate-900">
+      <div className="mx-auto max-w-3xl overflow-x-auto rounded-lg bg-white px-4 py-6 text-slate-900 sm:px-6 sm:py-8 print:overflow-visible print:rounded-none">
         <header className="border-b border-slate-300 pb-5">
-          <p className="app-overline text-rose-800">{RLC_NAME}</p>
+          <p className="app-overline text-brand-800">{RLC_NAME}</p>
           <h1 className="mt-1 text-2xl font-semibold">Service attendance record</h1>
           <p className="mt-3 text-xl font-semibold text-slate-900">{serviceLabel}</p>
           <p className="mt-1 text-sm text-slate-600">{formatPrintDate(serviceDate)}</p>

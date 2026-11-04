@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { Hash, UserCheck } from 'lucide-react'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 
 type Props = {
   registrations: CampRegistration[]
@@ -112,8 +113,8 @@ export function CampQuickCodeCheckIn({
   }
 
   return (
-    <Card className="border-2">
-      <CardHeader className="border-b bg-slate-50">
+    <Card>
+      <CardHeader className="border-b border-neutral-200/80 bg-neutral-50 p-4 dark:border-white/10 dark:bg-white/[0.03] sm:p-6">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Hash className="h-5 w-5" />
           Quick code entry
@@ -122,17 +123,17 @@ export function CampQuickCodeCheckIn({
           Type or paste a GEM code (e.g. GEM-26-K7M3) — fastest when the camera is unavailable.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className="space-y-4 p-4 sm:p-6 sm:pt-4">
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-3 sm:flex-row">
           <Input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="GEM-26-XXXX"
-            className="min-h-11 flex-1 font-mono text-base uppercase"
+            className="h-11 min-h-11 flex-1 font-mono text-base uppercase"
             autoComplete="off"
             autoFocus
           />
-          <Button type="submit" className="min-h-11 sm:min-w-[9rem]" disabled={submitting || !code.trim()}>
+          <Button type="submit" className="h-11 min-h-11 w-full sm:w-auto sm:min-w-[9rem]" disabled={submitting || !code.trim()}>
             {submitting ? (
               <LoadingSpinner className="h-4 w-4" />
             ) : (
@@ -145,8 +146,25 @@ export function CampQuickCodeCheckIn({
         </form>
 
         {lastMatch ? (
-          <div className="rounded-lg border border-green-200 bg-green-50/80 p-3 text-sm">
-            <p className="font-semibold text-green-900">{campRegistrationDisplayName(lastMatch)}</p>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 text-sm dark:border-emerald-400/20 dark:bg-emerald-400/10">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-emerald-900 dark:text-emerald-200">{campRegistrationDisplayName(lastMatch)}</p>
+                {lastMatch.phone ? (
+                  <PhoneLink
+                    phone={lastMatch.phone}
+                    whatsapp={lastMatch.whatsapp}
+                    name={campRegistrationDisplayName(lastMatch)}
+                    className="text-neutral-700 dark:text-neutral-300"
+                  />
+                ) : null}
+              </div>
+              <QuickContactButtons
+                phone={lastMatch.phone}
+                whatsapp={lastMatch.whatsapp}
+                name={campRegistrationDisplayName(lastMatch)}
+              />
+            </div>
             <div className="mt-1 flex flex-wrap gap-2">
               <Badge variant="outline">{lastMatch.role}</Badge>
               {resolveCampCheckInCode(lastMatch) ? (

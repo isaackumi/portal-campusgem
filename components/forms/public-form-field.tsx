@@ -41,7 +41,7 @@ export function PublicFormQuestionBlock({
   const theme = usePublicFormTheme()
 
   return (
-    <section className="rounded-lg border border-slate-200/80 bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+    <section className="rounded-lg border border-slate-200/80 bg-white px-4 py-5 shadow-sm sm:px-6 sm:py-6">
       <fieldset className="space-y-4">
         <legend className="mb-0 w-full">
           <div className="flex items-start gap-3">
@@ -59,7 +59,7 @@ export function PublicFormQuestionBlock({
             </div>
           </div>
         </legend>
-        <div className={questionNumber != null ? 'pl-6 sm:pl-7' : undefined}>{children}</div>
+        <div className={questionNumber != null ? 'sm:pl-7' : undefined}>{children}</div>
         <div className="h-0.5 w-12 rounded-full opacity-30" style={{ backgroundColor: theme.accentHex }} />
       </fieldset>
     </section>

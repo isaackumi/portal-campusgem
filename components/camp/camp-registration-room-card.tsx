@@ -28,6 +28,7 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { BedDouble, Copy, Crown, MessageSquare, Users } from 'lucide-react'
 
 type Props = {
@@ -203,17 +204,17 @@ export function CampRegistrationRoomCard({
   }
 
   return (
-    <Card className="border-2 border-brand-200">
-      <CardHeader className="border-b bg-brand-50/60">
+    <Card className="border-brand-200 dark:border-brand-400/20">
+      <CardHeader className="border-b border-brand-100 bg-brand-50/60 p-4 dark:border-white/10 dark:bg-brand-400/5 sm:p-6">
         <CardTitle className="flex items-center gap-2">
-          <BedDouble className="h-5 w-5 text-brand-700" />
+          <BedDouble className="h-5 w-5 text-brand-700 dark:text-brand-300" />
           Room assignment
         </CardTitle>
         <CardDescription>
           Rooms for this camper&apos;s camp year only. Share name, phone, code, room, and roommates.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className="space-y-4 p-4 sm:p-6 sm:pt-4">
         {loading ? (
           <div className="flex justify-center py-6">
             <LoadingSpinner />
@@ -221,15 +222,15 @@ export function CampRegistrationRoomCard({
         ) : (
           <>
             <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-800">Assign room</p>
+              <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Assign room</p>
               {roomsLoading ? (
                 <div className="flex justify-center py-3">
                   <LoadingSpinner />
                 </div>
               ) : yearRooms.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 dark:border-white/10 dark:bg-white/[0.03] py-4 text-sm text-muted-foreground">
                   No rooms for this camp year yet.{' '}
-                  <Link href={roomsHref} className="font-medium text-brand-700 underline">
+                  <Link href={roomsHref} className="font-medium text-brand-700 underline dark:text-brand-300">
                     Create rooms
                   </Link>
                   .
@@ -261,23 +262,33 @@ export function CampRegistrationRoomCard({
             {!room ? (
               <p className="text-sm text-muted-foreground">
                 Pick a room above, or manage lodging on the{' '}
-                <Link href={roomsHref} className="font-medium text-brand-700 underline">
+                <Link href={roomsHref} className="font-medium text-brand-700 underline dark:text-brand-300">
                   rooms page
                 </Link>
                 .
               </p>
             ) : (
               <>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-lg border border-neutral-200/80 bg-neutral-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
                   <p className="app-overline">
                     Check-in at desk
                   </p>
-                  <p className="mt-1 text-lg font-bold text-slate-900">{checkInIdentity.name}</p>
-                  {checkInIdentity.phone ? (
-                    <p className="text-base font-medium text-slate-800">{checkInIdentity.phone}</p>
-                  ) : null}
+                  <div className="mt-1 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="break-words text-lg font-bold text-neutral-900 dark:text-neutral-100">{checkInIdentity.name}</p>
+                      {checkInIdentity.phone ? (
+                        <PhoneLink
+                          phone={checkInIdentity.phone}
+                          whatsapp={registration.whatsapp}
+                          name={checkInIdentity.name}
+                          className="text-base font-medium text-neutral-800 dark:text-neutral-200"
+                        />
+                      ) : null}
+                    </div>
+                    <QuickContactButtons phone={checkInIdentity.phone} whatsapp={registration.whatsapp} name={checkInIdentity.name} />
+                  </div>
                   {checkInIdentity.code ? (
-                    <p className="mt-2 font-mono text-xl font-bold tracking-wide text-brand-900">
+                    <p className="mt-2 font-mono text-xl font-bold tracking-wide text-brand-900 dark:text-brand-200">
                       {checkInIdentity.code}
                     </p>
                   ) : (
@@ -288,10 +299,10 @@ export function CampRegistrationRoomCard({
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-brand-200 bg-white p-4">
+                <div className="rounded-lg border border-brand-200 bg-white p-4 dark:border-brand-400/20 dark:bg-neutral-800/60">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="app-overline text-brand-700">
+                    <div className="min-w-0">
+                      <p className="app-overline text-brand-700 dark:text-brand-300">
                         Your room
                       </p>
                       <p className="mt-1 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{room.name}</p>
@@ -299,7 +310,7 @@ export function CampRegistrationRoomCard({
                         <p className="text-sm text-muted-foreground">{room.building}</p>
                       ) : null}
                     </div>
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" asChild>
                       <Link href={roomsHref}>Manage rooms</Link>
                     </Button>
                   </div>
@@ -316,13 +327,13 @@ export function CampRegistrationRoomCard({
 
                 {canManageLeader && occupants.length > 0 ? (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-800">Room leader</p>
+                    <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Room leader</p>
                     <Select
                       value={leaderSelectValue}
                       disabled={savingLeader}
                       onValueChange={(v) => void handleLeaderChange(v)}
                     >
-                      <SelectTrigger className="min-h-10">
+                      <SelectTrigger className="min-h-11 sm:min-h-10">
                         <SelectValue placeholder="Choose room leader…" />
                       </SelectTrigger>
                       <SelectContent>
@@ -339,7 +350,7 @@ export function CampRegistrationRoomCard({
                 ) : null}
 
                 <div className="space-y-2">
-                  <p className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                  <p className="flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
                     <Users className="h-4 w-4" />
                     Roommates ({occupants.length})
                   </p>
@@ -353,9 +364,9 @@ export function CampRegistrationRoomCard({
                         return (
                           <li
                             key={occ.id}
-                            className="flex items-center justify-between gap-2 rounded-md border bg-slate-50 px-3 py-2 text-sm"
+                            className="flex min-h-11 items-center justify-between gap-2 rounded-md border border-neutral-200/80 bg-neutral-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03]"
                           >
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="truncate font-medium">
                                 {campRegistrationDisplayName(occ)}
                                 {isSelf ? ' (this camper)' : ''}
@@ -367,6 +378,13 @@ export function CampRegistrationRoomCard({
                                 <Crown className="h-3 w-3" />
                                 Leader
                               </Badge>
+                            ) : null}
+                            {!isSelf ? (
+                              <QuickContactButtons
+                                phone={occ.phone}
+                                whatsapp={occ.whatsapp}
+                                name={campRegistrationDisplayName(occ)}
+                              />
                             ) : null}
                           </li>
                         )

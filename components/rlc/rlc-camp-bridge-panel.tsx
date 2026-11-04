@@ -49,10 +49,10 @@ export function RlcCampBridgePanel({ campRows, visitors, members }: RlcCampBridg
 
   return (
     <FoldableCard
-      className="border-rose-100/80"
+      className="border-brand-100/80 dark:border-brand-400/20"
       title="Camp contacts not yet in RLC"
       description="Camp registrants who are not visitors or members at Redemption Light yet"
-      icon={<UserCheck className="h-5 w-5 text-rose-700" />}
+      icon={<UserCheck className="h-5 w-5 text-brand-700 dark:text-brand-300" />}
       badge={
         <Badge variant={missingRows.length > 0 ? 'secondary' : 'outline'}>
           {missingRows.length} not in RLC
@@ -105,7 +105,7 @@ export function RlcCampBridgePanel({ campRows, visitors, members }: RlcCampBridg
                 return (
                   <div
                     key={row.phone_key}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-rose-100/80 bg-white px-3 py-2 text-sm"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-brand-100/80 bg-white px-3 py-2 text-sm dark:border-brand-400/20 dark:bg-neutral-800/60"
                   >
                     <div className="min-w-0">
                       <p className="truncate font-medium">{row.full_name}</p>
@@ -133,10 +133,10 @@ export function RlcCampBridgePanel({ campRows, visitors, members }: RlcCampBridg
             </div>
           )}
 
-          <Button variant="ghost" size="sm" className="px-0 text-rose-700" asChild>
+          <Button variant="ghost" size="sm" className="px-0 text-brand-700 dark:text-brand-300" asChild>
             <Link href="/admin/rlc/import?tab=camp-bulk">Bulk import from camp</Link>
           </Button>
-          <Button variant="ghost" size="sm" className="px-0 text-rose-700" asChild>
+          <Button variant="ghost" size="sm" className="px-0 text-brand-700 dark:text-brand-300" asChild>
             <Link href="/admin/rlc/import">Open full import search</Link>
           </Button>
         </div>

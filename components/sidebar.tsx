@@ -294,11 +294,11 @@ export function MobileSidebar({
       >
         <button
           type="button"
-          className="absolute inset-0 bg-neutral-900/80"
+          className="absolute inset-0 bg-neutral-950/50 backdrop-blur-[2px] animate-in fade-in-0 duration-200"
           aria-label="Dismiss menu overlay"
           onClick={close}
         />
-        <aside className="mobile-nav-panel relative z-10 flex h-full max-h-[100dvh] w-full max-w-[260px] flex-col shadow-xl">
+        <aside className="mobile-nav-panel relative z-10 flex h-full max-h-[100dvh] w-[86vw] max-w-[320px] flex-col pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-pop animate-in slide-in-from-left duration-300 ease-out motion-reduce:animate-none">
           <SidebarShell
             collapsed={false}
             onNavigate={close}
@@ -307,7 +307,7 @@ export function MobileSidebar({
                 variant="ghost"
                 size="icon"
                 onClick={close}
-                className="sidebar-sign-out ml-auto h-8 w-8 shrink-0"
+                className="sidebar-sign-out ml-auto h-10 w-10 shrink-0"
                 aria-label="Close menu"
               >
                 <Cross2Icon className="h-5 w-5" />

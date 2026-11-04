@@ -17,63 +17,80 @@
 
   :root {
     color-scheme: light;
-    /* neutral-100 canvas, neutral-900 text, brand-600 actions */
-    --background: 0 0% 96.1%;
-    --foreground: 0 0% 9%;
+    /* slate-100 canvas, white surfaces, slate-900 ink, indigo-600 actions */
+    --background: 210 40% 96.1%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    --primary: 346 82% 44%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 243 75% 59%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 346 83% 57%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 239 84% 67%;
     --radius: 0.75rem;
-    --brand-accent: 346 83% 57%;
-    --brand-surface: 346 82% 44%;
-    --brand-muted: 0 0% 45%;
+    --brand-accent: 243 75% 59%;
+    --brand-surface: 243 75% 59%;
+    --brand-muted: 215 16% 47%;
   }
 
   .dark {
     color-scheme: dark;
-    /* neutral-900 canvas, neutral-800 panels, brand-700 actions */
-    --background: 0 0% 9%;
-    --foreground: 0 0% 96%;
-    --card: 0 0% 15%;
-    --card-foreground: 0 0% 96%;
-    --popover: 0 0% 15%;
-    --popover-foreground: 0 0% 96%;
-    --primary: 345 85% 37%;
+    /* slate-950 canvas, slate-900 panel, slate-800 cards, indigo-500 actions */
+    --background: 229 84% 5%;
+    --foreground: 210 40% 96%;
+    --card: 217 33% 17%;
+    --card-foreground: 210 40% 96%;
+    --popover: 217 33% 17%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 25%;
-    --secondary-foreground: 0 0% 96%;
-    --muted: 0 0% 25%;
-    --muted-foreground: 0 0% 64%;
-    --accent: 0 0% 25%;
-    --accent-foreground: 0 0% 96%;
+    --secondary: 215 25% 27%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 215 25% 27%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 215 25% 27%;
+    --accent-foreground: 210 40% 96%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
-    --ring: 346 96% 69%;
-    --brand-accent: 346 96% 69%;
-    --brand-surface: 345 85% 37%;
-    --brand-muted: 0 0% 64%;
+    --border: 215 25% 27%;
+    --input: 215 25% 27%;
+    --ring: 234 89% 74%;
+    --brand-accent: 234 89% 74%;
+    --brand-surface: 239 84% 67%;
+    --brand-muted: 215 20% 65%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+  }
+
+  /* iOS zooms into any field under 16px; keep phone inputs at 16px. */
+  @media (max-width: 639px) {
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
+  /* Tap feedback without the grey flash, and no 300ms delay. */
+  a,
+  button,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -83,17 +100,17 @@
 @layer components {
   /*
    * Type scale. Every screen picks from these so sizes and weights never drift:
-   * 11 overline → 13 meta/label → 14 body → 15 card/section title → 28 stat → 32/40 page.
-   * Display serif only for page-level headings; everything inside cards is Geist.
-   * Geist weights: semibold for headings, medium for emphasis, regular for body.
+   * 11 overline → 13 meta/label → 14 body → 15 card/section title → 28 stat → 26/30 page.
+   * One family (Plus Jakarta Sans): bold page titles, semibold section titles,
+   * medium for emphasis, regular for body.
    */
   .app-page-title {
-    @apply font-display text-[32px] font-normal leading-[1.1] tracking-[-0.01em] text-neutral-900 dark:text-neutral-50 sm:text-[40px];
+    @apply font-display text-[26px] font-bold leading-[1.15] tracking-[-0.025em] text-neutral-900 dark:text-white sm:text-[30px];
   }
 
-  /* Italic serif accent inside a display heading, e.g. the person's name. */
+  /* Accent word inside a page title, e.g. the person's name or the camp year. */
   .app-display-accent {
-    @apply font-display italic text-brand-700 dark:text-brand-300;
+    @apply bg-gradient-to-r from-brand-600 to-violet-600 bg-clip-text text-transparent dark:from-brand-300 dark:to-violet-300;
   }
 
   .app-page-description {
@@ -110,7 +127,7 @@
 
   /* Small caps-style label for groups and table headings. The only uppercase text style. */
   .app-overline {
-    @apply text-[11px] font-medium uppercase tracking-[0.06em] text-neutral-500 dark:text-neutral-400;
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-500 dark:text-neutral-400;
   }
 
   .app-stat-label {
@@ -118,19 +135,19 @@
   }
 
   .app-stat-value {
-    @apply text-[28px] font-semibold leading-none tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50;
+    @apply text-[28px] font-bold leading-none tracking-[-0.02em] tabular-nums text-neutral-900 dark:text-white;
   }
 
   .dashboard-shell {
-    @apply mx-auto max-w-7xl space-y-6;
+    @apply mx-auto max-w-7xl space-y-5 sm:space-y-6;
   }
 
   .dashboard-panel {
-    @apply rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800;
+    @apply rounded-xl border border-neutral-200/80 bg-white shadow-card dark:border-white/[0.06] dark:bg-neutral-800/60 dark:shadow-none;
   }
 
   .dashboard-metric-strip {
-    @apply grid divide-y divide-neutral-200 border border-neutral-200 bg-white dark:divide-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4;
+    @apply grid divide-y divide-neutral-200 border border-neutral-200/80 bg-white shadow-card dark:divide-white/[0.06] dark:border-white/[0.06] dark:bg-neutral-800/60 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4;
     border-radius: 0.75rem;
     overflow: hidden;
   }
@@ -144,7 +161,7 @@
   }
 
   .app-card {
-    @apply rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-800;
+    @apply rounded-xl border border-neutral-200/80 bg-white shadow-card dark:border-white/[0.06] dark:bg-neutral-800/60;
   }
 
   .app-accent-bar {
@@ -164,7 +181,7 @@
   }
 
   .app-content-panel {
-    @apply rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] dark:border-neutral-800 dark:bg-neutral-900;
+    @apply rounded-2xl border border-neutral-200/70 bg-neutral-50/70 dark:border-white/[0.06] dark:bg-neutral-900;
   }
 
   /*
@@ -192,11 +209,11 @@
   }
 
   .sidebar-panel .sidebar-nav-item {
-    @apply relative flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:text-neutral-400 dark:hover:bg-neutral-800/70 dark:hover:text-white;
+    @apply relative flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:text-neutral-400 dark:hover:bg-white/[0.04] dark:hover:text-white;
   }
 
   .sidebar-panel .sidebar-nav-item[data-active='true'] {
-    @apply bg-white font-medium text-neutral-900 shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-neutral-200/80 dark:bg-neutral-800 dark:text-white dark:ring-neutral-700/80;
+    @apply bg-white font-semibold text-neutral-900 shadow-card ring-1 ring-neutral-200/80 dark:bg-white/[0.06] dark:text-white dark:ring-white/[0.06];
   }
 
   /* Brand marker on the active row, like a bookmark ribbon. */
@@ -214,50 +231,17 @@
   }
 
   .sidebar-panel .sidebar-sign-out {
-    @apply text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white;
+    @apply text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-white/[0.06] dark:hover:text-white;
   }
 
   /* Small bordered pill in the top bar (camp status, etc.). */
   .header-chip {
-    @apply h-9 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-[13px] text-neutral-800 transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-700;
-  }
-
-  /* Dashboard sticky-note quick actions */
-  .sticky-note {
-    @apply relative flex h-[118px] w-[118px] shrink-0 flex-col justify-end rounded-lg p-3 text-left transition-transform duration-200 ease-out sm:h-[125px] sm:w-[125px];
-    background-image: linear-gradient(rgba(255, 255, 255, 0.35), transparent 30%);
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08), 0 6px 10px -4px rgba(0, 0, 0, 0.22);
-    transform: rotate(var(--note-tilt, 0deg));
-  }
-
-  .sticky-note:hover,
-  .sticky-note:focus-visible {
-    transform: rotate(0deg) translateY(-3px);
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08), 0 12px 18px -6px rgba(0, 0, 0, 0.28);
-  }
-
-  /* Curled bottom-right corner */
-  .sticky-note::after {
-    content: '';
-    @apply pointer-events-none absolute bottom-0 right-0 h-4 w-4 rounded-tl-md;
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.5));
-  }
-
-  .sticky-note-tape {
-    @apply pointer-events-none absolute -top-2 left-1/2 h-4 w-14 -translate-x-1/2 rounded-[2px] bg-white/60 shadow-[0_1px_1px_rgba(0,0,0,0.06)] backdrop-blur-[1px];
-    transform: translateX(-50%) rotate(var(--tape-tilt, -2deg));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sticky-note,
-    .sticky-note:hover {
-      transition: none;
-    }
+    @apply h-9 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-[13px] text-neutral-800 shadow-card transition-colors hover:border-neutral-300 dark:border-white/[0.08] dark:bg-neutral-900 dark:text-neutral-100 dark:shadow-none dark:hover:border-white/[0.14];
   }
 
   .sidebar-scroll {
     scrollbar-width: thin;
-    scrollbar-color: rgb(212 212 212) transparent;
+    scrollbar-color: rgb(203 213 225) transparent;
   }
 
   .sidebar-scroll::-webkit-scrollbar {
@@ -269,20 +253,20 @@
   }
 
   .sidebar-scroll::-webkit-scrollbar-thumb {
-    background-color: rgb(212 212 212);
+    background-color: rgb(203 213 225);
     border-radius: 9999px;
   }
 
   .dark .sidebar-scroll {
-    scrollbar-color: rgb(82 82 82) #262626;
+    scrollbar-color: rgb(51 65 85) transparent;
   }
 
   .dark .sidebar-scroll::-webkit-scrollbar-track {
-    background-color: #262626;
+    background-color: transparent;
   }
 
   .dark .sidebar-scroll::-webkit-scrollbar-thumb {
-    background-color: rgb(82 82 82);
+    background-color: rgb(51 65 85);
   }
 
   .mobile-nav-overlay {
@@ -293,9 +277,26 @@
   .mobile-nav-panel {
     pointer-events: auto;
   }
+
+  /* Touch-sized rows in the phone menu. */
+  .mobile-nav-panel .sidebar-nav-item {
+    @apply h-11 text-[15px];
+  }
+
+  .mobile-nav-panel .sidebar-group-toggle {
+    @apply h-10;
+  }
 }
 
 @layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .text-brand-accent {
     color: hsl(var(--brand-accent));
   }
@@ -309,17 +310,17 @@
   }
 }
 
-/* Brand washes aligned with Trovesuite Accounting */
+/* Brand washes */
 .church-gradient {
-  background: linear-gradient(135deg, #ad0e36 0%, #440416 100%);
+  background: linear-gradient(135deg, #4338ca 0%, #1e1b4b 100%);
 }
 
 .profile-completion-gradient {
-  background: linear-gradient(135deg, #ec3560 0%, #ad0e36 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
 }
 
 .attendance-gradient {
-  background: linear-gradient(135deg, #ce1440 0%, #7a1231 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
 }
 
 .dark select,
@@ -331,7 +332,7 @@
 
 .dark select option,
 .dark select optgroup {
-  background-color: #171717;
+  background-color: #0f172a;
   color: #ffffff;
 }
 
@@ -428,37 +429,37 @@
 .dark .text-neutral-950:not([class*="dark:text-"]),
 .dark .text-neutral-900:not([class*="dark:text-"]),
 .dark .text-neutral-800:not([class*="dark:text-"]) {
-  color: #f5f5f5;
+  color: #f1f5f9;
 }
 
 .dark .text-slate-700:not([class*="dark:text-"]),
 .dark .text-gray-700:not([class*="dark:text-"]),
 .dark .text-neutral-700:not([class*="dark:text-"]) {
-  color: #e5e5e5;
+  color: #e2e8f0;
 }
 
 .dark .text-slate-600:not([class*="dark:text-"]),
 .dark .text-gray-600:not([class*="dark:text-"]),
 .dark .text-neutral-600:not([class*="dark:text-"]) {
-  color: #d4d4d4;
+  color: #cbd5e1;
 }
 
 .dark .text-slate-500:not([class*="dark:text-"]),
 .dark .text-gray-500:not([class*="dark:text-"]),
 .dark .text-neutral-500:not([class*="dark:text-"]) {
-  color: #a3a3a3;
+  color: #94a3b8;
 }
 
 .dark .text-slate-400:not([class*="dark:text-"]),
 .dark .text-gray-400:not([class*="dark:text-"]),
 .dark .text-neutral-400:not([class*="dark:text-"]) {
-  color: #8f8f8f;
+  color: #8291a8;
 }
 
 .dark .text-slate-300:not([class*="dark:text-"]),
 .dark .text-gray-300:not([class*="dark:text-"]),
 .dark .text-neutral-300:not([class*="dark:text-"]) {
-  color: #6b6b6b;
+  color: #64748b;
 }
 
 .dark [class*="bg-amber-3"].text-slate-950,
@@ -466,7 +467,7 @@
 .dark [class*="bg-yellow-3"].text-neutral-900,
 .dark .bg-white.text-brand-800,
 .dark .bg-white.text-brand-900 {
-  color: #171717;
+  color: #0f172a;
 }
 
 .dark .bg-white:not([class*="dark:bg-"]),
@@ -474,7 +475,7 @@
 .dark .bg-white\/90:not([class*="dark:bg-"]),
 .dark .bg-white\/80:not([class*="dark:bg-"]),
 .dark .bg-white\/70:not([class*="dark:bg-"]) {
-  background-color: #262626;
+  background-color: #1e293b;
 }
 
 .dark .bg-white.text-brand-800,
@@ -486,7 +487,7 @@
 .dark .bg-\[\#eceff1\]:not([class*="dark:bg-"]),
 .dark .bg-\[\#f3f2ef\]:not([class*="dark:bg-"]),
 .dark .bg-\[\#f7f6f3\]:not([class*="dark:bg-"]) {
-  background-color: #171717;
+  background-color: #0f172a;
 }
 
 .dark .bg-slate-50:not([class*="dark:bg-"]),
@@ -613,7 +614,7 @@
 .dark .placeholder\:text-gray-500::placeholder,
 .dark .placeholder\:text-neutral-400::placeholder,
 .dark .placeholder\:text-neutral-500::placeholder {
-  color: #737373;
+  color: #64748b;
 }
 
 /* Tinted panels and status text: light tints become a soft glow of the same hue. */
@@ -1377,12 +1378,12 @@
 .dark .bg-brand-100\/70:not([class*="dark:bg-"]),
 .dark .bg-brand-100\/60:not([class*="dark:bg-"]),
 .dark .bg-brand-100\/50:not([class*="dark:bg-"]) {
-  background-color: rgb(236 53 96 / 0.12);
+  background-color: rgb(99 102 241 / 0.12);
 }
 
 .dark .bg-brand-200:not([class*="dark:bg-"]),
 .dark .bg-brand-200\/70:not([class*="dark:bg-"]) {
-  background-color: rgb(236 53 96 / 0.22);
+  background-color: rgb(99 102 241 / 0.22);
 }
 
 .dark .text-brand-600:not([class*="dark:text-"]):not([class*="bg-brand-2"]):not([class*="bg-brand-3"]):not([class*="bg-brand-4"]),
@@ -1390,11 +1391,11 @@
 .dark .text-brand-800:not([class*="dark:text-"]):not([class*="bg-brand-2"]):not([class*="bg-brand-3"]):not([class*="bg-brand-4"]),
 .dark .text-brand-900:not([class*="dark:text-"]):not([class*="bg-brand-2"]):not([class*="bg-brand-3"]):not([class*="bg-brand-4"]),
 .dark .text-brand-950:not([class*="dark:text-"]):not([class*="bg-brand-2"]):not([class*="bg-brand-3"]):not([class*="bg-brand-4"]) {
-  color: #ff9cb0;
+  color: #a5b4fc;
 }
 
 .dark .text-brand-500:not([class*="dark:text-"]) {
-  color: #fb6485;
+  color: #818cf8;
 }
 
 .dark .border-brand-100:not([class*="dark:border-"]),
@@ -1402,12 +1403,12 @@
 .dark .border-brand-200\/80:not([class*="dark:border-"]),
 .dark .border-brand-200\/70:not([class*="dark:border-"]),
 .dark .border-brand-300:not([class*="dark:border-"]) {
-  border-color: rgb(236 53 96 / 0.3);
+  border-color: rgb(99 102 241 / 0.3);
 }
 
 .dark .hover\:bg-brand-50:hover:not([class*="dark:hover:bg-"]),
 .dark .hover\:bg-brand-100:hover:not([class*="dark:hover:bg-"]) {
-  background-color: rgb(236 53 96 / 0.18);
+  background-color: rgb(99 102 241 / 0.18);
 }
 
 

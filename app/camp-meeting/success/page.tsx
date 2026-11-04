@@ -101,38 +101,38 @@ function SuccessContent() {
   return (
     <Card className="w-full max-w-md border-0 shadow-lg sm:border sm:shadow-md">
       <CardHeader className="pb-2">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-          <CheckCircle className="h-8 w-8 text-green-600" />
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-400/10">
+          <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400" aria-hidden />
         </div>
-        <CardTitle className="text-2xl text-green-700">Registration Successful!</CardTitle>
-        <CardDescription className="text-base">
+        <CardTitle className="text-center text-2xl text-emerald-700 dark:text-emerald-300">Registration Successful!</CardTitle>
+        <CardDescription className="text-center text-base">
           Welcome{displayName ? `, ${displayName}` : ''}! We are excited to have you at the camp meeting.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <p className="text-center text-sm text-slate-700 sm:text-base">
+        <p className="text-center text-sm text-neutral-700 dark:text-neutral-300 sm:text-base">
           Your registration has been confirmed successfully.
         </p>
 
         {checkInCode ? (
-          <div className="rounded-xl border-2 border-slate-200 bg-slate-50/80 p-4 text-center">
-            <p className="app-overline text-brand-800">
+          <div className="rounded-xl border-2 border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/[0.04] p-4 text-center">
+            <p className="app-overline text-brand-800 dark:text-brand-300">
               Your camp check-in code
             </p>
-            <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-slate-950">
+            <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-neutral-950 dark:text-white">
               {checkInCode}
             </p>
-            <p className="mt-2 text-xs text-slate-900/80">
+            <p className="mt-2 text-xs text-neutral-700 dark:text-neutral-300">
               Show this code, your QR, name, or phone at the gate — each person has their own code.
             </p>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="mt-3 min-h-9 gap-1.5 border-brand-300 bg-white"
+              className="mt-3 min-h-11 gap-1.5 sm:min-h-9"
               onClick={() => void copyCheckInCode()}
             >
-              <Copy className="h-3.5 w-3.5" />
+              <Copy className="h-3.5 w-3.5" aria-hidden />
               Copy code
             </Button>
           </div>
@@ -140,8 +140,8 @@ function SuccessContent() {
 
         {qrCode ? (
           <div className="space-y-3 text-center">
-            <p className="text-sm text-slate-600">Or present this QR code at check-in.</p>
-            <div className="mx-auto w-fit rounded-xl border bg-white p-4 shadow-sm">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">Or present this QR code at check-in.</p>
+            <div className="mx-auto w-fit rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-white/10">
               <QRCode
                 value={qrCode}
                 size={Math.min(192, typeof window !== 'undefined' ? window.innerWidth - 120 : 192)}
@@ -150,14 +150,14 @@ function SuccessContent() {
             {(displayName || displayRole) && (
               <div className="space-y-0.5">
                 {displayName ? (
-                  <p className="text-base font-semibold text-slate-900">{displayName}</p>
+                  <p className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{displayName}</p>
                 ) : null}
-                {displayRole ? <p className="text-sm text-slate-600">{displayRole}</p> : null}
+                {displayRole ? <p className="text-sm text-neutral-600 dark:text-neutral-400">{displayRole}</p> : null}
               </div>
             )}
           </div>
         ) : (
-          <p className="text-center text-sm text-slate-600">
+          <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
             You will receive your QR code and registration details upon arrival at the camp meeting.
           </p>
         )}
@@ -174,14 +174,14 @@ function SuccessContent() {
               </a>
             </Button>
           ) : null}
-          <div className="space-y-2 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
-            <p className="text-sm font-medium text-emerald-900">Tell friends to register</p>
-            <p className="text-xs text-emerald-800/90">
+          <div className="space-y-2 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-400/20 dark:bg-emerald-400/10">
+            <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">Tell friends to register</p>
+            <p className="text-xs text-emerald-800/90 dark:text-emerald-300/90">
               Share on WhatsApp so others know you&apos;ve signed up and can register too.
             </p>
             <Button
               variant="outline"
-              className="min-h-11 w-full gap-2 border-emerald-300 bg-white text-emerald-900 hover:bg-emerald-50"
+              className="min-h-11 w-full gap-2 border-emerald-300 bg-white text-emerald-900 hover:bg-emerald-50 dark:border-emerald-400/30 dark:bg-transparent dark:text-emerald-200 dark:hover:bg-emerald-400/10"
               asChild
             >
               <a href={whatsappInviteHref} target="_blank" rel="noopener noreferrer">
@@ -193,7 +193,7 @@ function SuccessContent() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:justify-center">
+        <div className="flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-white/10 sm:flex-row sm:justify-center">
           <Button
             variant="outline"
             onClick={() => router.push('/camp-meeting/register')}
@@ -214,10 +214,10 @@ function SuccessContent() {
 export default function SuccessPage() {
   return (
     <div
-      className="flex min-h-[100dvh] items-center justify-center bg-slate-50 p-4 pt-[max(1rem,env(safe-area-inset-top))]"
+      className="flex min-h-[100dvh] items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4 pt-[max(1rem,env(safe-area-inset-top))]"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
-      <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<p className="text-neutral-500 dark:text-neutral-400">Loading…</p>}>
         <SuccessContent />
       </Suspense>
     </div>

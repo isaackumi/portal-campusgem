@@ -22,6 +22,9 @@ import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-ph
 import { applyWhatsappSameAsPhone } from '@/lib/forms/whatsapp-phone'
 import type { PublicFormController } from '@/hooks/use-public-form'
 
+/** In the staff preview the page sits inside the app shell, so lift the bar above the phone tab bar. */
+const PREVIEW_BAR_OFFSET = 'bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0'
+
 export function PublicFormClassicView({ controller }: { controller: PublicFormController }) {
   const {
     form,
@@ -109,6 +112,7 @@ export function PublicFormClassicView({ controller }: { controller: PublicFormCo
           onSubmit={() => void handleSubmit()}
           submitting={submitting}
           disabled={alreadySubmitted && !previewMode}
+          className={previewMode ? PREVIEW_BAR_OFFSET : undefined}
         />
       </PublicFormPageShell>
     )
@@ -201,7 +205,7 @@ export function PublicFormClassicView({ controller }: { controller: PublicFormCo
           ) : null}
         </PublicFormDocument>
 
-        <PublicFormSubmitBar>
+        <PublicFormSubmitBar className={previewMode ? PREVIEW_BAR_OFFSET : undefined}>
           <PublicFormPrimaryButton type="submit" disabled={alreadySubmitted && !previewMode}>
             Continue to review
           </PublicFormPrimaryButton>

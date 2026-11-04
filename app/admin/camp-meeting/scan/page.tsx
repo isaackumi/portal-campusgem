@@ -32,6 +32,7 @@ import { useAuth } from '@/components/providers'
 import { cn } from '@/lib/utils'
 import { CampManualCheckInPanel } from '@/components/camp/camp-manual-check-in-panel'
 import { CampQuickCodeCheckIn } from '@/components/camp/camp-quick-code-check-in'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { findCampRegistrationFromScan } from '@/lib/camp/resolve-registration-from-scan'
 import { mapRawCampActivity, sortCampActivities } from '@/lib/camp/activity-display'
 import {
@@ -455,7 +456,7 @@ export default function CampScannerPage() {
 
   if (!campYear) {
     return (
-      <div className="mx-auto max-w-lg p-4">
+      <div className="mx-auto max-w-lg">
         <Card>
           <CardContent className="py-12 text-center">
             <p className="mb-4 text-muted-foreground">No active camp year found.</p>
@@ -469,17 +470,18 @@ export default function CampScannerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-lg space-y-4 p-4 pb-16 sm:max-w-2xl">
+    <div>
+      <div className="mx-auto max-w-lg space-y-4 pb-6 sm:max-w-2xl">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Camp check-in</h1>
-            <p className="text-sm text-slate-600">{campYear.year} · presence by session</p>
+          <div className="min-w-0">
+            <h1 className="app-page-title">Camp check-in</h1>
+            <p className="app-page-description">{campYear.year} · presence by session</p>
           </div>
           <Button
             variant="outline"
-            size="sm"
-            className="min-h-10 shrink-0"
+            size="icon"
+            aria-label="Refresh sessions and check-ins"
+            className="h-11 w-11 shrink-0"
             disabled={ensuringSessions}
             onClick={() => {
               setPeriodOverride(false)
@@ -491,9 +493,9 @@ export default function CampScannerPage() {
           </Button>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="dashboard-panel p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <label htmlFor="session-date" className="text-sm font-medium text-slate-700">
+            <label htmlFor="session-date" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               Camp day
             </label>
             <Input
@@ -504,11 +506,11 @@ export default function CampScannerPage() {
                 setPeriodOverride(false)
                 setSessionDate(e.target.value || todayIsoDate())
               }}
-              className="h-10 w-[10.5rem] bg-white"
+              className="h-11 w-[10.5rem] sm:h-10"
             />
           </div>
 
-          <p className="mb-2 text-xs text-slate-500">
+          <p className="mb-2 text-xs text-neutral-500 dark:text-neutral-400">
             Auto: Morning until 12:00 · Afternoon until 17:00 · Evening after 17:00
           </p>
 
@@ -526,20 +528,20 @@ export default function CampScannerPage() {
                   disabled={!activity || ensuringSessions}
                   onClick={() => selectPeriod(period)}
                   className={cn(
-                    'rounded-xl border-2 p-3 text-left transition-colors',
+                    'min-w-0 rounded-xl border-2 p-2.5 text-left transition-colors sm:p-3',
                     isSelected
-                      ? 'border-brand-700 bg-brand-600 text-white'
+                      ? 'border-brand-700 bg-brand-600 text-white dark:border-brand-400 dark:bg-brand-500'
                       : isSuggested
-                        ? 'border-emerald-400 bg-emerald-50'
-                        : 'border-slate-200 bg-white',
+                        ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-400/40 dark:bg-emerald-400/10'
+                        : 'border-neutral-200 bg-white dark:border-white/10 dark:bg-neutral-800/60',
                     (!activity || ensuringSessions) && 'opacity-50'
                   )}
                 >
-                  <Icon className={cn('mb-1 h-4 w-4', isSelected ? 'text-white' : 'text-slate-700')} />
-                  <div className={cn('text-sm font-semibold', isSelected ? 'text-white' : 'text-slate-900')}>
+                  <Icon className={cn('mb-1 h-4 w-4', isSelected ? 'text-white' : 'text-neutral-700 dark:text-neutral-300')} />
+                  <div className={cn('truncate text-sm font-semibold', isSelected ? 'text-white' : 'text-neutral-900 dark:text-neutral-100')}>
                     {meta.label}
                   </div>
-                  <div className={cn('text-[11px]', isSelected ? 'text-slate-300' : 'text-slate-500')}>
+                  <div className={cn('truncate text-xs', isSelected ? 'text-brand-100' : 'text-neutral-500 dark:text-neutral-400')}>
                     {meta.hint}
                   </div>
                 </button>
@@ -548,7 +550,7 @@ export default function CampScannerPage() {
           </div>
 
           {outsideUsualHours ? (
-            <div className="mt-3 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            <div className="mt-3 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 Clock suggests <strong>{CAMP_DAILY_SESSION_META[suggestedPeriod].label}</strong> now.
@@ -556,24 +558,24 @@ export default function CampScannerPage() {
               </span>
             </div>
           ) : (
-            <p className="mt-3 text-sm text-emerald-800">
+            <p className="mt-3 text-sm text-emerald-800 dark:text-emerald-300">
               Checking into <strong>{sessionLabel}</strong> (auto-selected for now).
             </p>
           )}
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl border bg-white p-3 text-center">
-            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{sessionStats.totalRegistrations}</div>
-            <div className="text-xs text-slate-500">At camp</div>
+          <div className="dashboard-panel p-3 text-center">
+            <div className="app-stat-value text-neutral-900 dark:text-neutral-100">{sessionStats.totalRegistrations}</div>
+            <div className="app-stat-label">At camp</div>
           </div>
-          <div className="rounded-xl border bg-white p-3 text-center">
-            <div className="text-2xl font-bold text-green-600">{sessionStats.checkedInSession}</div>
-            <div className="text-xs text-slate-500">Present</div>
+          <div className="dashboard-panel p-3 text-center">
+            <div className="app-stat-value text-emerald-600 dark:text-emerald-400">{sessionStats.checkedInSession}</div>
+            <div className="app-stat-label">Present</div>
           </div>
-          <div className="rounded-xl border bg-white p-3 text-center">
-            <div className="text-2xl font-bold text-rose-600">{sessionStats.remaining}</div>
-            <div className="text-xs text-slate-500">Missing</div>
+          <div className="dashboard-panel p-3 text-center">
+            <div className="app-stat-value text-red-600 dark:text-red-400">{sessionStats.remaining}</div>
+            <div className="app-stat-label">Missing</div>
           </div>
         </div>
 
@@ -591,7 +593,7 @@ export default function CampScannerPage() {
 
         <button
           type="button"
-          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700"
+          className="flex min-h-11 w-full items-center justify-between rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-700 dark:border-white/10 dark:bg-neutral-800/60 dark:text-neutral-200"
           onClick={() => setShowMoreTools((v) => !v)}
         >
           <span>More tools (code, QR, arrival)</span>
@@ -599,7 +601,7 @@ export default function CampScannerPage() {
         </button>
 
         {showMoreTools ? (
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3">
+          <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-neutral-800/60">
             <div className="grid grid-cols-3 gap-2">
               {(
                 [
@@ -615,8 +617,8 @@ export default function CampScannerPage() {
                   className={cn(
                     'flex min-h-11 items-center justify-center gap-1.5 rounded-lg border text-sm font-medium',
                     moreTool === tool.id
-                      ? 'border-brand-700 bg-brand-600 text-white'
-                      : 'border-slate-200 bg-slate-50 text-slate-700'
+                      ? 'border-brand-700 bg-brand-600 text-white dark:border-brand-400 dark:bg-brand-500'
+                      : 'border-neutral-200 bg-neutral-50 text-neutral-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-neutral-300'
                   )}
                 >
                   <tool.icon className="h-4 w-4" />
@@ -647,7 +649,7 @@ export default function CampScannerPage() {
                 </CardHeader>
                 <CardContent>
                   {!selectedActivityId ? (
-                    <p className="py-8 text-center text-sm text-slate-500">Select a session first.</p>
+                    <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">Select a session first.</p>
                   ) : (
                     <div id="reader" className="w-full" />
                   )}
@@ -656,25 +658,42 @@ export default function CampScannerPage() {
                       className={cn(
                         'mt-4 rounded-lg border-2 p-3',
                         scanResult.success
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-red-500 bg-red-50'
+                          ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400/40 dark:bg-emerald-400/10'
+                          : 'border-red-500 bg-red-50 dark:border-red-400/40 dark:bg-red-400/10'
                       )}
                     >
                       <div className="flex items-start gap-2">
                         {scanResult.success ? (
-                          <CheckCircle className="mt-0.5 h-5 w-5 text-green-600" />
+                          <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                         ) : (
-                          <XCircle className="mt-0.5 h-5 w-5 text-red-600" />
+                          <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
                         )}
-                        <div>
-                          <p className="font-semibold">{scanResult.message}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-neutral-900 dark:text-neutral-100">{scanResult.message}</p>
                           {scanResult.data ? (
-                            <p className="text-sm">
-                              {scanResult.data.full_name ||
-                                `${scanResult.data.first_name} ${scanResult.data.last_name}`}
-                            </p>
+                            <>
+                              <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                                {scanResult.data.full_name ||
+                                  `${scanResult.data.first_name} ${scanResult.data.last_name}`}
+                              </p>
+                              {scanResult.data.phone ? (
+                                <PhoneLink
+                                  phone={scanResult.data.phone}
+                                  whatsapp={scanResult.data.whatsapp}
+                                  name={scanResult.data.full_name}
+                                  className="text-sm text-neutral-600 dark:text-neutral-400"
+                                />
+                              ) : null}
+                            </>
                           ) : null}
                         </div>
+                        {scanResult.data ? (
+                          <QuickContactButtons
+                            phone={scanResult.data.phone}
+                            whatsapp={scanResult.data.whatsapp}
+                            name={scanResult.data.full_name}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   ) : null}
@@ -704,15 +723,15 @@ export default function CampScannerPage() {
             </CardHeader>
             <CardContent>
               {recentCheckIns.length === 0 ? (
-                <p className="py-4 text-center text-sm text-slate-500">No check-ins yet</p>
+                <p className="py-4 text-center text-sm text-neutral-500 dark:text-neutral-400">No check-ins yet</p>
               ) : (
                 <ul className="max-h-64 space-y-2 overflow-y-auto">
                   {recentCheckIns.map((checkIn) => {
                     const when = formatRelativeWhen(checkIn.checked_in_at)
                     return (
-                      <li key={checkIn.id} className="rounded-lg border bg-slate-50 px-3 py-2">
-                        <p className="truncate text-sm font-semibold">{checkIn.full_name}</p>
-                        <p className="text-xs text-slate-500" title={when.absolute}>
+                      <li key={checkIn.id} className="rounded-lg border border-neutral-200/80 bg-neutral-50 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+                        <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{checkIn.full_name}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400" title={when.absolute}>
                           {when.absoluteTime}
                           {when.relative ? ` · ${when.relative}` : ''}
                         </p>
@@ -724,33 +743,38 @@ export default function CampScannerPage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-rose-200">
+          <Card className="border border-red-200 dark:border-red-400/20">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base text-rose-900">
+              <CardTitle className="flex items-center gap-2 text-base text-red-900 dark:text-red-300">
                 <AlertTriangle className="h-4 w-4" /> Missing
               </CardTitle>
               <CardDescription>Not yet marked for {sessionLabel}</CardDescription>
             </CardHeader>
             <CardContent>
               {!selectedActivityId ? (
-                <p className="py-4 text-center text-sm text-slate-500">Select a session</p>
+                <p className="py-4 text-center text-sm text-neutral-500 dark:text-neutral-400">Select a session</p>
               ) : missingCampers.length === 0 ? (
-                <p className="py-4 text-center text-sm text-green-700">Everyone present</p>
+                <p className="py-4 text-center text-sm text-emerald-700 dark:text-emerald-300">Everyone present</p>
               ) : (
-                <ul className="max-h-64 space-y-2 overflow-y-auto">
-                  {missingCampers.slice(0, 40).map((reg) => (
-                    <li key={reg.id} className="rounded-lg border border-rose-100 px-3 py-2">
-                      <p className="truncate text-sm font-medium">
-                        {reg.full_name || `${reg.first_name} ${reg.last_name}`}
-                      </p>
-                      <p className="truncate text-xs text-slate-500">
-                        {reg.role}
-                        {reg.phone ? ` · ${reg.phone}` : ''}
-                      </p>
-                    </li>
-                  ))}
+                <ul className="max-h-80 space-y-2 overflow-y-auto">
+                  {missingCampers.slice(0, 40).map((reg) => {
+                    const name = reg.full_name || `${reg.first_name} ${reg.last_name}`
+                    return (
+                      <li key={reg.id} className="flex min-h-11 items-center gap-2 rounded-lg border border-red-100 px-3 py-2 dark:border-red-400/10">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{name}</p>
+                          <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">
+                            {reg.role}
+                            {reg.phone ? ' · ' : ''}
+                            {reg.phone ? <PhoneLink phone={reg.phone} whatsapp={reg.whatsapp} name={name} /> : null}
+                          </p>
+                        </div>
+                        <QuickContactButtons phone={reg.phone} whatsapp={reg.whatsapp} name={name} />
+                      </li>
+                    )
+                  })}
                   {missingCampers.length > 40 ? (
-                    <li className="text-center text-xs text-slate-500">
+                    <li className="text-center text-xs text-neutral-500 dark:text-neutral-400">
                       +{missingCampers.length - 40} more
                     </li>
                   ) : null}
@@ -760,12 +784,12 @@ export default function CampScannerPage() {
           </Card>
         </div>
 
-        <p className="text-center text-xs text-slate-500">
-          <Link href="/admin/camp-meeting/activities" className="underline">
+        <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+          <Link href="/admin/camp-meeting/activities" className="inline-flex min-h-11 items-center underline">
             Manage sessions
           </Link>
           {' · '}
-          <Link href="/admin/camp-meeting/rooms" className="underline">
+          <Link href="/admin/camp-meeting/rooms" className="inline-flex min-h-11 items-center underline">
             Rooms
           </Link>
         </p>

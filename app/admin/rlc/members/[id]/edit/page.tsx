@@ -78,20 +78,20 @@ export default function EditRlcMemberPage() {
   const memberName = member.user?.full_name?.trim() || 'Member'
 
   return (
-    <PageContainer size="lg" className="pb-24 lg:pb-8">
+    <PageContainer size="lg" className="pb-20 lg:pb-8">
       <RlcPageHeader
         title={memberName}
         subtitle="Update RLC membership type and ministry roles. Contact details are edited separately in the directory."
         backHref="/admin/rlc/members"
         actions={
           <>
-            <Button type="button" variant="outline" onClick={() => router.push('/admin/rlc/members')}>
+            <Button type="button" variant="outline" className="hidden lg:inline-flex" onClick={() => router.push('/admin/rlc/members')}>
               Cancel
             </Button>
             <Button
               type="button"
               disabled={saving}
-              className="bg-rose-700 hover:bg-rose-800"
+              className="hidden lg:inline-flex"
               onClick={() => void handleSubmit()}
             >
               <Save className="mr-2 h-4 w-4" aria-hidden />
@@ -105,12 +105,12 @@ export default function EditRlcMemberPage() {
         <RlcMemberForm member={member} form={form} onChange={setForm} />
       </form>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 lg:hidden">
+      <div className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 rounded-xl border border-neutral-200 bg-white/95 p-2 shadow-lg backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 lg:hidden">
         <div className="mx-auto flex max-w-lg gap-2">
           <Button
             type="button"
             variant="outline"
-            className="flex-1"
+            className="h-11 flex-1"
             onClick={() => router.push('/admin/rlc/members')}
           >
             Cancel
@@ -118,7 +118,7 @@ export default function EditRlcMemberPage() {
           <Button
             type="button"
             disabled={saving}
-            className="flex-1 bg-rose-700 hover:bg-rose-800"
+            className="h-11 flex-1"
             onClick={() => void handleSubmit()}
           >
             {saving ? 'Saving…' : 'Save changes'}

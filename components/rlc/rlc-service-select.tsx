@@ -73,7 +73,7 @@ export function RlcServiceSelect({
         </Select>
       </div>
 
-      <div className="space-y-3 rounded-lg border border-dashed border-rose-200/90 bg-rose-50/50 p-3">
+      <div className="space-y-3 rounded-lg border border-dashed border-brand-200/90 bg-brand-50/50 p-3 dark:border-brand-400/20 dark:bg-brand-400/10">
         <div>
           <Label>Other service</Label>
           <p className="text-xs text-muted-foreground">
@@ -121,7 +121,7 @@ export function RlcServiceSelect({
           <Button
             type="button"
             variant="outline"
-            className="shrink-0 border-rose-200"
+            className="shrink-0 border-brand-200 dark:border-brand-400/20"
             disabled={creatingCustom || newOtherName.trim().length < 2}
             onClick={() => void handleSaveOther()}
           >

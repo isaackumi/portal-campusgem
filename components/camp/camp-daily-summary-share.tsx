@@ -73,15 +73,16 @@ export function CampDailySummaryShare({ input, yearId, variant = 'compact', clas
   }
 
   const actions = (
-    <div className={`flex flex-wrap gap-2 ${className ?? ''}`}>
-      <Button type="button" variant="outline" size="sm" onClick={() => void handleCopy()} className="shadow-sm">
-        {copied ? <Check className="mr-1.5 h-4 w-4 text-emerald-600" /> : <Copy className="mr-1.5 h-4 w-4" />}
-        {copied ? 'Copied' : 'Copy daily summary'}
+    <div className={`flex w-full flex-wrap gap-2 sm:w-auto ${className ?? ''}`}>
+      <Button type="button" variant="outline" size="sm" onClick={() => void handleCopy()} className="h-11 flex-1 shadow-sm sm:h-9 sm:flex-none">
+        {copied ? <Check className="mr-1.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="mr-1.5 h-4 w-4" />}
+        {copied ? 'Copied' : <>Copy<span className="hidden sm:inline">&nbsp;daily summary</span></>}
       </Button>
-      <Button type="button" variant="outline" size="sm" asChild className="shadow-sm">
+      <Button type="button" variant="outline" size="sm" asChild className="h-11 flex-1 shadow-sm sm:h-9 sm:flex-none">
         <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
-          <MessageCircle className="mr-1.5 h-4 w-4 text-emerald-600" />
-          Share on WhatsApp
+          <MessageCircle className="mr-1.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <span className="sm:hidden">WhatsApp</span>
+          <span className="hidden sm:inline">Share on WhatsApp</span>
         </a>
       </Button>
     </div>
@@ -90,10 +91,10 @@ export function CampDailySummaryShare({ input, yearId, variant = 'compact', clas
   if (variant === 'compact') return actions
 
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800">
+    <div className="dashboard-panel p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Daily summary</p>
+          <p className="app-section-title">Daily summary</p>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             Today’s new and returning counts, plus the registration link.
           </p>

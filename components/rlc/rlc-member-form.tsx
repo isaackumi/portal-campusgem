@@ -64,11 +64,11 @@ function DirectoryField({
 }) {
   if (!value?.trim()) return null
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-rose-700/70" aria-hidden />
+    <div className="flex items-start gap-3 rounded-lg border border-neutral-100 bg-neutral-50/80 px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.04]">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand-700/70 dark:text-brand-300" aria-hidden />
       <div className="min-w-0">
         <p className="app-overline">{label}</p>
-        <p className={cn('truncate text-sm font-medium text-slate-900', mono && 'font-mono text-xs')}>
+        <p className={cn('truncate text-sm font-medium text-neutral-900 dark:text-neutral-100', mono && 'font-mono text-xs')}>
           {value}
         </p>
       </div>
@@ -83,11 +83,11 @@ function RlcMemberDirectorySummary({ member }: { member: Member }) {
     : null
 
   return (
-    <Card className="border-slate-200/80 bg-slate-50/40">
+    <Card className="border-neutral-200/80 bg-neutral-50/40 dark:border-white/10 dark:bg-white/[0.04]">
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-rose-100 text-base font-semibold text-rose-800"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-100 text-base font-semibold text-brand-800 dark:bg-brand-400/10 dark:text-brand-300"
             aria-hidden
           >
             {memberInitials(member)}
@@ -107,7 +107,7 @@ function RlcMemberDirectorySummary({ member }: { member: Member }) {
         <DirectoryField icon={QrCode} label="Check-in code" value={member.check_in_code} mono />
         <Link
           href={`/members/${member.id}`}
-          className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition-colors hover:border-rose-200 hover:bg-rose-50/50 hover:text-rose-900"
+          className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-900 dark:border-white/10 dark:bg-neutral-800/60 dark:text-neutral-100 dark:hover:bg-brand-400/10"
         >
           <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
           Update contact details in directory
@@ -134,17 +134,17 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-start">
       <div className="space-y-6">
-        <Card className="border-rose-200/80 shadow-sm">
-          <CardHeader className="space-y-3 border-b border-rose-100/80 bg-rose-50/30 pb-4">
+        <Card className="border-brand-200/80 shadow-sm dark:border-brand-400/20">
+          <CardHeader className="space-y-3 border-b border-brand-100/80 bg-brand-50/30 pb-4 dark:border-brand-400/20 dark:bg-brand-400/10">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-rose-700 hover:bg-rose-700">Step 1</Badge>
+              <Badge className="bg-brand-700 hover:bg-brand-700">Step 1</Badge>
               <Badge variant="success">
                 You can edit this
               </Badge>
             </div>
             <div>
               <CardTitle className="flex items-center gap-2 text-xl">
-                <Shield className="h-5 w-5 text-rose-700" aria-hidden />
+                <Shield className="h-5 w-5 text-brand-700 dark:text-brand-300" aria-hidden />
                 RLC membership type
               </CardTitle>
               <CardDescription className="mt-1.5">
@@ -161,8 +161,8 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
                   className={cn(
                     'flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-colors',
                     selected
-                      ? 'border-rose-600 bg-rose-50/80 ring-1 ring-rose-600/20'
-                      : 'border-slate-200 bg-white hover:border-rose-200 hover:bg-rose-50/30'
+                      ? 'border-brand-600 bg-brand-50/80 ring-1 ring-brand-600/20 dark:bg-brand-400/10'
+                      : 'border-neutral-200 bg-white hover:border-brand-200 hover:bg-brand-50/30 dark:border-white/10 dark:bg-neutral-800/60 dark:hover:bg-brand-400/10'
                   )}
                 >
                   <input
@@ -175,14 +175,14 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
                   <span
                     className={cn(
                       'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2',
-                      selected ? 'border-rose-600 bg-rose-600' : 'border-slate-300 bg-white'
+                      selected ? 'border-brand-600 bg-brand-600' : 'border-neutral-300 bg-white dark:border-white/10 dark:bg-neutral-800/60'
                     )}
                     aria-hidden
                   >
-                    {selected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
+                    {selected ? <span className="h-2 w-2 rounded-full bg-white dark:bg-neutral-800/60" /> : null}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-slate-900">
+                    <span className="block text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                       {RLC_MEMBERSHIP_TYPE_LABELS[type]}
                     </span>
                     <span className="mt-0.5 block text-sm text-muted-foreground">
@@ -195,10 +195,10 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
           </CardContent>
         </Card>
 
-        <Card className="border-rose-200/80 shadow-sm">
-          <CardHeader className="space-y-3 border-b border-rose-100/80 bg-rose-50/30 pb-4">
+        <Card className="border-brand-200/80 shadow-sm dark:border-brand-400/20">
+          <CardHeader className="space-y-3 border-b border-brand-100/80 bg-brand-50/30 pb-4 dark:border-brand-400/20 dark:bg-brand-400/10">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-rose-700 hover:bg-rose-700">Step 2</Badge>
+              <Badge className="bg-brand-700 hover:bg-brand-700">Step 2</Badge>
               <Badge variant="success">
                 You can edit this
               </Badge>
@@ -206,11 +206,11 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
             </div>
             <div>
               <CardTitle className="flex items-center gap-2 text-xl">
-                <UserRound className="h-5 w-5 text-rose-700" aria-hidden />
+                <UserRound className="h-5 w-5 text-brand-700 dark:text-brand-300" aria-hidden />
                 Ministry roles
               </CardTitle>
               <CardDescription className="mt-1.5">
-                Select every role this person holds. Keep <strong className="font-medium text-slate-800">Member</strong>{' '}
+                Select every role this person holds. Keep <strong className="font-medium text-neutral-800 dark:text-neutral-100">Member</strong>{' '}
                 checked unless they are staff-only.
               </CardDescription>
             </div>
@@ -225,8 +225,8 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
                     className={cn(
                       'flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors',
                       checked
-                        ? 'border-rose-300 bg-rose-50/70'
-                        : 'border-slate-200 bg-white hover:border-rose-200 hover:bg-rose-50/40'
+                        ? 'border-brand-300 bg-brand-50/70 dark:border-brand-400/20 dark:bg-brand-400/10'
+                        : 'border-neutral-200 bg-white hover:border-brand-200 hover:bg-brand-50/40 dark:border-white/10 dark:bg-neutral-800/60 dark:hover:bg-brand-400/10'
                     )}
                   >
                     <Checkbox
@@ -235,7 +235,7 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
                       className="mt-0.5"
                     />
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium leading-snug text-slate-900">
+                      <span className="block text-sm font-medium leading-snug text-neutral-900 dark:text-neutral-100">
                         {RLC_ROLE_LABELS[role]}
                       </span>
                       {role === 'member' ? (
@@ -256,9 +256,9 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
 
       <aside className="space-y-4 lg:sticky lg:top-6">
         <RlcMemberDirectorySummary member={member} />
-        <Card className="border-dashed border-slate-200 bg-white/80">
+        <Card className="border-dashed border-neutral-200 bg-white/80 dark:border-white/10">
           <CardContent className="flex gap-3 pt-6 text-sm text-muted-foreground">
-            <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+            <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden />
             <p>
               Changes here only affect RLC membership type and ministry roles. Attendance and check-in codes stay
               linked to this profile.

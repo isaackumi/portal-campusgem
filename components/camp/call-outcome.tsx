@@ -14,7 +14,7 @@ export const OUTCOME_FILL: Record<CallOutcome, string> = {
   maybe: 'bg-amber-400 dark:bg-amber-400',
   unreachable: 'bg-neutral-400 dark:bg-neutral-500',
   declined: 'bg-red-500 dark:bg-red-400',
-  unconfirmed: 'bg-neutral-200 dark:bg-neutral-700',
+  unconfirmed: 'bg-neutral-300 dark:bg-neutral-600',
 }
 
 export const OUTCOME_ICON: Record<CallOutcome, typeof CheckCircle2> = {

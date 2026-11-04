@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import type React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/page-header'
+import { StatCard } from '@/components/ui/stat-card'
+import { Meter } from '@/components/ui/meter'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay } from '@/components/ui/error-display'
 import { 
@@ -27,7 +30,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { useAttendanceAnalyticsQuery } from '@/lib/hooks/use-data'
-import { formatDateTime, formatMembershipIdForDisplay } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
 interface AttendanceAnalytics {
   total_attendance: number
@@ -113,8 +116,8 @@ export default function AttendanceAnalyticsPage() {
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">Authentication Required</h2>
-            <p className="text-slate-600 mb-4">Please log in to view attendance analytics.</p>
+            <h2 className="app-section-title mb-2">Authentication required</h2>
+            <p className="mb-4 text-neutral-600 dark:text-neutral-300">Please log in to view attendance analytics.</p>
             <Button onClick={() => router.push('/auth')}>
               Go to Login
             </Button>
@@ -145,278 +148,171 @@ export default function AttendanceAnalyticsPage() {
     )
   }
 
+  const rangeLabel = timeRanges.find((r) => r.value === timeRange)?.label ?? ''
+  const pretty = (v: string) => v.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
+  const peak = processedAnalytics.service_breakdown[0]?.service_type
+  const change = processedAnalytics.attendance_change_percentage
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-            <h1 className="app-page-title">Attendance Analytics</h1>
-            <p className="text-slate-600 mt-1">
-              Comprehensive insights into church attendance patterns and trends
-            </p>
-            </div>
-          <div className="mt-4 sm:mt-0 flex gap-2">
-            <Button variant="outline" onClick={() => window.print()}>
-                <Download className="h-4 w-4 mr-2" />
-              Export Report
-              </Button>
-          </div>
+      <div className="space-y-4 sm:space-y-6">
+        <PageHeader
+          title="Attendance analytics"
+          description="Patterns and trends in church attendance"
+          className="mb-0"
+          actions={
+            <Button variant="outline" className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => window.print()}>
+              <Download className="mr-2 h-4 w-4" />
+              Export report
+            </Button>
+          }
+        />
+
+        <div className="grid grid-cols-2 gap-3 sm:flex">
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="h-11 sm:h-10 sm:w-44" aria-label="Time range">
+              <SelectValue placeholder="Time range" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeRanges.map((range) => (
+                <SelectItem key={range.value} value={range.value}>
+                  {range.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={serviceType} onValueChange={setServiceType}>
+            <SelectTrigger className="h-11 sm:h-10 sm:w-52" aria-label="Service type">
+              <SelectValue placeholder="Service type" />
+            </SelectTrigger>
+            <SelectContent>
+              {serviceTypes.map((service) => (
+                <SelectItem key={service.value} value={service.value}>
+                  {service.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Time Range</label>
-                <Select value={timeRange} onValueChange={setTimeRange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timeRanges.map(range => (
-                      <SelectItem key={range.value} value={range.value}>
-                        {range.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Service Type</label>
-                <Select value={serviceType} onValueChange={setServiceType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select service type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {serviceTypes.map(service => (
-                      <SelectItem key={service.value} value={service.value}>
-                        {service.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <StatCard className="p-4 sm:p-5" label="Total attendance" value={processedAnalytics.total_attendance} sub={rangeLabel} icon={Users} />
+          <StatCard className="p-4 sm:p-5" label="Average per day" value={processedAnalytics.average_attendance} sub="Per service day" icon={Calendar} />
+          <StatCard
+            className="p-4 sm:p-5"
+            label="Change"
+            value={`${change > 0 ? '+' : ''}${change}%`}
+            sub="vs previous period"
+            icon={processedAnalytics.attendance_trend === 'down' ? TrendingDown : processedAnalytics.attendance_trend === 'up' ? TrendingUp : Activity}
+            tone={processedAnalytics.attendance_trend === 'down' ? 'danger' : processedAnalytics.attendance_trend === 'up' ? 'success' : 'default'}
+          />
+          <StatCard
+            className="p-4 sm:p-5"
+            label="Peak service"
+            value={<span className="block truncate text-lg sm:text-xl">{peak ? pretty(peak) : 'N/A'}</span>}
+            sub="Most attended"
+            icon={Target}
+          />
+        </div>
 
-            {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Attendance</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{processedAnalytics.total_attendance}</div>
-              <p className="text-xs text-muted-foreground">
-                {timeRange === '7d' ? 'Last 7 days' : 
-                 timeRange === '30d' ? 'Last 30 days' :
-                 timeRange === '90d' ? 'Last 90 days' : 'Last year'}
-              </p>
-                </CardContent>
-              </Card>
-              <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Daily</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{processedAnalytics.average_attendance}</div>
-              <p className="text-xs text-muted-foreground">
-                Per service day
-              </p>
-                </CardContent>
-              </Card>
-              <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Trend</CardTitle>
-              {processedAnalytics.attendance_trend === 'up' ? (
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              ) : processedAnalytics.attendance_trend === 'down' ? (
-                <TrendingDown className="h-4 w-4 text-red-600" />
-              ) : (
-                <Activity className="h-4 w-4 text-primary" />
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {processedAnalytics.attendance_change_percentage > 0 ? '+' : ''}
-                {processedAnalytics.attendance_change_percentage}%
-                      </div>
-              <p className="text-xs text-muted-foreground">
-                vs previous period
-              </p>
-                </CardContent>
-              </Card>
-              <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Peak Service</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {processedAnalytics.service_breakdown.length > 0 
-                  ? processedAnalytics.service_breakdown[0].service_type 
-                  : 'N/A'}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Most attended
-              </p>
-                </CardContent>
-              </Card>
-            </div>
-
-        {/* Analytics Tabs */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="trends">Trends</TabsTrigger>
+          <ScrollableTabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="trends">Trends</TabsTrigger>
             <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
-              </TabsList>
+          </ScrollableTabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Service Breakdown</CardTitle>
-                  <CardDescription>
-                    Attendance distribution by service type
-                  </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                  {processedAnalytics.service_breakdown.length > 0 ? (
-                    <div className="space-y-2">
-                      {processedAnalytics.service_breakdown.map((service: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{service.service_type}</span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-20 bg-gray-200 rounded-full h-2">
-                                  <div 
-                                    className="bg-primary h-2 rounded-full" 
-                                style={{ width: `${service.percentage}%` }}
-                                  />
-                                </div>
-                            <span className="text-sm text-slate-600">{service.count}</span>
-                              </div>
-                            </div>
-                      ))}
-                      </div>
-                  ) : (
-                    <p className="text-slate-500 text-center py-4">No data available</p>
-                  )}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Gender Distribution</CardTitle>
-                  <CardDescription>
-                    Attendance breakdown by gender
-                  </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                  {processedAnalytics.attendance_by_gender.length > 0 ? (
-                    <div className="space-y-2">
-                      {processedAnalytics.attendance_by_gender.map((gender: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-sm font-medium capitalize">{gender.gender}</span>
-                          <span className="text-sm text-slate-600">{gender.count}</span>
-                                </div>
-                      ))}
-                              </div>
-                  ) : (
-                    <p className="text-slate-500 text-center py-4">No data available</p>
-                  )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-          <TabsContent value="trends" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                <CardTitle>Daily Attendance Trends</CardTitle>
-                <CardDescription>
-                  Attendance patterns over the selected time period
-                </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                {processedAnalytics.daily_attendance.length > 0 ? (
-                      <div className="space-y-2">
-                    {processedAnalytics.daily_attendance.slice(-7).map((day: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{day.date}</span>
-                        <span className="text-sm text-slate-600">{day.count} attendees</span>
-                          </div>
-                        ))}
-                      </div>
-                ) : (
-                  <p className="text-slate-500 text-center py-4">No data available</p>
-                )}
-                    </CardContent>
-                  </Card>
-              </TabsContent>
-
-          <TabsContent value="breakdown" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                  <CardTitle>Weekly Breakdown</CardTitle>
-                  <CardDescription>
-                    Attendance by week
-                  </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                  {processedAnalytics.weekly_attendance.length > 0 ? (
-                    <div className="space-y-2">
-                      {processedAnalytics.weekly_attendance.slice(-4).map((week: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Week {week.week}</span>
-                          <span className="text-sm text-slate-600">{week.count} attendees</span>
-                              </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-center py-4">No data available</p>
-                  )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                  <CardTitle>Monthly Breakdown</CardTitle>
-                  <CardDescription>
-                    Attendance by month
-                  </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                  {processedAnalytics.monthly_attendance.length > 0 ? (
-                    <div className="space-y-2">
-                      {processedAnalytics.monthly_attendance.slice(-3).map((month: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{month.month}</span>
-                          <span className="text-sm text-slate-600">{month.count} attendees</span>
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Panel title="By service" description="Attendance by service type">
+                {processedAnalytics.service_breakdown.length > 0 ? (
+                  <ul className="space-y-3">
+                    {processedAnalytics.service_breakdown.map((service: any, index: number) => (
+                      <li key={index} className="space-y-1.5">
+                        <div className="flex items-baseline justify-between gap-3 text-sm">
+                          <span className="min-w-0 truncate font-medium text-neutral-900 dark:text-neutral-100">
+                            {pretty(String(service.service_type))}
+                          </span>
+                          <span className="shrink-0 tabular-nums text-neutral-500 dark:text-neutral-400">{service.count}</span>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-center py-4">No data available</p>
-                  )}
-                  </CardContent>
-                </Card>
+                        <Meter value={Number(service.percentage) || 0} max={100} label={`${service.service_type} share`} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <Empty />
+                )}
+              </Panel>
+
+              <Panel title="By gender" description="Attendance by gender">
+                {processedAnalytics.attendance_by_gender.length > 0 ? (
+                  <Rows rows={processedAnalytics.attendance_by_gender.map((g: any) => [String(g.gender), `${g.count}`])} capitalize />
+                ) : (
+                  <Empty />
+                )}
+              </Panel>
             </div>
-              </TabsContent>
-            </Tabs>
+          </TabsContent>
+
+          <TabsContent value="trends">
+            <Panel title="Last 7 days" description="Daily attendance in the selected period">
+              {processedAnalytics.daily_attendance.length > 0 ? (
+                <Rows rows={processedAnalytics.daily_attendance.slice(-7).map((d: any) => [String(d.date), `${d.count} attendees`])} />
+              ) : (
+                <Empty />
+              )}
+            </Panel>
+          </TabsContent>
+
+          <TabsContent value="breakdown">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Panel title="Weekly" description="Last four weeks">
+                {processedAnalytics.weekly_attendance.length > 0 ? (
+                  <Rows rows={processedAnalytics.weekly_attendance.slice(-4).map((w: any) => [`Week ${w.week}`, `${w.count} attendees`])} />
+                ) : (
+                  <Empty />
+                )}
+              </Panel>
+              <Panel title="Monthly" description="Last three months">
+                {processedAnalytics.monthly_attendance.length > 0 ? (
+                  <Rows rows={processedAnalytics.monthly_attendance.slice(-3).map((m: any) => [String(m.month), `${m.count} attendees`])} />
+                ) : (
+                  <Empty />
+                )}
+              </Panel>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   )
+}
+
+function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="dashboard-panel p-4 sm:p-5">
+      <h2 className="app-section-title">{title}</h2>
+      <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+      {children}
+    </section>
+  )
+}
+
+function Rows({ rows, capitalize }: { rows: [string, string][]; capitalize?: boolean }) {
+  return (
+    <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+      {rows.map(([label, value], i) => (
+        <li key={i} className="flex min-h-11 items-center justify-between gap-3 text-sm">
+          <span className={cn('min-w-0 truncate font-medium text-neutral-900 dark:text-neutral-100', capitalize && 'capitalize')}>
+            {label}
+          </span>
+          <span className="shrink-0 tabular-nums text-neutral-500 dark:text-neutral-400">{value}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function Empty() {
+  return <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">No data for this period yet.</p>
 }

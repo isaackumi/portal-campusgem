@@ -88,14 +88,14 @@ export function SmsProviderBanner({
   }
 
   return (
-    <div className={`rounded-xl border bg-white p-4 shadow-sm ${className ?? ''}`}>
+    <div className={`dashboard-panel p-4 ${className ?? ''}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <Radio className="h-4 w-4 text-emerald-600" />
+          <p className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+            <Radio className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
             SMS provider
           </p>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300">
             <Badge variant={live ? 'default' : 'secondary'}>
               {live ? 'Live' : dryRun ? 'Dry run' : status.forceMock || forceMock ? 'Mock' : status.smsProvider}
             </Badge>
@@ -103,7 +103,7 @@ export function SmsProviderBanner({
             <span>· sender {status.smsSenderId}</span>
             <span>· env {status.environment}</span>
             {!status.smsConfigured ? (
-              <span className="text-amber-700">
+              <span className="text-amber-700 dark:text-amber-300">
                 Not live yet
                 {status.missingKeys?.length
                   ? ` — missing on this server: ${status.missingKeys.join(', ')}`
@@ -112,7 +112,7 @@ export function SmsProviderBanner({
             ) : null}
           </div>
           {!status.smsConfigured && status.envPresence ? (
-            <p className="mt-2 text-[11px] text-slate-500">
+            <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">
               Seen by server:{' '}
               {Object.entries(status.envPresence)
                 .map(([key, present]) => `${key}=${present ? 'yes' : 'no'}`)
@@ -129,13 +129,13 @@ export function SmsProviderBanner({
       </div>
 
       {status.devModeAvailable ? (
-        <div className="mt-4 space-y-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3">
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm text-slate-800">
+        <div className="mt-4 space-y-3 rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+          <div className="flex flex-wrap gap-x-4">
+            <label className="flex min-h-11 items-center gap-2 text-sm text-neutral-800 dark:text-neutral-100">
               <Checkbox checked={dryRun} onCheckedChange={(v) => onDryRunChange(v === true)} />
               Dry run (no real SMS)
             </label>
-            <label className="flex items-center gap-2 text-sm text-slate-800">
+            <label className="flex min-h-11 items-center gap-2 text-sm text-neutral-800 dark:text-neutral-100">
               <Checkbox
                 checked={forceMock || status.forceMock}
                 disabled={status.forceMock}

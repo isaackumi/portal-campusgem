@@ -55,11 +55,11 @@ export function DeleteFormDialog({ form, open, onOpenChange, onDeleted }: Props)
           <DialogDescription asChild>
             <div className="space-y-2 pt-1 text-sm text-muted-foreground">
               <p>
-                <span className="font-medium text-slate-900">{form?.title}</span> will be permanently
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">{form?.title}</span> will be permanently
                 deleted. This cannot be undone.
               </p>
               {responseCount > 0 ? (
-                <p className="rounded-md bg-amber-50 px-3 py-2 text-amber-950">
+                <p className="rounded-md bg-amber-50 px-3 py-2 text-amber-950 dark:bg-amber-400/10 dark:text-amber-300">
                   {responseCount} response{responseCount === 1 ? '' : 's'} will also be deleted.
                 </p>
               ) : null}

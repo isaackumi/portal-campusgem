@@ -9,6 +9,7 @@ import { RlcPublicVisitShare } from '@/components/rlc/rlc-public-visit-share'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Button } from '@/components/ui/button'
+import { FormActionBar } from '@/components/admin/form-action-bar'
 import { useToast } from '@/hooks/use-toast'
 import type { CreateRlcMemberForm } from '@/lib/types'
 
@@ -52,18 +53,18 @@ export default function AddRlcMemberPage() {
         backHref="/admin/rlc/members"
       />
 
-      <RlcPublicVisitShare kind="join" className="mb-6" />
+      <RlcPublicVisitShare kind="join" />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <RlcCreateMemberForm form={form} onChange={setForm} />
-        <div className="flex justify-end gap-2">
+        <FormActionBar>
           <Button type="button" variant="outline" onClick={() => router.push('/admin/rlc/members')}>
             Cancel
           </Button>
-          <Button type="submit" disabled={loading} className="bg-rose-700 hover:bg-rose-800">
+          <Button type="submit" disabled={loading}>
             {loading ? 'Saving…' : 'Add member'}
           </Button>
-        </div>
+        </FormActionBar>
       </form>
     </PageContainer>
   )

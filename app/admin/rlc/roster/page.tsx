@@ -6,6 +6,7 @@ import { loadRlcMembersAction } from '@/lib/actions/rlc'
 import { RLC_ROLE_LABELS, RLC_ROLES } from '@/lib/constants/rlc'
 import type { Member } from '@/lib/types'
 import { PageContainer } from '@/components/layout/page-container'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -58,20 +59,27 @@ export default function RlcRosterPage() {
         </Card>
       ) : (
         grouped.map((group) => (
-          <Card key={group.role} className="border-rose-100/80">
+          <Card key={group.role}>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between gap-2">
                 {RLC_ROLE_LABELS[group.role]}
                 <Badge variant="secondary">{group.people.length}</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <CardContent className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
               {group.people.map((member) => (
-                <div key={`${group.role}-${member.id}`} className="rounded-lg border bg-white p-3">
-                  <p className="font-medium">{member.user?.full_name ?? 'Member'}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {[member.user?.phone, member.user?.membership_id].filter(Boolean).join(' · ')}
-                  </p>
+                <div
+                  key={`${group.role}-${member.id}`}
+                  className="flex min-h-[60px] items-center justify-between gap-2 rounded-lg border bg-white p-3 dark:border-white/10 dark:bg-neutral-800/60"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{member.user?.full_name ?? 'Member'}</p>
+                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                      {member.user?.phone ? <PhoneLink phone={member.user.phone} name={member.user?.full_name} /> : null}
+                      {member.user?.membership_id ? <span className="font-mono">{member.user.membership_id}</span> : null}
+                    </div>
+                  </div>
+                  <QuickContactButtons phone={member.user?.phone} name={member.user?.full_name} />
                 </div>
               ))}
             </CardContent>

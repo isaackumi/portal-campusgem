@@ -1,36 +1,34 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { 
-  Monitor, 
-  User, 
-  Search, 
-  CheckCircle, 
-  Users,
-  Clock,
-  Calendar
-} from 'lucide-react'
+import { Check, CheckCircle, ChevronRight, Search } from 'lucide-react'
+import { PersonAvatar, displayName } from '@/components/ui/person'
 import { dataService } from '@/lib/services/data-service'
 import { AppUser, Member, Dependant, ServiceType } from '@/lib/types'
-import { formatMembershipIdForDisplay, formatPhoneNumber } from '@/lib/utils'
+import { cn, formatMembershipIdForDisplay, formatPhoneNumber } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 
 interface KioskFormProps {
+  /** Called after the member (and any chosen dependants) have been recorded. */
   onCheckInSuccess: (member: AppUser, dependants?: Dependant[]) => void
   className?: string
+  /** When the page already picks the service, pass it here and the form hides its own picker. */
+  serviceType?: ServiceType
+  /** The signed-in user doing the check-in, if supervised. */
+  checkedInBy?: string
 }
 
-export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
+export function KioskForm({ onCheckInSuccess, className, serviceType: serviceTypeProp, checkedInBy }: KioskFormProps) {
   const [searchInput, setSearchInput] = useState('')
   const [searchResults, setSearchResults] = useState<(AppUser & { member?: Member })[]>([])
   const [selectedMember, setSelectedMember] = useState<(AppUser & { member?: Member }) | null>(null)
   const [dependants, setDependants] = useState<Dependant[]>([])
   const [selectedDependants, setSelectedDependants] = useState<string[]>([])
-  const [serviceType, setServiceType] = useState<ServiceType>('sunday_service')
+  const [serviceTypeState, setServiceType] = useState<ServiceType>('sunday_service')
+  const serviceType = serviceTypeProp ?? serviceTypeState
   const [loading, setLoading] = useState(false)
   const [searching, setSearching] = useState(false)
   
@@ -98,7 +96,7 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
     setLoading(true)
     try {
       const today = new Date().toISOString().split('T')[0]
-      const checkedInByUserId: string | null = null // Kiosk self-service; could use useAuth() if supervised
+      const checkedInByUserId: string | null = checkedInBy ?? null
 
       const { error: memberError } = await dataService.recordAttendance({
         member_id: selectedMember.member.id,
@@ -171,193 +169,174 @@ export function KioskForm({ onCheckInSuccess, className }: KioskFormProps) {
     setSearchResults([])
   }
 
+  const selectedIds = new Set(selectedDependants)
+
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Monitor className="h-5 w-5" />
-          <span>Kiosk Check-in</span>
-        </CardTitle>
-        <CardDescription>
-          Search for a member and check them in for today's service.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {!selectedMember ? (
-            // Search Phase
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="search">Search Member</Label>
-                <div className="flex space-x-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="search"
-                      placeholder="Enter membership ID, phone, or name..."
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      className="pl-10"
-                    />
-                  </div>
-                  <Button onClick={handleSearch} disabled={searching || !searchInput.trim()}>
-                    {searching ? 'Searching...' : 'Search'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Search Results */}
-              {searchResults.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm text-slate-700">Search Results:</h4>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {searchResults.map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer"
-                        onClick={() => handleSelectMember(member)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center">
-                            <User className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{member.full_name}</p>
-                            <div className="text-sm text-slate-500 space-x-2">
-                              {member.membership_id && (
-                                <span>{formatMembershipIdForDisplay(member.membership_id)}</span>
-                              )}
-                              {member.phone && (
-                                <span>{formatPhoneNumber(member.phone)}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          Select
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+    <div className={cn('space-y-4', className)}>
+      {!selectedMember ? (
+        <div className="space-y-4">
+          <form
+            className="flex flex-col gap-2 sm:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void handleSearch()
+            }}
+          >
+            <Label htmlFor="kiosk-search" className="sr-only">
+              Search member
+            </Label>
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+              <Input
+                id="kiosk-search"
+                placeholder="Membership ID, phone or name"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                autoComplete="off"
+                enterKeyHint="search"
+                className="h-12 pl-10 text-base"
+              />
             </div>
-          ) : (
-            // Check-in Phase
-            <div className="space-y-4">
-              {/* Selected Member */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-lg">{selectedMember.full_name}</h3>
-                      <div className="text-sm text-slate-600 space-x-2">
-                        {selectedMember.membership_id && (
-                          <span>{formatMembershipIdForDisplay(selectedMember.membership_id)}</span>
-                        )}
-                        {selectedMember.phone && (
-                          <span>{formatPhoneNumber(selectedMember.phone)}</span>
-                        )}
+            <Button type="submit" className="h-12 sm:px-6" disabled={searching || !searchInput.trim()}>
+              {searching ? 'Searching…' : 'Search'}
+            </Button>
+          </form>
+
+          {searchResults.length > 0 && (
+            <div>
+              <p className="app-overline mb-2">
+                {searchResults.length} {searchResults.length === 1 ? 'match' : 'matches'}
+              </p>
+              <ul className="max-h-[50vh] space-y-2 overflow-y-auto overscroll-contain">
+                {searchResults.map((member) => (
+                  <li key={member.id}>
+                    <button
+                      type="button"
+                      className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-neutral-200/80 p-3 text-left transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 active:bg-neutral-100 dark:border-white/[0.08] dark:hover:bg-white/[0.04] dark:active:bg-white/[0.08]"
+                      onClick={() => handleSelectMember(member)}
+                    >
+                      <PersonAvatar name={member.full_name} seed={member.id} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">
+                          {displayName(member.full_name)}
+                        </p>
+                        <p className="truncate text-[13px] text-neutral-500 dark:text-neutral-400">
+                          {member.membership_id ? (
+                            <span className="font-mono">{formatMembershipIdForDisplay(member.membership_id)}</span>
+                          ) : null}
+                          {member.membership_id && member.phone ? ' · ' : null}
+                          {member.phone ? <span className="font-mono">{formatPhoneNumber(member.phone)}</span> : null}
+                        </p>
                       </div>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={resetForm}>
-                    Change
-                  </Button>
-                </div>
-              </div>
+                      <ChevronRight className="h-5 w-5 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 rounded-lg bg-neutral-50 p-3 ring-1 ring-inset ring-neutral-200/80 dark:bg-white/[0.04] dark:ring-white/[0.06]">
+            <PersonAvatar name={selectedMember.full_name} seed={selectedMember.id} size="lg" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-neutral-900 dark:text-neutral-100">
+                {displayName(selectedMember.full_name)}
+              </p>
+              <p className="truncate text-[13px] text-neutral-500 dark:text-neutral-400">
+                {selectedMember.membership_id ? (
+                  <span className="font-mono">{formatMembershipIdForDisplay(selectedMember.membership_id)}</span>
+                ) : null}
+                {selectedMember.membership_id && selectedMember.phone ? ' · ' : null}
+                {selectedMember.phone ? <span className="font-mono">{formatPhoneNumber(selectedMember.phone)}</span> : null}
+              </p>
+            </div>
+            <Button variant="ghost" className="h-11 shrink-0" onClick={resetForm}>
+              Change
+            </Button>
+          </div>
 
-              {/* Service Type */}
-              <div className="space-y-2">
-                <Label htmlFor="service-type">Service Type</Label>
-                <select
-                  id="service-type"
-                  value={serviceType}
-                  onChange={(e) => setServiceType(e.target.value as ServiceType)}
-                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
-                >
-                  <option value="sunday_service">Sunday Service</option>
-                  <option value="midweek_service">Midweek Service</option>
-                  <option value="prayer_meeting">Prayer Meeting</option>
-                  <option value="youth_service">Youth Service</option>
-                  <option value="children_service">Children Service</option>
-                  <option value="special_event">Special Event</option>
-                </select>
-              </div>
-
-              {/* Dependants */}
-              {dependants.length > 0 && (
-                <div className="space-y-3">
-                  <Label>Family Members (Optional)</Label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {dependants.map((dependant) => (
-                      <div
-                        key={dependant.id}
-                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${
-                          selectedDependants.includes(dependant.id)
-                            ? 'bg-green-50 border-green-200'
-                            : 'hover:bg-slate-50'
-                        }`}
-                        onClick={() => handleDependantToggle(dependant.id)}
-                      >
-                        <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${
-                          selectedDependants.includes(dependant.id)
-                            ? 'bg-green-500 border-green-500'
-                            : 'border-gray-300'
-                        }`}>
-                          {selectedDependants.includes(dependant.id) && (
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">{dependant.first_name}</p>
-                          <p className="text-sm text-slate-500 capitalize">{dependant.relationship}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Check-in Button */}
-              <div className="flex space-x-2 pt-4">
-                <Button onClick={resetForm} variant="outline" className="flex-1">
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleCheckIn} 
-                  disabled={loading}
-                  className="flex-1"
-                >
-                  {loading ? (
-                    'Checking In...'
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Check In
-                    </>
-                  )}
-                </Button>
-              </div>
+          {!serviceTypeProp && (
+            <div className="space-y-2">
+              <Label htmlFor="service-type">Service</Label>
+              <select
+                id="service-type"
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value as ServiceType)}
+                className="h-11 w-full rounded-md border border-input bg-background px-3 text-base sm:text-sm"
+              >
+                <option value="sunday_service">Sunday Service</option>
+                <option value="midweek_service">Midweek Service</option>
+                <option value="prayer_meeting">Prayer Meeting</option>
+                <option value="youth_service">Youth Service</option>
+                <option value="children_service">Children Service</option>
+                <option value="special_event">Special Event</option>
+              </select>
             </div>
           )}
 
-          {/* Instructions */}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-            <h4 className="font-medium text-slate-900 mb-2">Instructions:</h4>
-            <ul className="text-sm text-slate-600 space-y-1">
-              <li>• Search for a member by ID, phone, or name</li>
-              <li>• Select the member from search results</li>
-              <li>• Choose service type and optional family members</li>
-              <li>• Click "Check In" to complete the process</li>
-            </ul>
+          {dependants.length > 0 && (
+            <fieldset className="space-y-2">
+              <legend className="app-overline mb-2">Family checking in too (optional)</legend>
+              <div className="max-h-56 space-y-2 overflow-y-auto overscroll-contain">
+                {dependants.map((dependant) => {
+                  const on = selectedIds.has(dependant.id)
+                  return (
+                    <button
+                      type="button"
+                      key={dependant.id}
+                      aria-pressed={on}
+                      className={cn(
+                        'flex min-h-14 w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
+                        on
+                          ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-400/30 dark:bg-emerald-400/10'
+                          : 'border-neutral-200/80 hover:bg-neutral-50 dark:border-white/[0.08] dark:hover:bg-white/[0.04]'
+                      )}
+                      onClick={() => handleDependantToggle(dependant.id)}
+                    >
+                      <span
+                        className={cn(
+                          'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2',
+                          on
+                            ? 'border-emerald-500 bg-emerald-500 dark:border-emerald-400 dark:bg-emerald-400'
+                            : 'border-neutral-300 dark:border-neutral-600'
+                        )}
+                      >
+                        {on && <Check className="h-4 w-4 text-white dark:text-neutral-900" />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-neutral-900 dark:text-neutral-100">
+                          {dependant.first_name}
+                        </span>
+                        <span className="block text-sm capitalize text-neutral-500 dark:text-neutral-400">
+                          {dependant.relationship}
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </fieldset>
+          )}
+
+          <div className="grid grid-cols-[auto_1fr] gap-2 pt-2">
+            <Button onClick={resetForm} variant="outline" className="h-12">
+              Cancel
+            </Button>
+            <Button onClick={handleCheckIn} disabled={loading} className="h-12 text-base">
+              {loading ? (
+                'Checking in…'
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-5 w-5" />
+                  Check in{selectedDependants.length ? ` (${selectedDependants.length + 1})` : ''}
+                </>
+              )}
+            </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }

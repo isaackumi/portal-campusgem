@@ -1,9 +1,9 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
-import { Mail, Phone, Shield, UserRound } from 'lucide-react'
+import { Mail, Shield, UserRound } from 'lucide-react'
 
-import { ContactActions } from '@/components/contact/contact-actions'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { ContactRowActions } from '@/components/contacts/contact-row-actions'
 import type { CampCamperDirectoryRow } from '@/lib/types'
 import { RLC_ROLE_LABELS } from '@/lib/constants/rlc'
@@ -20,7 +20,7 @@ export function createCamperDirectoryColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
       cell: ({ row }) => (
         <div className="min-w-[180px]">
-          <div className="font-medium text-slate-900">{row.original.full_name}</div>
+          <div className="font-medium text-neutral-900 dark:text-neutral-100">{row.original.full_name}</div>
           {row.original.first_name || row.original.last_name ? (
             <div className="text-xs text-muted-foreground">
               {[row.original.first_name, row.original.last_name].filter(Boolean).join(' ')}
@@ -33,7 +33,10 @@ export function createCamperDirectoryColumns(
       accessorKey: 'phone',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Phone" />,
       cell: ({ row }) => (
-        <ContactActions phone={row.original.phone} email={row.original.email} compact size="sm" />
+        <div className="flex items-center gap-2 whitespace-nowrap text-sm">
+          <PhoneLink phone={row.original.phone} name={row.original.full_name} />
+          <QuickContactButtons phone={row.original.phone} name={row.original.full_name} />
+        </div>
       ),
     },
     {
@@ -41,7 +44,7 @@ export function createCamperDirectoryColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
       cell: ({ row }) => (
         <div className="flex items-center gap-2 text-sm">
-          <Mail className="h-4 w-4 text-slate-500" />
+          <Mail className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
           <span>{row.original.email || '—'}</span>
         </div>
       ),
@@ -82,7 +85,7 @@ export function createCamperDirectoryColumns(
         row.original.rlc_roles && row.original.rlc_roles.length > 0 ? (
           <div className="flex max-w-[220px] flex-wrap gap-1">
             {row.original.rlc_roles.slice(0, 3).map((role) => (
-              <Badge key={role} variant="outline" className="border-rose-200 text-rose-800">
+              <Badge key={role} variant="outline" className="border-rose-200 text-rose-800 dark:border-rose-400/20 dark:text-rose-300">
                 {RLC_ROLE_LABELS[role as keyof typeof RLC_ROLE_LABELS] ?? role}
               </Badge>
             ))}
@@ -101,7 +104,7 @@ export function createCamperDirectoryColumns(
       cell: ({ row }) =>
         row.original.user_id ? (
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-emerald-600" />
+            <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             <Badge variant="outline" className="capitalize">
               {row.original.user_role ?? 'member'}
             </Badge>
@@ -136,4 +139,62 @@ export function createCamperDirectoryColumns(
       },
     },
   ]
+}
+
+/** Card row for the directory on phones (DataTable `renderMobileRow`). */
+export function CamperDirectoryMobileRow({
+  row,
+  onOpenRegistration,
+  onRefresh,
+}: {
+  row: CampCamperDirectoryRow
+  onOpenRegistration: (registrationId: string) => void
+  onRefresh?: () => void
+}) {
+  const latest = row.years[0]
+  return (
+    <div className="flex min-h-11 items-start gap-3">
+      <button
+        type="button"
+        className="min-w-0 flex-1 text-left"
+        onClick={() => latest && onOpenRegistration(latest.registration_id)}
+        disabled={!latest}
+      >
+        <span className="block truncate font-medium text-neutral-900 dark:text-neutral-100">{row.full_name}</span>
+        <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">
+          {[row.phone, row.email].filter(Boolean).join(' · ') || 'No contact details'}
+        </span>
+        <span className="mt-1.5 flex flex-wrap items-center gap-1">
+          {row.years.slice(0, 4).map((year) => (
+            <Badge key={`${row.phone_key}-${year.year_id}`} variant={year.status === 'checked_in' ? 'success' : 'secondary'}>
+              {year.year}
+            </Badge>
+          ))}
+          {row.years.length > 4 ? <Badge variant="outline">+{row.years.length - 4}</Badge> : null}
+          {row.user_id ? (
+            <Badge variant="outline" className="capitalize">
+              <Shield className="h-3 w-3" aria-hidden />
+              {row.user_role ?? 'member'}
+            </Badge>
+          ) : null}
+        </span>
+      </button>
+      <div className="flex shrink-0 items-center gap-1">
+        <QuickContactButtons phone={row.phone} name={row.full_name} />
+        <ContactRowActions
+          contactName={row.full_name}
+          phone={row.phone}
+          email={row.email}
+          userId={row.user_id}
+          userRole={row.user_role}
+          memberId={row.member_id}
+          rlcRoles={row.rlc_roles}
+          latestRegistrationId={latest?.registration_id}
+          showFollowUp={false}
+          showPromotions
+          onPromoted={onRefresh}
+        />
+      </div>
+    </div>
+  )
 }

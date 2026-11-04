@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { KioskForm } from '@/components/kiosk-form'
-import { AppUser, Dependant } from '@/lib/types'
+import { AppUser, Dependant, ServiceType } from '@/lib/types'
 import { ServiceTypeMapper } from '@/lib/constants/service-types'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/page-header'
+import { PersonAvatar, displayName } from '@/components/ui/person'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -18,7 +19,8 @@ import {
   User,
   Calendar,
   Clock,
-  Users
+  Users,
+  QrCode
 } from 'lucide-react'
 import { dataService } from '@/lib/services/data-service'
 import { useToast } from '@/hooks/use-toast'
@@ -71,301 +73,175 @@ export default function KioskPage() {
     return null
   }
 
-  const handleCheckIn = async (member: AppUser, dependants: Dependant[] = []) => {
-    setLoading(true)
-    try {
-      const memberDocId = (member as AppUser & { member?: { id: string } }).member?.id ?? member.id
-      const serviceDate = new Date().toISOString().split('T')[0]
-      const checkInTime = new Date().toISOString()
-
-      const { error: memberError } = await dataService.recordAttendance({
-        member_id: memberDocId,
-        service_date: serviceDate,
-        service_type: ServiceTypeMapper.toEnum(serviceType),
-        check_in_time: checkInTime,
-        status: 'present',
-        checked_in_by: user?.id
-      })
-      if (memberError) throw new Error(memberError)
-
-      for (const dependant of dependants) {
-        const { error: dependantsError } = await dataService.recordAttendance({
-          member_id: dependant.id,
-          service_date: serviceDate,
-          service_type: ServiceTypeMapper.toEnum(serviceType),
-          check_in_time: checkInTime,
-          status: 'present',
-          checked_in_by: user?.id
-        })
-        if (dependantsError) throw new Error(dependantsError)
-      }
-
-      // Set check-in result with the provided data
-      setCheckInResult({
-        member: {
-          id: member.id,
-          full_name: member.full_name,
-          membership_id: member.membership_id,
-          phone: member.phone
-        },
-        dependants: dependants.map(d => ({
-          id: d.id,
-          name: d.first_name,
-          relationship: d.relationship
-        })),
-        service_type: serviceType,
-        timestamp: new Date().toISOString()
-      })
-
-      toast({
-        title: "Check-in Successful",
-        description: `${member.full_name} has been checked in successfully.`,
-        variant: "default"
-      })
-    } catch (error) {
-      console.error('Error checking in member:', error)
-      toast({
-        title: "Check-in Failed",
-        description: "There was an error checking in the member. Please try again.",
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
-    }
+  // KioskForm records the attendance itself; this only shows the confirmation.
+  const handleCheckIn = (member: AppUser, dependants: Dependant[] = []) => {
+    setCheckInResult({
+      member: {
+        id: member.id,
+        full_name: member.full_name,
+        membership_id: member.membership_id,
+        phone: member.phone,
+      },
+      dependants: dependants.map((d) => ({
+        id: d.id,
+        name: d.first_name,
+        relationship: d.relationship,
+      })),
+      service_type: serviceType,
+      timestamp: new Date().toISOString(),
+    })
   }
 
   const handleNewCheckIn = () => {
     setCheckInResult(null)
   }
 
+  const serviceLabel = (value: string) => serviceTypes.find((s) => s.value === value)?.label ?? value
+
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="app-page-title mb-2">
-                Kiosk Mode
-              </h1>
-              <p className="text-slate-600">Self-service attendance check-in for members</p>
-            </div>
-            <Button variant="outline" onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+      <div className="mx-auto max-w-6xl">
+        <PageHeader
+          title="Kiosk"
+          description="Self-service check-in for members"
+          className="mb-4 sm:mb-6"
+          actions={
+            <Button variant="outline" className="hidden sm:inline-flex" onClick={() => router.push('/attendance')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Attendance
             </Button>
-          </div>
+          }
+        />
 
-          {/* Service Type Selection */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Service Type</CardTitle>
-              <CardDescription>Select the type of service for attendance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Select value={serviceType} onValueChange={setServiceType}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select service type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {serviceTypes.map((service) => (
-                    <SelectItem key={service.value} value={service.value}>
-                      {service.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+        <div className="mb-4">
+          <Select value={serviceType} onValueChange={setServiceType}>
+            <SelectTrigger className="h-11 w-full sm:max-w-xs" aria-label="Service type">
+              <SelectValue placeholder="Select service type" />
+            </SelectTrigger>
+            <SelectContent>
+              {serviceTypes.map((service) => (
+                <SelectItem key={service.value} value={service.value}>
+                  {service.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Kiosk Form */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2 text-primary" />
-                  Member Check-in
-                </CardTitle>
-                <CardDescription>
-                  Search for a member by membership ID, phone, or name to check them in
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <KioskForm 
-                  onCheckInSuccess={handleCheckIn}
-                />
-              </CardContent>
-            </Card>
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <div className="dashboard-panel min-w-0 p-4 sm:p-5">
+            <div className="mb-4">
+              <h2 className="app-section-title flex items-center gap-2">
+                <User className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+                Member check-in
+              </h2>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                Search by membership ID, phone or name.
+              </p>
+            </div>
+            <KioskForm
+              onCheckInSuccess={handleCheckIn}
+              serviceType={ServiceTypeMapper.toEnum(serviceType) as ServiceType}
+              checkedInBy={user?.id}
+            />
           </div>
 
-          {/* Check-in Result */}
-          <div>
+          <div className={checkInResult ? 'order-first min-w-0 lg:order-none' : 'min-w-0'} aria-live="polite">
             {checkInResult ? (
-              <Card className="border-green-200 bg-green-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-green-800">
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Check-in Successful
-                  </CardTitle>
-                  <CardDescription className="text-green-600">
-                    Member has been successfully checked in
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-white p-4 rounded-lg border border-green-200">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <User className="h-6 w-6 text-green-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">
-                          {checkInResult.member.full_name}
-                        </h3>
-                        <p className="text-sm text-slate-600">
-                          {formatMembershipIdForDisplay(checkInResult.member.membership_id)}
-                        </p>
-                      </div>
-                    </div>
+              <div className="dashboard-panel space-y-4 p-4 ring-1 ring-inset ring-emerald-600/20 dark:ring-emerald-400/20 sm:p-5">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                  <CheckCircle className="h-5 w-5" />
+                  <h2 className="app-section-title text-emerald-700 dark:text-emerald-300">Checked in</h2>
+                </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-slate-600">Service:</span>
-                        <span className="ml-2 font-medium">{checkInResult.service_type}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-slate-600">Time:</span>
-                        <span className="ml-2 font-medium">
-                          {formatDateTime(checkInResult.timestamp)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {checkInResult.dependants && checkInResult.dependants.length > 0 && (
-                      <div className="mt-4">
-                        <div className="flex items-center mb-2">
-                          <Users className="h-4 w-4 mr-2 text-gray-400" />
-                          <span className="text-sm font-medium text-slate-600">Dependants:</span>
-                        </div>
-                        <div className="space-y-1">
-                          {checkInResult.dependants.map((dependant) => (
-                            <div key={dependant.id} className="text-sm text-slate-600">
-                              • {dependant.name} ({dependant.relationship})
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                <div className="flex items-center gap-3">
+                  <PersonAvatar name={checkInResult.member.full_name} seed={checkInResult.member.id} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-neutral-900 dark:text-neutral-100">
+                      {displayName(checkInResult.member.full_name)}
+                    </p>
+                    <p className="truncate font-mono text-[13px] text-neutral-500 dark:text-neutral-400">
+                      {formatMembershipIdForDisplay(checkInResult.member.membership_id)}
+                    </p>
                   </div>
+                </div>
 
-                  <Button 
-                    onClick={handleNewCheckIn}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    Check In Another Member
-                  </Button>
-                </CardContent>
-              </Card>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
+                  <dt className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
+                    <Calendar className="h-4 w-4" /> Service
+                  </dt>
+                  <dd className="font-medium text-neutral-900 dark:text-neutral-100">{serviceLabel(checkInResult.service_type)}</dd>
+                  <dt className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
+                    <Clock className="h-4 w-4" /> Time
+                  </dt>
+                  <dd className="font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
+                    {formatDateTime(checkInResult.timestamp)}
+                  </dd>
+                </dl>
+
+                {checkInResult.dependants && checkInResult.dependants.length > 0 && (
+                  <div>
+                    <p className="app-overline mb-2 flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5" /> Dependants
+                    </p>
+                    <ul className="space-y-1 text-sm text-neutral-700 dark:text-neutral-300">
+                      {checkInResult.dependants.map((dependant) => (
+                        <li key={dependant.id} className="truncate">
+                          {dependant.name} <span className="text-neutral-500 dark:text-neutral-400">({dependant.relationship})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <Button onClick={handleNewCheckIn} className="h-12 w-full">
+                  Check in another member
+                </Button>
+              </div>
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Monitor className="h-5 w-5 mr-2 text-primary" />
-                    Instructions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3 text-sm text-slate-600">
-                    <div className="flex items-start">
-                      <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                        <span className="text-xs font-semibold text-primary">1</span>
-                      </div>
+              <div className="dashboard-panel space-y-4 p-4 sm:p-5">
+                <h2 className="app-section-title flex items-center gap-2">
+                  <Monitor className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+                  How it works
+                </h2>
+                <ol className="space-y-3 text-sm text-neutral-600 dark:text-neutral-300">
+                  {[
+                    ['Find yourself', 'Enter your membership ID, phone number or name.'],
+                    ['Add family', 'Pick any dependants checking in with you.'],
+                    ['Confirm', 'Tap check in. That is it.'],
+                  ].map(([title, body], i) => (
+                    <li key={title} className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700 dark:bg-brand-400/10 dark:text-brand-300">
+                        {i + 1}
+                      </span>
                       <div>
-                        <p className="font-medium">Search for Member</p>
-                        <p>Enter membership ID, phone number, or name to find the member</p>
+                        <p className="font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
+                        <p>{body}</p>
                       </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                        <span className="text-xs font-semibold text-primary">2</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">Select Dependants</p>
-                        <p>Choose any family members to check in together</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                        <span className="text-xs font-semibold text-primary">3</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">Confirm Check-in</p>
-                        <p>Review details and confirm the attendance</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                    <h4 className="font-medium text-slate-900 mb-2">Service Information</h4>
-                    <div className="text-sm text-slate-700">
-                      <p><strong>Service:</strong> {serviceTypes.find(s => s.value === serviceType)?.label}</p>
-                      <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
-                      <p><strong>Time:</strong> {new Date().toLocaleTimeString()}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </li>
+                  ))}
+                </ol>
+                <div className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700 ring-1 ring-inset ring-neutral-200/80 dark:bg-white/[0.04] dark:text-neutral-300 dark:ring-white/[0.06]">
+                  <p className="app-overline mb-1">Today</p>
+                  <p>
+                    {serviceLabel(serviceType)} · {new Date().toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Navigate to other attendance features</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/attendance/scanner')}
-                className="h-20 flex-col space-y-2"
-              >
-                <User className="h-6 w-6" />
-                <span>QR Scanner</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/attendance/manual')}
-                className="h-20 flex-col space-y-2"
-              >
-                <Users className="h-6 w-6" />
-                <span>Manual Check-in</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/attendance')}
-                className="h-20 flex-col space-y-2"
-              >
-                <Calendar className="h-6 w-6" />
-                <span>View Attendance</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/dashboard')}
-                className="h-20 flex-col space-y-2"
-              >
-                <ArrowLeft className="h-6 w-6" />
-                <span>Dashboard</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <Button variant="outline" onClick={() => router.push('/attendance/scanner')} className="h-12">
+            <QrCode className="mr-2 h-4 w-4" />
+            QR scanner
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/attendance/manual')} className="h-12">
+            <Users className="mr-2 h-4 w-4" />
+            Manual check-in
+          </Button>
+        </div>
       </div>
     </DashboardLayout>
   )

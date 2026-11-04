@@ -21,6 +21,7 @@ import Link from 'next/link'
 import { classifyFollowUpSla, type FollowUpSlaBucket } from '@/lib/camp/follow-up-sla'
 import { cn } from '@/lib/utils'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 
 const FOLLOW_UP_STATUSES = ['pending', 'in_progress', 'completed'] as const
 const SLA_FILTERS = ['all', 'overdue', 'due_soon', 'healthy'] as const
@@ -191,7 +192,7 @@ function FollowUpManagementContent() {
 
     if (!campYear) {
         return (
-            <div className="p-6 max-w-4xl mx-auto">
+            <div className="mx-auto max-w-4xl">
                 <Card>
                     <CardContent className="py-12 text-center">
                         <p className="text-muted-foreground mb-4">No active camp year found.</p>
@@ -205,8 +206,8 @@ function FollowUpManagementContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div>
+            <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
                 <CampAdminPageHeader
                     title={mineOnly ? 'My follow-ups' : 'Follow-up Management'}
                     campYear={campYear}
@@ -239,15 +240,15 @@ function FollowUpManagementContent() {
                 </CampAdminPageHeader>
 
                 {availableYears.length > 0 ? (
-                    <Card className="border-slate-200">
+                    <Card>
                         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="space-y-1">
-                                <p className="text-sm font-medium text-slate-800">Camp year for assignments</p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">Camp year for assignments</p>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                     Follow-up owners are assigned only for registrations in the selected season.
                                 </p>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                                 <Select
                                     value={campYear?.id}
                                     onValueChange={(yearId) => {
@@ -256,7 +257,7 @@ function FollowUpManagementContent() {
                                         router.push(`/admin/camp-meeting/follow-up?${params.toString()}`)
                                     }}
                                 >
-                                    <SelectTrigger className="min-h-10 w-[11rem] bg-white">
+                                    <SelectTrigger className="min-h-11 flex-1 sm:min-h-10 sm:w-[11rem] sm:flex-none">
                                         <SelectValue placeholder="Select year" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -272,7 +273,7 @@ function FollowUpManagementContent() {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="min-h-10"
+                                        className="min-h-11 flex-1 sm:min-h-10 sm:flex-none"
                                         onClick={() => {
                                             const params = new URLSearchParams(searchParams.toString())
                                             params.set('year', activeYear.id)
@@ -288,73 +289,37 @@ function FollowUpManagementContent() {
                 ) : null}
 
                 {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-5">
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Total
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-yellow-600" />
-                                Pending
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-primary" />
-                                In Progress
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-primary">{stats.inProgress}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                Completed
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-green-600">{stats.completed}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-2">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <UserX className="h-4 w-4 text-red-600" />
-                                Unassigned
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-red-600">{stats.unassigned}</div>
-                        </CardContent>
-                    </Card>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
+                    {([
+                        { label: 'Total', value: stats.total, icon: Users, tone: 'text-neutral-500 dark:text-neutral-400' },
+                        { label: 'Pending', value: stats.pending, icon: Clock, tone: 'text-amber-600 dark:text-amber-400' },
+                        { label: 'In progress', value: stats.inProgress, icon: AlertCircle, tone: 'text-brand-600 dark:text-brand-300' },
+                        { label: 'Completed', value: stats.completed, icon: CheckCircle2, tone: 'text-emerald-600 dark:text-emerald-400' },
+                        { label: 'Unassigned', value: stats.unassigned, icon: UserX, tone: 'text-red-600 dark:text-red-400' },
+                    ] as const).map(({ label, value, icon: Icon, tone }, i) => (
+                        <div
+                            key={label}
+                            className={cn('dashboard-panel p-3 sm:p-5', i === 4 && 'col-span-2 md:col-span-1')}
+                        >
+                            <p className="app-stat-label flex items-center gap-1.5">
+                                <Icon className={cn('h-3.5 w-3.5', tone)} aria-hidden />
+                                {label}
+                            </p>
+                            <p className="app-stat-value mt-1">{value}</p>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Filters */}
-                <Card className="border-2">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Filter className="h-5 w-5" />
+                <Card>
+                    <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
+                        <CardTitle className="app-section-title flex items-center gap-2">
+                            <Filter className="h-4 w-4" aria-hidden />
                             Filters
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <CardContent className="p-4 pt-2 sm:p-6 sm:pt-2">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&_button[role=combobox]]:min-h-11 sm:[&_button[role=combobox]]:min-h-10">
                             <Select value={slaFilter} onValueChange={(v: SlaFilter) => setSlaFilter(v)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="SLA health" />
@@ -406,21 +371,21 @@ function FollowUpManagementContent() {
                 </Card>
 
                 {/* Follow-up Queue */}
-                <div className="grid gap-6 lg:grid-cols-3">
+                <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
                     {/* Pending */}
                     <Card className="border-2">
-                        <CardHeader className="bg-yellow-50 border-b">
-                            <CardTitle className="flex items-center justify-between">
+                        <CardHeader className="border-b border-neutral-200/80 bg-amber-50 p-4 dark:border-white/[0.06] dark:bg-amber-400/10">
+                            <CardTitle className="app-section-title flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <Clock className="h-5 w-5 text-yellow-600" />
+                                    <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
                                     Pending ({byStatus.pending.length})
                                 </div>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6">
-                            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                        <CardContent className="p-3 sm:p-4">
+                            <div className="space-y-3 lg:max-h-[600px] lg:overflow-y-auto">
                                 {byStatus.pending.length === 0 ? (
-                                    <p className="text-center text-slate-500 text-sm py-8">
+                                    <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
                                         No pending follow-ups
                                     </p>
                                 ) : (
@@ -441,18 +406,18 @@ function FollowUpManagementContent() {
 
                     {/* In Progress */}
                     <Card className="border-2">
-                        <CardHeader className="bg-slate-50 border-b">
-                            <CardTitle className="flex items-center justify-between">
+                        <CardHeader className="border-b border-neutral-200/80 bg-neutral-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                            <CardTitle className="app-section-title flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <AlertCircle className="h-5 w-5 text-primary" />
+                                    <AlertCircle className="h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
                                     In Progress ({byStatus.in_progress.length})
                                 </div>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6">
-                            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                        <CardContent className="p-3 sm:p-4">
+                            <div className="space-y-3 lg:max-h-[600px] lg:overflow-y-auto">
                                 {byStatus.in_progress.length === 0 ? (
-                                    <p className="text-center text-slate-500 text-sm py-8">
+                                    <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
                                         No in-progress follow-ups
                                     </p>
                                 ) : (
@@ -473,18 +438,18 @@ function FollowUpManagementContent() {
 
                     {/* Completed */}
                     <Card className="border-2">
-                        <CardHeader className="bg-green-50 border-b">
-                            <CardTitle className="flex items-center justify-between">
+                        <CardHeader className="border-b border-neutral-200/80 bg-emerald-50 p-4 dark:border-white/[0.06] dark:bg-emerald-400/10">
+                            <CardTitle className="app-section-title flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
                                     Completed ({byStatus.completed.length})
                                 </div>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6">
-                            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                        <CardContent className="p-3 sm:p-4">
+                            <div className="space-y-3 lg:max-h-[600px] lg:overflow-y-auto">
                                 {byStatus.completed.length === 0 ? (
-                                    <p className="text-center text-slate-500 text-sm py-8">
+                                    <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
                                         No completed follow-ups
                                     </p>
                                 ) : (
@@ -540,32 +505,45 @@ function RegistrationCard({
     const fullName = registration.full_name || `${registration.first_name} ${registration.last_name}`.trim()
 
     return (
-        <div className="p-4 bg-white border-2 rounded-lg hover:shadow-md transition-shadow cursor-pointer" onClick={onView}>
-            <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                    <p className="font-semibold text-sm text-slate-900 truncate">{fullName}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">{registration.role}</Badge>
+        <div
+            className="cursor-pointer rounded-lg border border-neutral-200/80 bg-white p-3 transition-shadow hover:shadow-md dark:border-white/[0.06] dark:bg-neutral-800/60 sm:p-4"
+            onClick={onView}
+        >
+            <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{fullName}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <Badge variant="outline" className="text-xs capitalize">{registration.role}</Badge>
                         {registration.is_new_registrant && (
                             <Badge variant="secondary" className="text-xs">New</Badge>
                         )}
                     </div>
+                    {registration.phone ? (
+                        <div className="mt-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+                            <PhoneLink phone={registration.phone} whatsapp={registration.whatsapp} name={fullName} />
+                        </div>
+                    ) : null}
                 </div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); onView() }}
-                >
-                    <Eye className="h-4 w-4" />
-                </Button>
+                <div className="flex shrink-0 items-center gap-1">
+                    <QuickContactButtons phone={registration.phone} whatsapp={registration.whatsapp} name={fullName} />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 sm:h-9 sm:w-9"
+                        aria-label={`View ${fullName}`}
+                        onClick={(e) => { e.stopPropagation(); onView() }}
+                    >
+                        <Eye className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
 
-            <div className="space-y-2 mt-3 pt-3 border-t">
+            <div className="mt-3 space-y-2 border-t border-neutral-200/80 pt-3 dark:border-white/[0.06]">
                 {registration.assigned_user ? (
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <UserCheck className="h-3 w-3 text-primary" />
-                            <span className="text-xs text-slate-600">{registration.assigned_user.full_name}</span>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <UserCheck className="h-3 w-3 shrink-0 text-brand-600 dark:text-brand-300" />
+                            <span className="truncate text-xs text-neutral-600 dark:text-neutral-300">{registration.assigned_user.full_name}</span>
                         </div>
                         <Select
                             value={registration.assigned_to || '__unassign__'}
@@ -574,7 +552,7 @@ function RegistrationCard({
                                 v === '__unassign__' ? null : v
                             )}
                         >
-                            <SelectTrigger className="h-7 text-xs" onClick={(e) => e.stopPropagation()}>
+                            <SelectTrigger className="h-10 w-[9.5rem] text-xs sm:h-8" onClick={(e) => e.stopPropagation()}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -588,13 +566,13 @@ function RegistrationCard({
                         </Select>
                     </div>
                 ) : (
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                            <UserX className="h-3 w-3 text-red-600" />
-                            <span className="text-xs text-slate-600">Unassigned</span>
+                            <UserX className="h-3 w-3 text-red-600 dark:text-red-400" />
+                            <span className="text-xs text-neutral-600 dark:text-neutral-300">Unassigned</span>
                         </div>
                         <Select onValueChange={(v) => onAssign(registration.id, v || null)}>
-                            <SelectTrigger className="h-7 text-xs" onClick={(e) => e.stopPropagation()}>
+                            <SelectTrigger className="h-10 w-[9.5rem] text-xs sm:h-8" onClick={(e) => e.stopPropagation()}>
                                 <SelectValue placeholder="Assign" />
                             </SelectTrigger>
                             <SelectContent>
@@ -612,7 +590,7 @@ function RegistrationCard({
                     value={registration.follow_up_status || 'pending'}
                     onValueChange={(v: any) => onUpdateStatus(registration.id, v)}
                 >
-                    <SelectTrigger className="h-7 text-xs w-full" onClick={(e) => e.stopPropagation()}>
+                    <SelectTrigger className="h-10 w-full text-xs sm:h-8" onClick={(e) => e.stopPropagation()}>
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -622,12 +600,6 @@ function RegistrationCard({
                     </SelectContent>
                 </Select>
 
-                {registration.phone && (
-                    <div className="flex items-center gap-1 text-xs text-slate-500 mt-2">
-                        <Phone className="h-3 w-3" />
-                        <span>{registration.phone}</span>
-                    </div>
-                )}
             </div>
         </div>
     )

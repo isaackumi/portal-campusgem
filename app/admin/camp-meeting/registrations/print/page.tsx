@@ -83,9 +83,9 @@ function PrintQRCodesContent() {
           }
         }
       `}</style>
-      <div className={cn('min-h-screen bg-white', isSlips ? 'p-4' : 'p-8')}>
-        <div className="no-print mb-8 border-b pb-4 text-center">
-          <h1 className="text-2xl font-bold">
+      <div className={cn('min-h-screen rounded-xl bg-white text-neutral-900 dark:bg-white dark:text-neutral-900 print:rounded-none', isSlips ? 'p-4' : 'p-4 sm:p-8 print:p-8')}>
+        <div className="no-print mb-6 border-b pb-4 text-center sm:mb-8">
+          <h1 className="app-page-title">
             {isSlips ? 'Camp QR slips' : 'Camp meeting QR codes'}
           </h1>
           <p className="mt-2 text-slate-600">
@@ -98,7 +98,7 @@ function PrintQRCodesContent() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="rounded bg-primary px-4 py-2 text-white hover:bg-primary/90"
+              className="min-h-11 w-full rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 dark:bg-brand-600 sm:w-auto"
             >
               Print
             </button>
@@ -119,7 +119,7 @@ function PrintQRCodesContent() {
           className={cn(
             isSlips
               ? 'mx-auto flex max-w-[62mm] flex-col gap-4'
-              : 'grid grid-cols-3 gap-8'
+              : 'grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-8 print:grid-cols-3 print:gap-8'
           )}
         >
           {registrations.map((reg) => {

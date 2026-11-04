@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PageHeader } from '@/components/layout/page-header'
+import { StatCard } from '@/components/ui/stat-card'
+import { PersonAvatar, displayName } from '@/components/ui/person'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ErrorDisplay } from '@/components/ui/error-display'
 import { 
@@ -130,30 +131,33 @@ export default function AttendancePage() {
     return null
   }
 
+  const quickActions = [
+    { href: '/attendance/scanner', label: 'QR scanner', icon: QrCode },
+    { href: '/attendance/kiosk', label: 'Kiosk mode', icon: Monitor },
+    { href: '/attendance/manual', label: 'Manual check-in', icon: CheckSquare },
+    { href: '/attendance/bulk', label: 'Bulk attendance', icon: Users },
+    { href: '/attendance/comprehensive', label: 'Comprehensive', icon: BarChart3 },
+  ]
+
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="app-page-title mb-2">
-                Attendance Management
-              </h1>
-              <p className="text-slate-600">Track and manage church attendance</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button variant="outline" onClick={exportAttendance}>
-                <Download className="h-4 w-4 mr-2" />
+      <div className="mx-auto max-w-7xl">
+        <PageHeader
+          title="Attendance"
+          description="Track and manage church attendance"
+          actions={
+            <>
+              <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => router.push('/attendance/manual')}>
+                <CheckSquare className="mr-2 h-4 w-4" />
+                Check in
+              </Button>
+              <Button variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={exportAttendance}>
+                <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
-              <Button variant="outline" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {error && (
           <div className="mb-6">
@@ -161,273 +165,145 @@ export default function AttendancePage() {
           </div>
         )}
 
-        {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Today</p>
-                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.today_attendance}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-                    <Users className="h-6 w-6 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">This Week</p>
-                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.weekly_attendance}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="h-6 w-6 text-green-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">This Month</p>
-                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.monthly_attendance}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-purple-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Total</p>
-                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total_attendance}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="h-6 w-6 text-orange-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard className="p-4 sm:p-5" label="Today" value={stats.today_attendance} icon={Users} />
+            <StatCard className="p-4 sm:p-5" label="This week" value={stats.weekly_attendance} icon={BarChart3} />
+            <StatCard className="p-4 sm:p-5" label="This month" value={stats.monthly_attendance} icon={TrendingUp} />
+            <StatCard className="p-4 sm:p-5" label="All time" value={stats.total_attendance} icon={Calendar} />
           </div>
         )}
 
         <Tabs defaultValue="records" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="records">Attendance Records</TabsTrigger>
+          <ScrollableTabsList>
+            <TabsTrigger value="records">Records</TabsTrigger>
+            <TabsTrigger value="actions">Check-in tools</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="actions">Quick Actions</TabsTrigger>
-          </TabsList>
+          </ScrollableTabsList>
 
-          <TabsContent value="records" className="space-y-6">
-            {/* Filters */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Filter className="h-5 w-5 mr-2" />
-                  Filters
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="search">Search Members</Label>
-                    <div className="relative mt-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="search"
-                        placeholder="Search by name or ID..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="service-filter">Service Type</Label>
-                    <Select value={serviceFilter} onValueChange={setServiceFilter}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {serviceTypes.map((service) => (
-                          <SelectItem key={service.value} value={service.value}>
-                            {service.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="date-filter">Date Range</Label>
-                    <Select value={dateFilter} onValueChange={setDateFilter}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dateFilters.map((filter) => (
-                          <SelectItem key={filter.value} value={filter.value}>
-                            {filter.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Attendance Records */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendance Records</CardTitle>
-                <CardDescription>
-                  Showing {filteredAttendance.length} attendance records
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <LoadingSpinner />
-                  </div>
-                ) : filteredAttendance.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
-                    <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No attendance records found</p>
-                    <p className="text-sm">Try adjusting your filters or date range</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredAttendance.map((record) => (
-                      <div
-                        key={record.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50"
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
-                            <Users className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-slate-900">
-                              {record.member.full_name}
-                            </h3>
-                            <p className="text-sm text-slate-600">
-                              {formatMembershipIdForDisplay(record.member.membership_id)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-slate-900">
-                            {record.service_type}
-                          </p>
-                          <p className="text-sm text-slate-600">
-                            {formatDateTime(record.check_in_time)}
-                          </p>
-                        </div>
-                      </div>
+          <TabsContent value="records" className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                <Input
+                  id="search"
+                  aria-label="Search members"
+                  placeholder="Search by name or ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-11 pl-10 sm:h-10"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:flex sm:w-auto">
+                <Select value={serviceFilter} onValueChange={setServiceFilter}>
+                  <SelectTrigger className="h-11 sm:h-10 sm:w-48" aria-label="Service type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {serviceTypes.map((service) => (
+                      <SelectItem key={service.value} value={service.value}>
+                        {service.label}
+                      </SelectItem>
                     ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  </SelectContent>
+                </Select>
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger className="h-11 sm:h-10 sm:w-40" aria-label="Date range">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dateFilters.map((filter) => (
+                      <SelectItem key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Attendance Trends</CardTitle>
-                  <CardDescription>Weekly attendance patterns</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-slate-500">
-                    <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Analytics coming soon</p>
-                    <p className="text-sm">Charts and trends will be displayed here</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Service Popularity</CardTitle>
-                  <CardDescription>Most attended service types</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-slate-500">
-                    <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Service analytics coming soon</p>
-                    <p className="text-sm">Popular services will be shown here</p>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="dashboard-panel overflow-hidden">
+              <div className="flex items-baseline justify-between gap-3 border-b border-neutral-200/80 px-4 py-3 dark:border-white/[0.06] sm:px-5">
+                <h2 className="app-section-title">Check-ins</h2>
+                <p className="text-[13px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                  {filteredAttendance.length} records
+                </p>
+              </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-10">
+                  <LoadingSpinner />
+                </div>
+              ) : filteredAttendance.length === 0 ? (
+                <div className="px-4 py-10 text-center text-neutral-500 dark:text-neutral-400">
+                  <Calendar className="mx-auto mb-2 h-8 w-8 opacity-50" />
+                  <p className="font-medium text-neutral-700 dark:text-neutral-300">No attendance records found</p>
+                  <p className="text-sm">Try a different service or date range.</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+                  {filteredAttendance.map((record) => (
+                    <li
+                      key={record.id}
+                      className="flex min-h-11 items-center gap-3 px-4 py-3 sm:px-5"
+                    >
+                      <PersonAvatar name={record.member?.full_name} seed={record.member_id} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {displayName(record.member?.full_name)}
+                        </p>
+                        <p className="truncate text-[13px] text-neutral-500 dark:text-neutral-400">
+                          <span className="font-mono">{formatMembershipIdForDisplay(record.member?.membership_id)}</span>
+                          <span className="sm:hidden"> · {formatServiceType(record.service_type)}</span>
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="hidden text-sm font-medium text-neutral-900 dark:text-neutral-100 sm:block">
+                          {formatServiceType(record.service_type)}
+                        </p>
+                        <p className="text-[13px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                          {formatDateTime(record.check_in_time)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </TabsContent>
 
-          <TabsContent value="actions" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Access attendance tools and features</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => router.push('/attendance/scanner')}
-                    className="h-24 flex-col space-y-2"
-                  >
-                    <QrCode className="h-6 w-6" />
-                    <span>QR Scanner</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => router.push('/attendance/kiosk')}
-                    className="h-24 flex-col space-y-2"
-                  >
-                    <Monitor className="h-6 w-6" />
-                    <span>Kiosk Mode</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => router.push('/attendance/manual')}
-                    className="h-24 flex-col space-y-2"
-                  >
-                    <CheckSquare className="h-6 w-6" />
-                    <span>Manual Check-in</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => router.push('/attendance/bulk')}
-                    className="h-24 flex-col space-y-2"
-                  >
-                    <Users className="h-6 w-6" />
-                    <span>Bulk Attendance</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => router.push('/attendance/comprehensive')}
-                    className="h-24 flex-col space-y-2"
-                  >
-                    <BarChart3 className="h-6 w-6" />
-                    <span>Comprehensive</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="actions">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {quickActions.map(({ href, label, icon: Icon }) => (
+                <Button
+                  key={href}
+                  variant="outline"
+                  onClick={() => router.push(href)}
+                  className="h-24 flex-col gap-2 whitespace-normal text-center"
+                >
+                  <Icon className="h-6 w-6 text-brand-600 dark:text-brand-300" />
+                  <span>{label}</span>
+                </Button>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <div className="dashboard-panel px-4 py-10 text-center text-neutral-500 dark:text-neutral-400">
+              <BarChart3 className="mx-auto mb-2 h-8 w-8 opacity-50" />
+              <p className="font-medium text-neutral-700 dark:text-neutral-300">Trends and service breakdowns</p>
+              <p className="mb-4 text-sm">See weekly patterns and the most attended services.</p>
+              <Button variant="outline" className="h-11 sm:h-10" onClick={() => router.push('/attendance/analytics')}>
+                Open analytics
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
   )
+}
+
+function formatServiceType(value?: string | null): string {
+  if (!value) return ''
+  return value.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
 }

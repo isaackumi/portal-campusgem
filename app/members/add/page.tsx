@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +15,7 @@ import { createUserRecord, loadMemberByUserId, updateMemberAction } from '@/lib/
 import { generateMembershipId } from '@/lib/membershipId'
 import { CreateUserForm } from '@/lib/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { cn } from '@/lib/utils'
 import { 
   ArrowLeft, 
   UserPlus, 
@@ -30,7 +31,10 @@ import {
   Circle,
   Save,
   ArrowRight,
-  User
+  User,
+  RotateCcw,
+  Copy,
+  X,
 } from 'lucide-react'
 
 type OnboardingStep = 'personal' | 'contact' | 'professional' | 'family' | 'spiritual' | 'additional'
@@ -268,7 +272,7 @@ export default function AddMemberPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-pulse text-primary text-lg">Loading...</div>
+          <div className="animate-pulse text-lg text-neutral-500 dark:text-neutral-400">Loading…</div>
         </div>
       </DashboardLayout>
     )
@@ -340,12 +344,12 @@ export default function AddMemberPage() {
 
             <div>
               <Label htmlFor="membershipId">Generated Membership ID</Label>
-              <div className="flex items-center space-x-2">
-                <Input 
-                  id="membershipId" 
-                  value={membershipId} 
-                  readOnly 
-                  className="bg-slate-50 font-mono text-primary font-semibold" 
+              <div className="flex items-center gap-2">
+                <Input
+                  id="membershipId"
+                  value={membershipId}
+                  readOnly
+                  className="h-11 bg-neutral-50 font-mono font-semibold text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100 sm:h-10"
                 />
                 {membershipId && (
                   <Button
@@ -359,17 +363,16 @@ export default function AddMemberPage() {
                         description: "Membership ID copied to clipboard",
                       })
                     }}
-                    className="px-3"
+                    className="h-11 w-11 shrink-0 px-0 sm:h-10 sm:w-10"
+                    aria-label="Copy membership ID"
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                    <Copy className="h-4 w-4" />
                   </Button>
                 )}
               </div>
               {membershipId && (
-                <p className="text-xs text-slate-500 mt-1">
-                  💡 This ID is auto-generated and can be copied for records
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  This ID is auto-generated and can be copied for records
                 </p>
               )}
             </div>
@@ -662,14 +665,15 @@ export default function AddMemberPage() {
               {formData.special_skills && formData.special_skills.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.special_skills.map((skill, index) => (
-                    <span key={index} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-sm flex items-center gap-1">
+                    <span key={index} className="flex items-center gap-1 rounded-md py-1 pl-2.5 pr-1 text-sm bg-neutral-100 text-neutral-700 dark:bg-neutral-700/60 dark:text-neutral-200">
                       {skill}
                       <button
                         type="button"
                         onClick={() => removeArrayItem('special_skills', skill)}
-                        className="text-primary hover:text-slate-700"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded opacity-70 hover:opacity-100"
+                        aria-label={`Remove ${skill}`}
                       >
-                        ×
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </span>
                   ))}
@@ -692,14 +696,15 @@ export default function AddMemberPage() {
               {formData.interests && formData.interests.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.interests.map((interest, index) => (
-                    <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm flex items-center gap-1">
+                    <span key={index} className="flex items-center gap-1 rounded-md py-1 pl-2.5 pr-1 text-sm bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20">
                       {interest}
                       <button
                         type="button"
                         onClick={() => removeArrayItem('interests', interest)}
-                        className="text-green-600 hover:text-green-800"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded opacity-70 hover:opacity-100"
+                        aria-label={`Remove ${interest}`}
                       >
-                        ×
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </span>
                   ))}
@@ -725,167 +730,143 @@ export default function AddMemberPage() {
     }
   }
 
+  const stepIndex = steps.findIndex(s => s.key === currentStep)
+  const current = steps[stepIndex]
+  const StepIcon =
+    currentStep === 'personal' ? User
+    : currentStep === 'contact' ? Phone
+    : currentStep === 'professional' ? Briefcase
+    : currentStep === 'family' ? Heart
+    : currentStep === 'spiritual' ? Calendar
+    : FileText
+
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => router.push('/members')}
-              className="mr-3 text-slate-600 hover:text-slate-900"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Members
-            </Button>
-            <h1 className="app-page-title">
-              Add New Member
-            </h1>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={loadProgress} disabled={saving}>
-              <Save className="h-4 w-4 mr-2" />
-              Load Progress
-            </Button>
-            <Button variant="outline" onClick={saveProgress} disabled={saving}>
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Progress'}
-            </Button>
-          </div>
-        </div>
+      <div className="mx-auto max-w-4xl space-y-5 pb-28 sm:pb-0">
+        <Link
+          href="/members"
+          className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 sm:min-h-9"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Members
+        </Link>
 
-        {/* Enhanced Progress Steps */}
-        <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between">
-              {steps.map((step, index) => (
-                <div key={step.key} className="flex items-center">
-                  <div className="flex flex-col items-center">
-                    <div className={`relative flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
-                      currentStep === step.key 
-                        ? 'border-slate-900 bg-primary text-white shadow-lg scale-110' 
-                        : isStepComplete(step.key)
-                        ? 'border-green-600 bg-green-600 text-white shadow-md'
-                        : 'border-gray-300 bg-white text-gray-400 hover:border-gray-400'
-                    }`}>
-                      {isStepComplete(step.key) && currentStep !== step.key ? (
-                        <CheckCircle className="h-6 w-6" />
-                      ) : (
-                        <span className="text-sm font-bold">{index + 1}</span>
-                      )}
-                      {currentStep === step.key && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-white animate-pulse"></div>
-                      )}
-                    </div>
-                    <div className="mt-2 text-center max-w-24">
-                      <p className={`text-xs font-medium transition-colors ${
-                        currentStep === step.key ? 'text-primary' : isStepComplete(step.key) ? 'text-green-600' : 'text-slate-500'
-                      }`}>
-                        {step.title}
-                      </p>
-                    </div>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div className={`flex-1 h-1 mx-6 rounded-full transition-colors duration-300 ${
-                      isStepComplete(steps[index + 1].key) ? 'bg-green-600' : 
-                      currentStep === steps[index + 1].key ? 'bg-slate-200' : 'bg-gray-200'
-                    }`}>
-                      <div className={`h-full rounded-full transition-all duration-500 ${
-                        isStepComplete(steps[index + 1].key) ? 'w-full bg-green-600' : 
-                        currentStep === steps[index + 1].key ? 'w-1/2 bg-amber-400' : 'w-0'
-                      }`}></div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            
-            {/* Progress Summary */}
-            <div className="mt-6 pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Overall Progress</p>
-                  <p className="text-xs text-slate-500">Complete all steps to finish onboarding</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-primary">
-                    {Math.round((steps.findIndex(s => s.key === currentStep) + 1) / steps.length * 100)}%
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Step {steps.findIndex(s => s.key === currentStep) + 1} of {steps.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold flex items-center">
-              {currentStep === 'personal' && <User className="h-6 w-6 mr-2" />}
-              {currentStep === 'contact' && <Phone className="h-6 w-6 mr-2" />}
-              {currentStep === 'professional' && <Briefcase className="h-6 w-6 mr-2" />}
-              {currentStep === 'family' && <Heart className="h-6 w-6 mr-2" />}
-              {currentStep === 'spiritual' && <Calendar className="h-6 w-6 mr-2" />}
-              {currentStep === 'additional' && <FileText className="h-6 w-6 mr-2" />}
-              {steps.find(s => s.key === currentStep)?.title}
-            </CardTitle>
-            <p className="text-slate-600">
-              {steps.find(s => s.key === currentStep)?.description}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="app-page-title">Add member</h1>
+            <p className="app-page-description mt-1">
+              Step {stepIndex + 1} of {steps.length} · {current?.title}
             </p>
-          </CardHeader>
-          <CardContent>
-            {renderStepContent()}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={loadProgress} disabled={saving} className="h-11 flex-1 sm:h-10 sm:flex-none">
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Load draft
+            </Button>
+            <Button variant="outline" onClick={saveProgress} disabled={saving} className="h-11 flex-1 sm:h-10 sm:flex-none">
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? 'Saving…' : 'Save draft'}
+            </Button>
+          </div>
+        </div>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t">
-              <Button 
-                variant="outline" 
-                onClick={prevStep}
-                disabled={currentStep === steps[0].key}
+        {/* Stepper: compact segmented bar on phones, labelled steps from sm */}
+        <nav aria-label="Progress" className="dashboard-panel p-3 sm:p-4">
+          <ol className="flex items-center gap-1.5 sm:gap-2">
+            {steps.map((step, index) => {
+              const active = currentStep === step.key
+              const done = isStepComplete(step.key) && !active
+              return (
+                <li key={step.key} className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <span
+                    className={cn(
+                      'h-1.5 rounded-full transition-colors',
+                      active
+                        ? 'bg-brand-600 dark:bg-brand-500'
+                        : done
+                          ? 'bg-emerald-500 dark:bg-emerald-400'
+                          : 'bg-neutral-200 dark:bg-neutral-700'
+                    )}
+                    aria-hidden
+                  />
+                  <span
+                    className={cn(
+                      'hidden items-center gap-1 truncate text-xs font-medium sm:flex',
+                      active
+                        ? 'text-brand-700 dark:text-brand-300'
+                        : done
+                          ? 'text-emerald-700 dark:text-emerald-300'
+                          : 'text-neutral-500 dark:text-neutral-400'
+                    )}
+                    aria-current={active ? 'step' : undefined}
+                  >
+                    {done ? <CheckCircle className="h-3.5 w-3.5 shrink-0" aria-hidden /> : <span className="tabular-nums">{index + 1}.</span>}
+                    <span className="truncate">{step.title}</span>
+                  </span>
+                  <span className="sr-only sm:hidden">
+                    {step.title}{active ? ' (current)' : done ? ' (complete)' : ''}
+                  </span>
+                </li>
+              )
+            })}
+          </ol>
+        </nav>
+
+        <section className="dashboard-panel p-4 sm:p-6">
+          <div className="mb-5">
+            <h2 className="app-section-title flex items-center gap-2">
+              <StepIcon className="h-4 w-4 text-neutral-500 dark:text-neutral-400" aria-hidden />
+              {current?.title}
+            </h2>
+            {current?.description ? (
+              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{current.description}</p>
+            ) : null}
+          </div>
+
+          {renderStepContent()}
+
+          {/* Navigation: sticky above the bottom tab bar on phones, inline from sm */}
+          <div className="fixed inset-x-4 bottom-20 z-30 flex items-center gap-2 rounded-xl border border-neutral-200/80 bg-white/95 p-2 shadow-lg backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 sm:static sm:inset-auto sm:z-auto sm:mt-8 sm:justify-between sm:rounded-none sm:border-0 sm:border-t sm:bg-transparent sm:p-0 sm:pt-6 sm:shadow-none sm:backdrop-blur-none sm:dark:bg-transparent">
+            <Button
+              variant="outline"
+              onClick={prevStep}
+              disabled={currentStep === steps[0].key}
+              className="h-11 flex-1 sm:h-10 sm:flex-none"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+
+            <span className="hidden text-sm tabular-nums text-neutral-500 dark:text-neutral-400 sm:inline">
+              Step {stepIndex + 1} of {steps.length}
+            </span>
+
+            {isLastStep ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={!canProceed || loading}
+                className="h-11 flex-1 sm:h-10 sm:flex-none"
               >
-                Previous
+                {loading ? (
+                  <>
+                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />
+                    Adding…
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add member
+                  </>
+                )}
               </Button>
-              
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-slate-500">
-                  Step {steps.findIndex(s => s.key === currentStep) + 1} of {steps.length}
-                </span>
-              </div>
-
-              {isLastStep ? (
-                <Button 
-                  onClick={handleSubmit} 
-                  disabled={!canProceed || loading}
-                  className=""
-                >
-                  {loading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Adding Member...
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <UserPlus className="h-5 w-5 mr-2" />
-                      Add Member
-                    </div>
-                  )}
-                </Button>
-              ) : (
-                <Button 
-                  onClick={nextStep}
-                  disabled={!canProceed}
-                  className=""
-                >
-                  Next
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            ) : (
+              <Button onClick={nextStep} disabled={!canProceed} className="h-11 flex-1 sm:h-10 sm:flex-none">
+                Next
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </section>
       </div>
     </DashboardLayout>
   )

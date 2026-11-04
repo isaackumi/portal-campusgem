@@ -722,7 +722,7 @@ export function EditRegistrationDialog({
                   hint="Month and day drive birthday reminders. Year is optional."
                   dirty={dirtySet.has('birth_month') || dirtySet.has('birth_day') || dirtySet.has('birth_year')}
                 >
-                  <div className="grid grid-cols-[1fr_5rem_6rem] gap-2">
+                  <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_5.5rem] gap-2">
                     <Select
                       value={form.birth_month || undefined}
                       onValueChange={(v) => set('birth_month', v)}
@@ -1098,14 +1098,14 @@ export function EditRegistrationDialog({
           )}
         </div>
 
-        <div className="border-t border-neutral-200 bg-white px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800 sm:px-6">
+        <div className="border-t border-neutral-200 bg-white px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 dark:border-neutral-700 dark:bg-neutral-900 sm:px-6 sm:pb-3">
           {confirmDiscard ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="flex items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
                 <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
                 Discard {dirtyKeys.length} unsaved change{dirtyKeys.length === 1 ? '' : 's'}?
               </p>
-              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row [&>button]:min-h-11 [&>button]:w-full sm:[&>button]:min-h-0 sm:[&>button]:w-auto">
                 <Button variant="outline" onClick={() => setConfirmDiscard(false)}>
                   Keep editing
                 </Button>
@@ -1125,7 +1125,7 @@ export function EditRegistrationDialog({
                   'No changes yet'
                 ) : null}
               </div>
-              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row [&>button]:min-h-11 [&>button]:w-full sm:[&>button]:min-h-0 sm:[&>button]:w-auto">
                 <Button variant="outline" onClick={() => requestClose(false)} disabled={saving}>
                   Cancel
                 </Button>

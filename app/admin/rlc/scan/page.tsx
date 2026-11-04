@@ -183,12 +183,15 @@ export default function RlcScanPage() {
         subtitle="Prefer manual search by name or phone. Open the camera only when you need QR slips."
         actions={
           <Button variant="outline" asChild>
-            <Link href="/admin/rlc/attendance">Full attendance + print</Link>
+            <Link href="/admin/rlc/attendance">
+              <span className="sm:hidden">Full register</span>
+              <span className="hidden sm:inline">Full attendance + print</span>
+            </Link>
           </Button>
         }
       />
 
-      <Card className="border-rose-100">
+      <Card className="border-brand-100 dark:border-brand-400/20">
         <CardHeader>
           <CardTitle>Active service</CardTitle>
           <CardDescription>
@@ -218,6 +221,8 @@ export default function RlcScanPage() {
         <CardContent className="space-y-3">
           <Input
             autoFocus
+            type="search"
+            className="h-11 text-base sm:h-10 sm:text-sm"
             placeholder="Name, phone, RLC-26-XXXX, membership ID…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -229,7 +234,7 @@ export default function RlcScanPage() {
             }}
           />
           {lastCheckedIn ? (
-            <p className="flex items-center gap-1.5 text-sm text-emerald-700">
+            <p className="flex items-center gap-1.5 text-sm text-emerald-700 dark:text-emerald-300">
               <CheckCircle className="h-4 w-4 shrink-0" />
               Checked in {lastCheckedIn}
             </p>
@@ -251,7 +256,7 @@ export default function RlcScanPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Camera className="h-4 w-4" />
@@ -262,6 +267,7 @@ export default function RlcScanPage() {
           <Button
             variant={cameraOpen ? 'secondary' : 'outline'}
             size="sm"
+            className="h-11 w-full sm:h-8 sm:w-auto"
             onClick={() => setCameraOpen((open) => !open)}
           >
             {cameraOpen ? 'Close camera' : 'Open camera'}
@@ -285,9 +291,9 @@ export default function RlcScanPage() {
             people
               .filter((p) => checkedKeys.has(p.key))
               .map((p) => (
-                <div key={p.key} className="flex items-center gap-2 rounded border px-3 py-2">
-                  <CheckCircle className="h-4 w-4 text-emerald-600" />
-                  <span className="font-medium">{p.name}</span>
+                <div key={p.key} className="flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2">
+                  <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                  <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
                   <span className="text-xs text-muted-foreground">{p.kind}</span>
                 </div>
               ))

@@ -5,33 +5,34 @@ This page explains the rules so new screens match the old ones in both themes.
 
 ## Colour
 
+Indigo brand on cool slate. `neutral`, `slate` and `gray` all resolve to the slate scale.
+
 | Role | Light | Dark | Use |
 |------|-------|------|-----|
 | Canvas (header, sidebar) | `neutral-100` | `neutral-950` | Behind everything |
-| Content panel | `white` | `neutral-900` | `.app-content-panel` |
-| Card | `white` | `neutral-800` | `.dashboard-panel`, `.app-card` |
-| Inset well | `neutral-50` | `neutral-900/40` | Code boxes, stat wells |
-| Border | `neutral-200` | `neutral-700` | Cards, inputs, dividers |
-| Ink: primary | `neutral-900` | `neutral-50`/`100` | Titles, values |
+| Content panel | `neutral-50/70` | `neutral-900` | `.app-content-panel` |
+| Card | `white` + `shadow-card` | `neutral-800/60`, `border-white/[0.06]` | `.dashboard-panel`, `Card` |
+| Border | `neutral-200/80` | `white/[0.06]`–`white/10` | Cards, inputs, dividers |
+| Ink: primary | `neutral-900` | `white` / `neutral-100` | Titles, values |
 | Ink: secondary | `neutral-600`/`700` | `neutral-300` | Body |
 | Ink: muted | `neutral-500` | `neutral-400` | Meta, labels |
-| Brand action | `brand-600` | `brand-700` (button), `brand-400` (text) | Primary buttons, links, active nav |
+| Brand action | `brand-600` | `brand-500` (button), `brand-300` (text) | Primary buttons, links |
+| Accent gradient | `brand-500 → violet-600` | same | Icon tiles, logo, one title word |
 
-- **One grey.** `slate` and `gray` are aliased to the neutral scale. Write `neutral-*` in new code.
 - **Status colours are reserved:** emerald = good, amber = needs attention, red = problem.
-  Always pair them with an icon or a label. Never use them for decoration or "series 4".
-- **Every colour class needs a `dark:` pair.** `globals.css` has a safety net for older
-  screens (light-only `text-slate-900`, `bg-blue-50`, etc.), but it only applies when the
-  element has no `dark:` class of the same kind. Explicit `dark:` classes always win.
-- Tinted panels: `bg-{hue}-50 text-{hue}-800 border-{hue}-200` in light,
-  `dark:bg-{hue}-950/30 dark:text-{hue}-200 dark:border-{hue}-900/60` in dark.
+  Always pair them with an icon or a label.
+- **Every colour class needs a `dark:` pair.** `globals.css` has a fallback for older screens,
+  but only when the element has no `dark:` class of the same kind.
+- Tinted chips: `bg-{hue}-50 text-{hue}-700 ring-1 ring-inset ring-{hue}-600/20`, dark
+  `bg-{hue}-400/10 text-{hue}-300 ring-{hue}-400/20` (see `Badge`).
+- Categorical chart palette (fixed order, validated on white and slate-800):
+  `#6366f1 #0d9488 #ea580c #db2777 #0284c7 #65a30d #a855f7 #b45309` in `lib/charts/theme.ts`.
 
 ## Type
 
-See AGENTS.md. In short: Instrument Serif only for page titles (`.app-page-title`,
-`.app-display-accent`); Geist for everything else; Geist Mono for IDs, check-in codes and
-phone numbers in call lists. Use `.app-section-title`, `.app-overline`, `.app-stat-label`,
-`.app-stat-value`, `.app-page-description`; don't invent sizes.
+Plus Jakarta Sans for everything (bold page titles, semibold section titles), JetBrains Mono
+for IDs, codes and phone numbers in lists. Use `.app-page-title`, `.app-section-title`,
+`.app-overline`, `.app-stat-label`, `.app-stat-value`, `.app-page-description`; don't invent sizes.
 
 ## Components
 
@@ -50,7 +51,7 @@ phone numbers in call lists. Use `.app-section-title`, `.app-overline`, `.app-st
 
 ## Charts
 
-- One series → no legend; the title names it. Bars `brand-600` (light) / `brand-500` (dark),
+- One series → no legend; the title names it. Bars `#4f46e5` (light) / `#6366f1` (dark),
   4px rounded tops, recessive grid (`currentColor` at 12%), tooltip on hover.
 - Never a dual axis. Status colours only for status.
 - Give every chart a text summary (`figcaption` or `sr-only`).

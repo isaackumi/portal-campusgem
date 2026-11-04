@@ -1,15 +1,16 @@
-/** Shared palette aligned with form analytics colors. */
+/**
+ * Categorical palette in fixed order (validated for colour-vision deficiency and
+ * contrast on white and slate-800). Status colours are not reused here.
+ */
 export const CHART_PALETTE = [
-  '#ce1440',
-  '#ec3560',
-  '#10b981',
-  '#f59e0b',
-  '#7a1231',
-  '#737373',
-  '#fb6485',
-  '#404040',
-  '#14b8a6',
-  '#ad0e36',
+  '#6366f1',
+  '#0d9488',
+  '#ea580c',
+  '#db2777',
+  '#0284c7',
+  '#65a30d',
+  '#a855f7',
+  '#b45309',
 ] as const
 
 export function chartColor(index: number): string {

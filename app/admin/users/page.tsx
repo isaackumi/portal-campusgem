@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StatCard } from '@/components/ui/stat-card'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -250,10 +250,7 @@ export default function UsersManagementPage() {
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading users...</p>
-        </div>
+        <LoadingSpinner />
       </div>
     )
   }
@@ -261,291 +258,300 @@ export default function UsersManagementPage() {
   if (error) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <UserX className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">Error Loading Users</h2>
-            <p className="text-slate-600 mb-4">{error}</p>
-            <Button onClick={() => refetch()}>
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="dashboard-panel w-full max-w-md p-6 text-center">
+          <UserX className="mx-auto mb-4 h-12 w-12 text-red-500 dark:text-red-400" />
+          <h2 className="app-section-title mb-2">Couldn&apos;t load users</h2>
+          <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-400">{error}</p>
+          <Button onClick={() => refetch()} className="h-11 w-full sm:h-10 sm:w-auto">
+            Try again
+          </Button>
+        </div>
       </div>
     )
   }
 
+  const createField = 'h-11 sm:h-10'
+
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="app-page-title">User Management</h1>
-              <p className="text-slate-600 mt-2">Manage church members and their roles</p>
-            </div>
-            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-              <DialogTrigger asChild>
-                <Button className="">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add User
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New User</DialogTitle>
-                  <DialogDescription>
-                    Add a new member to the church management system.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="full_name">Full Name *</Label>
-                      <Input
-                        id="full_name"
-                        value={formData.full_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                        placeholder="Enter full name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone Number *</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="Enter email address"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="role">Role *</Label>
-                      <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor' }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="member">Member</SelectItem>
-                          <SelectItem value="elder">Elder</SelectItem>
-                          <SelectItem value="pastor">Pastor</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="membership_id">Membership ID</Label>
-                      <Input
-                        id="membership_id"
-                        value={formData.membership_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, membership_id: e.target.value }))}
-                        placeholder="Auto-generated if empty"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="join_year">Join Year</Label>
-                      <Input
-                        id="join_year"
-                        type="number"
-                        value={formData.join_year}
-                        onChange={(e) => setFormData(prev => ({ ...prev, join_year: parseInt(e.target.value) }))}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                      placeholder="Enter address"
-                      rows={3}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="app-page-title">Users</h1>
+            <p className="app-page-description mt-1">Manage church members and their roles</p>
+          </div>
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button className="h-11 w-full sm:h-10 sm:w-auto">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add user
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create new user</DialogTitle>
+                <DialogDescription>
+                  Add a new member to the church management system.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="full_name">Full name *</Label>
+                    <Input
+                      id="full_name"
+                      className={createField}
+                      value={formData.full_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="Enter full name"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="occupation">Occupation</Label>
-                      <Input
-                        id="occupation"
-                        value={formData.occupation}
-                        onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
-                        placeholder="Enter occupation"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="place_of_work">Place of Work</Label>
-                      <Input
-                        id="place_of_work"
-                        value={formData.place_of_work}
-                        onChange={(e) => setFormData(prev => ({ ...prev, place_of_work: e.target.value }))}
-                        placeholder="Enter place of work"
-                      />
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone">Phone number *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="tel"
+                      className={createField}
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Enter phone number"
+                    />
                   </div>
-
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateUser} disabled={creating}>
-                      {creating ? 'Creating...' : 'Create User'}
-                    </Button>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      inputMode="email"
+                      className={createField}
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="role">Role *</Label>
+                    <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor' }))}>
+                      <SelectTrigger id="role" className={createField}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="member">Member</SelectItem>
+                        <SelectItem value="elder">Elder</SelectItem>
+                        <SelectItem value="pastor">Pastor</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="membership_id">Membership ID</Label>
+                    <Input
+                      id="membership_id"
+                      className={createField}
+                      value={formData.membership_id}
+                      onChange={(e) => setFormData(prev => ({ ...prev, membership_id: e.target.value }))}
+                      placeholder="Auto-generated if empty"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="join_year">Join year</Label>
+                    <Input
+                      id="join_year"
+                      type="number"
+                      inputMode="numeric"
+                      className={createField}
+                      value={formData.join_year}
+                      onChange={(e) => setFormData(prev => ({ ...prev, join_year: parseInt(e.target.value) }))}
+                    />
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="Enter address"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="occupation">Occupation</Label>
+                    <Input
+                      id="occupation"
+                      className={createField}
+                      value={formData.occupation}
+                      onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
+                      placeholder="Enter occupation"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="place_of_work">Place of work</Label>
+                    <Input
+                      id="place_of_work"
+                      className={createField}
+                      value={formData.place_of_work}
+                      onChange={(e) => setFormData(prev => ({ ...prev, place_of_work: e.target.value }))}
+                      placeholder="Enter place of work"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <Button variant="outline" onClick={() => setShowCreateDialog(false)} className={createField}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateUser} disabled={creating} className={createField}>
+                    {creating ? 'Creating…' : 'Create user'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
-          <StatCard label="Total users" value={stats.total} />
+        {/* Statistics */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
+          <StatCard label="Total users" value={stats.total} className="col-span-2 md:col-span-1" />
           <StatCard label="Admins" value={stats.admins} />
-          
           <StatCard label="Pastors" value={stats.pastors} />
           <StatCard label="Elders" value={stats.elders} />
-          
           <StatCard label="Members" value={stats.members} />
         </div>
 
-        {/* Search and Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search users by name, phone, email, or membership ID..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    {uniqueRoles.map(role => (
-                      <SelectItem key={role} value={role}>
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Search and filters */}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+            <Input
+              type="search"
+              placeholder="Search name, phone, email or ID"
+              aria-label="Search users"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-11 pl-10 sm:h-10"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="h-11 sm:h-10 sm:w-36" aria-label="Filter by role">
+                <SelectValue placeholder="Role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All roles</SelectItem>
+                {uniqueRoles.map(role => (
+                  <SelectItem key={role} value={role}>
+                    {chipLabel(role)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-11 sm:h-10 sm:w-36" aria-label="Filter by status">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-        {/* Users List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Users ({filteredUsers.length})</CardTitle>
-            <CardDescription>
-              Manage church members and their roles
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredUsers.length === 0 ? (
-              <div className="text-center py-12">
-                <UserX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-2">No users found</h3>
-                <p className="text-slate-600">Try adjusting your search or filters.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-neutral-100 overflow-hidden rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-                {filteredUsers.map((user) => (
-                  <div
+        {/* Users list */}
+        <section className="dashboard-panel overflow-hidden">
+          <div className="border-b border-neutral-200/80 px-4 py-3 dark:border-white/[0.06] sm:px-5">
+            <h2 className="app-section-title">
+              Users <span className="tabular-nums text-neutral-500 dark:text-neutral-400">({filteredUsers.length})</span>
+            </h2>
+          </div>
+          {filteredUsers.length === 0 ? (
+            <div className="px-4 py-12 text-center">
+              <UserX className="mx-auto mb-4 h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+              <h3 className="app-section-title mb-1">No users found</h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Try adjusting your search or filters.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-neutral-100 dark:divide-white/[0.06]">
+              {filteredUsers.map((user) => {
+                const name = displayName(user.full_name)
+                return (
+                  <li
                     key={user.id}
-                    className="flex flex-col gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/70 dark:hover:bg-neutral-800/40 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex min-h-14 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/70 dark:hover:bg-neutral-800/40 sm:px-5"
+                    onClick={() => void handleViewUser(user)}
                   >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <PersonAvatar name={user.full_name} seed={user.id} />
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-0.5 flex items-center gap-2">
-                          <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {displayName(user.full_name)}
-                          </h3>
-                          <Badge variant={roleTone(user.role)} className="capitalize">
-                            {chipLabel(user.role)}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-slate-500">
-                          {user.phone && (
-                            <span className="flex items-center">
-                              <Phone className="h-3 w-3 mr-1" />
-                              {user.phone}
-                            </span>
-                          )}
-                          {user.email && (
-                            <span className="flex items-center">
-                              <Mail className="h-3 w-3 mr-1" />
-                              {user.email}
-                            </span>
-                          )}
-                          {user.membership_id && (
-                            <span className="font-mono text-[13px]">{user.membership_id}</span>
-                          )}
-                        </div>
+                    <PersonAvatar name={user.full_name} seed={user.id} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <button
+                          type="button"
+                          className="min-w-0 truncate text-left text-sm font-medium text-neutral-900 hover:text-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:text-neutral-100 dark:hover:text-brand-300"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void handleViewUser(user)
+                          }}
+                        >
+                          {name}
+                        </button>
+                        <Badge variant={roleTone(user.role)} className="shrink-0 capitalize">
+                          {chipLabel(user.role)}
+                        </Badge>
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
+                        {user.phone ? (
+                          <PhoneLink phone={user.phone} whatsapp={user.whatsapp} name={name} />
+                        ) : null}
+                        {user.membership_id && (
+                          <span className="font-mono">{user.membership_id}</span>
+                        )}
+                        {user.email && (
+                          <span className="hidden min-w-0 max-w-[16rem] items-center truncate md:inline-flex">
+                            <Mail className="mr-1 h-3 w-3 shrink-0" aria-hidden />
+                            <span className="truncate">{user.email}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
-                    
-                    {/* One visible action; everything else lives in the row menu. */}
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void handleViewUser(user)}>
-                        <Eye className="h-3.5 w-3.5" aria-hidden />
-                        View
-                      </Button>
+
+                    <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <QuickContactButtons
+                        phone={user.phone}
+                        whatsapp={user.whatsapp}
+                        name={name}
+                        className="hidden min-[400px]:inline-flex"
+                      />
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 px-0" aria-label={`More actions for ${displayName(user.full_name)}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-11 w-11 sm:h-9 sm:w-9"
+                            aria-label={`Actions for ${name}`}
+                          >
                             <MoreHorizontal className="h-4 w-4" aria-hidden />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuItem onClick={() => setEditingUserId(user.id)}>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuItem className="min-h-11 sm:min-h-9" onClick={() => void handleViewUser(user)}>
+                            <Eye className="mr-2 h-4 w-4" aria-hidden />
+                            View profile
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="min-h-11 sm:min-h-9" onClick={() => setEditingUserId(user.id)}>
                             <Edit className="mr-2 h-4 w-4" aria-hidden />
                             Edit details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openAddToRlc(user)}>
+                          <DropdownMenuItem className="min-h-11 sm:min-h-9" onClick={() => openAddToRlc(user)}>
                             <UserPlus className="mr-2 h-4 w-4" aria-hidden />
                             Add to RLC
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            className="min-h-11 sm:min-h-9"
                             disabled={promotingUserId === user.id}
                             onClick={() => void handlePromoteToCorporateGem(user)}
                           >
@@ -554,7 +560,7 @@ export default function UsersManagementPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600 focus:text-red-700 dark:text-red-400"
+                            className="min-h-11 text-red-600 focus:text-red-700 dark:text-red-400 dark:focus:text-red-300 sm:min-h-9"
                             onClick={() => handleDeleteUser(user.id, user.full_name || 'User')}
                           >
                             <Trash2 className="mr-2 h-4 w-4" aria-hidden />
@@ -563,12 +569,12 @@ export default function UsersManagementPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
 
         <EditUserDialog
           open={Boolean(editingUserId)}

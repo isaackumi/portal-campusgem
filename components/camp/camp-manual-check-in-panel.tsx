@@ -17,6 +17,7 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { CheckCircle2, Search, UserCheck, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 
 type CampManualCheckInPanelProps = {
   campYearId: string
@@ -169,9 +170,9 @@ export function CampManualCheckInPanel({
   }
 
   return (
-    <Card className={cn('border-2', simple && 'border-slate-200 shadow-none', className)}>
+    <Card className={cn(simple && 'shadow-none', className)}>
       {!simple ? (
-        <CardHeader className="border-b bg-slate-50">
+        <CardHeader className="border-b border-neutral-200/80 bg-neutral-50 p-4 dark:border-white/10 dark:bg-white/[0.03] sm:p-6">
           <CardTitle className="flex items-center gap-2 text-lg">
             <UserCheck className="h-5 w-5" />
             {checkInMethod === 'arrival' ? 'Arrival desk' : 'Manual search'}
@@ -188,11 +189,11 @@ export function CampManualCheckInPanel({
           </CardDescription>
         </CardHeader>
       ) : null}
-      <CardContent className={cn('space-y-4', simple ? 'pt-4' : 'pt-4')}>
+      <CardContent className="space-y-4 p-4 sm:p-6 sm:pt-4">
         {simple ? (
           <div className="space-y-1">
-            <p className="text-base font-semibold text-slate-900">Find camper</p>
-            <p className="text-sm text-slate-600">
+            <p className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Find camper</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
               Search by <strong>name</strong> or <strong>phone</strong>
               {sessionLabel ? (
                 <>
@@ -213,7 +214,7 @@ export function CampManualCheckInPanel({
                 ? 'Name or phone number…'
                 : 'Camp code (GEM-26-XXXX), name, or phone…'
             }
-            className={cn('pl-10 text-base', simple ? 'min-h-14 text-lg' : 'min-h-11')}
+            className={cn('pl-10 text-base', simple ? 'h-14 min-h-14 text-lg' : 'h-11 min-h-11')}
             inputMode="search"
             autoComplete="off"
             autoFocus={simple}
@@ -223,14 +224,14 @@ export function CampManualCheckInPanel({
         {query.trim().length >= 2 ? (
           <>
             {mode === 'code' && results.length === 1 ? (
-              <p className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-900">
+              <p className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-3 py-2 text-sm text-neutral-900 dark:border-white/10 dark:bg-white/[0.03] dark:text-neutral-100">
                 Matched camp code{' '}
                 <span className="font-mono font-semibold">{resolveCampCheckInCode(results[0]!)}</span>
               </p>
             ) : null}
 
             {mode === 'phone' && results.length > 1 ? (
-              <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-900 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-neutral-50/80 p-3 text-sm text-neutral-900 dark:border-white/10 dark:bg-white/[0.03] dark:text-neutral-100 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-2">
                   <Users className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>
@@ -241,7 +242,7 @@ export function CampManualCheckInPanel({
                 {pendingResults.length > 1 ? (
                   <Button
                     size="sm"
-                    className="min-h-9 shrink-0"
+                    className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
                     disabled={bulkChecking}
                     onClick={() => void checkInAllPending()}
                   >
@@ -278,17 +279,20 @@ export function CampManualCheckInPanel({
                       key={reg.id}
                       className={cn(
                         'flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between',
-                        checkedIn ? 'border-green-200 bg-green-50/50' : 'border-slate-200 bg-white'
+                        checkedIn
+                          ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-400/20 dark:bg-emerald-400/5'
+                          : 'border-neutral-200 bg-white dark:border-white/10 dark:bg-neutral-800/60'
                       )}
                     >
                       <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-slate-900">{name}</p>
+                        <div className="flex items-start gap-2">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                          <p className="break-words font-semibold text-neutral-900 dark:text-neutral-100">{name}</p>
                           <Badge variant="outline" className="text-xs">
                             {reg.role}
                           </Badge>
                           {checkedIn ? (
-                            <Badge className="text-xs">
+                            <Badge variant="success" className="text-xs">
                               {activityId ? 'In session' : 'Checked in'}
                             </Badge>
                           ) : (
@@ -297,28 +301,42 @@ export function CampManualCheckInPanel({
                             </Badge>
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                        <QuickContactButtons phone={reg.phone || guardian} whatsapp={reg.whatsapp} name={name} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                           {campCode ? (
-                            <span className="font-mono font-semibold text-brand-800">
+                            <span className="font-mono font-semibold text-brand-800 dark:text-brand-300">
                               Code: {campCode}
                             </span>
                           ) : null}
-                          {reg.phone?.trim() ? <span>Camper phone: {reg.phone}</span> : null}
-                          {guardian ? <span>Guardian phone: {guardian}</span> : null}
+                          {reg.phone?.trim() ? (
+                            <span>
+                              Camper: <PhoneLink phone={reg.phone} whatsapp={reg.whatsapp} name={name} />
+                            </span>
+                          ) : null}
+                          {guardian ? (
+                            <span>
+                              Guardian:{' '}
+                              <PhoneLink
+                                phone={guardian}
+                                name={reg.parent_name && reg.parent_name !== 'N/A' ? reg.parent_name : `${name}'s guardian`}
+                              />
+                            </span>
+                          ) : null}
                           {reg.parent_name?.trim() && reg.parent_name !== 'N/A' ? (
                             <span>Guardian name: {reg.parent_name}</span>
                           ) : null}
                         </div>
                       </div>
                       <div className="flex shrink-0 gap-2">
-                        <Button variant="outline" size="sm" className="min-h-9" asChild>
+                        <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" asChild>
                           <Link href={`/admin/camp-meeting/registrations/${reg.id}?year=${campYearId}`}>
                             View
                           </Link>
                         </Button>
                         <Button
                           size="sm"
-                          className={cn('min-h-9 min-w-[7rem]', simple && 'min-h-12 min-w-[8.5rem] text-base')}
+                          className={cn('min-h-11 flex-1 sm:min-h-9 sm:min-w-[7rem] sm:flex-none', simple && 'min-h-12 text-base sm:min-h-12 sm:min-w-[8.5rem]')}
                           disabled={checkedIn || checkingId === reg.id || bulkChecking}
                           onClick={() => void checkInOne(reg)}
                         >

@@ -14,6 +14,7 @@ import { publishCampusMemberRegistrationForm } from '@/lib/actions/campus-regist
 import { getGroupTypeLabel } from '@/lib/constants/groups'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatCard } from '@/components/ui/stat-card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
@@ -47,7 +48,7 @@ function BoardGroupCard({ group }: { group: CorporateGemBoardGroup }) {
   }
 
   return (
-    <Card className="flex h-full flex-col border-violet-200/80 bg-white shadow-sm">
+    <Card className="flex h-full flex-col border-violet-200/80 bg-white shadow-sm dark:border-violet-400/20 dark:bg-neutral-800/60">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-2">
@@ -56,7 +57,7 @@ function BoardGroupCard({ group }: { group: CorporateGemBoardGroup }) {
               {getGroupTypeLabel(group.group_type)}
             </Badge>
           </div>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-800">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-800 dark:bg-violet-400/10 dark:text-violet-300">
             <Briefcase className="h-5 w-5" />
           </div>
         </div>
@@ -64,18 +65,18 @@ function BoardGroupCard({ group }: { group: CorporateGemBoardGroup }) {
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-lg bg-slate-50 px-3 py-2">
+          <div className="rounded-lg bg-neutral-50 px-3 py-2 dark:bg-white/[0.04]">
             <p className="text-xs text-muted-foreground">Members</p>
             <p className="font-semibold">{group.memberCount}</p>
           </div>
-          <div className="rounded-lg bg-slate-50 px-3 py-2">
+          <div className="rounded-lg bg-neutral-50 px-3 py-2 dark:bg-white/[0.04]">
             <p className="text-xs text-muted-foreground">Leaders / exec</p>
             <p className="font-semibold">
               {group.leaderCount} / {group.executiveCount}
             </p>
           </div>
         </div>
-        <div className="mt-auto grid gap-2">
+        <div className="mt-auto grid gap-2 [&_a]:h-10 [&_button]:h-10 sm:[&_a]:h-8 sm:[&_button]:h-8">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/groups/${group.id}`}>
               <Users className="mr-2 h-3.5 w-3.5" />
@@ -85,7 +86,7 @@ function BoardGroupCard({ group }: { group: CorporateGemBoardGroup }) {
           <Button
             variant="outline"
             size="sm"
-            className="border-violet-200"
+            className="border-violet-200 dark:border-violet-400/20"
             disabled={settingUpForm}
             onClick={() => void createRegistrationForm()}
           >
@@ -172,67 +173,51 @@ export default function CorporateGemAdminPage() {
   const totals = board?.totals ?? { groups: 0, members: 0, forms: 0 }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50/50 via-white to-slate-50">
-      <div className="mx-auto max-w-7xl space-y-8 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-3">
-            <Button variant="ghost" onClick={() => router.push('/admin')}>
+    <div>
+      <div className="mx-auto w-full min-w-0 max-w-7xl space-y-6 sm:space-y-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 space-y-2">
+            <Button variant="ghost" className="-ml-2 h-11 px-2 sm:h-10" onClick={() => router.push('/admin')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Admin
             </Button>
             <div>
               <h1 className="app-page-title">Corporate Gem</h1>
-              <p className="mt-1 max-w-2xl text-muted-foreground">
+              <p className="app-page-description mt-1 max-w-2xl">
                 Graduates and working professionals — executives, leaders, members, activities, and forms. Promote
                 students here when they finish campus.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 [&>*]:h-11 [&>*]:flex-1 sm:[&>*]:h-10 sm:[&>*]:flex-none">
             <Button variant="outline" asChild>
-              <Link href="/admin/users">Promote from users</Link>
+              <Link href="/admin/users">
+                <span className="sm:hidden">Promote</span>
+                <span className="hidden sm:inline">Promote from users</span>
+              </Link>
             </Button>
             <Button disabled={bootstrapping} onClick={() => void bootstrapCorporateGem()}>
               <Sparkles className="mr-2 h-4 w-4" />
-              {bootstrapping ? 'Setting up...' : 'Set up Corporate Gem'}
+              {bootstrapping ? 'Setting up...' : (
+                <>
+                  <span className="sm:hidden">Set up</span>
+                  <span className="hidden sm:inline">Set up Corporate Gem</span>
+                </>
+              )}
             </Button>
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardContent className="flex items-center gap-3 p-5">
-              <Briefcase className="h-8 w-8 text-violet-700" />
-              <div>
-                <p className="text-sm text-muted-foreground">Units</p>
-                <p className="text-2xl font-bold">{totals.groups}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 p-5">
-              <Users className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Members</p>
-                <p className="text-2xl font-bold">{totals.members}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 p-5">
-              <ClipboardList className="h-8 w-8 text-emerald-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Forms</p>
-                <p className="text-2xl font-bold">{totals.forms}</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <StatCard className="p-3 sm:p-5" label="Units" value={totals.groups} />
+          <StatCard className="p-3 sm:p-5" label="Members" value={totals.members} />
+          <StatCard className="p-3 sm:p-5" label="Forms" value={totals.forms} />
         </div>
 
         {groups.length === 0 ? (
-          <Card className="border-dashed border-violet-200">
+          <Card className="border-dashed border-violet-200 dark:border-violet-400/20">
             <CardContent className="flex flex-col items-center py-14 text-center">
-              <UserPlus className="mb-4 h-12 w-12 text-violet-300" />
+              <UserPlus className="mb-4 h-12 w-12 text-violet-300 dark:text-violet-400/60" />
               <h3 className="text-lg font-semibold">No Corporate Gem group yet</h3>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
                 Click &quot;Set up Corporate Gem&quot; to create the default group and registration form, or add a group
@@ -241,7 +226,7 @@ export default function CorporateGemAdminPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
             {groups.map((group) => (
               <BoardGroupCard key={group.id} group={group} />
             ))}

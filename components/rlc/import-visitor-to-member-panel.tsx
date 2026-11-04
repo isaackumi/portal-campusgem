@@ -110,10 +110,10 @@ export function ImportVisitorToMemberPanel({ onImported }: Props) {
 
   return (
     <>
-      <Card id="import-visitors" className="border-rose-100/80">
+      <Card id="import-visitors" className="border-brand-100/80 dark:border-brand-400/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Users className="h-5 w-5 text-rose-700" />
+            <Users className="h-5 w-5 text-brand-700 dark:text-brand-300" />
             Bulk import from visitors
           </CardTitle>
           <CardDescription>
@@ -135,7 +135,7 @@ export function ImportVisitorToMemberPanel({ onImported }: Props) {
                   value={membershipType}
                   onValueChange={(v) => setMembershipType(v as RlcMembershipType)}
                 >
-                  <SelectTrigger className="sm:w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -149,7 +149,7 @@ export function ImportVisitorToMemberPanel({ onImported }: Props) {
               </div>
               <Button
                 type="button"
-                className="bg-rose-700 hover:bg-rose-800"
+                className="bg-brand-700 hover:bg-brand-800"
                 disabled={importing || selectedIds.size === 0}
                 onClick={() => void runBulkImport()}
               >
@@ -178,14 +178,14 @@ export function ImportVisitorToMemberPanel({ onImported }: Props) {
             </p>
           ) : (
             <div className="space-y-2">
-              <div className="flex items-center gap-3 rounded-lg border bg-slate-50 px-3 py-2 text-sm">
+              <div className="flex items-center gap-3 rounded-lg border bg-neutral-50 px-3 py-2 text-sm dark:bg-white/[0.04]">
                 <Checkbox
                   checked={allVisibleSelected}
                   onCheckedChange={(checked) => toggleAllVisible(checked === true)}
                 />
                 <span className="font-medium">Select all visible ({filtered.length})</span>
               </div>
-              <ul className="max-h-80 divide-y overflow-y-auto rounded-md border bg-white">
+              <ul className="max-h-80 divide-y overflow-y-auto rounded-md border bg-white dark:bg-neutral-800/60">
                 {filtered.map((v) => (
                   <li key={v.id} className="flex items-start gap-3 px-3 py-3">
                     <Checkbox

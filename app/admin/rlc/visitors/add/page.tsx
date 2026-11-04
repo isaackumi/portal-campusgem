@@ -12,6 +12,7 @@ import { RlcVisitorForm } from '@/components/rlc/rlc-visitor-form'
 import { PageContainer } from '@/components/layout/page-container'
 import { RlcPageHeader } from '@/components/rlc/rlc-page-header'
 import { Button } from '@/components/ui/button'
+import { FormActionBar } from '@/components/admin/form-action-bar'
 import { useToast } from '@/hooks/use-toast'
 import { useClientOnly } from '@/lib/hooks/use-client-only'
 
@@ -81,19 +82,19 @@ export default function AddRlcVisitorPage() {
         backHref="/admin/rlc/visitors"
       />
 
-      <RlcPublicVisitShare className="mb-6" />
+      <RlcPublicVisitShare />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <RlcVisitorForm form={form} onChange={setForm} />
 
-        <div className="flex justify-end gap-2">
+        <FormActionBar>
           <Button type="button" variant="outline" onClick={() => router.push('/admin/rlc/visitors')}>
             Cancel
           </Button>
-          <Button type="submit" disabled={loading} className="bg-rose-700 hover:bg-rose-800">
+          <Button type="submit" disabled={loading}>
             {loading ? 'Saving…' : 'Register visitor'}
           </Button>
-        </div>
+        </FormActionBar>
       </form>
     </PageContainer>
   )

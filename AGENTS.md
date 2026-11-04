@@ -42,19 +42,20 @@ camp meeting, RLC (mother church), forms, SMS.
 - `bun test lib` — unit tests.
 - `npm run build`
 
-## UI typography
+## UI typography and colour
 
-Three families, each with one job (set up in `app/layout.tsx`):
+Set up in `app/layout.tsx` and `tailwind.config.ts`:
 
-- **Instrument Serif** (`font-display`): page-level headings only, 24px and up. Use
-  `.app-page-title` (or `PageHeader`), with `.app-display-accent` for an italic word.
-  Never inside cards, buttons, tables or forms.
-- **Geist** (`font-sans`, the default): everything else, numbers included.
-- **Geist Mono** (`font-mono`): membership IDs, check-in codes, keyboard shortcuts.
-
-Colour rules, components and chart rules: `design-system/campus-gem/MASTER.md`. Every
-colour class needs a `dark:` pair; write `neutral-*` (slate and gray are aliased to it).
+- **Plus Jakarta Sans** (`font-sans`, also `font-display`): the whole interface. Page titles
+  use `.app-page-title` (bold, tight tracking) or `PageHeader`; `.app-display-accent` gives one
+  word an indigo→violet gradient.
+- **JetBrains Mono** (`font-mono`): membership IDs, check-in codes, phone numbers in call lists,
+  keyboard shortcuts.
+- **Colour:** indigo `brand-*` on cool slate greys. `neutral`, `slate` and `gray` all resolve to
+  the same slate scale. Dark mode is navy (slate-950 canvas, slate-900 panel, slate-800/60 cards).
+  Every colour class needs a `dark:` pair. Full rules: `design-system/campus-gem/MASTER.md`.
 
 Use the type classes in `app/globals.css` (`app-section-title`, `app-overline`,
 `app-stat-label`, `app-stat-value`) rather than ad-hoc sizes. Chips are `Badge` with a tone
-variant; `app-overline` is the only uppercase style.
+variant; `app-overline` is the only uppercase style. Headline numbers are `StatCard` (optional
+`icon`, `trend`, `href`).

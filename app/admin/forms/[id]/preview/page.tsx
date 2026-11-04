@@ -70,7 +70,7 @@ export default function FormPreviewPage() {
 
   if (authLoading || (user && loading)) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#eceff1]">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#eceff1] dark:bg-neutral-950">
         <LoadingSpinner />
       </div>
     )
@@ -80,8 +80,8 @@ export default function FormPreviewPage() {
 
   if (!form) {
     return (
-      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-[#eceff1] p-6">
-        <p className="text-slate-600">Form not found.</p>
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-[#eceff1] p-6 dark:bg-neutral-950">
+        <p className="text-neutral-600 dark:text-neutral-300">Form not found.</p>
         <Button variant="outline" asChild>
           <Link href="/admin/forms">Back to Forms Hub</Link>
         </Button>
@@ -91,19 +91,19 @@ export default function FormPreviewPage() {
 
   return (
     <div className="relative">
-      <div className="sticky top-0 z-[60] flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-4 py-2.5 backdrop-blur sm:px-6">
-        <Button variant="ghost" size="sm" asChild>
+      <div className="sticky top-0 z-[60] flex items-center justify-between gap-2 border-b border-neutral-200 bg-white/95 px-3 py-2 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 sm:px-6">
+        <Button variant="ghost" size="sm" className="-ml-2 h-10 px-2" asChild>
           <Link href={`/admin/forms/${form.id}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to editor
           </Link>
         </Button>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-slate-500">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="hidden truncate text-sm text-neutral-500 dark:text-neutral-400 sm:inline">
             Preview · {form.display_mode === 'classic' ? 'Classic' : 'Step-by-step'}
           </span>
           {form.status === 'published' ? (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" className="h-10" asChild>
               <a href={`/f/${form.slug}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-2 h-4 w-4" />
                 Live link

@@ -37,7 +37,7 @@ export function WhatsappSameAsPhoneBlock({
         'flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-all',
         isStepped
           ? 'rounded-2xl border-2 border-white/25 bg-white/10 hover:border-white/50'
-          : 'rounded-xl border border-slate-200 bg-slate-50/80 active:bg-slate-100'
+          : 'rounded-xl border border-neutral-200 bg-neutral-50/80 active:bg-neutral-100'
       )}
     >
       <Checkbox
@@ -46,15 +46,15 @@ export function WhatsappSameAsPhoneBlock({
         className={cn('mt-0.5 h-5 w-5', isStepped && 'border-white/70 data-[state=checked]:bg-white data-[state=checked]:text-slate-900')}
       />
       <div className="space-y-1">
-        <Label className={cn('cursor-pointer text-base font-medium', isStepped ? 'text-white' : 'text-slate-900')}>
+        <Label className={cn('cursor-pointer text-base font-medium', isStepped ? 'text-white' : 'text-neutral-900')}>
           Same as my phone number
         </Label>
         {phone ? (
-          <p className={cn('text-sm', isStepped ? 'text-white/80' : 'text-slate-600')}>
+          <p className={cn('text-sm', isStepped ? 'text-white/80' : 'text-neutral-600')}>
             WhatsApp: <span className="font-semibold">{phone}</span>
           </p>
         ) : (
-          <p className={cn('text-sm', isStepped ? 'text-white/60' : 'text-slate-500')}>
+          <p className={cn('text-sm', isStepped ? 'text-white/60' : 'text-neutral-500')}>
             Enter your phone number first.
           </p>
         )}

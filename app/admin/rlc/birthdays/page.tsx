@@ -34,14 +34,14 @@ export default function RlcBirthdaysPage() {
 
   return (
     <PageContainer className="space-y-4">
-      <Button variant="ghost" size="sm" asChild className="w-fit px-0">
+      <Button variant="ghost" size="sm" asChild className="-ml-2 h-11 w-fit px-2 sm:h-8">
         <Link href="/admin/rlc">
           <ArrowLeft className="mr-2 h-4 w-4" />
           RLC hub
         </Link>
       </Button>
       {error ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300">
           {error}
         </p>
       ) : null}
@@ -49,7 +49,7 @@ export default function RlcBirthdaysPage() {
         title={`${RLC_NAME} Birthdays`}
         subtitle="RLC members and active visitors with birthdays on file — includes today, weekly, 30-day upcoming, and month browse."
         entries={entries}
-        accentClass="text-rose-700"
+        accentClass="text-brand-700 dark:text-brand-300"
         smsModule="rlc"
       />
     </PageContainer>

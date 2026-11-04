@@ -25,8 +25,14 @@ import { Label } from '@/components/ui/label'
 import { ErrorDisplay } from '@/components/ui/error-display'
 import { LoadingCard, LoadingSpinner } from '@/components/ui/loading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Download, UserPlus, Users } from 'lucide-react'
-import { ContactActions } from '@/components/contact/contact-actions'
+import { Download, MoreHorizontal, Printer, QrCode, UserPlus, Users } from 'lucide-react'
+import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { RlcPublicVisitShare } from '@/components/rlc/rlc-public-visit-share'
 import { useToast } from '@/hooks/use-toast'
 
@@ -188,22 +194,50 @@ function RlcVisitorsContent() {
         subtitle="Track every visitor from first visit through membership."
         actions={
           <>
-            <Button variant="outline" className="w-full sm:w-auto" asChild>
+            <Button variant="outline" className="hidden sm:inline-flex" asChild>
               <Link href="/admin/rlc/members#import-visitors">
                 <Users className="mr-2 h-4 w-4" />
                 Import as members
               </Link>
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto" asChild>
+            <Button variant="outline" className="hidden sm:inline-flex" asChild>
               <Link href="/admin/rlc/visitors/print">Print slips</Link>
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto" asChild>
+            <Button variant="outline" className="hidden sm:inline-flex" asChild>
               <Link href="/admin/rlc/visitors/qr">QR code</Link>
             </Button>
-            <Button asChild className="w-full bg-rose-700 hover:bg-rose-800 sm:w-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="sm:hidden">
+                  <MoreHorizontal className="mr-2 h-4 w-4" />
+                  More
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem asChild className="min-h-11">
+                  <Link href="/admin/rlc/members#import-visitors">
+                    <Users className="mr-2 h-4 w-4" />
+                    Import as members
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="min-h-11">
+                  <Link href="/admin/rlc/visitors/print">
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print slips
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="min-h-11">
+                  <Link href="/admin/rlc/visitors/qr">
+                    <QrCode className="mr-2 h-4 w-4" />
+                    QR code
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button asChild>
               <Link href="/admin/rlc/visitors/add">
                 <UserPlus className="mr-2 h-4 w-4" />
-                Register Visitor
+                Register visitor
               </Link>
             </Button>
           </>
@@ -218,12 +252,12 @@ function RlcVisitorsContent() {
         />
       ) : null}
 
-      <RlcPublicVisitShare className="mb-6" />
+      <RlcPublicVisitShare />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <Input placeholder="Search name, phone, email, or check-in code…" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+        <Input className="sm:min-w-[16rem] sm:flex-1" type="search" placeholder="Search name, phone, email, or check-in code…" value={query} onChange={(e) => setQuery(e.target.value)} />
         <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
-          <SelectTrigger className="sm:w-44">
+          <SelectTrigger className="w-full sm:w-44">
             <SelectValue placeholder="Pipeline" />
           </SelectTrigger>
           <SelectContent>
@@ -236,7 +270,7 @@ function RlcVisitorsContent() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="sm:w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -249,9 +283,9 @@ function RlcVisitorsContent() {
       </div>
 
       {importableFiltered.length > 0 ? (
-        <Card className="border-rose-100/80">
+        <Card className="border-brand-100/80 dark:border-brand-400/20">
           <CardContent className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <label className="flex items-center gap-3 text-sm">
+            <label className="flex min-h-11 items-center gap-3 text-sm">
               <Checkbox
                 checked={allVisibleSelected}
                 onCheckedChange={(checked) => toggleAllVisible(checked === true)}
@@ -265,7 +299,7 @@ function RlcVisitorsContent() {
                   value={membershipType}
                   onValueChange={(v) => setMembershipType(v as RlcMembershipType)}
                 >
-                  <SelectTrigger className="sm:w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -278,7 +312,7 @@ function RlcVisitorsContent() {
                 </Select>
               </div>
               <Button
-                className="bg-rose-700 hover:bg-rose-800"
+                className="h-11 w-full sm:h-10 sm:w-auto"
                 disabled={importing || selectedIds.size === 0}
                 onClick={() => void runBulkImport()}
               >
@@ -306,7 +340,7 @@ function RlcVisitorsContent() {
               {visitors.length === 0 && !loadError ? (
                 <>
                   <p>No RLC visitors registered yet.</p>
-                  <Button asChild className="bg-rose-700 hover:bg-rose-800">
+                  <Button asChild>
                     <Link href="/admin/rlc/visitors/add">
                       <UserPlus className="mr-2 h-4 w-4" />
                       Register first visitor
@@ -320,7 +354,7 @@ function RlcVisitorsContent() {
                     {visitors.length} record{visitors.length === 1 ? '' : 's'} loaded — try{' '}
                     <button
                       type="button"
-                      className="font-medium text-rose-700 underline"
+                      className="font-medium text-brand-700 underline dark:text-brand-300"
                       onClick={() => setStatusFilter('all')}
                     >
                       All records
@@ -335,46 +369,58 @@ function RlcVisitorsContent() {
           filtered.map((v) => {
             const pipeline = v.pipeline_status ?? 'first_visit'
             return (
-              <Card key={v.id} className="border-rose-100/80">
-                <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-start gap-3">
+              <Card key={v.id} className="overflow-hidden">
+                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
                     {!v.converted_to_member ? (
-                      <Checkbox
-                        className="mt-1"
-                        checked={selectedIds.has(v.id)}
-                        onCheckedChange={(value) => toggleRow(v.id, value === true)}
-                      />
+                      <label className="-m-2 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-auto sm:w-auto sm:p-2">
+                        <Checkbox
+                          checked={selectedIds.has(v.id)}
+                          onCheckedChange={(value) => toggleRow(v.id, value === true)}
+                          aria-label={`Select ${v.first_name} ${v.last_name}`}
+                        />
+                      </label>
                     ) : null}
-                    <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-900">
-                        {v.first_name} {v.last_name}
-                      </p>
-                      <Badge className={RLC_PIPELINE_COLORS[pipeline]}>{RLC_PIPELINE_LABELS[pipeline]}</Badge>
-                      {v.follow_up_status ? (
-                        <Badge variant="outline">{RLC_FOLLOW_UP_LABELS[v.follow_up_status]}</Badge>
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          href={`/admin/rlc/visitors/${v.id}`}
+                          className="min-w-0 break-words font-semibold text-neutral-900 hover:text-brand-700 dark:text-neutral-100 dark:hover:text-brand-300"
+                        >
+                          {v.first_name} {v.last_name}
+                        </Link>
+                        <QuickContactButtons
+                          phone={v.phone}
+                          name={`${v.first_name} ${v.last_name}`}
+                          className="-mt-1 shrink-0"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge className={RLC_PIPELINE_COLORS[pipeline]}>{RLC_PIPELINE_LABELS[pipeline]}</Badge>
+                        {v.follow_up_status ? (
+                          <Badge variant="outline">{RLC_FOLLOW_UP_LABELS[v.follow_up_status]}</Badge>
+                        ) : null}
+                        {v.source ? <Badge variant="secondary">{RLC_SOURCE_LABELS[v.source]}</Badge> : null}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-neutral-600 dark:text-neutral-400">
+                        {v.phone ? <PhoneLink phone={v.phone} name={`${v.first_name} ${v.last_name}`} /> : null}
+                        <span>Visit {v.visit_date}</span>
+                        {v.service_attended ? <span>· {v.service_attended}</span> : null}
+                        {v.check_in_code ? <span className="font-mono text-xs">· {v.check_in_code}</span> : null}
+                      </div>
+                      {(v.invited_by_members && v.invited_by_members.length > 0) || v.assigned_follow_up?.user?.full_name ? (
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                          {v.invited_by_members && v.invited_by_members.length > 0 ? (
+                            <span>
+                              Brought by:{' '}
+                              {v.invited_by_members.map((m) => m.user?.full_name).filter(Boolean).join(', ')}
+                            </span>
+                          ) : null}
+                          {v.assigned_follow_up?.user?.full_name ? (
+                            <span>Follow-up: {v.assigned_follow_up.user.full_name}</span>
+                          ) : null}
+                        </div>
                       ) : null}
-                      {v.source ? (
-                        <Badge variant="secondary">{RLC_SOURCE_LABELS[v.source]}</Badge>
-                      ) : null}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Visit {v.visit_date}
-                      {v.service_attended ? ` · ${v.service_attended}` : ''}
-                      {v.check_in_code ? ` · ${v.check_in_code}` : ''}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <ContactActions phone={v.phone} email={v.email} compact size="sm" />
-                      {v.invited_by_members && v.invited_by_members.length > 0 ? (
-                        <span>
-                          Brought by:{' '}
-                          {v.invited_by_members.map((m) => m.user?.full_name).filter(Boolean).join(', ')}
-                        </span>
-                      ) : null}
-                      {v.assigned_follow_up?.user?.full_name ? (
-                        <span>Follow-up: {v.assigned_follow_up.user.full_name}</span>
-                      ) : null}
-                    </div>
                     </div>
                   </div>
                   <RlcVisitorRowActions visitor={v} onDeleted={reload} />
