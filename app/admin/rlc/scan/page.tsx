@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Html5QrcodeScanner } from 'html5-qrcode'
+import { CameraQrScanner } from '@/components/camera-qr-scanner'
 import { useAuth } from '@/components/providers'
 import {
   createRlcCustomServiceAction,
@@ -50,7 +50,6 @@ export default function RlcScanPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [loading, setLoading] = useState(true)
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const lastScannedRef = useRef<string | null>(null)
 
   const serviceLabel = useMemo(() => rlcServiceSelectionLabel(serviceSelection), [serviceSelection])
@@ -81,35 +80,6 @@ export default function RlcScanPage() {
   useEffect(() => {
     void loadAll()
   }, [loadAll])
-
-  useEffect(() => {
-    if (!cameraOpen) {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(() => {})
-        scannerRef.current = null
-      }
-      return
-    }
-
-    const element = document.getElementById('rlc-reader')
-    if (!element || scannerRef.current) return
-
-    const scanner = new Html5QrcodeScanner(
-      'rlc-reader',
-      { fps: 10, qrbox: { width: 240, height: 240 } },
-      false
-    )
-    scanner.render(
-      (decoded) => void onScan(decoded),
-      () => undefined
-    )
-    scannerRef.current = scanner
-    return () => {
-      scanner.clear().catch(() => {})
-      if (scannerRef.current === scanner) scannerRef.current = null
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraOpen, serviceDate, serviceSelection])
 
   const checkedKeys = useMemo(
     () => sessionCheckedKeys(attendance, serviceSelection),
@@ -275,7 +245,7 @@ export default function RlcScanPage() {
         </CardHeader>
         {cameraOpen ? (
           <CardContent>
-            <div id="rlc-reader" className="w-full" />
+            <CameraQrScanner onScan={(decoded) => void onScan(decoded)} hint="Point the camera at the member’s QR code" />
           </CardContent>
         ) : null}
       </Card>

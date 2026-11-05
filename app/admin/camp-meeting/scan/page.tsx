@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Html5QrcodeScanner } from 'html5-qrcode'
+import { CameraQrScanner } from '@/components/camera-qr-scanner'
 import { campService } from '@/lib/services/camp-service'
 import { ensureDailyCampSessionsAction, getActiveCampYear } from '@/lib/actions/camp'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -87,7 +87,7 @@ export default function CampScannerPage() {
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
   const [sessionAttendances, setSessionAttendances] = useState<CampSessionAttendance[]>([])
   const [loading, setLoading] = useState(true)
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
+  const [scanPaused, setScanPaused] = useState(false)
   const lastScannedRef = useRef<string | null>(null)
   /** Set when the desk data came from this phone's cache (loaded offline). */
   const [cachedAt, setCachedAt] = useState<number | null>(null)
@@ -305,11 +305,6 @@ export default function CampScannerPage() {
       }
     }
     void loadCampYear()
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error)
-      }
-    }
   }, [applySuggestedPeriod])
 
   useEffect(() => {
@@ -344,37 +339,6 @@ export default function CampScannerPage() {
     void loadSessionAttendances(selectedActivityId)
   }, [selectedActivityId, loadSessionAttendances])
 
-  useEffect(() => {
-    if (!campYear || !selectedActivityId || moreTool !== 'qr' || !showMoreTools) return
-
-    const element = document.getElementById('reader')
-    if (!element) return
-
-    let cancelled = false
-    const scanner = new Html5QrcodeScanner(
-      'reader',
-      {
-        fps: 10,
-        qrbox: { width: 280, height: 280 },
-        aspectRatio: 1.0,
-        disableFlip: false,
-      },
-      false
-    )
-    scanner.render(onScanSuccess, onScanFailure)
-    scannerRef.current = scanner
-
-    return () => {
-      cancelled = true
-      scanner.clear().catch(() => {})
-      if (scannerRef.current === scanner) {
-        scannerRef.current = null
-      }
-      void cancelled
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campYear, selectedActivityId, moreTool, showMoreTools])
-
   function playBeep(type: 'success' | 'error' | 'warning' = 'success') {
     try {
       const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)()
@@ -397,9 +361,7 @@ export default function CampScannerPage() {
     if (lastScannedRef.current === decodedText) return
     lastScannedRef.current = decodedText
 
-    if (scannerRef.current) {
-      scannerRef.current.pause(true)
-    }
+    setScanPaused(true)
 
     if (!selectedActivityId) {
       setScanResult({
@@ -478,19 +440,8 @@ export default function CampScannerPage() {
 
     setTimeout(() => {
       setScanResult(null)
-      if (scannerRef.current) {
-        scannerRef.current.resume()
-      }
+      setScanPaused(false)
     }, 2500)
-  }
-
-  function onScanFailure(error: unknown) {
-    if (error && typeof error === 'object' && 'message' in error) {
-      const message = String((error as { message?: string }).message ?? '')
-      if (!message.includes('No QR')) {
-        console.log('Scan error:', error)
-      }
-    }
   }
 
   const recentCheckIns = useMemo((): RecentCheckIn[] => {
@@ -805,7 +756,11 @@ export default function CampScannerPage() {
                   {!selectedActivityId ? (
                     <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">Select a session first.</p>
                   ) : (
-                    <div id="reader" className="w-full" />
+                    <CameraQrScanner
+                      onScan={(text) => void onScanSuccess(text)}
+                      paused={scanPaused}
+                      hint="Point the camera at the camper’s QR code"
+                    />
                   )}
                   {scanResult ? (
                     <div
