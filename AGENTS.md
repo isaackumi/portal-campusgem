@@ -53,7 +53,7 @@ camp meeting, RLC (mother church), forms, SMS.
 - Server code talks to Convex through `lib/convex/*-bridge.ts` using `*WithSecret`
   functions guarded by `CAMP_CONVEX_SERVER_SECRET`. Convex Auth is not wired, so
   `requireAuth` functions are unreachable from the browser.
-- Vercel deploys Convex for you: `vercel.json` runs `scripts/vercel-build.sh`, which runs
+- Vercel deploys Convex for you: `vercel.json` runs `ci/vercel-build.sh`, which runs
   `npx convex deploy --cmd 'bun run build'` on production builds (needs `CONVEX_DEPLOY_KEY`,
   Production scope only; the live site currently uses a dev deployment's key). Production builds fail without the key, so app code never ships
   ahead of its Convex functions; `SKIP_CONVEX_DEPLOY=1` overrides. Previews build against the

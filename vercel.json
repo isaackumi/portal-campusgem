@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bash scripts/vercel-build.sh",
+  "buildCommand": "bash ci/vercel-build.sh",
   "installCommand": "bun install",
   "framework": "nextjs",
   "build": {
