@@ -21,9 +21,36 @@ camp meeting, RLC (mother church), forms, SMS.
 - **Tap-to-confirm (`/c/<token>`):** public, no sign-in; the 128-bit `confirm_token` on the
   registration is the credential (never map it to the browser). `{{confirmLink}}` in camp SMS
   fills it in. Answers record as `performed_by: 'self'`.
+- **Pastoral care:** `/api/cron/pastoral-alerts` (Mon 07:30 UTC) sends each group leader one text:
+  group digest + missed-church alerts (`lib/pastoral/*`, page `/admin/pastoral-care`). Sends
+  nothing on a schedule until `pastoral_settings` has been saved once. `attendance.member_id` and
+  `group_memberships.member_id` are `members` ids; `groups.leader_id` is a `users` id.
 - **Camp reminders:** `/api/cron/camp-reminders` (daily, `CRON_SECRET`) texts 7 days and 1 day
   before the active camp year. Per-registration `reminder_7d_sent_at` / `reminder_1d_sent_at`
   stop repeats; `camp_years.auto_reminders` (unset = on) toggles it. `?dry_run=1` to preview.
+- **Events / RSVP (`/e/<token>`):** `/admin/events` (`groups.manage`; texting invites also needs
+  `sms.send`). Each `event_rsvps` row has a 128-bit `token`, same rules as `confirm_token`.
+  Capacity and deadline are enforced in `convex/events.ts`. Members' own events:
+  `components/events/my-events.tsx`.
+- **SMS replies:** Hubtel posts to `/api/sms/inbound?secret=$SMS_INBOUND_SECRET` (GET or POST; it
+  is refused in production when the secret is unset). Replies land in `sms_inbox`, shown on
+  `/admin/inbox` (`sms.send`). A STOP reply sets `users.sms_opt_out`, and every bulk SMS path skips
+  those people (`lib/comms/opt-out.ts`). Add that check to any new bulk sender.
+- **`guard()` only checks once per request:** after it passes, nested calls are trusted, so a second
+  `guard('x')` always passes. Check a second permission with `hasPermission(user.role, p, user.permissions)`.
+- **Campuses:** a campus is a `groups` row with `group_type: 'campus'` (plus `short_code`, `slug`,
+  `aliases`). A person's campus tag is their single active campus membership; add or move people
+  only via `placeOnCampus` (`convex/lib/campusMembership.ts`). The role `campus_leader`
+  (`campus.lead`) manages only campuses where the person is an active leader/co-leader (executives:
+  view). Every campus action starts with `guardCampus(groupId, level)` (`lib/auth/campus-scope.ts`)
+  and then uses only the verified `group.id`. `/join/<slug>` is public: it never moves anyone off
+  another campus and never reveals which campus a phone number is on.
+- **My GEM (`/me`):** plain members/visitors land here instead of `/dashboard`. `lib/actions/me.ts`
+  always acts on the session user; members cannot change phone, role or permissions.
+- **QR self check-in (`/i/<token>`):** `checkin_sessions` token, the member is always the session user.
+  Households: `households` + `users.household_id` (`members.manage` to change).
+- **Header workspace switcher:** `lib/navigation/workspaces.ts` (church, RLC, camp, Corporate GEM,
+  each campus). Add new top-level areas there.
 - **Permissions** live in `lib/auth/roles.ts`. A user has a role (`ROLE_PERMISSIONS`) plus
   optional per-user extra grants (`users.permissions` in Convex). Always check with
   `hasPermission(role, permission, user.permissions)` / `canAccessPath(...)`, never

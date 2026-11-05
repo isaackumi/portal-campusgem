@@ -23,6 +23,7 @@ import {
   Monitor,
   CheckSquare,
   ArrowLeft,
+  Smartphone,
   Download,
   Filter,
   Search
@@ -54,7 +55,7 @@ interface AttendanceStats {
 }
 
 export default function AttendancePage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, can } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [serviceFilter, setServiceFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('today')
@@ -137,6 +138,9 @@ export default function AttendancePage() {
     { href: '/attendance/manual', label: 'Manual check-in', icon: CheckSquare },
     { href: '/attendance/bulk', label: 'Bulk attendance', icon: Users },
     { href: '/attendance/comprehensive', label: 'Comprehensive', icon: BarChart3 },
+    ...(can('attendance.manage')
+      ? [{ href: '/attendance/self-check-in', label: 'Self check-in', icon: Smartphone }]
+      : []),
   ]
 
   return (
@@ -147,7 +151,7 @@ export default function AttendancePage() {
           description="Track and manage church attendance"
           actions={
             <>
-              <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => router.push('/attendance/manual')}>
+              <Button data-tour="attendance-check-in" className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => router.push('/attendance/manual')}>
                 <CheckSquare className="mr-2 h-4 w-4" />
                 Check in
               </Button>
@@ -166,7 +170,7 @@ export default function AttendancePage() {
         )}
 
         {stats && (
-          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div data-tour="attendance-stats" className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <StatCard className="p-4 sm:p-5" label="Today" value={stats.today_attendance} icon={Users} />
             <StatCard className="p-4 sm:p-5" label="This week" value={stats.weekly_attendance} icon={BarChart3} />
             <StatCard className="p-4 sm:p-5" label="This month" value={stats.monthly_attendance} icon={TrendingUp} />
@@ -175,14 +179,14 @@ export default function AttendancePage() {
         )}
 
         <Tabs defaultValue="records" className="space-y-6">
-          <ScrollableTabsList>
+          <ScrollableTabsList data-tour="attendance-tabs">
             <TabsTrigger value="records">Records</TabsTrigger>
             <TabsTrigger value="actions">Check-in tools</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </ScrollableTabsList>
 
           <TabsContent value="records" className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div data-tour="attendance-filters" className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
                 <Input
@@ -222,7 +226,7 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="dashboard-panel overflow-hidden">
+            <div className="dashboard-panel overflow-hidden" data-tour="attendance-list">
               <div className="flex items-baseline justify-between gap-3 border-b border-neutral-200/80 px-4 py-3 dark:border-white/[0.06] sm:px-5">
                 <h2 className="app-section-title">Check-ins</h2>
                 <p className="text-[13px] tabular-nums text-neutral-500 dark:text-neutral-400">

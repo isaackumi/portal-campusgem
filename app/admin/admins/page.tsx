@@ -42,6 +42,7 @@ const ROLE_SUMMARIES: Record<UserRole, string> = {
   pastor: 'Members, groups, attendance, camp operations & payments, RLC, SMS.',
   elder: 'Visitors, groups, attendance, camp operations, RLC, SMS.',
   finance_officer: 'Finance, camp payments, read-only members and attendance.',
+  campus_leader: 'Member access plus the campus page(s) they lead: members, forms, onboarding, texting.',
   member: 'Own dashboard, groups, attendance and celebrations.',
   visitor: 'Dashboard and attendance only.',
 }
@@ -135,7 +136,7 @@ export default function AccessManagementPage() {
             <UserPlus className="mr-2 h-4 w-4" />
             New person
           </Button>
-          <Button onClick={() => setPickerOpen(true)} className="h-11 sm:h-10">
+          <Button data-tour="admins-grant" onClick={() => setPickerOpen(true)} className="h-11 sm:h-10">
             <KeyRound className="mr-2 h-4 w-4" />
             Grant access
           </Button>
@@ -151,7 +152,7 @@ export default function AccessManagementPage() {
         }}
       />
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
+      <div data-tour="admins-roles" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
         <RoleChip label="Everyone with access" active={roleFilter === 'all'} onClick={() => setRoleFilter('all')}
           count={Object.values(counts).reduce((a, b) => a + (b ?? 0), 0)} />
         {USER_ROLES.filter((r) => counts[r]).map((r) => (
@@ -160,7 +161,7 @@ export default function AccessManagementPage() {
         ))}
       </div>
 
-      <div className="dashboard-panel overflow-hidden">
+      <div className="dashboard-panel overflow-hidden" data-tour="admins-list">
         <div className="border-b border-neutral-200/80 p-3 dark:border-white/[0.06] sm:p-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
@@ -221,7 +222,7 @@ export default function AccessManagementPage() {
                   </div>
                   <div className="flex items-center gap-2 pl-12 sm:pl-0">
                     <QuickContactButtons phone={person.phone} whatsapp={person.whatsapp} name={person.full_name} />
-                    <Button variant="outline" disabled={locked} onClick={() => setEditing(person)}
+                    <Button data-tour="admins-edit" variant="outline" disabled={locked} onClick={() => setEditing(person)}
                       className="h-11 flex-1 sm:h-9 sm:flex-none"
                       title={locked ? 'Only people who can manage administrators can edit an admin' : undefined}>
                       {locked ? <Lock className="mr-2 h-3.5 w-3.5" /> : <ShieldCheck className="mr-2 h-3.5 w-3.5" />}
@@ -235,7 +236,7 @@ export default function AccessManagementPage() {
         )}
       </div>
 
-      <section className="dashboard-panel p-4 sm:p-5" aria-labelledby="access-history-title">
+      <section className="dashboard-panel p-4 sm:p-5" aria-labelledby="access-history-title" data-tour="admins-history">
         <div className="flex items-baseline justify-between gap-3">
           <h2 id="access-history-title" className="app-section-title">Recent changes</h2>
           <span className="text-xs text-neutral-500 dark:text-neutral-400">Who changed whose access, and when</span>
@@ -369,6 +370,17 @@ function PersonPicker({
   )
 }
 
+/** The role only unlocks /campuses; which campus comes from a leader membership on it. */
+function CampusLeaderHint() {
+  return (
+    <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-400/10 dark:text-amber-200 dark:ring-amber-400/20">
+      <strong className="font-semibold">Also make them leader of a campus.</strong> A campus leader only sees the
+      campuses where they are a leader or co-leader. Add them on the campus page (Campuses → the campus → Members)
+      with the role Leader or Co-leader.
+    </p>
+  )
+}
+
 function NewPersonDialog({
   open,
   onOpenChange,
@@ -437,6 +449,7 @@ function NewPersonDialog({
               </SelectContent>
             </Select>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">{ROLE_SUMMARIES[role]}</p>
+            {role === 'campus_leader' && <CampusLeaderHint />}
           </div>
           {isStaffRole(role) && (
             <div className="flex min-h-11 items-start gap-2 sm:min-h-0">
@@ -590,6 +603,7 @@ function AccessEditor({
           {isSelf && person.role === 'admin' && (
             <p className="text-xs text-neutral-500 dark:text-neutral-400">You can&apos;t remove your own administrator role.</p>
           )}
+          {(role === 'campus_leader' || extra.includes('campus.lead')) && <CampusLeaderHint />}
         </section>
 
         <section className="space-y-3">

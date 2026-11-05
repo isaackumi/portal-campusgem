@@ -421,7 +421,7 @@ function RegistrationsPageContent() {
                                 <Printer className="mr-2 h-4 w-4" />
                                 Print QR sheet
                             </Button>
-                            <Button onClick={exportToCSV} variant="outline" className="shadow-sm">
+                            <Button data-tour="camp-reg-export" onClick={exportToCSV} variant="outline" className="shadow-sm">
                                 <Download className="mr-2 h-4 w-4" />
                                 Export CSV
                             </Button>
@@ -470,7 +470,7 @@ function RegistrationsPageContent() {
                 />
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <div data-tour="camp-reg-stats" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     <StatCard label="Registrations" value={stats.total} />
                     <StatCard
                         label="Checked in"
@@ -493,7 +493,7 @@ function RegistrationsPageContent() {
                 {/* Filters and Bulk Actions */}
                 <Card>
                     <CardHeader className="p-4 sm:p-6">
-                        <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+                        <div data-tour="camp-reg-filters" className="flex flex-col gap-3 md:flex-row md:gap-4">
                             <div className="relative w-full flex-1 md:max-w-md">
                                 <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
@@ -556,7 +556,7 @@ function RegistrationsPageContent() {
                         
                     </CardHeader>
                     <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                        <div className="md:hidden">
+                        <div className="md:hidden" data-tour="camp-reg-list">
                             {paginated.length > 0 ? (
                                 <label className="mb-2 flex min-h-11 items-center gap-3 px-1 text-sm text-neutral-600 dark:text-neutral-400">
                                     <Checkbox
@@ -617,7 +617,7 @@ function RegistrationsPageContent() {
                                 )}
                             </ul>
                         </div>
-                        <div className="hidden overflow-hidden rounded-md border md:block">
+                        <div className="hidden overflow-hidden rounded-md border md:block" data-tour="camp-reg-table">
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>

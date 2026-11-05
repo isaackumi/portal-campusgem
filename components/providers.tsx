@@ -3,6 +3,7 @@
 import { SimpleAuthProvider as AuthProvider } from './simple-auth-provider'
 import { ConvexClientProvider } from './convex-client-provider'
 import { PWAProvider } from './pwa-provider'
+import { TourProvider } from './tour/tour-provider'
 import { ThemeProvider } from './theme-provider'
 import { ReactQueryDevtoolsLoader } from './react-query-devtools-loader'
 import { BackgroundJobsProvider } from './background-jobs'
@@ -35,7 +36,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <AuthProvider>
             <PWAProvider>
               <BackgroundJobsProvider>
-                {children}
+                <TourProvider>{children}</TourProvider>
                 <ReactQueryDevtoolsLoader />
               </BackgroundJobsProvider>
             </PWAProvider>

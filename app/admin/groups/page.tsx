@@ -38,6 +38,13 @@ import { AccessDenied } from '@/components/auth/access-denied'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Group, AppUser } from '@/lib/types'
 import { GROUP_MEMBERSHIP_ROLES, GROUP_TYPES, getGroupTypeLabel } from '@/lib/constants/groups'
+import {
+  CampusIdentityFields,
+  EMPTY_CAMPUS_IDENTITY,
+  campusIdentityFromGroup,
+  type CampusIdentityValue,
+} from '@/components/campus/campus-identity-fields'
+import { setCampusIdentityAction } from '@/lib/actions/campuses'
 
 export default function GroupsManagementPage() {
   const { user: currentUser, loading: authLoading, can } = useAuth()
@@ -73,6 +80,16 @@ export default function GroupsManagementPage() {
     is_active: true,
     max_members: undefined
   })
+
+  const [campusIdentity, setCampusIdentity] = useState<CampusIdentityValue>(EMPTY_CAMPUS_IDENTITY)
+
+  /** Campus groups: save short code / link / aliases after the group itself is saved. */
+  const saveCampusIdentity = async (groupId: string) => {
+    const res = await setCampusIdentityAction(groupId, campusIdentity)
+    if (res.error) {
+      toast({ title: 'Campus tag not saved', description: res.error, variant: 'destructive' })
+    }
+  }
 
   // Data hooks
   const { data: groups, loading, error, refetch } = useGroups(1, 100)
@@ -133,6 +150,7 @@ export default function GroupsManagementPage() {
     try {
       const result = await createGroup(formData)
       if (result) {
+        if (formData.group_type === 'campus' && result.id) await saveCampusIdentity(result.id)
         toast({
           title: "Group Created",
           description: `${formData.name} has been successfully created.`,
@@ -157,6 +175,7 @@ export default function GroupsManagementPage() {
     try {
       const result = await updateGroup(editingGroup.id, formData)
       if (result) {
+        if (formData.group_type === 'campus') await saveCampusIdentity(editingGroup.id)
         toast({
           title: "Group Updated",
           description: `${formData.name} has been successfully updated.`,
@@ -259,6 +278,7 @@ export default function GroupsManagementPage() {
       is_active: true,
       max_members: undefined
     })
+    setCampusIdentity(EMPTY_CAMPUS_IDENTITY)
   }
 
   const openEditDialog = (group: Group) => {
@@ -272,6 +292,7 @@ export default function GroupsManagementPage() {
       is_active: group.is_active,
       max_members: group.max_members
     })
+    setCampusIdentity(campusIdentityFromGroup(group))
     setShowEditDialog(true)
   }
 
@@ -423,6 +444,10 @@ export default function GroupsManagementPage() {
                       <Label htmlFor="is_active">Active Group</Label>
                     </div>
                   </div>
+
+                  {formData.group_type === 'campus' ? (
+                    <CampusIdentityFields idPrefix="create" value={campusIdentity} onChange={setCampusIdentity} />
+                  ) : null}
 
                   <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <Button variant="outline" className="h-11 sm:h-10" onClick={() => setShowCreateDialog(false)}>
@@ -635,6 +660,10 @@ export default function GroupsManagementPage() {
                   rows={3}
                 />
               </div>
+
+              {formData.group_type === 'campus' ? (
+                <CampusIdentityFields idPrefix="edit" value={campusIdentity} onChange={setCampusIdentity} />
+              ) : null}
 
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button variant="outline" className="h-11 sm:h-10" onClick={() => setShowEditDialog(false)}>

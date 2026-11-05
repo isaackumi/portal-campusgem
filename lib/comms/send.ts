@@ -17,6 +17,7 @@ import {
   sendSms,
 } from '@/lib/comms/sms-client'
 import { EmailService } from '@/lib/services/email-service'
+import { OPTED_OUT_REASON, isOptedOut, loadSmsOptOutSet } from '@/lib/comms/opt-out'
 
 const emailService = new EmailService()
 
@@ -49,6 +50,9 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
   const smsProvider = resolveSmsProvider()
 
   const { logCommunicationInConvex } = await import('@/lib/convex/comms-bridge')
+  // Bulk SMS skips people who replied STOP; one-to-one messages still go.
+  const optedOut =
+    request.channel === 'sms' && request.audience_type !== 'individual' ? await loadSmsOptOutSet() : new Set<string>()
 
   for (let index = 0; index < request.recipients.length; index++) {
     const recipient = request.recipients[index]
@@ -62,10 +66,12 @@ export async function sendCommunications(request: SendCommsRequest): Promise<Sen
       ? personalizeMessage(request.subject, variables)
       : undefined
 
-    if (!canDeliver(recipient, request.channel)) {
+    const optedOutHere = request.channel === 'sms' && isOptedOut(optedOut, recipient.phone)
+    if (optedOutHere || !canDeliver(recipient, request.channel)) {
       error_count++
-      const reason =
-        request.channel === 'email'
+      const reason = optedOutHere
+        ? OPTED_OUT_REASON
+        : request.channel === 'email'
           ? 'No email'
           : recipient.phone?.trim()
             ? `Invalid phone (${recipient.phone})`

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { CampRegistration } from '@/lib/types'
 import { campService } from '@/lib/services/camp-service'
+import { recordCampCheckInOrQueue } from '@/components/camp/use-camp-offline-queue'
 import { resolveCampCheckInCode } from '@/lib/camp/check-in-code'
 import { campRegistrationDisplayName } from '@/lib/camp/manual-check-in-search'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -72,15 +73,18 @@ export function CampQuickCodeCheckIn({
     }
 
     setSubmitting(true)
+    let queued = false
     try {
       if (activityId && performedByUserId) {
-        const { data, error } = await campService.recordSessionCheckIn({
+        const outcome = await recordCampCheckInOrQueue({
           activity_id: activityId,
           registration_id: reg.id,
           performed_by: performedByUserId,
           check_in_method: 'code',
+          camp_year_id: reg.camp_year_id,
+          name: campRegistrationDisplayName(reg),
         })
-        if (error || !data) throw new Error(error ?? 'Check-in failed')
+        queued = outcome.kind === 'queued' || outcome.kind === 'already_queued'
       } else {
         const { error } = await campService.updateRegistration(reg.id, { status: 'checked_in' })
         if (error) throw new Error(error)
@@ -97,7 +101,7 @@ export function CampQuickCodeCheckIn({
       setLastMatch(reg)
       setCode('')
       toast({
-        title: 'Checked in',
+        title: queued ? 'Saved on this phone, will sync' : 'Checked in',
         description: campRegistrationDisplayName(reg),
       })
       onCheckInComplete?.()

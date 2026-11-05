@@ -21,6 +21,7 @@ const protectedPrefixes = [
   '/communication',
   '/settings',
   '/recommendations',
+  '/campuses',
 ]
 
 function legacyVisitorsRedirect(request: NextRequest): NextResponse | null {
@@ -50,7 +51,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 301)
   }
 
-  const isProtectedRoute = protectedPrefixes.some((prefix) => pathname.startsWith(prefix))
+  const isProtectedRoute =
+    protectedPrefixes.some((prefix) => pathname.startsWith(prefix)) ||
+    pathname === '/me' ||
+    pathname.startsWith('/me/') ||
+    pathname === '/help' ||
+    pathname.startsWith('/help/')
   const hasAuthToken = request.cookies.has(CHMS_AUTH_SESSION_COOKIE)
 
   if (pathname === RLC_ADMIN_VISITOR_ADD_PATH && !hasAuthToken) {
@@ -59,6 +65,14 @@ export function middleware(request: NextRequest) {
 
   if (pathname === RLC_ADMIN_MEMBER_ADD_PATH && !hasAuthToken) {
     return NextResponse.redirect(new URL(RLC_PUBLIC_JOIN_PATH, request.url))
+  }
+
+  // Self check-in (`/i/<token>`): any signed-in role may use it, so no role check here;
+  // signed-out members go through /auth and come straight back. The page re-checks the session.
+  if (pathname.startsWith('/i/') && !hasAuthToken) {
+    const redirectUrl = new URL('/auth', request.url)
+    redirectUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(redirectUrl)
   }
 
   if (isProtectedRoute) {

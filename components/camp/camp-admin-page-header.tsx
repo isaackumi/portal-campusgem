@@ -47,7 +47,7 @@ export function CampAdminPageHeader({
           <ArrowLeft className="h-4 w-4" />
           Back
         </button>
-        <h1 className="app-page-title">{title}</h1>
+        <h1 className="app-page-title" data-tour="page-title">{title}</h1>
         {campYear ? (
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary">
@@ -74,7 +74,7 @@ export function CampAdminPageHeader({
         {children ? <div className="mt-2 flex flex-wrap items-center gap-2">{children}</div> : null}
       </div>
       {actions ? (
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 [&>*]:min-h-11 [&>*]:flex-1 sm:[&>*]:min-h-0 sm:[&>*]:flex-none">
+        <div data-tour="page-actions" className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 [&>*]:min-h-11 [&>*]:flex-1 sm:[&>*]:min-h-0 sm:[&>*]:flex-none">
           {actions}
         </div>
       ) : null}

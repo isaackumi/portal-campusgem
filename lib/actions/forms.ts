@@ -28,7 +28,7 @@ export async function getFormAdmin(formId: string): Promise<{
   data: { form: ChurchForm; fields: ChurchFormField[]; creator_name?: string } | null
   error: string | null
 }> {
-  await guard('dashboard.view')
+  await guard('forms.manage')
   requireConvexEnv()
   try {
     const { getFormAdminFromConvex } = await import('@/lib/convex/forms-bridge')
@@ -104,7 +104,7 @@ export async function listFormResponses(formId: string): Promise<{
   data: ChurchFormResponse[]
   error: string | null
 }> {
-  await guard('dashboard.view')
+  await guard('forms.manage')
   requireConvexEnv()
   try {
     const { listFormResponsesFromConvex } = await import('@/lib/convex/forms-bridge')

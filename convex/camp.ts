@@ -29,6 +29,7 @@ const directoryRoleValue = v.union(
   v.literal('pastor'),
   v.literal('elder'),
   v.literal('finance_officer'),
+  v.literal('campus_leader'),
   v.literal('member'),
   v.literal('visitor')
 )
@@ -1119,6 +1120,8 @@ export const recordCampSessionCheckInWithSecret = mutation({
     check_in_method: v.optional(
       v.union(v.literal('qr'), v.literal('manual'), v.literal('code'), v.literal('arrival'))
     ),
+    /** Offline desk check-ins synced later keep the time they were tapped (clamped to the last 7 days). */
+    checked_in_at: v.optional(v.number()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -1154,12 +1157,16 @@ export const recordCampSessionCheckInWithSecret = mutation({
     }
 
     const now = Date.now()
+    const tappedAt =
+      args.checked_in_at != null && Number.isFinite(args.checked_in_at)
+        ? Math.min(now, Math.max(args.checked_in_at, now - 7 * 24 * 60 * 60 * 1000))
+        : now
     const attendanceId = await ctx.db.insert('camp_session_attendances', {
       camp_year_id: reg.camp_year_id,
       activity_id: args.activity_id,
       registration_id: String(args.registration_id),
       checked_in_by: args.performed_by,
-      checked_in_at: now,
+      checked_in_at: tappedAt,
       check_in_method: args.check_in_method,
     })
 

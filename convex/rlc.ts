@@ -1495,7 +1495,8 @@ export const recordRlcAttendanceWithSecret = mutation({
       v.literal('kiosk'),
       v.literal('admin'),
       v.literal('pin'),
-      v.literal('mobile')
+      v.literal('mobile'),
+      v.literal('self')
     ),
     created_by: v.optional(v.string()),
     notes: v.optional(v.string()),

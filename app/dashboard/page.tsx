@@ -45,6 +45,7 @@ import {
   Users,
 } from 'lucide-react'
 import { canAccessPath } from '@/lib/auth/roles'
+import { isPlainMember } from '@/lib/me/my-details'
 import { DashboardHeader, type QuickAction } from '@/components/dashboard/dashboard-header'
 import { RegistrationTrendChart } from '@/components/camp/registration-trend-chart'
 import { SegmentedBar } from '@/components/ui/meter'
@@ -708,10 +709,22 @@ function DashboardContent() {
   )
 }
 
+/** Plain members and visitors get their own page ("My GEM"); staff keep this dashboard. */
+function DashboardGate() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  const plain = !loading && isPlainMember(user)
+  useEffect(() => {
+    if (plain) router.replace('/me')
+  }, [plain, router])
+  if (loading || plain) return <LoadingPage />
+  return <DashboardContent />
+}
+
 export default function DashboardPage() {
   return (
     <ErrorBoundary>
-      <DashboardContent />
+      <DashboardGate />
     </ErrorBoundary>
   )
 }

@@ -18,6 +18,7 @@ const ROLE_RANK: Record<UserRole, number> = {
   pastor: 1,
   elder: 2,
   finance_officer: 3,
+  campus_leader: 3.5,
   member: 4,
   visitor: 5,
 }

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { LogOut, PanelLeft, Search } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { HelpMenu } from '@/components/tour/help-menu'
 import { BrandMark } from '@/components/brand-mark'
 import {
   DropdownMenu,
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { CommandPalette } from '@/components/command-palette'
+import { WorkspaceSwitcher } from '@/components/workspace-switcher'
 import { useActiveCampYear } from '@/lib/hooks/use-camp'
 import { ROLE_LABELS, isUserRole } from '@/lib/auth/roles'
 import { cn, getInitials } from '@/lib/utils'
@@ -86,11 +88,14 @@ export function AppHeader({
         <PanelLeft className="h-[18px] w-[18px]" aria-hidden />
       </button>
 
+      <WorkspaceSwitcher />
+
       <div className="mx-auto min-w-0 max-w-md flex-1">
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
           aria-haspopup="dialog"
+          data-tour="search"
           className="group flex h-9 w-full items-center gap-2.5 rounded-lg border border-neutral-200 bg-white pl-3 pr-2 text-left text-sm text-neutral-400 transition-colors hover:border-neutral-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-500 dark:hover:border-neutral-600"
         >
           <Search className="h-4 w-4 shrink-0 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300" aria-hidden />
@@ -107,6 +112,7 @@ export function AppHeader({
 
       <div className="flex items-center gap-x-2 sm:gap-x-3">
         <CampStatusChip />
+        <HelpMenu />
         <ThemeToggle />
         <div className="hidden h-6 w-px bg-neutral-900/10 dark:bg-white/10 sm:block" aria-hidden />
 
@@ -114,6 +120,7 @@ export function AppHeader({
           <DropdownMenuTrigger
             className="-m-1.5 flex items-center gap-2 rounded-lg p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
             aria-label="Open user menu"
+            data-tour="user-menu"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
               {user?.full_name?.trim() ? getInitials(user.full_name) : '?'}

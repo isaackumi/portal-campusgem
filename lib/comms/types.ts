@@ -14,6 +14,9 @@ export interface CommsRecipient {
   module: CommsModule
   /** Template variables for personalization */
   variables?: Record<string, string>
+  /** Directory user behind a member recipient; used for "One text per household". */
+  user_id?: string
+  household_id?: string
 }
 
 export interface CommunicationRecord {

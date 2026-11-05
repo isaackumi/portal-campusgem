@@ -19,6 +19,8 @@ export function memberToRecipient(member: Member, module: CommsModule): CommsRec
     entity_type: 'member',
     entity_id: member.id,
     module,
+    user_id: user?.id ?? (member.user_id || undefined),
+    household_id: user?.household_id,
     variables: {
       name: name.split(' ')[0] ?? name,
       full_name: name,

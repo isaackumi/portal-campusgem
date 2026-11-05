@@ -113,7 +113,7 @@ export default function KioskPage() {
           }
         />
 
-        <div className="mb-4">
+        <div className="mb-4" data-tour="kiosk-service">
           <Select value={serviceType} onValueChange={setServiceType}>
             <SelectTrigger className="h-11 w-full sm:max-w-xs" aria-label="Service type">
               <SelectValue placeholder="Select service type" />
@@ -129,7 +129,7 @@ export default function KioskPage() {
         </div>
 
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <div className="dashboard-panel min-w-0 p-4 sm:p-5">
+          <div className="dashboard-panel min-w-0 p-4 sm:p-5" data-tour="kiosk-form">
             <div className="mb-4">
               <h2 className="app-section-title flex items-center gap-2">
                 <User className="h-5 w-5 text-brand-600 dark:text-brand-300" />
@@ -146,7 +146,7 @@ export default function KioskPage() {
             />
           </div>
 
-          <div className={checkInResult ? 'order-first min-w-0 lg:order-none' : 'min-w-0'} aria-live="polite">
+          <div className={checkInResult ? 'order-first min-w-0 lg:order-none' : 'min-w-0'} aria-live="polite" data-tour="kiosk-result">
             {checkInResult ? (
               <div className="dashboard-panel space-y-4 p-4 ring-1 ring-inset ring-emerald-600/20 dark:ring-emerald-400/20 sm:p-5">
                 <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">

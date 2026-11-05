@@ -831,6 +831,8 @@ export async function recordCampSessionCheckInInConvex(args: {
   registration_id: string
   performed_by: string
   check_in_method?: import('@/lib/types').CampSessionAttendance['check_in_method']
+  /** Offline check-ins: when it was tapped (ms). Server clamps it. */
+  checked_in_at?: number
 }): Promise<{
   already_checked_in: boolean
   attendance: import('@/lib/types').CampSessionAttendance | null
@@ -843,6 +845,7 @@ export async function recordCampSessionCheckInInConvex(args: {
     registration_id: args.registration_id as Id<'camp_registrations'>,
     performed_by: args.performed_by,
     check_in_method: args.check_in_method,
+    checked_in_at: args.checked_in_at,
   })) as {
     already_checked_in: boolean
     attendance: Record<string, unknown> | null

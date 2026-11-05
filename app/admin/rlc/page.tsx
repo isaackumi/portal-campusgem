@@ -122,7 +122,7 @@ export default function RlcDashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div data-tour="rlc-stats" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard className="p-4 sm:p-5" label="Active visitors" value={stats?.active_visitors ?? 0} href="/admin/rlc/visitors" />
         <StatCard
           className="p-4 sm:p-5"
@@ -141,7 +141,7 @@ export default function RlcDashboardPage() {
         />
       </div>
 
-      <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
+      <div data-tour="rlc-queues" className="grid gap-3 sm:gap-4 md:grid-cols-3">
         <section className="dashboard-panel p-4 sm:p-5">
           <p className="app-stat-label">Follow-up SLA</p>
           <h2 className="app-section-title">Queue health</h2>
@@ -185,7 +185,7 @@ export default function RlcDashboardPage() {
         </section>
       </div>
 
-      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+      <div data-tour="rlc-pipeline" className="grid gap-3 sm:gap-4 lg:grid-cols-2">
         <section className="dashboard-panel p-4 sm:p-5">
           <h2 className="app-section-title flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
@@ -210,7 +210,7 @@ export default function RlcDashboardPage() {
         <RlcCampBridgePanel campRows={campRows} visitors={visitors} members={members} />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+      <div data-tour="rlc-shortcuts" className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
         {[
           { href: '/admin/rlc/visitors', icon: UserPlus, title: 'Visitors', desc: 'Full visitor records' },
           { href: '/admin/rlc/follow-up', icon: UserCheck, title: 'Follow-up', desc: 'Assign & track contacts' },

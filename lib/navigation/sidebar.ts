@@ -1,6 +1,7 @@
 import type { ComponentProps, ComponentType } from 'react'
 import {
   ArchiveIcon,
+  BackpackIcon,
   BarChartIcon,
   CalendarIcon,
   CardStackIcon,
@@ -13,6 +14,7 @@ import {
   DashboardIcon,
   DesktopIcon,
   EnvelopeClosedIcon,
+  EnvelopeOpenIcon,
   FileTextIcon,
   GearIcon,
   GroupIcon,
@@ -23,7 +25,9 @@ import {
   LockClosedIcon,
   MobileIcon,
   PersonIcon,
+  QuestionMarkCircledIcon,
   ReaderIcon,
+  StarIcon,
   TableIcon,
   UploadIcon,
   ViewGridIcon,
@@ -40,6 +44,8 @@ export type SidebarNavItem = {
   roles?: UserRole[]
   permission?: Permission
   description?: string
+  /** Live count shown next to the item (see components/sidebar.tsx). */
+  badge?: 'inbox-unread'
 }
 
 export type SidebarNavSection = {
@@ -52,9 +58,12 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
   {
     title: 'Main',
     items: [
+      { name: 'My GEM', href: '/me', icon: StarIcon, description: 'Your groups, attendance, camp and household' },
       { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
       { name: 'Members', href: '/members', icon: PersonIcon },
       { name: 'Groups', href: '/groups', icon: GroupIcon },
+      // groups.manage or campus.lead (route rule in lib/auth/roles.ts)
+      { name: 'Campuses', href: '/campuses', icon: BackpackIcon, description: 'Campus fellowships you lead or manage' },
       { name: 'Recommendations', href: '/recommendations', icon: HeartIcon },
     ],
   },
@@ -64,6 +73,7 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
       { name: 'Attendance', href: '/attendance', icon: CalendarIcon },
       { name: 'QR Scanner', href: '/attendance/scanner', icon: ViewGridIcon },
       { name: 'Kiosk', href: '/attendance/kiosk', icon: DesktopIcon },
+      { name: 'Self check-in', href: '/attendance/self-check-in', icon: MobileIcon, permission: 'attendance.manage' },
       { name: 'Manual check-in', href: '/attendance/manual', icon: CheckboxIcon },
       { name: 'Analytics', href: '/attendance/analytics', icon: BarChartIcon },
     ],
@@ -215,6 +225,13 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         icon: ArchiveIcon,
       },
       {
+        name: 'Events',
+        href: '/admin/events',
+        icon: CalendarIcon,
+        permission: 'groups.manage',
+        description: 'Events with tap-to-RSVP invitations',
+      },
+      {
         name: 'Forms',
         href: '/admin/forms',
         icon: ClipboardIcon,
@@ -230,6 +247,14 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         href: '/admin/communications',
         icon: ChatBubbleIcon,
         permission: 'sms.send',
+      },
+      {
+        name: 'Inbox',
+        href: '/admin/inbox',
+        icon: EnvelopeOpenIcon,
+        permission: 'sms.send',
+        description: 'SMS replies from members and registrants',
+        badge: 'inbox-unread',
       },
       { name: 'SMS (legacy)', href: '/sms', icon: ChatBubbleIcon, permission: 'sms.send' },
       { name: 'Celebrations', href: '/celebrations', icon: HeartIcon, permission: 'celebrations.view' },
@@ -261,6 +286,7 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
       },
       { name: 'Users', href: '/admin/users', icon: PersonIcon },
       { name: 'Access & roles', href: '/admin/admins', icon: LockClosedIcon },
+      { name: 'Pastoral care', href: '/admin/pastoral-care', icon: HeartIcon, permission: 'members.manage' },
       { name: 'Groups', href: '/admin/groups', icon: GroupIcon },
     ],
   },
@@ -269,6 +295,12 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
 export const sidebarSettingsNavigation: SidebarNavItem[] = [
   { name: 'General', href: '/settings/general', icon: GearIcon },
   { name: 'Security', href: '/settings/security', icon: LockClosedIcon },
+  {
+    name: 'Guided tours',
+    href: '/help',
+    icon: QuestionMarkCircledIcon,
+    description: 'Step-by-step tours of the app; replay any time',
+  },
 ]
 
 /** Path used for permission checks (strips query/hash). */

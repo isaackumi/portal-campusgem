@@ -42,14 +42,14 @@ export function RlcPageHeader({
           </div>
           <div className="min-w-0">
             <p className="app-overline">{RLC_NAME}</p>
-            <h1 className="app-page-title break-words">{title}</h1>
+            <h1 className="app-page-title break-words" data-tour="page-title">{title}</h1>
             {subtitle ? <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{subtitle}</p> : null}
           </div>
         </div>
         {children}
       </div>
       {actions ? (
-        <div className="flex w-full shrink-0 flex-wrap gap-2 [&>*]:min-h-11 [&>*]:flex-1 sm:[&>*]:min-h-0 sm:[&>*]:flex-none lg:w-auto lg:justify-end">
+        <div data-tour="page-actions" className="flex w-full shrink-0 flex-wrap gap-2 [&>*]:min-h-11 [&>*]:flex-1 sm:[&>*]:min-h-0 sm:[&>*]:flex-none lg:w-auto lg:justify-end">
           {actions}
         </div>
       ) : null}

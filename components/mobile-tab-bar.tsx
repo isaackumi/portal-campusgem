@@ -35,6 +35,7 @@ export function MobileTabBar({ onOpenMenu }: { onOpenMenu: () => void }) {
   return (
     <nav
       aria-label="Main"
+      data-tour="mobile-tabs"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-white/85 dark:border-white/[0.08] dark:bg-neutral-950/95 dark:supports-[backdrop-filter]:bg-neutral-950/85 lg:hidden"
     >
       <ul className="mx-auto flex max-w-lg">
@@ -68,6 +69,7 @@ export function MobileTabBar({ onOpenMenu }: { onOpenMenu: () => void }) {
           <button
             type="button"
             onClick={onOpenMenu}
+            data-tour="mobile-menu"
             className={cn(item, 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white')}
           >
             <span className="flex h-7 w-12 items-center justify-center rounded-full">

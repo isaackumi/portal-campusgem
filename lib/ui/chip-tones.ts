@@ -13,6 +13,7 @@ export function roleTone(role: string | null | undefined): ChipTone {
     case 'pastor':
     case 'elder':
     case 'finance_officer':
+    case 'campus_leader':
       return 'secondary'
     default:
       return 'outline'

@@ -25,6 +25,8 @@ import {
   Moon,
   ChevronDown,
   ChevronUp,
+  CloudOff,
+  UploadCloud,
 } from 'lucide-react'
 import { CampActivity, CampRegistration, CampSessionAttendance, CampYear } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
@@ -45,6 +47,9 @@ import {
   todayIsoDate,
 } from '@/lib/camp/daily-sessions'
 import { formatRelativeWhen } from '@/lib/camp/relative-time'
+import { recordCampCheckInOrQueue, useCampOfflineQueue } from '@/components/camp/use-camp-offline-queue'
+import { queuedRegistrationIds } from '@/lib/camp/offline-checkin-queue'
+import { loadCampDeskSnapshot, saveCampDeskSnapshot } from '@/lib/camp/offline-lookup-cache'
 
 interface RecentCheckIn {
   id: string
@@ -84,6 +89,29 @@ export default function CampScannerPage() {
   const [loading, setLoading] = useState(true)
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const lastScannedRef = useRef<string | null>(null)
+  /** Set when the desk data came from this phone's cache (loaded offline). */
+  const [cachedAt, setCachedAt] = useState<number | null>(null)
+  const refreshRef = useRef<() => void>(() => {})
+
+  const offline = useCampOfflineQueue({
+    autoSync: true,
+    onSynced: (summary) => {
+      if (summary.synced > 0) {
+        toast({
+          title: 'Synced',
+          description: `${summary.synced} check-in${summary.synced === 1 ? '' : 's'} saved on this phone ${summary.synced === 1 ? 'is' : 'are'} now on the server.`,
+        })
+      }
+      if (summary.failed > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Some check-ins could not sync',
+          description: `${summary.failed} need attention. See the list on this page.`,
+        })
+      }
+      refreshRef.current()
+    },
+  })
 
   const selectedActivity = useMemo(
     () => activities.find((a) => a.id === selectedActivityId) ?? null,
@@ -105,9 +133,15 @@ export default function CampScannerPage() {
     [selectedActivity]
   )
 
+  const queuedIds = useMemo(
+    () => queuedRegistrationIds(offline.queue, selectedActivityId),
+    [offline.queue, selectedActivityId]
+  )
+
+  // Saved-on-this-phone check-ins count as present so nobody is queued twice.
   const sessionCheckedInIds = useMemo(
-    () => new Set(sessionAttendances.map((row) => row.registration_id)),
-    [sessionAttendances]
+    () => new Set([...sessionAttendances.map((row) => row.registration_id), ...Array.from(queuedIds)]),
+    [sessionAttendances, queuedIds]
   )
 
   const activeCampers = useMemo(
@@ -139,8 +173,9 @@ export default function CampScannerPage() {
   )
 
   const loadSessionAttendances = useCallback(async (activityId: string) => {
-    const { data } = await campService.getSessionAttendancesForActivity(activityId)
-    setSessionAttendances(data ?? [])
+    const { data, error } = await campService.getSessionAttendancesForActivity(activityId)
+    // Offline: keep what is on screen rather than wiping the list.
+    if (!error) setSessionAttendances(data ?? [])
   }, [])
 
   const loadRegistrations = useCallback(async (yearId: string) => {
@@ -168,8 +203,9 @@ export default function CampScannerPage() {
 
   const loadActivities = useCallback(
     async (yearId: string, date: string, opts?: { keepOverride?: boolean }) => {
-      const { data } = await campService.getCampActivities(yearId)
-      const mapped = (data ?? [])
+      const { data, error } = await campService.getCampActivities(yearId)
+      if (error || !data) return // offline: keep the sessions already loaded
+      const mapped = data
         .map((row) => mapRawCampActivity(row as Record<string, unknown>))
         .filter((a): a is CampActivity => a != null)
       const sorted = sortCampActivities(mapped)
@@ -193,7 +229,7 @@ export default function CampScannerPage() {
         const { data, error } = await ensureDailyCampSessionsAction({
           camp_year_id: yearId,
           date,
-        })
+        }).catch(() => ({ data: null, error: navigator.onLine === false ? null : 'Could not reach the server.' }))
         if (notify) {
           if (error) {
             toast({
@@ -223,6 +259,13 @@ export default function CampScannerPage() {
       await loadSessionAttendances(selectedActivityId)
     }
   }, [campYear, loadRegistrations, loadSessionAttendances, selectedActivityId])
+  refreshRef.current = () => void refreshCheckInData()
+
+  // Online data → cache for offline lookups (id, name, code, phone per camper).
+  useEffect(() => {
+    if (!campYear || cachedAt != null || registrations.length === 0 || activities.length === 0) return
+    void saveCampDeskSnapshot({ campYear, activities, registrations })
+  }, [campYear, activities, registrations, cachedAt])
 
   function selectPeriod(period: CampDailySessionPeriod) {
     const activity = dailySessionsForDate.get(period)
@@ -241,9 +284,25 @@ export default function CampScannerPage() {
 
   useEffect(() => {
     async function loadCampYear() {
-      const { data } = await getActiveCampYear()
-      setCampYear(data ?? null)
-      setLoading(false)
+      try {
+        if (navigator.onLine === false) throw new Error('offline')
+        const { data } = await getActiveCampYear()
+        setCampYear(data ?? null)
+        setCachedAt(null)
+      } catch {
+        // Offline: fall back to the lookup list saved the last time this page loaded online.
+        const snapshot = await loadCampDeskSnapshot()
+        if (snapshot) {
+          const sorted = sortCampActivities(snapshot.activities)
+          setActivities(sorted)
+          setRegistrations(snapshot.registrations)
+          setSelectedActivityId(applySuggestedPeriod(sorted, todayIsoDate(), suggestDailySessionPeriod()))
+          setCachedAt(snapshot.saved_at)
+          setCampYear(snapshot.campYear)
+        }
+      } finally {
+        setLoading(false)
+      }
     }
     void loadCampYear()
     return () => {
@@ -251,7 +310,7 @@ export default function CampScannerPage() {
         scannerRef.current.clear().catch(console.error)
       }
     }
-  }, [])
+  }, [applySuggestedPeriod])
 
   useEffect(() => {
     if (!campYear) return
@@ -369,29 +428,40 @@ export default function CampScannerPage() {
           })
           playBeep('warning')
         } else {
-          const { data, error } = await campService.recordSessionCheckIn({
+          const outcome = await recordCampCheckInOrQueue({
             activity_id: selectedActivityId,
             registration_id: registration.id,
             performed_by: user.id,
             check_in_method: 'qr',
+            camp_year_id: registration.camp_year_id,
+            name: registration.full_name || `${registration.first_name ?? ''} ${registration.last_name ?? ''}`.trim(),
           })
-          if (error || !data) throw new Error(error ?? 'Check-in failed')
 
-          const updatedRegistration = (data.registration ?? registration) as CampRegistration
-          if (data.attendance) {
-            setSessionAttendances((prev) => [
-              data.attendance!,
-              ...prev.filter((row) => row.registration_id !== registration.id),
-            ])
+          if (outcome.kind === 'queued' || outcome.kind === 'already_queued') {
+            setScanResult({
+              success: true,
+              message: 'Saved on this phone, will sync',
+              data: registration,
+            })
+            playBeep(outcome.kind === 'queued' ? 'success' : 'warning')
+          } else {
+            const updatedRegistration = (outcome.registration ?? registration) as CampRegistration
+            const attendance = outcome.attendance
+            if (attendance) {
+              setSessionAttendances((prev) => [
+                attendance,
+                ...prev.filter((row) => row.registration_id !== registration.id),
+              ])
+            }
+            setScanResult({
+              success: true,
+              message: outcome.kind === 'already'
+                ? 'Already checked in to this session'
+                : 'Session check-in successful!',
+              data: updatedRegistration,
+            })
+            playBeep(outcome.kind === 'already' ? 'warning' : 'success')
           }
-          setScanResult({
-            success: true,
-            message: data.already_checked_in
-              ? 'Already checked in to this session'
-              : 'Session check-in successful!',
-            data: updatedRegistration,
-          })
-          playBeep(data.already_checked_in ? 'warning' : 'success')
         }
       } catch (err: unknown) {
         setScanResult({
@@ -474,7 +544,15 @@ export default function CampScannerPage() {
       <div className="mx-auto max-w-lg space-y-4 pb-6 sm:max-w-2xl">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="app-page-title">Camp check-in</h1>
+            <h1 className="app-page-title flex flex-wrap items-center gap-2">
+              Camp check-in
+              {offline.pending.length > 0 ? (
+                <Badge variant="warning" aria-label={`${offline.pending.length} check-ins waiting to sync`}>
+                  <UploadCloud className="h-3.5 w-3.5" aria-hidden />
+                  {offline.pending.length} to sync
+                </Badge>
+              ) : null}
+            </h1>
             <p className="app-page-description">{campYear.year} · presence by session</p>
           </div>
           <Button
@@ -493,7 +571,79 @@ export default function CampScannerPage() {
           </Button>
         </div>
 
-        <div className="dashboard-panel p-4">
+        {!offline.online || cachedAt != null || offline.pending.length > 0 || offline.failed.length > 0 ? (
+          <div
+            role="status"
+            className={cn(
+              'rounded-xl border px-3 py-3 text-sm',
+              offline.failed.length > 0
+                ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-200'
+                : 'border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200'
+            )}
+          >
+            <div className="flex items-start gap-2">
+              <CloudOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1 space-y-1">
+                {!offline.online ? (
+                  <p>
+                    <strong>Offline.</strong> Keep checking people in: each one is saved on this phone and syncs
+                    when the connection is back.
+                  </p>
+                ) : null}
+                {cachedAt != null ? (
+                  <p>
+                    Using the camper list saved on this phone at{' '}
+                    {new Date(cachedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.
+                  </p>
+                ) : null}
+                {offline.pending.length > 0 ? (
+                  <p>
+                    <strong>{offline.pending.length}</strong> check-in{offline.pending.length === 1 ? '' : 's'} saved on
+                    this phone, will sync automatically.
+                  </p>
+                ) : null}
+                {offline.failed.length > 0 ? (
+                  <div>
+                    <p>
+                      <strong>{offline.failed.length}</strong> could not sync:
+                    </p>
+                    <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                      {offline.failed.slice(0, 10).map((item) => (
+                        <li key={item.client_uuid}>
+                          {item.name || item.registration_id}: {item.last_error ?? 'Rejected by the server'}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {offline.pending.length > 0 ? (
+                <Button
+                  size="sm"
+                  className="min-h-11 sm:min-h-9"
+                  disabled={offline.syncing || !offline.online}
+                  onClick={() =>
+                    void offline.sync().then((s) => {
+                      if (s.error) toast({ variant: 'destructive', title: 'Not synced yet', description: s.error })
+                    })
+                  }
+                >
+                  <RefreshCw className={cn('mr-2 h-4 w-4', offline.syncing && 'animate-spin')} />
+                  Sync now
+                </Button>
+              ) : null}
+              {offline.failed.length > 0 ? (
+                <Button size="sm" variant="outline" className="min-h-11 sm:min-h-9" onClick={offline.dismissFailed}>
+                  Dismiss failed
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="dashboard-panel p-4" data-tour="scan-session">
           <div className="mb-3 flex items-center justify-between gap-2">
             <label htmlFor="session-date" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               Camp day
@@ -564,7 +714,7 @@ export default function CampScannerPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div data-tour="scan-stats" className="grid grid-cols-3 gap-2">
           <div className="dashboard-panel p-3 text-center">
             <div className="app-stat-value text-neutral-900 dark:text-neutral-100">{sessionStats.totalRegistrations}</div>
             <div className="app-stat-label">At camp</div>
@@ -579,6 +729,7 @@ export default function CampScannerPage() {
           </div>
         </div>
 
+        <div data-tour="scan-manual">
         <CampManualCheckInPanel
           simple
           campYearId={campYear.id}
@@ -588,11 +739,14 @@ export default function CampScannerPage() {
           performedByUserId={user?.id}
           checkInMethod="manual"
           sessionLabel={sessionLabel}
+          savedOfflineIds={queuedIds}
           onCheckInComplete={() => void refreshCheckInData()}
         />
+        </div>
 
         <button
           type="button"
+          data-tour="scan-more"
           className="flex min-h-11 w-full items-center justify-between rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-700 dark:border-white/10 dark:bg-neutral-800/60 dark:text-neutral-200"
           onClick={() => setShowMoreTools((v) => !v)}
         >

@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useAuth } from '@/components/providers'
 import { useBackgroundJobs } from '@/components/background-jobs'
 import { parseManualRecipients } from '@/lib/comms/recipients'
+import { householdIdsOf, onePerHousehold } from '@/lib/households/one-per-household'
+import { loadHouseholdPrimariesAction } from '@/lib/actions/households'
 import {
   getCommsProviderStatusAction,
   getCommsStatsAction,
@@ -113,6 +115,8 @@ export function CommsCenterView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<CommsRecipient[]>([])
   const [selectedRecipients, setSelectedRecipients] = useState<CommsRecipient[]>([])
+  const [onePerHouse, setOnePerHouse] = useState(false)
+  const [householdPrimaries, setHouseholdPrimaries] = useState<Record<string, string | null>>({})
   const [groups, setGroups] = useState<Array<{ id: string; name: string; group_type: string }>>([])
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [manualRecipients, setManualRecipients] = useState('')
@@ -190,15 +194,47 @@ export function CommsCenterView() {
     })
   }
 
+  const householdIds = useMemo(
+    () => householdIdsOf(selectedRecipients, (r) => r.household_id),
+    [selectedRecipients]
+  )
+
+  useEffect(() => {
+    if (!onePerHouse || householdIds.length === 0) return
+    let alive = true
+    void loadHouseholdPrimariesAction(householdIds)
+      .then((res) => {
+        if (alive && res.data) setHouseholdPrimaries(res.data)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [onePerHouse, householdIds])
+
+  /** Selected people after "One text per household" (when on). */
+  const { kept: effectiveRecipients, dropped: householdDropped } = useMemo(
+    () =>
+      onePerHouse
+        ? onePerHousehold(selectedRecipients, {
+            householdId: (r) => r.household_id,
+            userId: (r) => r.user_id,
+            isReachable: (r) => (channel === 'email' ? Boolean(r.email) : isValidSmsPhone(r.phone)),
+            primaryByHousehold: householdPrimaries,
+          })
+        : { kept: selectedRecipients, dropped: [] as CommsRecipient[] },
+    [onePerHouse, selectedRecipients, channel, householdPrimaries]
+  )
+
   const deliverableCount = useMemo(() => {
-    return selectedRecipients.filter((r) =>
+    return effectiveRecipients.filter((r) =>
       channel === 'email' ? Boolean(r.email) : isValidSmsPhone(r.phone)
     ).length
-  }, [selectedRecipients, channel])
+  }, [effectiveRecipients, channel])
 
   const smsRecipients = useMemo(
-    () => selectedRecipients.filter((r) => isValidSmsPhone(r.phone)),
-    [selectedRecipients]
+    () => effectiveRecipients.filter((r) => isValidSmsPhone(r.phone)),
+    [effectiveRecipients]
   )
 
   const manualLineCount = useMemo(
@@ -241,7 +277,7 @@ export function CommsCenterView() {
     // Build the full list here (same de-duplication as the server) so it can be sent in chunks.
     const unique = new Map<string, CommsRecipient>()
     const all = [
-      ...(audienceMode === 'manual' ? [] : selectedRecipients),
+      ...(audienceMode === 'manual' ? [] : effectiveRecipients),
       ...(audienceMode === 'manual' && manualRecipients.trim()
         ? parseManualRecipients(manualRecipients, channel, module)
         : []),
@@ -370,7 +406,7 @@ export function CommsCenterView() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="comms-stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Total logged" value={stats?.total ?? 0} />
         <StatTile label="Sent / delivered" value={stats?.sent ?? 0} />
         <StatTile
@@ -397,7 +433,7 @@ export function CommsCenterView() {
       ) : null}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <ScrollableTabsList>
+        <ScrollableTabsList data-tour="comms-tabs">
           <TabsTrigger value="compose">Compose</TabsTrigger>
           <TabsTrigger value="history">History ({history.length})</TabsTrigger>
         </ScrollableTabsList>
@@ -411,7 +447,7 @@ export function CommsCenterView() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div data-tour="comms-audience" className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Module</Label>
                   <Select value={module} onValueChange={(v) => setModule(v as CommsModule)}>
@@ -556,6 +592,24 @@ export function CommsCenterView() {
                 </div>
               ) : null}
 
+              {audienceMode !== 'manual' && householdIds.length > 0 ? (
+                <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                  <Checkbox
+                    checked={onePerHouse}
+                    onCheckedChange={(value) => setOnePerHouse(value === true)}
+                    aria-describedby="comms-household-hint"
+                  />
+                  <span>
+                    One text per household
+                    <span id="comms-household-hint" className="block text-xs text-neutral-500 dark:text-neutral-400">
+                      {onePerHouse && householdDropped.length > 0
+                        ? `${householdDropped.length} family member${householdDropped.length === 1 ? '' : 's'} left out; the main contact gets it`
+                        : 'Send only to the main contact (or first reachable person) in each family'}
+                    </span>
+                  </span>
+                </label>
+              ) : null}
+
               {channel === 'email' ? (
                 <div className="space-y-2">
                   <Label>Subject</Label>
@@ -563,7 +617,7 @@ export function CommsCenterView() {
                 </div>
               ) : null}
 
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="comms-message">
                 <Label>Message</Label>
                 <Textarea
                   rows={5}
@@ -592,6 +646,7 @@ export function CommsCenterView() {
 
               <FormActionBar className="sm:justify-start">
               <Button
+                data-tour="comms-send"
                 disabled={sending || (audienceMode !== 'manual' && deliverableCount === 0 && !manualRecipients.trim())}
                 onClick={requestSend}
               >

@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useBackgroundJobs } from '@/components/background-jobs'
 import { getCommsProviderStatusAction } from '@/lib/actions/comms'
 import { sendGroupSmsAction } from '@/lib/actions/groups'
+import { loadHouseholdPrimariesAction } from '@/lib/actions/households'
+import { householdIdsOf, onePerHousehold } from '@/lib/households/one-per-household'
 import { memberToRecipient, personalizeMessage } from '@/lib/comms/recipients'
 import { isValidSmsPhone } from '@/lib/comms/sms-client'
 import { smsSegmentInfo } from '@/lib/comms/sms-segments'
@@ -31,16 +33,21 @@ export function GroupSmsComposer({
   groupId,
   groupName,
   memberships,
+  sendAction = sendGroupSmsAction,
 }: {
   groupId: string
   groupName: string
   memberships: GroupMembership[]
+  /** Server action that sends one chunk; campus pages pass their campus-scoped action. */
+  sendAction?: typeof sendGroupSmsAction
 }) {
   const { toast } = useToast()
   const jobs = useBackgroundJobs()
   const [message, setMessage] = useState('')
   const [dryRun, setDryRun] = useState(false)
   const [smsConfigured, setSmsConfigured] = useState<boolean | null>(null)
+  const [onePerHouse, setOnePerHouse] = useState(false)
+  const [primaries, setPrimaries] = useState<Record<string, string | null>>({})
 
   useEffect(() => {
     let alive = true
@@ -54,19 +61,49 @@ export function GroupSmsComposer({
     }
   }, [])
 
-  const { targets, skipped } = useMemo(() => {
+  const rows = useMemo(
+    () =>
+      memberships.map((row) => ({
+        row,
+        recipient: row.member ? memberToRecipient(row.member, 'church') : null,
+      })),
+    [memberships]
+  )
+  const householdIds = useMemo(() => householdIdsOf(rows, (r) => r.recipient?.household_id), [rows])
+
+  useEffect(() => {
+    if (!onePerHouse || householdIds.length === 0) return
+    let alive = true
+    loadHouseholdPrimariesAction(householdIds)
+      .then((res) => {
+        if (alive && res.data) setPrimaries(res.data)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [onePerHouse, householdIds])
+
+  const { targets, skipped, merged } = useMemo(() => {
+    const { kept, dropped } = onePerHouse
+      ? onePerHousehold(rows, {
+          householdId: (r) => r.recipient?.household_id,
+          userId: (r) => r.recipient?.user_id,
+          isReachable: (r) => Boolean(r.recipient && isValidSmsPhone(r.recipient.phone)),
+          primaryByHousehold: primaries,
+        })
+      : { kept: rows, dropped: [] }
     const targets: Target[] = []
     const skipped: string[] = []
-    for (const row of memberships) {
-      const recipient = row.member ? memberToRecipient(row.member, 'church') : null
+    for (const { row, recipient } of kept) {
       if (recipient && isValidSmsPhone(recipient.phone)) {
         targets.push({ memberId: row.member_id, recipient })
       } else {
         skipped.push(row.member?.user?.full_name?.trim() || 'Unknown member')
       }
     }
-    return { targets, skipped }
-  }, [memberships])
+    return { targets, skipped, merged: dropped.length }
+  }, [rows, onePerHouse, primaries])
 
   const sample = targets[0]?.recipient
   const preview = sample
@@ -102,7 +139,7 @@ export function GroupSmsComposer({
       items: targets,
       chunkSize: 20,
       runChunk: async (chunk) => {
-        const res = await sendGroupSmsAction({
+        const res = await sendAction({
           group_id: groupId,
           member_ids: chunk.map((t) => t.memberId),
           message: body,
@@ -141,7 +178,29 @@ export function GroupSmsComposer({
             {skipped.length > 4 ? ` and ${skipped.length - 4} more` : ''}.
           </span>
         ) : null}
+        {merged > 0 ? (
+          <span>
+            {' '}
+            {merged} household member{merged === 1 ? '' : 's'} left out (one text per household).
+          </span>
+        ) : null}
       </p>
+
+      {householdIds.length > 0 ? (
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <Checkbox
+            checked={onePerHouse}
+            onCheckedChange={(value) => setOnePerHouse(value === true)}
+            aria-describedby="group-household-hint"
+          />
+          <span>
+            One text per household
+            <span id="group-household-hint" className="block text-xs text-neutral-500 dark:text-neutral-400">
+              Text only the main contact (or the first person with a valid number) in each family
+            </span>
+          </span>
+        </label>
+      ) : null}
 
       {notConfigured ? (
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">

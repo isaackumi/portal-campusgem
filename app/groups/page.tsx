@@ -176,6 +176,7 @@ function GroupsContent() {
               onClick={handleExport}
               disabled={exporting}
               title="Download a CSV of these groups"
+              data-tour="groups-export"
             >
               {exporting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
@@ -185,7 +186,7 @@ function GroupsContent() {
               {exporting ? 'Exporting…' : 'Export'}
             </Button>
             {canManage ? (
-              <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => router.push('/groups/add')}>
+              <Button data-tour="groups-add" className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => router.push('/groups/add')}>
                 <Plus className="mr-2 h-4 w-4" />
                 Create group
               </Button>
@@ -201,7 +202,7 @@ function GroupsContent() {
         </section>
 
         {/* Search and Filters */}
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div data-tour="groups-filters" className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
             <Input
@@ -231,7 +232,7 @@ function GroupsContent() {
         {loading ? (
           <LoadingGrid count={6} />
         ) : groups && groups.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+          <div data-tour="groups-list" className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
             {groups.map((group) => (
               <Card
                 key={group.id}

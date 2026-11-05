@@ -7,8 +7,10 @@ import { BrandMark, BrandTitle } from '@/components/brand-mark'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { activeNavHref, type SidebarNavItem, type SidebarNavSection } from '@/lib/navigation/sidebar'
+import { navItemTourId, navSectionTourId } from '@/lib/tour/anchors'
 import { useVisibleNav } from '@/lib/navigation/use-visible-nav'
 import { InstallAppNavItem } from '@/components/install-app'
+import { InboxUnreadBadge } from '@/components/inbox/inbox-unread-badge'
 import { useInstallApp } from '@/components/pwa-provider'
 import { ChevronRightIcon, Cross2Icon } from '@radix-ui/react-icons'
 
@@ -72,10 +74,12 @@ function NavItem({
         title={collapsed ? item.name : item.description}
         aria-current={active ? 'page' : undefined}
         data-active={active ? 'true' : 'false'}
+        data-tour={navItemTourId(item.href)}
         className={cn('sidebar-nav-item group', collapsed && 'justify-center px-0')}
       >
         <Icon className="sidebar-nav-icon h-4 w-4 shrink-0" />
         {!collapsed && <span className="truncate">{item.name}</span>}
+        {item.badge === 'inbox-unread' ? <InboxUnreadBadge collapsed={collapsed} /> : null}
       </button>
     </li>
   )
@@ -94,10 +98,10 @@ function NavGroup({
   onToggle: () => void
   children: React.ReactNode
 }) {
-  if (!collapsible) return <ul className="flex flex-col gap-px">{children}</ul>
+  if (!collapsible) return <ul className="flex flex-col gap-px" data-tour={navSectionTourId(section.title)}>{children}</ul>
   const id = `nav-group-${section.title.toLowerCase().replace(/\W+/g, '-')}`
   return (
-    <div>
+    <div data-tour={navSectionTourId(section.title)}>
       <button
         type="button"
         onClick={onToggle}
@@ -173,6 +177,7 @@ function SidebarNavInner({
     <div className="flex min-h-0 flex-1 flex-col">
       <nav
         aria-label="Main"
+        data-tour="sidebar"
         className={cn(
           'sidebar-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4 pt-2',
           'px-3'
@@ -180,7 +185,7 @@ function SidebarNavInner({
       >
         {sections.map((section, index) =>
           collapsed ? (
-            <div key={section.title}>
+            <div key={section.title} data-tour={navSectionTourId(section.title)}>
               {index > 0 && <div className="mx-2 mb-3 h-px bg-neutral-200 dark:bg-neutral-800" aria-hidden />}
               <ul className="flex flex-col gap-px">{renderItems(section.items)}</ul>
             </div>

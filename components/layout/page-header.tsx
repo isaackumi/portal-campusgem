@@ -18,12 +18,12 @@ export function PageHeader({ title, description, eyebrow, actions, className }: 
           {eyebrow ? (
             <p className="app-overline mb-2">{eyebrow}</p>
           ) : null}
-          <h1 className="app-page-title">{title}</h1>
+          <h1 className="app-page-title" data-tour="page-title">{title}</h1>
           {description ? (
             <p className="app-page-description mt-2 max-w-2xl">{description}</p>
           ) : null}
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? <div className="flex flex-wrap items-center gap-2" data-tour="page-actions">{actions}</div> : null}
       </div>
     </div>
   )

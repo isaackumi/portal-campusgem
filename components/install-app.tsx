@@ -30,6 +30,7 @@ export function InstallAppNavItem({
         void install()
       }}
       title={collapsed ? 'Install app' : 'Add Campus Gem to your home screen'}
+      data-tour="install-app"
       className={cn('sidebar-nav-item group', collapsed && 'justify-center px-0')}
     >
       <Download className="sidebar-nav-icon h-4 w-4 shrink-0" aria-hidden />
@@ -46,6 +47,7 @@ export function InstallAppCard({ className }: { className?: string }) {
   return (
     <section
       aria-label="Install the app"
+      data-tour="install-app"
       className={cn(
         'relative flex items-center gap-3 rounded-2xl border border-brand-200/70 bg-brand-50 p-3 pr-12 dark:border-brand-500/20 dark:bg-brand-500/10 lg:hidden',
         className

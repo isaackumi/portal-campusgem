@@ -5,6 +5,7 @@ export const USER_ROLES: UserRole[] = [
   'pastor',
   'elder',
   'finance_officer',
+  'campus_leader',
   'member',
   'visitor',
 ]
@@ -14,6 +15,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   pastor: 'Pastor',
   elder: 'Elder',
   finance_officer: 'Finance Officer',
+  campus_leader: 'Campus leader',
   member: 'Member',
   visitor: 'Visitor',
 }
@@ -43,6 +45,8 @@ export type Permission =
   | 'admins.manage'
   | 'financial.view'
   | 'financial.manage'
+  /** Administer the campus groups where you are an active leader / co-leader (lib/auth/campus-scope.ts). */
+  | 'campus.lead'
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
@@ -129,18 +133,33 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'attendance.record',
     'celebrations.view',
   ],
+  // Member access plus their own campus page(s); scope is checked per campus server-side.
+  campus_leader: [
+    'dashboard.view',
+    'groups.view',
+    'attendance.view',
+    'attendance.record',
+    'celebrations.view',
+    'campus.lead',
+  ],
   visitor: ['dashboard.view', 'attendance.view'],
 }
 
-const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
+/** A rule passes when the user holds the permission, or any one of a list. */
+const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission | Permission[] }> = [
+  // Which campuses (all, or only the ones you lead) is checked server-side per campus.
+  { prefix: '/campuses', permission: ['groups.manage', 'campus.lead'] },
   { prefix: '/admin/rlc/follow-up', permission: 'rlc.manage' },
   { prefix: '/admin/rlc', permission: 'rlc.view' },
   { prefix: '/admin/admins', permission: 'admins.manage' },
   { prefix: '/admin/users', permission: 'users.manage' },
+  { prefix: '/admin/pastoral-care', permission: 'members.manage' },
   { prefix: '/admin/groups', permission: 'groups.manage' },
   { prefix: '/admin/campus-activities', permission: 'groups.manage' },
   { prefix: '/admin/corporate-gem', permission: 'groups.manage' },
   { prefix: '/admin/communications', permission: 'sms.send' },
+  { prefix: '/admin/events', permission: 'groups.manage' },
+  { prefix: '/admin/inbox', permission: 'sms.send' },
   { prefix: '/admin/camp-meeting/years', permission: 'camp.settings' },
   { prefix: '/admin/camp-meeting/notifications', permission: 'camp.settings' },
   { prefix: '/admin/camp-meeting/payments', permission: 'camp.payments' },
@@ -159,6 +178,7 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/visitors', permission: 'rlc.view' },
   { prefix: '/groups/add', permission: 'groups.manage' },
   { prefix: '/groups', permission: 'groups.view' },
+  { prefix: '/attendance/self-check-in', permission: 'attendance.manage' },
   { prefix: '/attendance', permission: 'attendance.view' },
   { prefix: '/sms', permission: 'sms.send' },
   { prefix: '/celebrations', permission: 'celebrations.view' },
@@ -167,6 +187,10 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/settings', permission: 'dashboard.view' },
   { prefix: '/recommendations', permission: 'dashboard.view' },
   { prefix: '/dashboard', permission: 'dashboard.view' },
+  // "My GEM" (every role has dashboard.view). Last, so '/me' never shadows '/members'.
+  { prefix: '/me', permission: 'dashboard.view' },
+  // Guided tours (every signed-in role). Last, so it never shadows another rule.
+  { prefix: '/help', permission: 'dashboard.view' },
 ]
 
 export function isUserRole(value: string | null | undefined): value is UserRole {
@@ -174,7 +198,7 @@ export function isUserRole(value: string | null | undefined): value is UserRole 
 }
 
 /** Roles that can be assigned when elevating access from camp / user management. */
-export const STAFF_ROLES: UserRole[] = ['admin', 'pastor', 'elder', 'finance_officer']
+export const STAFF_ROLES: UserRole[] = ['admin', 'pastor', 'elder', 'finance_officer', 'campus_leader']
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'dashboard.view': 'View dashboard',
@@ -201,6 +225,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'admins.manage': 'Manage administrators',
   'financial.view': 'View financials',
   'financial.manage': 'Manage financials',
+  'campus.lead': 'Lead own campus (campuses they are leader of)',
 }
 
 export const ALL_PERMISSIONS = Object.keys(PERMISSION_LABELS) as Permission[]
@@ -209,7 +234,7 @@ export const ALL_PERMISSIONS = Object.keys(PERMISSION_LABELS) as Permission[]
 export const PERMISSION_GROUPS: Array<{ label: string; permissions: Permission[] }> = [
   { label: 'General', permissions: ['dashboard.view', 'celebrations.view', 'sms.send', 'forms.manage'] },
   { label: 'Members & visitors', permissions: ['members.view', 'members.manage', 'visitors.view', 'visitors.manage'] },
-  { label: 'Groups', permissions: ['groups.view', 'groups.manage'] },
+  { label: 'Groups', permissions: ['groups.view', 'groups.manage', 'campus.lead'] },
   { label: 'Attendance', permissions: ['attendance.view', 'attendance.record', 'attendance.manage'] },
   { label: 'Camp meeting', permissions: ['camp.view', 'camp.calls', 'camp.manage', 'camp.payments', 'camp.settings'] },
   { label: 'RLC', permissions: ['rlc.view', 'rlc.manage'] },
@@ -271,12 +296,15 @@ export function canAccessPath(
   const path = pathname.split('?')[0].split('#')[0]
   const match = ROUTE_PERMISSIONS.find((rule) => path.startsWith(rule.prefix))
   if (!match) return true
-  return hasPermission(role, match.permission, extra)
+  const needed = Array.isArray(match.permission) ? match.permission : [match.permission]
+  return needed.some((permission) => hasPermission(role, permission, extra))
 }
 
+/** The (first) permission a path needs, for messages; null when the path is open to every role. */
 export function requiredPermissionForPath(pathname: string): Permission | null {
   const match = ROUTE_PERMISSIONS.find((rule) => pathname.startsWith(rule.prefix))
-  return match?.permission ?? null
+  if (!match) return null
+  return Array.isArray(match.permission) ? match.permission[0] : match.permission
 }
 
 /** Only allow same-origin relative redirects after login. */

@@ -305,7 +305,7 @@ export default function CampAdminDashboard() {
               <ClipboardList className="mr-2 h-4 w-4" aria-hidden />
               Registrations
             </Button>
-            <Button className="flex-1 sm:flex-none" onClick={() => router.push('/admin/camp-meeting/scan')}>
+            <Button data-tour="camp-checkin" className="flex-1 sm:flex-none" onClick={() => router.push('/admin/camp-meeting/scan')}>
               <QrCode className="mr-2 h-4 w-4" aria-hidden />
               Check-in
             </Button>
@@ -314,7 +314,7 @@ export default function CampAdminDashboard() {
       </header>
 
       {/* Headline numbers */}
-      <section aria-label="Camp totals" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <section data-tour="camp-totals" aria-label="Camp totals" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Kpi
           href="/admin/camp-meeting/registrations"
           label="Registered"
@@ -526,6 +526,7 @@ export default function CampAdminDashboard() {
         </Panel>
 
         <div className="space-y-6 lg:col-span-2">
+          <div data-tour="camp-link">
           <Panel title="Registration link" description="Share it anywhere people can sign up for camp.">
             <div className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 py-1.5 pl-3 pr-1.5 dark:border-neutral-600 dark:bg-neutral-900/40">
               <input
@@ -542,10 +543,11 @@ export default function CampAdminDashboard() {
               </Button>
             </div>
           </Panel>
+          </div>
 
           {can('camp.manage') ? <CampRemindersCard yearId={campYear.id} /> : null}
 
-          <nav aria-label="Camp tools" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+          <nav data-tour="camp-tools" aria-label="Camp tools" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
             {QUICK_LINKS.filter((q) => !q.permission || can(q.permission)).map((q) => {
               const Icon = q.icon
               return (

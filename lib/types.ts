@@ -2,7 +2,14 @@
  * Type definitions for the Church Management System
  */
 
-export type UserRole = 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
+export type UserRole =
+  | 'admin'
+  | 'pastor'
+  | 'elder'
+  | 'finance_officer'
+  | 'campus_leader'
+  | 'member'
+  | 'visitor'
 export type MemberStatus = 'active' | 'visitor' | 'transferred' | 'inactive'
 export type Congregation = 'rlc' | 'campus_gem' | 'both'
 export type RlcPipelineStatus = 'first_visit' | 'follow_up' | 'new_member' | 'full_member' | 'inactive'
@@ -37,7 +44,7 @@ export type RlcRole =
   | 'intercessor'
   | 'finance'
   | 'administration'
-export type AttendanceMethod = 'qr' | 'kiosk' | 'admin' | 'pin' | 'mobile'
+export type AttendanceMethod = 'qr' | 'kiosk' | 'admin' | 'pin' | 'mobile' | 'self'
 export type ServiceType = 'sunday_service' | 'midweek_service' | 'prayer_meeting' | 'youth_service' | 'children_service' | 'special_event' | 'other'
 export type AgeRange = '0_12' | '13_17' | '18_35' | '36_59' | '60_plus'
 
@@ -71,6 +78,8 @@ export interface AppUser {
   emergency_contact_name?: string
   emergency_contact_phone?: string
   emergency_contact_relation?: string
+  /** Family household this person belongs to (see convex/households.ts). */
+  household_id?: string
   created_at: string
   updated_at: string
 }
@@ -173,6 +182,10 @@ export interface Group {
   is_open?: boolean
   /** If true, leader/admin must approve new members */
   requires_approval?: boolean
+  /** Campus groups: unique uppercase tag ("UEW"), URL slug (/campuses/<slug>) and match names. */
+  short_code?: string
+  slug?: string
+  aliases?: string[]
   created_at: string
   updated_at: string
   // Joined data

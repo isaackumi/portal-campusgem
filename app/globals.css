@@ -1435,3 +1435,199 @@
     color: #171717 !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Guided tours (driver.js) — components/tour/tour-provider.tsx
+ * driver.css is imported by the provider; these overrides theme its popover with our
+ * tokens: Plus Jakarta Sans, indigo brand, slate. `.driver-popover.cg-tour` (two classes)
+ * beats driver.css whatever the load order. Dark mode = `.dark` on <html>.
+ * ───────────────────────────────────────────────────────────────────────────── */
+.driver-popover.cg-tour {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  color: #475569; /* slate-600 */
+  background-color: #fff;
+  border: 1px solid rgb(226 232 240 / 0.8); /* slate-200/80 */
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  min-width: 260px;
+  max-width: min(340px, calc(100vw - 24px));
+  box-shadow: 0 16px 40px -12px rgb(15 23 42 / 0.25), 0 4px 12px -4px rgb(15 23 42 / 0.1); /* shadow-pop */
+}
+
+.driver-popover.cg-tour .driver-popover-title {
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: #0f172a; /* slate-900 */
+  padding-right: 28px; /* room for the close button */
+}
+
+.driver-popover.cg-tour .driver-popover-description {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #475569; /* slate-600 */
+}
+
+.driver-popover.cg-tour .driver-popover-close-btn {
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: #64748b; /* slate-500 */
+  font-size: 20px;
+  line-height: 32px;
+}
+
+.driver-popover.cg-tour .driver-popover-close-btn:hover {
+  color: #0f172a;
+  background-color: #f1f5f9; /* slate-100 */
+}
+
+.driver-popover.cg-tour .driver-popover-footer {
+  margin-top: 16px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.driver-popover.cg-tour .driver-popover-progress-text {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #64748b; /* slate-500 */
+}
+
+.driver-popover.cg-tour .driver-popover-navigation-btns {
+  gap: 6px;
+}
+
+.driver-popover.cg-tour .driver-popover-navigation-btns button + button {
+  margin-left: 0;
+}
+
+.driver-popover.cg-tour .driver-popover-footer-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  text-shadow: none;
+  color: #334155; /* slate-700 */
+  background-color: #fff;
+  border: 1px solid #e2e8f0; /* slate-200 */
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+
+.driver-popover.cg-tour .driver-popover-footer-btn:hover {
+  background-color: #f8fafc; /* slate-50 */
+  border-color: #cbd5e1; /* slate-300 */
+}
+
+.driver-popover.cg-tour .driver-popover-next-btn,
+.driver-popover.cg-tour .driver-popover-done-btn {
+  color: #fff;
+  background-color: #4f46e5; /* brand-600 */
+  border-color: #4f46e5;
+}
+
+.driver-popover.cg-tour .driver-popover-next-btn:hover,
+.driver-popover.cg-tour .driver-popover-done-btn:hover {
+  background-color: #4338ca; /* brand-700 */
+  border-color: #4338ca;
+}
+
+/* "Don't show again" (first-run tour only): a quiet text button. */
+.driver-popover.cg-tour .cg-tour-optout {
+  border-color: transparent;
+  background-color: transparent;
+  color: #64748b;
+  padding: 0 8px;
+}
+
+.driver-popover.cg-tour .cg-tour-optout:hover {
+  color: #0f172a;
+  background-color: #f1f5f9;
+  border-color: transparent;
+}
+
+.driver-popover.cg-tour button:focus-visible {
+  outline: 2px solid rgb(99 102 241 / 0.5); /* brand-500/50 */
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .driver-popover.cg-tour .driver-popover-footer-btn {
+    min-height: 44px;
+  }
+}
+
+/* Dark: slate-900 panel on the navy canvas, brand-500 primary. */
+.dark .driver-popover.cg-tour {
+  color: #cbd5e1; /* slate-300 */
+  background-color: #0f172a; /* slate-900 */
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow: 0 16px 40px -12px rgb(0 0 0 / 0.6), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+}
+
+.dark .driver-popover.cg-tour .driver-popover-title {
+  color: #fff;
+}
+
+.dark .driver-popover.cg-tour .driver-popover-description {
+  color: #cbd5e1; /* slate-300 */
+}
+
+.dark .driver-popover.cg-tour .driver-popover-progress-text,
+.dark .driver-popover.cg-tour .driver-popover-close-btn,
+.dark .driver-popover.cg-tour .cg-tour-optout {
+  color: #94a3b8; /* slate-400 */
+}
+
+.dark .driver-popover.cg-tour .driver-popover-close-btn:hover,
+.dark .driver-popover.cg-tour .cg-tour-optout:hover {
+  color: #fff;
+  background-color: rgb(255 255 255 / 0.06);
+}
+
+.dark .driver-popover.cg-tour .driver-popover-footer-btn:not(.driver-popover-next-btn):not(.driver-popover-done-btn):not(.cg-tour-optout) {
+  color: #e2e8f0; /* slate-200 */
+  background-color: #1e293b; /* slate-800 */
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.dark .driver-popover.cg-tour .driver-popover-footer-btn:not(.driver-popover-next-btn):not(.driver-popover-done-btn):not(.cg-tour-optout):hover {
+  background-color: #334155; /* slate-700 */
+}
+
+.dark .driver-popover.cg-tour .driver-popover-next-btn,
+.dark .driver-popover.cg-tour .driver-popover-done-btn {
+  background-color: #6366f1; /* brand-500 */
+  border-color: #6366f1;
+}
+
+.dark .driver-popover.cg-tour .driver-popover-next-btn:hover,
+.dark .driver-popover.cg-tour .driver-popover-done-btn:hover {
+  background-color: #4f46e5; /* brand-600 */
+  border-color: #4f46e5;
+}
+
+/* The arrow is drawn with borders: recolour only the visible side. */
+.dark .driver-popover.cg-tour .driver-popover-arrow-side-left { border-left-color: #0f172a; }
+.dark .driver-popover.cg-tour .driver-popover-arrow-side-right { border-right-color: #0f172a; }
+.dark .driver-popover.cg-tour .driver-popover-arrow-side-top { border-top-color: #0f172a; }
+.dark .driver-popover.cg-tour .driver-popover-arrow-side-bottom { border-bottom-color: #0f172a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .driver-fade .driver-overlay,
+  .driver-fade .driver-popover {
+    animation: none !important;
+  }
+}

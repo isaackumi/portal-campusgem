@@ -261,7 +261,7 @@ function CallsWorkspace() {
       />
 
       {data.canManage ? (
-        <section aria-label="Campaign progress" className="grid gap-4 lg:grid-cols-3">
+        <section data-tour="calls-progress" aria-label="Campaign progress" className="grid gap-4 lg:grid-cols-3">
           <div className="dashboard-panel p-5 lg:col-span-2">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -350,7 +350,7 @@ function CallsWorkspace() {
 
       <div className="mt-6 flex flex-col gap-3">
         {data.canManage ? (
-          <div role="tablist" aria-label="Whose calls" className="inline-flex w-fit rounded-lg bg-neutral-200/60 p-1 dark:bg-neutral-800">
+          <div data-tour="calls-views" role="tablist" aria-label="Whose calls" className="inline-flex w-fit rounded-lg bg-neutral-200/60 p-1 dark:bg-neutral-800">
             {(
               [
                 ['team', `Everyone · ${summary.total}`],
@@ -374,7 +374,7 @@ function CallsWorkspace() {
             ))}
           </div>
         ) : (
-          <div className="dashboard-panel flex flex-wrap items-center gap-4 p-4">
+          <div data-tour="calls-views" className="dashboard-panel flex flex-wrap items-center gap-4 p-4">
             <PhoneCall className="h-5 w-5 text-brand-600 dark:text-brand-400" aria-hidden />
             <p className="text-sm text-neutral-700 dark:text-neutral-300">
               <span className="font-semibold text-neutral-900 dark:text-neutral-50">{myOpen}</span> of {mine.length} still to call
@@ -383,7 +383,7 @@ function CallsWorkspace() {
           </div>
         )}
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div data-tour="calls-filters" className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden />
             <input
@@ -453,7 +453,7 @@ function CallsWorkspace() {
             }
           />
         ) : (
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div data-tour="calls-list" className="mt-4 grid gap-3 lg:grid-cols-2">
             {visible.slice(0, limit).map((r) => (
               <CallCard
                 key={r.id}
@@ -468,7 +468,7 @@ function CallsWorkspace() {
       ) : visible.length === 0 ? (
         <EmptyState title="No one matches" body="Try a different search or clear the filters." />
       ) : (
-        <div className="dashboard-panel mt-4 overflow-hidden">
+        <div className="dashboard-panel mt-4 overflow-hidden" data-tour="calls-list">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

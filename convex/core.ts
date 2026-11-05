@@ -4,13 +4,16 @@ import type { Doc, Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
 import { isValidGhanaPhone, normalizeGhanaPhone, phoneLookupVariants } from './lib/phone'
 import { sealMemberCheckIn, sealVisitorCheckIn } from './lib/rlcCheckInCode'
+import { detachUserFromHousehold } from './households'
+import { endOtherCampusMemberships, groupFromString } from './lib/campusMembership'
 
 const attendanceMethod = v.union(
   v.literal('qr'),
   v.literal('kiosk'),
   v.literal('admin'),
   v.literal('pin'),
-  v.literal('mobile')
+  v.literal('mobile'),
+  v.literal('self')
 )
 
 const serviceType = v.union(
@@ -40,6 +43,7 @@ const userRole = v.union(
   v.literal('pastor'),
   v.literal('elder'),
   v.literal('finance_officer'),
+  v.literal('campus_leader'),
   v.literal('member'),
   v.literal('visitor')
 )
@@ -920,6 +924,11 @@ export const addGroupMembershipForUserWithSecret = mutation({
 
     const memberId = String(member._id)
     const now = Date.now()
+    // One campus per person: adding to a campus here ends any other campus membership.
+    const targetGroup = await groupFromString(ctx, args.group_id)
+    if (targetGroup?.group_type === 'campus') {
+      await endOtherCampusMemberships(ctx, memberId, args.group_id)
+    }
     const existing = await ctx.db
       .query('group_memberships')
       .withIndex('by_group_and_member', (q) => q.eq('group_id', args.group_id).eq('member_id', memberId))
@@ -1050,6 +1059,8 @@ export const deleteUserWithSecret = mutation({
       await ctx.db.delete(member._id)
     }
 
+    const userDoc = await ctx.db.get(id)
+    if (userDoc) await detachUserFromHousehold(ctx, userDoc)
     await ctx.db.delete(id)
     return null
   },

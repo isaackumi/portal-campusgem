@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { useMembers } from '@/lib/hooks/use-data'
@@ -22,6 +22,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MemberRowActions } from '@/components/members/member-row-actions'
+import { CampusBadge } from '@/components/campus/campus-badge'
+import { loadCampusTagsAction, type CampusTag } from '@/lib/actions/campuses'
 import { 
   Users,
   Search,
@@ -46,6 +48,8 @@ interface MemberFilters {
   role: string
   status: string
   joinYear: string
+  /** 'all', 'none' (no campus) or a campus group id */
+  campus: string
   sortBy: string
   sortOrder: 'asc' | 'desc'
 }
@@ -61,6 +65,7 @@ export default function MembersPage() {
     role: 'all',
     status: 'all',
     joinYear: 'all',
+    campus: 'all',
     sortBy: 'name',
     sortOrder: 'asc'
   })
@@ -77,6 +82,25 @@ export default function MembersPage() {
     loading, 
     refetch
   } = useMembers(currentPage, 50, filters.search)
+
+  // Campus tags: one call for the whole directory (member id → campus).
+  const [campusTags, setCampusTags] = useState<{
+    campuses: Array<{ id: string; label: string; name: string; key: string }>
+    byMember: Record<string, CampusTag>
+  } | null>(null)
+  useEffect(() => {
+    if (!user) return
+    let alive = true
+    loadCampusTagsAction()
+      .then((res) => {
+        if (alive && res.data) setCampusTags(res.data)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [user])
+  const campusOf = (memberId: string) => campusTags?.byMember[memberId]
 
   // Filter and sort members client-side for better UX
   const filteredMembers = useMemo(() => {
@@ -97,6 +121,14 @@ export default function MembersPage() {
     // Join year filter
     if (filters.joinYear !== 'all') {
       filtered = filtered.filter(member => member.user?.join_year?.toString() === filters.joinYear)
+    }
+
+    // Campus filter
+    if (filters.campus !== 'all' && campusTags) {
+      filtered = filtered.filter(member => {
+        const tag = campusTags.byMember[member.id]
+        return filters.campus === 'none' ? !tag : tag?.group_id === filters.campus
+      })
     }
     
     // Sort
@@ -129,7 +161,7 @@ export default function MembersPage() {
     })
     
     return filtered
-  }, [members, filters])
+  }, [members, filters, campusTags])
 
   // Get unique values for filter options
   const uniqueRoles = useMemo(() => {
@@ -161,6 +193,7 @@ export default function MembersPage() {
       role: 'all',
       status: 'all',
       joinYear: 'all',
+      campus: 'all',
       sortBy: 'name',
       sortOrder: 'asc'
     })
@@ -220,7 +253,7 @@ export default function MembersPage() {
   }
 
   const hasActiveFilters =
-    !!filters.search || filters.role !== 'all' || filters.status !== 'all' || filters.joinYear !== 'all'
+    !!filters.search || filters.role !== 'all' || filters.status !== 'all' || filters.joinYear !== 'all' || filters.campus !== 'all'
 
   return (
     <DashboardLayout>
@@ -247,7 +280,7 @@ export default function MembersPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button onClick={() => router.push('/members/add')} className="h-11 flex-1 sm:h-10 sm:flex-none">
+            <Button data-tour="members-add" onClick={() => router.push('/members/add')} className="h-11 flex-1 sm:h-10 sm:flex-none">
               <Plus className="mr-2 h-4 w-4" />
               Add member
             </Button>
@@ -293,7 +326,7 @@ export default function MembersPage() {
         {/* Search and filters */}
         <div className="space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="relative flex-1">
+            <div className="relative flex-1" data-tour="members-search">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
               <Input
                 type="search"
@@ -307,6 +340,7 @@ export default function MembersPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                data-tour="members-filters"
                 onClick={() => setShowFilters(!showFilters)}
                 aria-expanded={showFilters}
                 className="h-11 flex-1 sm:h-10 sm:flex-none"
@@ -325,7 +359,7 @@ export default function MembersPage() {
           </div>
 
           {showFilters && (
-            <div className="dashboard-panel grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
+            <div className="dashboard-panel grid grid-cols-2 gap-3 p-4 lg:grid-cols-5">
               <div>
                 <label className="app-stat-label mb-1.5 block">Role</label>
                 <Select value={filters.role} onValueChange={(value) => handleFilterChange('role', value)}>
@@ -376,6 +410,22 @@ export default function MembersPage() {
               </div>
 
               <div>
+                <label className="app-stat-label mb-1.5 block">Campus</label>
+                <Select value={filters.campus} onValueChange={(value) => handleFilterChange('campus', value)}>
+                  <SelectTrigger className="h-11 sm:h-10" aria-label="Campus">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {(campusTags?.campuses ?? []).map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                    ))}
+                    <SelectItem value="none">No campus</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <label className="app-stat-label mb-1.5 block">Sort by</label>
                 <div className="flex gap-2">
                   <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
@@ -404,7 +454,7 @@ export default function MembersPage() {
         </div>
 
         {/* Members list */}
-        <section className="dashboard-panel overflow-hidden">
+        <section className="dashboard-panel overflow-hidden" data-tour="members-list">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-neutral-200/80 px-4 py-3 dark:border-white/[0.06] sm:px-5">
             <h2 className="app-section-title">
               Members <span className="tabular-nums text-neutral-500 dark:text-neutral-400">({filteredMembers.length})</span>
@@ -416,6 +466,8 @@ export default function MembersPage() {
                   filters.role !== 'all' && `Role: ${filters.role.replace(/_/g, ' ')}`,
                   filters.status !== 'all' && `Status: ${filters.status}`,
                   filters.joinYear !== 'all' && `Year: ${filters.joinYear}`,
+                  filters.campus !== 'all' &&
+                    `Campus: ${filters.campus === 'none' ? 'none' : campusTags?.campuses.find(c => c.id === filters.campus)?.label ?? ''}`,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -472,6 +524,9 @@ export default function MembersPage() {
                         <Badge variant="secondary" className="capitalize">
                           {(member.user?.role || 'member').replace(/_/g, ' ')}
                         </Badge>
+                        {campusOf(member.id) ? (
+                          <CampusBadge label={campusOf(member.id)!.label} name={campusOf(member.id)!.name} />
+                        ) : null}
                         {member.status !== 'active' ? (
                           <Badge variant="secondary" className="capitalize">
                             {member.status}

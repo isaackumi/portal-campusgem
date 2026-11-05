@@ -252,9 +252,11 @@ function RlcVisitorsContent() {
         />
       ) : null}
 
-      <RlcPublicVisitShare />
+      <div data-tour="visitors-share">
+        <RlcPublicVisitShare />
+      </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+      <div data-tour="visitors-filters" className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
         <Input className="sm:min-w-[16rem] sm:flex-1" type="search" placeholder="Search name, phone, email, or check-in code…" value={query} onChange={(e) => setQuery(e.target.value)} />
         <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
           <SelectTrigger className="w-full sm:w-44">
@@ -333,7 +335,7 @@ function RlcVisitorsContent() {
         </Card>
       ) : null}
 
-      <div className="space-y-3">
+      <div className="space-y-3" data-tour="visitors-list">
         {filtered.length === 0 ? (
           <Card>
             <CardContent className="space-y-3 py-10 text-center text-muted-foreground">

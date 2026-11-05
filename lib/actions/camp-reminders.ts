@@ -104,6 +104,10 @@ export async function runCampRemindersJob(input?: {
 
     const regs = await bridge.fetchRegistrationsFromConvex(year.id)
     const plan = planReminders(regs, stage, isValidSmsPhone)
+    // Skip people who replied STOP to an SMS.
+    const { loadSmsOptOutSet, isOptedOut } = await import('@/lib/comms/opt-out')
+    const optedOut = await loadSmsOptOutSet()
+    if (optedOut.size) plan.send = plan.send.filter((p) => !isOptedOut(optedOut, p.registration.phone))
     result.planned = plan.send.length
     result.skipped_counts = plan.skipped
     if (plan.send.length === 0) return { data: { ...result, skipped: 'nobody_due' }, error: null }

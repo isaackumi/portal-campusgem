@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { HouseholdCard } from '@/components/members/household-card'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { Meter } from '@/components/ui/meter'
 import { PersonAvatar } from '@/components/ui/person'
@@ -16,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { MemberCampusControl } from '@/components/campus/member-campus-control'
 import { dataService } from '@/lib/services/data-service'
 import { useQuery } from '@tanstack/react-query'
 import { Member, AppUser, Dependant, GroupMembership, Attendance } from '@/lib/types'
@@ -282,7 +284,7 @@ export default function MemberProfilePage() {
         </Link>
 
         {/* Identity header */}
-        <section className="dashboard-panel p-4 sm:p-5">
+        <section className="dashboard-panel p-4 sm:p-5" data-tour="member-header">
           <div className="flex items-start gap-4">
             {member.profile_photo_url ? (
               <img
@@ -302,6 +304,7 @@ export default function MemberProfilePage() {
                 <Badge variant={memberStatusTone(member.status || 'active')} className="capitalize">
                   {member.status}
                 </Badge>
+                <MemberCampusControl memberId={member.id} userId={member.user_id || member.user?.id} />
               </div>
               {member.user?.membership_id ? (
                 <button
@@ -319,7 +322,7 @@ export default function MemberProfilePage() {
               ) : null}
             </div>
             {can('members.manage') && !isEditing ? (
-              <Button variant="outline" onClick={handleEdit} className="hidden shrink-0 sm:inline-flex">
+              <Button variant="outline" onClick={handleEdit} className="hidden shrink-0 sm:inline-flex" data-tour="member-edit">
                 <Edit className="mr-2 h-4 w-4" />
                 Edit profile
               </Button>
@@ -407,7 +410,7 @@ export default function MemberProfilePage() {
             )}
 
             {/* Attendance summary */}
-            <section className="dashboard-panel p-4 sm:p-5">
+            <section className="dashboard-panel p-4 sm:p-5" data-tour="member-attendance">
               <h2 className="app-section-title">Attendance</h2>
               <div className="mt-3 grid grid-cols-3 gap-2">
                 <div>
@@ -424,6 +427,10 @@ export default function MemberProfilePage() {
                 </div>
               </div>
             </section>
+
+            {member.user_id || member.user?.id ? (
+              <HouseholdCard userId={member.user?.id || member.user_id} fullName={fullName} />
+            ) : null}
           </div>
 
           {/* Main column */}

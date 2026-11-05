@@ -375,7 +375,7 @@ export default function GroupDetailsPage() {
           <div className="flex items-center gap-2">
             {canManage ? (
               <>
-                <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => setShowAddMember(true)}>
+                <Button data-tour="group-add-member" className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => setShowAddMember(true)}>
                   <UserPlus className="mr-2 h-4 w-4" />
                   Add member
                 </Button>
@@ -396,6 +396,7 @@ export default function GroupDetailsPage() {
               disabled={membersLoading}
               aria-label="Export members to CSV"
               title="Export members to CSV"
+              data-tour="group-export"
             >
               <Download className={canManage ? 'h-4 w-4 sm:mr-2' : 'mr-2 h-4 w-4'} />
               <span className={canManage ? 'hidden sm:inline' : undefined}>Export</span>
@@ -441,9 +442,9 @@ export default function GroupDetailsPage() {
           {/* Main Content */}
           <div className="min-w-0 space-y-6 lg:col-span-2 lg:col-start-1 lg:row-span-3 lg:row-start-1">
             <Tabs defaultValue="members" className="w-full">
-              <ScrollableTabsList>
+              <ScrollableTabsList data-tour="group-tabs">
                 <TabsTrigger value="members">Members</TabsTrigger>
-                {canText ? <TabsTrigger value="messages">Message</TabsTrigger> : null}
+                {canText ? <TabsTrigger value="messages" data-tour="group-message-tab">Message</TabsTrigger> : null}
                 <TabsTrigger value="settings">Settings</TabsTrigger>
               </ScrollableTabsList>
 

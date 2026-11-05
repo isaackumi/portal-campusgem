@@ -108,6 +108,7 @@ export function convexUserDocToAppUser(
       doc.emergency_contact_phone != null ? String(doc.emergency_contact_phone) : undefined,
     emergency_contact_relation:
       doc.emergency_contact_relation != null ? String(doc.emergency_contact_relation) : undefined,
+    household_id: doc.household_id != null ? String(doc.household_id) : undefined,
     created_at: isoFromMs(ct) || new Date().toISOString(),
     updated_at: isoFromMs(ut) || isoFromMs(ct) || new Date().toISOString(),
   }
@@ -130,6 +131,9 @@ export function convexGroupDocToGroup(doc: Record<string, unknown> | null | unde
     meeting_location: doc.meeting_location != null ? String(doc.meeting_location) : undefined,
     is_active: Boolean(doc.is_active ?? true),
     max_members: doc.max_members != null ? Number(doc.max_members) : undefined,
+    short_code: doc.short_code != null ? String(doc.short_code) : undefined,
+    slug: doc.slug != null ? String(doc.slug) : undefined,
+    aliases: Array.isArray(doc.aliases) ? (doc.aliases as string[]) : undefined,
     created_at: isoFromMs(ct) || new Date().toISOString(),
     updated_at: isoFromMs(ut) || isoFromMs(ct) || new Date().toISOString(),
   }

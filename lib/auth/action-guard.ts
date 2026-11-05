@@ -44,6 +44,25 @@ export async function guard(permission: Permission | Permission[]): Promise<AppU
   return user
 }
 
+/**
+ * Like `guard`, for checks that depend on the record being touched (e.g. "leads this
+ * campus", see lib/auth/campus-scope.ts). `authorise` runs on the signed-in user and the
+ * trusted scope is entered only once it returns true, so the caller must verify the
+ * target id inside `authorise` (or before calling) and only act on ids it verified.
+ * Returns the user, or null when already running inside a trusted scope.
+ */
+export async function guardWith(
+  authorise: (user: AppUser) => boolean | Promise<boolean>,
+  deniedMessage = 'You do not have permission to do this.'
+): Promise<AppUser | null> {
+  if (trustedScope.getStore()) return null
+  const user = await sessionUser()
+  if (!user) throw new Error('Your session has expired. Sign in again.')
+  if (!(await authorise(user))) throw new Error(deniedMessage)
+  trustedScope.enterWith(true)
+  return user
+}
+
 /** Run an intentionally public entry point (or cron job) with internal helpers trusted. */
 export function asSystem<T>(fn: () => Promise<T>): Promise<T> {
   return trustedScope.run(true, fn)

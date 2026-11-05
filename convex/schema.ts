@@ -8,6 +8,7 @@ const userRole = v.union(
   v.literal('pastor'),
   v.literal('elder'),
   v.literal('finance_officer'),
+  v.literal('campus_leader'),
   v.literal('member'),
   v.literal('visitor')
 )
@@ -24,7 +25,9 @@ const attendanceMethod = v.union(
   v.literal('kiosk'),
   v.literal('admin'),
   v.literal('pin'),
-  v.literal('mobile')
+  v.literal('mobile'),
+  /** Member checked themselves in by scanning a self check-in QR (`/i/<token>`). */
+  v.literal('self')
 )
 
 const serviceType = v.union(
@@ -85,13 +88,19 @@ export default defineSchema({
     emergency_contact_name: v.optional(v.string()),
     emergency_contact_phone: v.optional(v.string()),
     emergency_contact_relation: v.optional(v.string()),
+    /** Family household (see convex/households.ts). */
+    household_id: v.optional(v.id('households')),
+    /** Replied STOP to an SMS: bulk sends skip them (see convex/smsInbox.ts). */
+    sms_opt_out: v.optional(v.boolean()),
     updated_at: v.number(),
   })
     .index('by_membership_id', ['membership_id'])
     .index('by_phone', ['phone'])
     .index('by_secondary_phone', ['secondary_phone'])
     .index('by_auth_uid', ['auth_uid'])
-    .index('by_email', ['email']),
+    .index('by_email', ['email'])
+    .index('by_household', ['household_id'])
+    .index('by_sms_opt_out', ['sms_opt_out']),
 
   members: defineTable({
     user_id: v.string(),
@@ -190,6 +199,10 @@ export default defineSchema({
     meeting_location: v.optional(v.string()),
     is_active: v.boolean(),
     max_members: v.optional(v.number()),
+    /** Campus groups: unique uppercase tag ("UEW"), URL slug and names to match on (see convex/campuses.ts). */
+    short_code: v.optional(v.string()),
+    slug: v.optional(v.string()),
+    aliases: v.optional(v.array(v.string())),
     updated_at: v.number(),
   }).index('by_active', ['is_active']),
 
@@ -635,7 +648,8 @@ export default defineSchema({
     .index('by_module', ['module'])
     .index('by_batch', ['batch_id'])
     .index('by_channel', ['channel'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_recipient_phone', ['recipient_phone']),
 
   /** One-time sign-in codes (hashed). See convex/authCodes.ts. */
   auth_codes: defineTable({
@@ -669,4 +683,112 @@ export default defineSchema({
   })
     .index('by_user', ['user_id', 'at'])
     .index('by_at', ['at']),
+
+  /** Family households; members link via users.household_id. See convex/households.ts. */
+  households: defineTable({
+    name: v.string(),
+    primary_user_id: v.optional(v.id('users')),
+    updated_at: v.number(),
+  }),
+
+  /** QR self check-in sessions (`/i/<token>`). See convex/checkinSessions.ts. */
+  checkin_sessions: defineTable({
+    token: v.string(),
+    service_type: serviceType,
+    service_date: v.string(),
+    congregation: v.union(v.literal('campus_gem'), v.literal('rlc')),
+    title: v.optional(v.string()),
+    opens_at: v.number(),
+    closes_at: v.number(),
+    closed_at: v.optional(v.number()),
+    created_by: v.string(),
+    checkin_count: v.number(),
+    created_at: v.number(),
+  })
+    .index('by_token', ['token'])
+    .index('by_closes_at', ['closes_at']),
+
+  /** Church events with tap-to-RSVP. See convex/events.ts. */
+  events: defineTable({
+    title: v.string(),
+    description: v.optional(v.string()),
+    starts_at: v.number(),
+    ends_at: v.optional(v.number()),
+    location: v.optional(v.string()),
+    capacity: v.optional(v.number()),
+    audience: v.union(v.literal('all'), v.literal('group'), v.literal('custom')),
+    group_id: v.optional(v.string()),
+    rsvp_closes_at: v.optional(v.number()),
+    created_by: v.string(),
+    status: v.union(v.literal('draft'), v.literal('published'), v.literal('cancelled')),
+    updated_at: v.number(),
+  })
+    .index('by_starts_at', ['starts_at'])
+    .index('by_status_starts_at', ['status', 'starts_at']),
+
+  /** One invitee of an event. `token` is the personal /e/<token> credential: never sent to browsers. */
+  event_rsvps: defineTable({
+    event_id: v.id('events'),
+    user_id: v.id('users'),
+    token: v.string(),
+    response: v.optional(v.union(v.literal('yes'), v.literal('no'), v.literal('maybe'))),
+    guests: v.number(),
+    responded_at: v.optional(v.number()),
+    invited_at: v.optional(v.number()),
+    reminder_sent_at: v.optional(v.number()),
+    created_at: v.number(),
+  })
+    .index('by_event', ['event_id'])
+    .index('by_token', ['token'])
+    .index('by_user', ['user_id'])
+    .index('by_event_user', ['event_id', 'user_id']),
+
+  /** Incoming SMS replies (webhook /api/sms/inbound). See convex/smsInbox.ts. */
+  sms_inbox: defineTable({
+    from: v.string(),
+    /** normalizeSmsPhone form: 233XXXXXXXXX. */
+    phone: v.string(),
+    to: v.optional(v.string()),
+    body: v.string(),
+    received_at: v.number(),
+    provider_message_id: v.optional(v.string()),
+    user_id: v.optional(v.id('users')),
+    visitor_id: v.optional(v.id('visitors')),
+    camp_registration_id: v.optional(v.id('camp_registrations')),
+    sender_name: v.optional(v.string()),
+    keyword: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    read_at: v.optional(v.number()),
+    handled_by: v.optional(v.string()),
+    archived: v.optional(v.boolean()),
+  })
+    .index('by_received_at', ['received_at'])
+    .index('by_phone', ['phone', 'received_at'])
+    .index('by_provider_message_id', ['provider_message_id'])
+    .index('by_read_at', ['read_at']),
+
+  /** Missed-church alerts already sent (repeat protection). See convex/pastoral.ts. */
+  pastoral_alerts: defineTable({
+    /** members doc id */
+    member_id: v.string(),
+    alerted_at: v.number(),
+    /** Consecutive Sundays missed when alerted. */
+    streak: v.number(),
+    /** Last Sunday seen before the gap (ISO date); a new value means a new lapse. */
+    last_seen: v.optional(v.string()),
+    /** users ids texted */
+    recipients: v.optional(v.array(v.string())),
+  }).index('by_member', ['member_id', 'alerted_at']),
+
+  /** Single row: missed-church alerts and weekly leader summary settings. */
+  pastoral_settings: defineTable({
+    alerts_enabled: v.boolean(),
+    digest_enabled: v.boolean(),
+    weeks_threshold: v.number(),
+    fallback_user_ids: v.array(v.string()),
+    updated_at: v.number(),
+    updated_by: v.optional(v.string()),
+    last_run_at: v.optional(v.number()),
+    last_run_summary: v.optional(v.any()),
+  }),
 })

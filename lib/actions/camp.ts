@@ -1075,6 +1075,10 @@ export async function sendCampBulkSmsAction(input: {
     }
   }
 
+  // Bulk sends skip people who replied STOP to an SMS.
+  const { loadSmsOptOutSet, isOptedOut, OPTED_OUT_REASON } = await import('@/lib/comms/opt-out')
+  const optedOut = input.recipients.length > 1 ? await loadSmsOptOutSet() : new Set<string>()
+
   // Personal tap-to-confirm links, created the first time someone is texted one.
   let confirmTokens = new Map<string, string>()
   if (CONFIRM_LINK_PLACEHOLDER.test(input.message_template)) {
@@ -1103,6 +1107,11 @@ export async function sendCampBulkSmsAction(input: {
       errors.push(
         `${label}: Invalid phone (need Ghana mobile like 024… / +233… / 233…). Got: ${registration.phone}`
       )
+      continue
+    }
+    if (isOptedOut(optedOut, registration.phone)) {
+      error_count++
+      errors.push(`${label}: ${OPTED_OUT_REASON}`)
       continue
     }
 

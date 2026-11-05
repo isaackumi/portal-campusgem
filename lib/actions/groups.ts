@@ -2,8 +2,7 @@
 
 import { guard } from '@/lib/auth/action-guard'
 import type { ApiResponse } from '@/lib/services/api-types'
-import type { AppUser, Member } from '@/lib/types'
-import type { CommsRecipient, SendCommsResult } from '@/lib/comms/types'
+import type { GroupSmsResult } from '@/lib/groups/send-group-sms'
 import type { GroupSummaryRow } from '@/lib/groups/export'
 
 function isConvexDataSource(): boolean {
@@ -71,10 +70,7 @@ export async function exportGroupsSummaryAction(params?: {
   }
 }
 
-export type GroupSmsResult = SendCommsResult & {
-  /** Members in the chunk with no usable phone number (not sent, not logged). */
-  skipped: number
-}
+export type { GroupSmsResult } from '@/lib/groups/send-group-sms'
 
 /**
  * Text members of one group. The client sends member ids in small chunks (background
@@ -91,72 +87,6 @@ export async function sendGroupSmsAction(input: {
 }): Promise<ApiResponse<GroupSmsResult>> {
   const sender = await guard('sms.send')
   if (!sender) return { data: null, error: 'Sign in again to send messages.', loading: false }
-  if (!isConvexDataSource()) {
-    return { data: null, error: 'Database is not configured.', loading: false }
-  }
-  const message = input.message?.trim()
-  if (!message) return { data: null, error: 'Message is required', loading: false }
-  if (!input.group_id || !input.member_ids?.length) {
-    return { data: null, error: 'No recipients', loading: false }
-  }
-  if (input.member_ids.length > 100) {
-    return { data: null, error: 'Send at most 100 recipients per request', loading: false }
-  }
-
-  try {
-    const { fetchGroupFromConvex, fetchMemberFromConvex, fetchUserFromConvex, listGroupMembershipsFromConvex } =
-      await import('@/lib/convex/core-bridge')
-    const { memberToRecipient } = await import('@/lib/comms/recipients')
-    const { isValidSmsPhone } = await import('@/lib/comms/sms-client')
-    const { sendCommunications } = await import('@/lib/comms/send')
-
-    const [group, memberships] = await Promise.all([
-      fetchGroupFromConvex(input.group_id),
-      listGroupMembershipsFromConvex(input.group_id),
-    ])
-    if (!group) return { data: null, error: 'Group not found', loading: false }
-
-    const inGroup = new Set(memberships.map((m) => m.member_id))
-    const wanted = Array.from(new Set(input.member_ids)).filter((id) => inGroup.has(id))
-
-    const profiles = (await Promise.all(wanted.map((id) => fetchMemberFromConvex(id)))).filter(
-      (p): p is Member => p != null
-    )
-    const users = await Promise.all(profiles.map((p) => (p.user_id ? fetchUserFromConvex(p.user_id) : null)))
-
-    const recipients: CommsRecipient[] = []
-    let skipped = input.member_ids.length - wanted.length
-    profiles.forEach((profile, index) => {
-      const user = users[index] as AppUser | null
-      const recipient = memberToRecipient({ ...profile, user: user ?? undefined }, 'church')
-      if (recipient && isValidSmsPhone(recipient.phone)) recipients.push(recipient)
-      else skipped++
-    })
-    skipped += wanted.length - profiles.length
-
-    if (recipients.length === 0) {
-      return {
-        data: { batch_id: input.batch_id ?? '', success_count: 0, error_count: 0, errors: [], records: [], skipped },
-        error: null,
-        loading: false,
-      }
-    }
-
-    const result = await sendCommunications({
-      module: 'church',
-      channel: 'sms',
-      audience_type: 'group',
-      sender_id: sender.id,
-      message_body: message,
-      recipients,
-      batch_id: input.batch_id,
-      dry_run: Boolean(input.dry_run),
-      filter_criteria: { group_id: group.id },
-      metadata: { group_id: group.id, group_name: group.name },
-    })
-    // Records can be large; the client only needs the counts.
-    return { data: { ...result, records: [], skipped }, error: null, loading: false }
-  } catch (error: unknown) {
-    return failure(error, 'Failed to send messages')
-  }
+  const { sendGroupSms } = await import('@/lib/groups/send-group-sms')
+  return sendGroupSms(sender, input)
 }

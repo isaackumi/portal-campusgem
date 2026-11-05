@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { CampRegistration } from '@/lib/types'
 import { campService } from '@/lib/services/camp-service'
+import { recordCampCheckInOrQueue } from '@/components/camp/use-camp-offline-queue'
 import { resolveCampCheckInCode } from '@/lib/camp/check-in-code'
 import {
   campRegistrationDisplayName,
@@ -31,6 +32,8 @@ type CampManualCheckInPanelProps = {
   /** Compact mobile desk layout — big search, name/phone first. */
   simple?: boolean
   sessionLabel?: string
+  /** Session check-ins saved on this phone and waiting to sync. */
+  savedOfflineIds?: Set<string>
 }
 
 export function CampManualCheckInPanel({
@@ -44,6 +47,7 @@ export function CampManualCheckInPanel({
   className,
   simple = false,
   sessionLabel,
+  savedOfflineIds,
 }: CampManualCheckInPanelProps) {
   const { toast } = useToast()
   const [query, setQuery] = useState('')
@@ -83,15 +87,18 @@ export function CampManualCheckInPanel({
     }
 
     setCheckingId(reg.id)
+    let queued = false
     try {
       if (activityId && performedByUserId) {
-        const { data, error } = await campService.recordSessionCheckIn({
+        const outcome = await recordCampCheckInOrQueue({
           activity_id: activityId,
           registration_id: reg.id,
           performed_by: performedByUserId,
           check_in_method: checkInMethod === 'arrival' ? 'arrival' : 'manual',
+          camp_year_id: campYearId,
+          name: campRegistrationDisplayName(reg),
         })
-        if (error || !data) throw new Error(error ?? 'Check-in failed')
+        queued = outcome.kind === 'queued' || outcome.kind === 'already_queued'
       } else {
         const { error } = await campService.updateRegistration(reg.id, {
           status: 'checked_in',
@@ -112,7 +119,7 @@ export function CampManualCheckInPanel({
       }
 
       toast({
-        title: 'Checked in',
+        title: queued ? 'Saved on this phone, will sync' : 'Checked in',
         description: campRegistrationDisplayName(reg),
       })
       onCheckInComplete?.()
@@ -134,13 +141,14 @@ export function CampManualCheckInPanel({
     for (const reg of pendingResults) {
       try {
         if (activityId && performedByUserId) {
-          const { error } = await campService.recordSessionCheckIn({
+          await recordCampCheckInOrQueue({
             activity_id: activityId,
             registration_id: reg.id,
             performed_by: performedByUserId,
             check_in_method: checkInMethod === 'arrival' ? 'arrival' : 'manual',
+            camp_year_id: campYearId,
+            name: campRegistrationDisplayName(reg),
           })
-          if (error) throw new Error(error)
         } else {
           const { error } = await campService.updateRegistration(reg.id, {
             status: 'checked_in',
@@ -291,7 +299,11 @@ export function CampManualCheckInPanel({
                           <Badge variant="outline" className="text-xs">
                             {reg.role}
                           </Badge>
-                          {checkedIn ? (
+                          {checkedIn && savedOfflineIds?.has(reg.id) ? (
+                            <Badge variant="warning" className="text-xs">
+                              Saved on phone
+                            </Badge>
+                          ) : checkedIn ? (
                             <Badge variant="success" className="text-xs">
                               {activityId ? 'In session' : 'Checked in'}
                             </Badge>
