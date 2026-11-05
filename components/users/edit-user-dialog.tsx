@@ -462,9 +462,11 @@ export function EditUserDialog({ open, onOpenChange, userId, onSaved }: EditUser
 
       // 3. Role — the single path for access changes. Keep existing extra grants.
       if (changedUser.has('role')) {
-        const res = await updateUserAccess(person.id, u.role, person.permissions ?? [])
+        // Texts sign-in details only when the new role gives more access.
+        const res = await updateUserAccess(person.id, u.role, person.permissions ?? [], { notify: true })
         if (res.error || !res.data) failures.push(`Role: ${res.error ?? 'update failed'}`)
         else latest = res.data
+        if (res.sms && !res.sms.sent) failures.push(`Sign-in text: ${res.sms.error ?? 'not sent'}`)
       }
 
       // 4. Member profile.

@@ -140,7 +140,7 @@ export function AssignCallersDialog({
       return
     }
     withoutAccess.forEach((p) => (p.can_use_app = true))
-    toast({ title: 'Access granted', description: `${res.granted} caller${res.granted === 1 ? '' : 's'} can now open the call list.` })
+    toast({ title: 'Access granted', description: `${res.granted} caller${res.granted === 1 ? '' : 's'} can now open the call list.${res.texted ? ` ${res.texted} texted how to sign in.` : ''}` })
     setPicked((prev) => [...prev])
   }
 

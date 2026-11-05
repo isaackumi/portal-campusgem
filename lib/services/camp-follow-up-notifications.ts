@@ -1,14 +1,9 @@
 import { EmailService } from '@/lib/services/email-service'
 import { fetchUserFromConvex } from '@/lib/convex/core-bridge'
+import { siteOrigin } from '@/lib/site-url'
 
 function appOrigin(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
-  }
-  return 'http://localhost:3000'
+  return siteOrigin()
 }
 
 export async function notifyFollowUpAssignment(args: {

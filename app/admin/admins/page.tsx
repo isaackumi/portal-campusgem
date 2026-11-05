@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Copy, KeyRound, Link2, Lock, Search, ShieldCheck, UserPlus, Users } from 'lucide-react'
+import { Check, Copy, KeyRound, Link2, Lock, MessageSquare, Search, ShieldCheck, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +15,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import { useAllUsers } from '@/lib/hooks/use-data'
 import { dataService } from '@/lib/services/data-service'
-import { linkDuplicatePerson, listDuplicatePeople, updateSecondaryPhone, updateUserAccess } from '@/lib/actions/access'
+import { linkDuplicatePerson, listDuplicatePeople, sendSignInDetailsSms, updateSecondaryPhone, updateUserAccess } from '@/lib/actions/access'
+import { gainedPermissions } from '@/lib/auth/access-welcome'
 import type { DuplicatePeopleGroup } from '@/lib/people/duplicates'
 import {
   PERMISSION_GROUPS,
@@ -369,6 +370,7 @@ function NewPersonDialog({
   const [phone, setPhone] = useState('')
   const [role, setRole] = useState<UserRole>('elder')
   const [saving, setSaving] = useState(false)
+  const [notify, setNotify] = useState(true)
 
   async function submit() {
     if (!fullName.trim() || !phone.trim()) {
@@ -377,12 +379,15 @@ function NewPersonDialog({
     }
     setSaving(true)
     const result = await dataService.createUser({ full_name: fullName.trim(), phone: phone.trim(), role })
-    setSaving(false)
     if (result.error || !result.data) {
+      setSaving(false)
       toast({ variant: 'destructive', title: 'Could not add person', description: result.error ?? 'Unknown error' })
       return
     }
-    toast({ title: 'Person added', description: `${result.data.full_name} can now sign in with ${phone.trim()}.` })
+    const sms = notify && isStaffRole(role) ? await sendSignInDetailsSms(result.data.id) : null
+    setSaving(false)
+    const textNote = sms ? (sms.sent ? ' Sign-in details texted.' : ` The text didn't send: ${sms.error ?? 'unknown error'}.`) : ''
+    toast({ title: 'Person added', description: `${result.data.full_name} can now sign in with ${phone.trim()}.${textNote}` })
     setFullName('')
     setPhone('')
     onCreated(result.data)
@@ -418,6 +423,15 @@ function NewPersonDialog({
             </Select>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">{ROLE_SUMMARIES[role]}</p>
           </div>
+          {isStaffRole(role) && (
+            <div className="flex min-h-11 items-start gap-2 sm:min-h-0">
+              <Checkbox id="np-notify" checked={notify} onCheckedChange={(v) => setNotify(v === true)} className="mt-0.5" />
+              <label htmlFor="np-notify" className="text-sm text-neutral-800 dark:text-neutral-200">
+                Text them how to sign in
+                <span className="block text-xs text-neutral-500 dark:text-neutral-400">The app link and which number to sign in with.</span>
+              </label>
+            </div>
+          )}
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving} className="h-11 sm:h-10">Cancel</Button>
             <Button onClick={submit} disabled={saving} className="h-11 sm:h-10">
@@ -452,10 +466,22 @@ function AccessEditor({
   const [extra, setExtra] = useState<Permission[]>(() => sanitizePermissions(person.permissions))
   const [secondaryPhone, setSecondaryPhone] = useState(person.secondary_phone ?? '')
   const [saving, setSaving] = useState(false)
+  const [notify, setNotify] = useState(true)
+  const [resending, setResending] = useState(false)
 
   const fromRole = useMemo(() => new Set(permissionsForRole(role)), [role])
   const total = effectivePermissions(role, extra).length
   const adminOnly: Permission[] = ['users.manage', 'admins.manage']
+  const gainsAccess = gainedPermissions(person, { role, permissions: extra }).length > 0
+  const canText = Boolean(person.phone?.trim())
+
+  async function resend() {
+    setResending(true)
+    const res = await sendSignInDetailsSms(person.id)
+    setResending(false)
+    if (res.sent) onSuccess(`Sign-in details texted to ${person.full_name}.`)
+    else onError(res.error ?? 'Could not send the text')
+  }
 
   function toggle(permission: Permission, checked: boolean) {
     setExtra((prev) => (checked ? Array.from(new Set([...prev, permission])) : prev.filter((p) => p !== permission)))
@@ -471,13 +497,17 @@ function AccessEditor({
         return
       }
     }
-    const result = await updateUserAccess(person.id, role, extra.filter((p) => !fromRole.has(p)))
+    const result = await updateUserAccess(person.id, role, extra.filter((p) => !fromRole.has(p)), {
+      notify: notify && gainsAccess && canText,
+    })
     setSaving(false)
     if (result.error || !result.data) {
       onError(result.error ?? 'Unknown error')
       return
     }
-    onSuccess(`${person.full_name} is now ${ROLE_LABELS[role]}${extra.filter((p) => !fromRole.has(p)).length ? ' with extra permissions' : ''}.`)
+    const sms = result.sms
+    const textNote = sms ? (sms.sent ? ' Sign-in details texted.' : ` The text didn't send: ${sms.error ?? 'unknown error'}.`) : ''
+    onSuccess(`${person.full_name} is now ${ROLE_LABELS[role]}${extra.filter((p) => !fromRole.has(p)).length ? ' with extra permissions' : ''}.${textNote}`)
     onSaved(result.data)
   }
 
@@ -582,6 +612,38 @@ function AccessEditor({
               </fieldset>
             ))}
           </div>
+        </section>
+
+        <section className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3 dark:border-white/10 dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between">
+          {gainsAccess ? (
+            <div className="flex min-h-11 items-start gap-2 sm:min-h-0">
+              <Checkbox id="notify-sms" checked={notify && canText} disabled={!canText} onCheckedChange={(v) => setNotify(v === true)} className="mt-0.5" />
+              <label htmlFor="notify-sms" className="text-sm text-neutral-800 dark:text-neutral-200">
+                Text them how to sign in
+                <span className="block text-xs text-neutral-500 dark:text-neutral-400">
+                  {canText
+                    ? `Sends the app link and says to sign in with the number ending ${(person.phone ?? '').replace(/\D/g, '').slice(-3)}.`
+                    : 'Add a phone number first.'}
+                </span>
+              </label>
+            </div>
+          ) : (
+            <p className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+              <MessageSquare className="h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden />
+              Forgot how to sign in? Send the link again.
+            </p>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={resend}
+            disabled={!canText || resending || saving}
+            className="h-11 shrink-0 sm:h-9"
+          >
+            {resending ? <LoadingSpinner size="sm" className="mr-2" /> : <MessageSquare className="mr-2 h-4 w-4" aria-hidden />}
+            Send sign-in text now
+          </Button>
         </section>
 
         <div className="flex gap-2 border-t border-neutral-200 pt-4 dark:border-white/10 sm:justify-end">

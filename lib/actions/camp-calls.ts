@@ -9,6 +9,7 @@
 import { revalidatePath } from 'next/cache'
 import { guard } from '@/lib/auth/action-guard'
 import { hasPermission } from '@/lib/auth/roles'
+import { siteOrigin } from '@/lib/site-url'
 import type { AppUser, CampAttendanceConfirmation, CampRegistration, CampYear } from '@/lib/types'
 import {
   buildCallListSms,
@@ -55,9 +56,7 @@ function toCaller(user: AppUser): CallBoardCaller {
 }
 
 function appOrigin(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return 'http://localhost:3000'
+  return siteOrigin()
 }
 
 export async function getCallBoardAction(
@@ -329,21 +328,23 @@ export async function sendCallListsBySmsAction(input: {
 /** Grant `camp.calls` to people who were given a list but cannot open it yet. */
 export async function grantCallAccessAction(
   userIds: string[]
-): Promise<{ granted: number; error: string | null }> {
+): Promise<{ granted: number; texted: number; error: string | null }> {
   try {
     await guard('users.manage')
     const { fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
     const { updateUserAccess } = await import('@/lib/actions/access')
     let granted = 0
+    let texted = 0
     for (const id of Array.from(new Set(userIds))) {
       const target = await fetchUserFromConvex(id)
       if (!target || hasPermission(target.role, 'camp.calls', target.permissions)) continue
-      const res = await updateUserAccess(id, target.role, [...(target.permissions ?? []), 'camp.calls'])
+      const res = await updateUserAccess(id, target.role, [...(target.permissions ?? []), 'camp.calls'], { notify: true })
       if (res.error) throw new Error(`${target.full_name}: ${res.error}`)
       granted += 1
+      if (res.sms?.sent) texted += 1
     }
-    return { granted, error: null }
+    return { granted, texted, error: null }
   } catch (error: unknown) {
-    return { granted: 0, error: error instanceof Error ? error.message : 'Failed to grant access' }
+    return { granted: 0, texted: 0, error: error instanceof Error ? error.message : 'Failed to grant access' }
   }
 }

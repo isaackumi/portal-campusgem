@@ -26,6 +26,10 @@ camp meeting, RLC (mother church), forms, SMS.
 - **Access management UI:** `/admin/admins` ("Access & roles"). Role or grant changes go
   through `updateUserAccess` / `requireAccessChange`: `users.manage` is required, and
   `admins.manage` too for anything touching admin rights.
+- **Sign-in text:** `updateUserAccess(..., { notify: true })` texts the person the app link and
+  their phone's last 3 digits, but only when the change gives them new permissions
+  (`gainedPermissions`, `lib/auth/access-welcome.ts`). `sendSignInDetailsSms` resends it. Links use
+  `siteOrigin()` (`lib/site-url.ts`); set `NEXT_PUBLIC_SITE_URL` in production.
 
 ## Convex
 
