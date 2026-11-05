@@ -11,6 +11,7 @@ import { CALL_OUTCOMES, effectiveOutcome, type CallOutcome } from '@/lib/camp/ca
 import { isSelfReported } from '@/lib/camp/confirm-link'
 import { OUTCOME_ICON, OutcomeBadge } from '@/components/camp/call-outcome'
 import { PhoneLink } from '@/components/contact/phone-link'
+import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
 
 const OUTCOME_BUTTON: Record<Exclude<CallOutcome, 'unconfirmed'>, string> = {
   confirmed:
@@ -59,6 +60,7 @@ export function CallCard({
   onOutcome: (outcome: CallOutcome, note: string) => void
   detailHref?: string
 }) {
+  const followUpMessage = useCampFollowUpMessage()
   const outcome = effectiveOutcome(registration)
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
@@ -90,7 +92,7 @@ export function CallCard({
             ) : null}
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
-            <PhoneLink className="text-neutral-700 dark:text-neutral-200" phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} />
+            <PhoneLink className="text-neutral-700 dark:text-neutral-200" phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} message={followUpMessage(registration)} />
             {registration.residence ? (
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-3 w-3" aria-hidden />

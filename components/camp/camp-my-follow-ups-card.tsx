@@ -5,6 +5,7 @@ import type { CampRegistration } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
 
 type CampMyFollowUpsCardProps = {
   userId: string
@@ -19,6 +20,7 @@ export function CampMyFollowUpsCard({
   onOpenQueue,
   onOpenRegistration,
 }: CampMyFollowUpsCardProps) {
+  const followUpMessage = useCampFollowUpMessage()
   const assigned = useMemo(
     () =>
       registrations.filter(
@@ -80,13 +82,13 @@ export function CampMyFollowUpsCard({
                 {registration.full_name}
               </button>
               <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-                <PhoneLink phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} />
+                <PhoneLink phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} message={followUpMessage(registration)} />
                 <Badge variant="secondary" className="capitalize">
                   {(registration.follow_up_status ?? 'pending').replace('_', ' ')}
                 </Badge>
               </div>
             </div>
-            <QuickContactButtons phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} />
+            <QuickContactButtons phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} message={followUpMessage(registration)} />
           </div>
         ))}
       </div>

@@ -48,6 +48,7 @@ import { TextCallListsDialog } from '@/components/camp/calls/text-call-lists-dia
 import { TextRegistrantsDialog } from '@/components/camp/calls/text-registrants-dialog'
 import { OutcomeBadge, outcomeSegments } from '@/components/camp/call-outcome'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
 
 type View = 'team' | 'mine'
 type CallerFilter = 'all' | 'unassigned' | string
@@ -65,6 +66,7 @@ function matchesQuery(r: CampRegistration, q: string): boolean {
 }
 
 function CallsWorkspace() {
+  const followUpMessage = useCampFollowUpMessage()
   const router = useRouter()
   const params = useSearchParams()
   const queryClient = useQueryClient()
@@ -522,7 +524,7 @@ function CallsWorkspace() {
                           <div className="min-w-0">
                             <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{r.full_name}</p>
                             <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">
-                              <PhoneLink phone={r.phone} whatsapp={r.whatsapp} name={r.full_name} />
+                              <PhoneLink phone={r.phone} whatsapp={r.whatsapp} name={r.full_name} message={followUpMessage(r)} />
                               {r.residence ? <span className="hidden sm:inline"> · {r.residence}</span> : null}
                             </p>
                           </div>
@@ -551,7 +553,7 @@ function CallsWorkspace() {
                         {r.call_attempts ?? 0}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <QuickContactButtons className="mr-1 sm:hidden" phone={r.phone} whatsapp={r.whatsapp} name={r.full_name} />
+                        <QuickContactButtons className="mr-1 sm:hidden" phone={r.phone} whatsapp={r.whatsapp} name={r.full_name} message={followUpMessage(r)} />
                         <Link
                           href={`/admin/camp-meeting/registrations/${r.id}`}
                           className="hidden h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 sm:inline-flex hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-white"

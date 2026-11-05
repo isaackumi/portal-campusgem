@@ -45,10 +45,12 @@ import {
 } from '@/lib/camp/sms-templates'
 import { formatRelativeWhen } from '@/lib/camp/relative-time'
 import { campRegistrationRoleOptions } from '@/lib/camp/registration-roles'
+import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
 
 type DirectoryRole = 'admin' | 'pastor' | 'elder' | 'finance_officer' | 'member' | 'visitor'
 
 export default function RegistrationDetailPage() {
+  const followUpMessage = useCampFollowUpMessage()
     const { id } = useParams() as { id: string }
     const router = useRouter()
     const { toast } = useToast()
@@ -584,7 +586,7 @@ export default function RegistrationDetailPage() {
                         <p className="app-overline">Camp registration</p>
                         <div className="mt-1 flex items-center gap-3">
                             <h1 className="app-page-title min-w-0 break-words">{fullName}</h1>
-                            <QuickContactButtons phone={data.phone} whatsapp={data.whatsapp} name={fullName} />
+                            <QuickContactButtons phone={data.phone} whatsapp={data.whatsapp} name={fullName} message={followUpMessage(data)} />
                         </div>
                     </div>
                     <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>button]:min-h-11 [&>button]:flex-1 sm:[&>button]:min-h-0 sm:[&>button]:flex-none">
@@ -793,14 +795,14 @@ export default function RegistrationDetailPage() {
                                                 {data.phone && (
                                                     <div className="flex items-center text-sm">
                                                         <Phone className="h-4 w-4 mr-3 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden />
-                                                        <PhoneLink phone={data.phone} whatsapp={data.whatsapp} name={fullName} />
+                                                        <PhoneLink phone={data.phone} whatsapp={data.whatsapp} name={fullName} message={followUpMessage(data)} />
                                                     </div>
                                                 )}
                                                 {data.whatsapp && data.whatsapp !== data.phone ? (
                                                     <div className="flex items-center text-sm">
                                                         <Phone className="h-4 w-4 mr-3 shrink-0 text-emerald-500 dark:text-emerald-400" aria-hidden />
                                                         <span className="mr-1 text-neutral-500 dark:text-neutral-400">WhatsApp:</span>
-                                                        <PhoneLink phone={data.whatsapp} name={fullName} />
+                                                        <PhoneLink phone={data.whatsapp} name={fullName} message={followUpMessage(data)} />
                                                     </div>
                                                 ) : null}
                                                 {data.facebook_username && (
@@ -1064,7 +1066,7 @@ export default function RegistrationDetailPage() {
                                         <p className="font-semibold text-neutral-900 dark:text-neutral-100">{fullName}</p>
                                         {data.phone?.trim() && data.phone !== 'N/A' ? (
                                             <p className="text-base font-medium text-neutral-800 dark:text-neutral-200">
-                                                <PhoneLink phone={data.phone} whatsapp={data.whatsapp} name={fullName} />
+                                                <PhoneLink phone={data.phone} whatsapp={data.whatsapp} name={fullName} message={followUpMessage(data)} />
                                             </p>
                                         ) : null}
                                         <p className="text-sm text-neutral-600 dark:text-neutral-400">{data.role || 'Participant'}</p>

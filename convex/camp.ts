@@ -1051,6 +1051,34 @@ export const getCampActivityWithSecret = query({
   },
 })
 
+/** Fields a camp activity may store; anything else the app sends (id, created_at, joined data) is dropped. */
+const CAMP_ACTIVITY_STRING_FIELDS = [
+  'title', 'date', 'start_time', 'end_time', 'location', 'description', 'activity_type',
+  'venue', 'assigned_staff', 'status', 'notes', 'created_by',
+] as const
+const CAMP_ACTIVITY_NUMBER_FIELDS = ['capacity', 'attendance_count'] as const
+
+function campActivityFields(input: unknown, forPatch: boolean): Record<string, unknown> {
+  const src = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  for (const key of CAMP_ACTIVITY_STRING_FIELDS) {
+    if (!(key in src)) continue
+    const value = src[key]
+    if (value == null || value === '') {
+      if (forPatch) out[key] = undefined
+    } else out[key] = String(value)
+  }
+  for (const key of CAMP_ACTIVITY_NUMBER_FIELDS) {
+    if (!(key in src)) continue
+    const n = Number(src[key])
+    if (src[key] == null || src[key] === '' || !Number.isFinite(n)) {
+      if (forPatch) out[key] = undefined
+    } else out[key] = n
+  }
+  if ('metadata' in src) out.metadata = src.metadata ?? undefined
+  return out
+}
+
 export const createCampActivityWithSecret = mutation({
   args: {
     secret: v.string(),
@@ -1062,7 +1090,7 @@ export const createCampActivityWithSecret = mutation({
     assertServerSecret(secret)
     const now = Date.now()
     const aid = await ctx.db.insert('camp_activities', {
-      ...activity,
+      ...campActivityFields(activity, false),
       camp_year_id,
       updated_at: now,
     })
@@ -1075,7 +1103,7 @@ export const updateCampActivityWithSecret = mutation({
   returns: v.any(),
   handler: async (ctx, { secret, id, patch }) => {
     assertServerSecret(secret)
-    await ctx.db.patch(id, { ...patch, updated_at: Date.now() })
+    await ctx.db.patch(id, { ...campActivityFields(patch, true), updated_at: Date.now() })
     return await ctx.db.get('camp_activities', id)
   },
 })

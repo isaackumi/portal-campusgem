@@ -22,6 +22,7 @@ import { classifyFollowUpSla, type FollowUpSlaBucket } from '@/lib/camp/follow-u
 import { cn } from '@/lib/utils'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
 
 const FOLLOW_UP_STATUSES = ['pending', 'in_progress', 'completed'] as const
 const SLA_FILTERS = ['all', 'overdue', 'due_soon', 'healthy'] as const
@@ -502,6 +503,7 @@ function RegistrationCard({
     onUpdateStatus,
     onView
 }: RegistrationCardProps) {
+  const followUpMessage = useCampFollowUpMessage()
     const fullName = registration.full_name || `${registration.first_name} ${registration.last_name}`.trim()
 
     return (
@@ -520,12 +522,12 @@ function RegistrationCard({
                     </div>
                     {registration.phone ? (
                         <div className="mt-1.5 text-xs text-neutral-600 dark:text-neutral-300">
-                            <PhoneLink phone={registration.phone} whatsapp={registration.whatsapp} name={fullName} />
+                            <PhoneLink phone={registration.phone} whatsapp={registration.whatsapp} name={fullName} message={followUpMessage(registration)} />
                         </div>
                     ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                    <QuickContactButtons phone={registration.phone} whatsapp={registration.whatsapp} name={fullName} />
+                    <QuickContactButtons phone={registration.phone} whatsapp={registration.whatsapp} name={fullName} message={followUpMessage(registration)} />
                     <Button
                         variant="ghost"
                         size="icon"

@@ -14,9 +14,12 @@ import { WhatsappLogo } from '@/components/icons/whatsapp-logo'
 import { telHref, whatsAppChatHref } from '@/lib/contact-links'
 import { cn } from '@/lib/utils'
 
-function smsHref(phone: string): string | null {
+function smsHref(phone: string, message?: string | null): string | null {
   const tel = telHref(phone)
-  return tel ? tel.replace(/^tel:/, 'sms:') : null
+  if (!tel) return null
+  const sms = tel.replace(/^tel:/, 'sms:')
+  // "?&body=" is understood by both iOS and Android messaging apps.
+  return message?.trim() ? `${sms}?&body=${encodeURIComponent(message.trim())}` : sms
 }
 
 /**
@@ -29,6 +32,7 @@ export function PhoneLink({
   className,
   mono = true,
   whatsapp,
+  message,
 }: {
   phone?: string | null
   /** Who the number belongs to, for the menu heading and screen readers. */
@@ -37,14 +41,16 @@ export function PhoneLink({
   mono?: boolean
   /** A separate WhatsApp number, when the person has one. */
   whatsapp?: string | null
+  /** Pre-filled text for WhatsApp and SMS (the sender can still edit it). Calls can't carry one. */
+  message?: string | null
 }) {
   const [copied, setCopied] = useState(false)
   const number = phone?.trim()
   if (!number) return <span className={cn('text-neutral-400 dark:text-neutral-500', className)}>No phone</span>
 
   const tel = telHref(number)
-  const wa = whatsAppChatHref(whatsapp?.trim() || number)
-  const sms = smsHref(number)
+  const wa = whatsAppChatHref(whatsapp?.trim() || number, message ?? undefined)
+  const sms = smsHref(number, message)
   if (!tel) return <span className={cn(mono && 'font-mono', className)}>{number}</span>
 
   return (
@@ -114,14 +120,17 @@ export function QuickContactButtons({
   whatsapp,
   name,
   className,
+  message,
 }: {
   phone?: string | null
   whatsapp?: string | null
   name?: string | null
   className?: string
+  /** Pre-filled WhatsApp text (the sender can still edit it). */
+  message?: string | null
 }) {
   const tel = telHref(phone)
-  const wa = whatsAppChatHref(whatsapp?.trim() || phone)
+  const wa = whatsAppChatHref(whatsapp?.trim() || phone, message ?? undefined)
   if (!tel && !wa) return null
   const base =
     'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 sm:h-9 sm:w-9'
