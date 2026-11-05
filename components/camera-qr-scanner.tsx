@@ -2,8 +2,15 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Html5Qrcode, Html5QrcodeScannerState, Html5QrcodeSupportedFormats } from 'html5-qrcode'
-import { Camera, CameraOff, Flashlight, FlashlightOff, RefreshCw, SwitchCamera } from 'lucide-react'
+import { Aperture, Camera, CameraOff, Check, ChevronDown, Flashlight, FlashlightOff, RefreshCw, Sun, SwitchCamera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { backCameras, lensName, preferredBackCamera, type CameraInfo } from '@/lib/camera/lenses'
 import { cn } from '@/lib/utils'
 
 type Facing = 'environment' | 'user'
@@ -42,6 +49,13 @@ export function CameraQrScanner({
   const [torchOn, setTorchOn] = useState(false)
   const [canFlip, setCanFlip] = useState(true)
   const [retry, setRetry] = useState(0)
+  /** Back lens asked for (by us or the user). Null = let the browser choose. */
+  const [lensId, setLensId] = useState<string | null>(null)
+  /** Lens actually running, for the menu. */
+  const [activeLensId, setActiveLensId] = useState<string | null>(null)
+  const [lenses, setLenses] = useState<CameraInfo[]>([])
+  const autoPickedRef = useRef(false)
+  const [bright, setBright] = useState(false)
 
   const enqueue = useCallback((task: () => Promise<void>) => {
     queueRef.current = queueRef.current.then(task, task).catch(() => undefined)
@@ -74,6 +88,7 @@ export function CameraQrScanner({
       await stopCamera()
       setTorchOn(false)
       setTorchSupported(false)
+      setBright(false)
       if (cancelled || !wanted) {
         setStatus('stopped')
         return
@@ -81,10 +96,21 @@ export function CameraQrScanner({
       setStatus('starting')
       setError(null)
       try {
+        const useLens = facing === 'environment' && lensId
+        const which: MediaTrackConstraints = useLens ? { deviceId: { exact: lensId } } : { facingMode: facing }
         await scannerRef.current.start(
-          { facingMode: facing },
-          // No scan box: read codes anywhere in the frame (more forgiving when held at an angle).
-          { fps: 10, aspectRatio: 1 },
+          which,
+          {
+            fps: 10,
+            // No scan box: read codes anywhere in the frame. A sharper stream than the
+            // default helps in dim rooms; continuous focus where the phone supports it.
+            videoConstraints: {
+              ...which,
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
+            },
+          },
           (text) => onScanRef.current(text),
           () => undefined
         )
@@ -99,12 +125,37 @@ export function CameraQrScanner({
         } catch {
           setTorchSupported(false)
         }
-        // Only offer "flip" when there is more than one camera.
-        Html5Qrcode.getCameras()
-          .then((cams) => setCanFlip(cams.length > 1))
-          .catch(() => undefined)
+        let running: string | null = null
+        try {
+          running = scannerRef.current.getRunningTrackSettings().deviceId ?? null
+        } catch {
+          running = null
+        }
+        setActiveLensId(running)
+        // Labels are only readable once the camera is allowed, so look now.
+        try {
+          const cams = await Html5Qrcode.getCameras()
+          if (cancelled) return
+          setCanFlip(cams.length > 1)
+          const backs = backCameras(cams)
+          setLenses(backs)
+          // First start: if the browser picked a dark lens (ultra wide / zoom), switch once
+          // to the main back camera.
+          if (facing === 'environment' && !lensId && !autoPickedRef.current) {
+            autoPickedRef.current = true
+            const best = preferredBackCamera(cams)
+            if (best && running && best.id !== running) setLensId(best.id)
+          }
+        } catch {
+          // keep defaults
+        }
       } catch (err) {
         if (cancelled) return
+        if (facing === 'environment' && lensId) {
+          // That lens wouldn't open: go back to the browser's own back-camera choice.
+          setLensId(null)
+          return
+        }
         const name = err instanceof Error ? err.name : String(err)
         const text = err instanceof Error ? err.message : String(err)
         setStatus('error')
@@ -120,7 +171,7 @@ export function CameraQrScanner({
     return () => {
       cancelled = true
     }
-  }, [elementId, facing, wanted, retry, enqueue, stopCamera])
+  }, [elementId, facing, lensId, wanted, retry, enqueue, stopCamera])
 
   // Turn the camera off when the scanner leaves the page.
   useEffect(() => {
@@ -162,7 +213,31 @@ export function CameraQrScanner({
     }
   }
 
+  async function toggleBright() {
+    const next = !bright
+    setBright(next)
+    // Where the phone allows it, raise the camera's own exposure too (helps decoding, not
+    // just the preview). Otherwise only the preview is brightened.
+    const scanner = scannerRef.current
+    if (!scanner) return
+    try {
+      const caps = scanner.getRunningTrackCapabilities() as MediaTrackCapabilities & {
+        exposureCompensation?: { min: number; max: number }
+      }
+      const range = caps.exposureCompensation
+      if (range && range.max > 0) {
+        await scanner.applyVideoConstraints({
+          advanced: [{ exposureCompensation: next ? range.max * 0.6 : 0 } as MediaTrackConstraintSet],
+        })
+      }
+    } catch {
+      // preview-only brightening
+    }
+  }
+
   const live = status === 'scanning'
+  const showLensMenu = facing === 'environment' && lenses.length > 1
+  const currentLens = lenses.find((l) => l.id === activeLensId)
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -171,7 +246,8 @@ export function CameraQrScanner({
           id={elementId}
           className={cn(
             'h-full w-full [&_video]:!h-full [&_video]:!w-full [&_video]:object-cover',
-            facing === 'user' && '[&_video]:-scale-x-100'
+            facing === 'user' && '[&_video]:-scale-x-100',
+            bright && '[&_video]:brightness-[1.7] [&_video]:contrast-125'
           )}
         />
 
@@ -215,13 +291,13 @@ export function CameraQrScanner({
         )}
       </div>
 
-      {/* Controls: big, well-spaced touch targets */}
-      <div className="mx-auto flex w-full max-w-sm items-center justify-center gap-2">
-        {status === 'error' ? (
+      {/* Controls: big, well-spaced touch targets, two per row */}
+      {status === 'error' ? (
+        <div className="mx-auto w-full max-w-sm">
           <Button
             type="button"
             variant="outline"
-            className="h-11 flex-1 gap-2"
+            className="h-11 w-full gap-2"
             onClick={() => {
               setWanted(true)
               setRetry((n) => n + 1)
@@ -230,46 +306,84 @@ export function CameraQrScanner({
             <RefreshCw className="h-4 w-4" aria-hidden />
             Try again
           </Button>
-        ) : (
-          <>
-            {canFlip && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 flex-1 gap-2"
-                disabled={!wanted || status === 'starting'}
-                onClick={() => setFacing((f) => (f === 'environment' ? 'user' : 'environment'))}
-              >
-                <SwitchCamera className="h-4 w-4" aria-hidden />
-                {facing === 'environment' ? 'Front camera' : 'Back camera'}
-              </Button>
-            )}
-            {torchSupported && live && (
-              <Button
-                type="button"
-                variant={torchOn ? 'default' : 'outline'}
-                className="h-11 w-11 shrink-0 p-0"
-                onClick={() => void toggleTorch()}
-                aria-label={torchOn ? 'Turn light off' : 'Turn light on'}
-                aria-pressed={torchOn}
-                title={torchOn ? 'Light off' : 'Light on'}
-              >
-                {torchOn ? <FlashlightOff className="h-4 w-4" aria-hidden /> : <Flashlight className="h-4 w-4" aria-hidden />}
-              </Button>
-            )}
+        </div>
+      ) : (
+        <div className="mx-auto grid w-full max-w-sm grid-cols-2 gap-2">
+          {canFlip && (
             <Button
               type="button"
               variant="outline"
-              className="h-11 flex-1 gap-2"
-              disabled={status === 'starting'}
-              onClick={() => setWanted((w) => !w)}
+              className="h-11 gap-2"
+              disabled={!wanted || status === 'starting'}
+              onClick={() => setFacing((f) => (f === 'environment' ? 'user' : 'environment'))}
             >
-              {wanted ? <CameraOff className="h-4 w-4" aria-hidden /> : <Camera className="h-4 w-4" aria-hidden />}
-              {wanted ? 'Stop camera' : 'Start camera'}
+              <SwitchCamera className="h-4 w-4" aria-hidden />
+              {facing === 'environment' ? 'Front camera' : 'Back camera'}
             </Button>
-          </>
-        )}
-      </div>
+          )}
+          {showLensMenu && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" className="h-11 gap-2" disabled={!live}>
+                  <Aperture className="h-4 w-4" aria-hidden />
+                  <span className="truncate">Lens: {currentLens ? lensName(currentLens) : 'Auto'}</span>
+                  <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {lenses.map((lens, i) => (
+                  <DropdownMenuItem
+                    key={lens.id}
+                    className="min-h-11 cursor-pointer justify-between"
+                    onSelect={() => setLensId(lens.id)}
+                  >
+                    {lensName(lens, i)}
+                    {lens.id === activeLensId && <Check className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {live && (
+            <Button
+              type="button"
+              variant={bright ? 'default' : 'outline'}
+              className="h-11 gap-2"
+              aria-pressed={bright}
+              onClick={() => void toggleBright()}
+            >
+              <Sun className="h-4 w-4" aria-hidden />
+              Brighter
+            </Button>
+          )}
+          {torchSupported && live && (
+            <Button
+              type="button"
+              variant={torchOn ? 'default' : 'outline'}
+              className="h-11 gap-2"
+              aria-pressed={torchOn}
+              onClick={() => void toggleTorch()}
+            >
+              {torchOn ? <FlashlightOff className="h-4 w-4" aria-hidden /> : <Flashlight className="h-4 w-4" aria-hidden />}
+              {torchOn ? 'Light off' : 'Light on'}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              'h-11 gap-2',
+              // Full width when it would otherwise sit alone in half a row.
+              ([canFlip, showLensMenu, live, torchSupported && live].filter(Boolean).length % 2 === 0) && 'col-span-2'
+            )}
+            disabled={status === 'starting'}
+            onClick={() => setWanted((w) => !w)}
+          >
+            {wanted ? <CameraOff className="h-4 w-4" aria-hidden /> : <Camera className="h-4 w-4" aria-hidden />}
+            {wanted ? 'Stop camera' : 'Start camera'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
