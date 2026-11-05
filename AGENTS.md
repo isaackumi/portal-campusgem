@@ -7,6 +7,23 @@ camp meeting, RLC (mother church), forms, SMS.
 
 - **Sign-in** is phone number or membership ID (`app/api/auth/direct-login`). The session
   is the httpOnly `chms-auth-session` cookie, which holds the user's Convex `auth_uid`.
+- **`auth_uid` is the session secret.** `convexUserDocToAppUser` drops it unless called with
+  `{ withAuthUid: true }`, which only the sign-in lookup (`lib/auth/login-lookup.ts`) and
+  `getSessionUser` use. Never return a raw Convex user doc to the browser; map it first. Use
+  `has_login` to ask "can this person sign in?".
+- **Sign-in codes:** people with more than member access get a 6-digit SMS code
+  (`/api/auth/verify-code`). `AUTH_SIGNIN_CODES` = `staff` (default) | `all` | `off` (emergency
+  switch if SMS is down). Codes are HMAC-hashed in Convex `auth_codes` (`convex/authCodes.ts`):
+  10-minute expiry, 5 wrong tries, one resend per 45s, 5 per hour.
+- **Access history:** every change through `lib/actions/access.ts` is written to Convex
+  `access_log` (shown on `/admin/admins`). Add a `recordAccessChange` call to any new action
+  that changes who can sign in or what they can do.
+- **Tap-to-confirm (`/c/<token>`):** public, no sign-in; the 128-bit `confirm_token` on the
+  registration is the credential (never map it to the browser). `{{confirmLink}}` in camp SMS
+  fills it in. Answers record as `performed_by: 'self'`.
+- **Camp reminders:** `/api/cron/camp-reminders` (daily, `CRON_SECRET`) texts 7 days and 1 day
+  before the active camp year. Per-registration `reminder_7d_sent_at` / `reminder_1d_sent_at`
+  stop repeats; `camp_years.auto_reminders` (unset = on) toggles it. `?dry_run=1` to preview.
 - **Permissions** live in `lib/auth/roles.ts`. A user has a role (`ROLE_PERMISSIONS`) plus
   optional per-user extra grants (`users.permissions` in Convex). Always check with
   `hasPermission(role, permission, user.permissions)` / `canAccessPath(...)`, never
@@ -36,8 +53,11 @@ camp meeting, RLC (mother church), forms, SMS.
 - Server code talks to Convex through `lib/convex/*-bridge.ts` using `*WithSecret`
   functions guarded by `CAMP_CONVEX_SERVER_SECRET`. Convex Auth is not wired, so
   `requireAuth` functions are unreachable from the browser.
-- After changing `convex/schema.ts` or functions, deploy with `npx convex deploy`
-  (or `npx convex dev`).
+- Vercel deploys Convex for you: `vercel.json` runs `scripts/vercel-build.sh`, which runs
+  `npx convex deploy --cmd 'bun run build'` on production builds (needs `CONVEX_DEPLOY_KEY`,
+  Production scope only). Production builds fail without the key, so app code never ships
+  ahead of its Convex functions; `SKIP_CONVEX_DEPLOY=1` overrides. Previews build against the
+  existing deployment. Locally, use `npx convex dev`.
 - `patchCampRegistrationWithSecret` treats a `null` value as "remove this field".
 
 ## Checks

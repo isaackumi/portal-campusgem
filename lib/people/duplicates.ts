@@ -34,7 +34,7 @@ export function suggestKeep(records: AppUser[]): AppUser {
   return [...records].sort(
     (a, b) =>
       ROLE_RANK[a.role] - ROLE_RANK[b.role] ||
-      Number(Boolean(b.auth_uid)) - Number(Boolean(a.auth_uid)) ||
+      Number(Boolean(b.has_login ?? b.auth_uid)) - Number(Boolean(a.has_login ?? a.auth_uid)) ||
       Number(Boolean(phoneKey(b.phone))) - Number(Boolean(phoneKey(a.phone))) ||
       (b.updated_at ?? '').localeCompare(a.updated_at ?? '')
   )[0]

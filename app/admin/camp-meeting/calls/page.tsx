@@ -26,6 +26,7 @@ import { PersonAvatar } from '@/components/ui/person'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { isSelfReported } from '@/lib/camp/confirm-link'
 import type { CampRegistration } from '@/lib/types'
 import {
   effectiveOutcome,
@@ -156,6 +157,7 @@ function CallsWorkspace() {
                     ...r,
                     attendance_confirmation: outcome,
                     confirmation_note: note.trim() || r.confirmation_note,
+                    confirmation_updated_by: undefined,
                     call_attempts: (r.call_attempts ?? 0) + 1,
                     last_called_at: new Date().toISOString(),
                   }
@@ -537,6 +539,9 @@ function CallsWorkspace() {
                         <div className="flex flex-col items-start gap-1">
                           <OutcomeBadge outcome={r.status === 'checked_in' ? 'confirmed' : effectiveOutcome(r)} />
                           {r.status === 'checked_in' ? <span className="text-xs text-emerald-700 dark:text-emerald-300">At camp</span> : null}
+                          {r.status !== 'checked_in' && isSelfReported(r) ? (
+                            <span className="text-xs font-medium text-brand-700 dark:text-brand-300">via their link</span>
+                          ) : null}
                           {r.confirmation_note ? (
                             <span className="max-w-[16rem] truncate text-xs text-neutral-500 dark:text-neutral-400" title={r.confirmation_note}>“{r.confirmation_note}”</span>
                           ) : null}

@@ -1,95 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isValidMembershipId, normalizeMembershipId } from '@/lib/membershipId'
-import { normalizePhone, isValidPhone } from '@/lib/phone'
-import type { AppUser } from '@/lib/types'
 import { applySessionCookies, toSessionPayload } from '@/lib/auth/server-session'
+import { loginErrorResponse, lookupLoginUser } from '@/lib/auth/login-lookup'
+import { requiresSigninCode } from '@/lib/auth/signin-code'
+import { sendSigninCode } from '@/lib/auth/send-signin-code'
 
-async function findUserByMembershipId(membershipId: string): Promise<AppUser | null> {
-  const { findUserByMembershipIdFromConvex } = await import('@/lib/convex/core-bridge')
-  return findUserByMembershipIdFromConvex(membershipId)
-}
-
-async function findUserByPhone(phone: string): Promise<AppUser | null> {
-  const { findUserByPhoneFromConvex } = await import('@/lib/convex/core-bridge')
-  return findUserByPhoneFromConvex(phone)
-}
-
-async function resolveUserByPhone(phoneInput: string): Promise<AppUser | null> {
-  return findUserByPhone(phoneInput.trim())
-}
-
+/**
+ * Step 1 of sign-in. Members go straight in. People with more access (see
+ * AUTH_SIGNIN_CODES) are texted a 6-digit code instead and finish at
+ * /api/auth/verify-code. Calling this again resends the code (rate limited).
+ */
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.NEXT_PUBLIC_CONVEX_URL || !process.env.CAMP_CONVEX_SERVER_SECRET) {
-      return NextResponse.json(
-        { error: 'Convex is not configured for authentication' },
-        { status: 503 }
-      )
+      return NextResponse.json({ error: 'Convex is not configured for authentication' }, { status: 503 })
     }
 
     const { phoneOrId } = await request.json()
+    const found = await lookupLoginUser(phoneOrId)
+    if (!found.ok) return NextResponse.json({ error: found.error }, { status: found.status })
 
-    if (!phoneOrId?.trim()) {
-      return NextResponse.json(
-        { error: 'Phone number or membership ID is required' },
-        { status: 400 }
-      )
+    if (requiresSigninCode(found.user)) {
+      const sent = await sendSigninCode(found.user, found.codePhone)
+      if (!sent.ok) {
+        return NextResponse.json(
+          { error: sent.error, retryAfterSeconds: sent.retryAfterSeconds },
+          { status: sent.status }
+        )
+      }
+      return NextResponse.json({ codeRequired: true, sentTo: sent.sentTo, resendInSeconds: sent.resendInSeconds })
     }
 
-    const rawInput = phoneOrId.trim()
-    const normalizedMembershipId = normalizeMembershipId(rawInput)
-    const membershipLookup = isValidMembershipId(normalizedMembershipId)
-    const phoneLookup = isValidPhone(rawInput)
-
-    if (!membershipLookup && !phoneLookup) {
-      return NextResponse.json(
-        { error: 'Enter a valid Ghana phone number or membership ID (CG-XXXX-YYYY).' },
-        { status: 400 }
-      )
-    }
-
-    let userData: AppUser | null = null
-
-    if (phoneLookup) {
-      userData = await resolveUserByPhone(rawInput)
-    }
-    if (!userData && membershipLookup) {
-      userData = await findUserByMembershipId(normalizedMembershipId)
-    }
-
-    if (!userData) {
-      const checked = phoneLookup ? normalizePhone(rawInput) : normalizedMembershipId
-      return NextResponse.json(
-        {
-          error: membershipLookup
-            ? `No account matches ${checked}. Check the membership ID or sign in with the phone number on file.`
-            : `No account matches ${checked}. Sign in with the phone number on file, or use your membership ID.`,
-        },
-        { status: 404 }
-      )
-    }
-
-    if (!userData.auth_uid) {
-      return NextResponse.json({ error: 'Account not properly set up' }, { status: 400 })
-    }
-
-    const response = NextResponse.json({ success: true, user: toSessionPayload(userData) })
-    applySessionCookies(response, userData)
-
+    const response = NextResponse.json({ success: true, user: toSessionPayload(found.user) })
+    applySessionCookies(response, found.user)
     return response
   } catch (error) {
     console.error('Direct login error:', error)
-    const message = error instanceof Error ? error.message : ''
-    if (
-      message.includes('CAMP_CONVEX_SERVER_SECRET') ||
-      message.includes('NEXT_PUBLIC_CONVEX_URL') ||
-      message === 'Unauthorized'
-    ) {
-      return NextResponse.json(
-        { error: 'Login service is not configured correctly. Try again or use your membership ID.' },
-        { status: 503 }
-      )
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const { status, error: message } = loginErrorResponse(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

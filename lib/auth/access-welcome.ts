@@ -1,4 +1,5 @@
 import { ROLE_LABELS, effectivePermissions, isStaffRole } from '@/lib/auth/roles'
+import { requiresSigninCode, type SigninCodeMode } from '@/lib/auth/signin-policy'
 import type { UserRole } from '@/lib/types'
 
 /** Permissions the person has after the change that they did not have before. */
@@ -30,6 +31,8 @@ export function buildAccessWelcomeSms(args: {
   permissions?: readonly unknown[] | null
   phone: string | null | undefined
   siteUrl: string
+  /** Defaults to AUTH_SIGNIN_CODES on the server. */
+  codeMode?: SigninCodeMode
 }): string {
   const name = firstName(args.fullName)
   const signInUrl = `${args.siteUrl.replace(/\/$/, '')}/auth`
@@ -45,5 +48,8 @@ export function buildAccessWelcomeSms(args: {
   const how = tail ? `with your phone number ending ${tail}` : 'with your phone number'
   const after = !isStaffRole(args.role) && extras.includes('camp.calls') ? ' Then open Calls to see your list.' : ''
 
-  return `Hi ${name}, ${what}. Sign in at ${signInUrl} ${how}. No password needed.${after}`
+  const needsCode = requiresSigninCode({ role: args.role, permissions: extras }, args.codeMode)
+  const security = needsCode ? " We'll text you a code to confirm it's you." : ' No password needed.'
+
+  return `Hi ${name}, ${what}. Sign in at ${signInUrl} ${how}.${security}${after}`
 }

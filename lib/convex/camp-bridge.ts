@@ -4,6 +4,7 @@ import { getConvexHttpClient } from '@/lib/convex/http-client'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
 import type {
+  AppUser,
   CampCommunication,
   CampInteraction,
   CampRegistration,
@@ -29,6 +30,7 @@ export function convexCampYearDocToCampYear(doc: Record<string, unknown> | null 
     registration_open: Boolean(doc.registration_open),
     flyer_image_url: doc.flyer_image_url != null ? (doc.flyer_image_url as string | null) : undefined,
     venue: doc.venue != null ? String(doc.venue) : undefined,
+    auto_reminders: typeof doc.auto_reminders === 'boolean' ? doc.auto_reminders : undefined,
     created_at: iso(ct) || new Date().toISOString(),
     updated_at: iso(updated) || iso(ct) || new Date().toISOString(),
   }
@@ -209,6 +211,10 @@ export function convexRegistrationDocToCampRegistration(
       doc.confirmation_updated_by != null ? String(doc.confirmation_updated_by) : undefined,
     call_attempts: doc.call_attempts != null ? Number(doc.call_attempts) : undefined,
     last_called_at: typeof doc.last_called_at === 'number' ? iso(doc.last_called_at) : undefined,
+    reminder_7d_sent_at:
+      typeof doc.reminder_7d_sent_at === 'number' ? iso(doc.reminder_7d_sent_at) : undefined,
+    reminder_1d_sent_at:
+      typeof doc.reminder_1d_sent_at === 'number' ? iso(doc.reminder_1d_sent_at) : undefined,
     qr_code: String(doc.qr_code ?? ''),
     created_at: iso(ct) || new Date().toISOString(),
     updated_at: iso(ut) || iso(ct) || new Date().toISOString(),
@@ -423,6 +429,8 @@ export async function recordCallOutcomeInConvex(args: {
   note?: string
   performed_by: string
   count_attempt?: boolean
+  /** Self-reported through the tap-to-confirm link. */
+  via_link?: boolean
 }): Promise<CampRegistration> {
   const client = getConvexHttpClient()
   const doc = (await client.mutation(api.camp.recordCallOutcomeWithSecret, {
@@ -432,10 +440,78 @@ export async function recordCallOutcomeInConvex(args: {
     note: args.note,
     performed_by: args.performed_by,
     count_attempt: args.count_attempt,
+    via_link: args.via_link,
   })) as Record<string, unknown>
   const r = convexRegistrationDocToCampRegistration(doc)
   if (!r) throw new Error('Could not save the call outcome')
   return r
+}
+
+/**
+ * Tap-to-confirm tokens for these registrations, creating any that are missing.
+ * Returns registration id -> token.
+ */
+export async function ensureConfirmTokensInConvex(registrationIds: string[]): Promise<Map<string, string>> {
+  const { generateConfirmToken } = await import('@/lib/camp/confirm-link')
+  const client = getConvexHttpClient()
+  const map = new Map<string, string>()
+  const ids = Array.from(new Set(registrationIds.filter(Boolean)))
+  for (let i = 0; i < ids.length; i += 100) {
+    const rows = (await client.mutation(api.camp.ensureConfirmTokensWithSecret, {
+      secret: requireCampAdminSecret(),
+      items: ids.slice(i, i + 100).map((id) => ({
+        registration_id: id as Id<'camp_registrations'>,
+        token: generateConfirmToken(),
+      })),
+    })) as Array<{ registration_id: string; token: string }>
+    for (const row of rows) map.set(row.registration_id, row.token)
+  }
+  return map
+}
+
+export type ConfirmLinkContext = {
+  registration_id: string
+  first_name: string | null
+  full_name: string
+  checked_in: boolean
+  self_answer: import('@/lib/types').CampAttendanceConfirmation | null
+  camp: { year: number; theme: string; start_date: string; end_date: string; venue: string | null }
+}
+
+export async function fetchConfirmLinkContextFromConvex(token: string): Promise<ConfirmLinkContext | null> {
+  const client = getConvexHttpClient()
+  return (await client.query(api.camp.getConfirmLinkContextWithSecret, {
+    secret: requireCampAdminSecret(),
+    token,
+  })) as ConfirmLinkContext | null
+}
+
+export async function markRemindersSentInConvex(
+  registrationIds: string[],
+  stage: '7d' | '1d',
+  sentAt = Date.now()
+): Promise<number> {
+  const client = getConvexHttpClient()
+  let updated = 0
+  for (let i = 0; i < registrationIds.length; i += 200) {
+    const res = (await client.mutation(api.camp.markRemindersSentWithSecret, {
+      secret: requireCampAdminSecret(),
+      registration_ids: registrationIds.slice(i, i + 200) as Id<'camp_registrations'>[],
+      stage,
+      sent_at: sentAt,
+    })) as { updated: number }
+    updated += res.updated
+  }
+  return updated
+}
+
+export async function setCampYearAutoRemindersInConvex(yearId: string, enabled: boolean): Promise<void> {
+  const client = getConvexHttpClient()
+  await client.mutation(api.camp.setCampYearAutoRemindersWithSecret, {
+    secret: requireCampAdminSecret(),
+    yearId: yearId as Id<'camp_years'>,
+    enabled,
+  })
 }
 
 export async function fetchRegistrationFromConvex(id: string): Promise<CampRegistration | null> {
@@ -479,7 +555,7 @@ export async function promoteCampRegistrantInConvex(args: {
   birth_month?: number
   birth_day?: number
   birth_year?: number
-}): Promise<{ user: Record<string, unknown> | null; registration: CampRegistration | null }> {
+}): Promise<{ user: AppUser | null; registration: CampRegistration | null }> {
   const client = getConvexHttpClient()
   const result = (await client.mutation(api.camp.promoteCampRegistrantWithSecret, {
     secret: requireCampAdminSecret(),
@@ -492,8 +568,10 @@ export async function promoteCampRegistrantInConvex(args: {
     user: Record<string, unknown> | null
     registration: Record<string, unknown> | null
   }
+  const { convexUserDocToAppUser } = await import('@/lib/convex/core-bridge')
   return {
-    user: result.user,
+    // Mapped so the session secret (auth_uid) never leaves the server.
+    user: convexUserDocToAppUser(result.user),
     registration: convexRegistrationDocToCampRegistration(result.registration),
   }
 }

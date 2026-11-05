@@ -345,6 +345,8 @@ export default defineSchema({
     registration_open: v.boolean(),
     flyer_image_url: v.optional(v.union(v.string(), v.null())),
     venue: v.optional(v.string()),
+    /** Automatic 7-day / 1-day SMS reminders (cron). Unset means on. */
+    auto_reminders: v.optional(v.boolean()),
     updated_at: v.number(),
   })
     .index('by_year', ['year'])
@@ -424,10 +426,16 @@ export default defineSchema({
     confirmation_updated_by: v.optional(v.string()),
     call_attempts: v.optional(v.number()),
     last_called_at: v.optional(v.number()),
+    /** Secret for the tap-to-confirm link `/c/<token>`; created when first texted. */
+    confirm_token: v.optional(v.string()),
+    /** Automatic reminder markers so nobody is texted twice. */
+    reminder_7d_sent_at: v.optional(v.number()),
+    reminder_1d_sent_at: v.optional(v.number()),
     qr_code: v.string(),
     updated_at: v.number(),
   })
     .index('by_camp_year', ['camp_year_id'])
+    .index('by_confirm_token', ['confirm_token'])
     .index('by_camp_year_phone', ['camp_year_id', 'phone'])
     .index('by_camp_year_email', ['camp_year_id', 'email'])
     .index('by_camp_year_check_in_code', ['camp_year_id', 'check_in_code'])
@@ -628,4 +636,37 @@ export default defineSchema({
     .index('by_batch', ['batch_id'])
     .index('by_channel', ['channel'])
     .index('by_status', ['status']),
+
+  /** One-time sign-in codes (hashed). See convex/authCodes.ts. */
+  auth_codes: defineTable({
+    user_id: v.id('users'),
+    code_hash: v.string(),
+    sent_to: v.string(),
+    expires_at: v.number(),
+    attempts: v.number(),
+    created_at: v.number(),
+    used_at: v.optional(v.number()),
+  }).index('by_user', ['user_id', 'created_at']),
+
+  /** Who changed whose access, and when. See convex/accessLog.ts. */
+  access_log: defineTable({
+    user_id: v.id('users'),
+    user_name: v.string(),
+    actor_id: v.optional(v.id('users')),
+    actor_name: v.string(),
+    kind: v.union(
+      v.literal('access'),
+      v.literal('secondary_phone'),
+      v.literal('link_duplicate'),
+      v.literal('signin_text')
+    ),
+    from_role: v.optional(v.string()),
+    to_role: v.optional(v.string()),
+    added: v.array(v.string()),
+    removed: v.array(v.string()),
+    note: v.optional(v.string()),
+    at: v.number(),
+  })
+    .index('by_user', ['user_id', 'at'])
+    .index('by_at', ['at']),
 })

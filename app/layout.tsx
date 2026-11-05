@@ -27,17 +27,20 @@ export const metadata: Metadata = {
   title: 'Campus Gem Ministries - Church Management System',
   description: 'Church Management System for Campus Gem Ministries',
   manifest: '/manifest.json',
+  // Generated from the brand mark by scripts/generate-icons.js.
   icons: {
     icon: [
-      { url: '/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
-      { url: '/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' }
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
     ],
-    apple: '/icon-192x192.svg',
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
+  // Home-screen launch on iOS: full screen, short label under the icon. "default" keeps
+  // dark status-bar text readable on the light header (black-translucent would be white).
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Campus Gem Ministries'
+    title: 'Campus Gem',
   },
   formatDetection: {
     telephone: false,

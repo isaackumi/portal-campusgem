@@ -32,6 +32,7 @@ import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { CampActiveYearEmpty } from '@/components/camp/camp-active-year-empty'
 import { CampMyFollowUpsCard } from '@/components/camp/camp-my-follow-ups-card'
 import { CampDailySummaryShare } from '@/components/camp/camp-daily-summary-share'
+import { CampRemindersCard } from '@/components/camp/camp-reminders-card'
 import { RegistrationTrendChart } from '@/components/camp/registration-trend-chart'
 import { outcomeSegments } from '@/components/camp/call-outcome'
 import { buildLiveRegistrationPulse } from '@/lib/camp/analytics'
@@ -541,6 +542,8 @@ export default function CampAdminDashboard() {
               </Button>
             </div>
           </Panel>
+
+          {can('camp.manage') ? <CampRemindersCard yearId={campYear.id} /> : null}
 
           <nav aria-label="Camp tools" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
             {QUICK_LINKS.filter((q) => !q.permission || can(q.permission)).map((q) => {

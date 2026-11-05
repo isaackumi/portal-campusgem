@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { activeNavHref, type SidebarNavItem, type SidebarNavSection } from '@/lib/navigation/sidebar'
 import { useVisibleNav } from '@/lib/navigation/use-visible-nav'
+import { InstallAppNavItem } from '@/components/install-app'
+import { useInstallApp } from '@/components/pwa-provider'
 import { ChevronRightIcon, Cross2Icon } from '@radix-ui/react-icons'
 
 interface SidebarProps {
@@ -142,6 +144,7 @@ function SidebarNavInner({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { sections, settings, pages } = useVisibleNav()
+  const { mode: installMode } = useInstallApp()
 
   const activeHref = useMemo(
     () => activeNavHref(pages, pathname, searchParams),
@@ -196,9 +199,16 @@ function SidebarNavInner({
         )}
       </nav>
 
-      {settings.length > 0 ? (
+      {settings.length > 0 || installMode ? (
         <div className="shrink-0 border-t border-neutral-200 px-3 py-3 dark:border-neutral-800">
-          <ul className="flex flex-col gap-px">{renderItems(settings)}</ul>
+          <ul className="flex flex-col gap-px">
+            {renderItems(settings)}
+            {installMode ? (
+              <li>
+                <InstallAppNavItem collapsed={collapsed} onDone={onNavigate} />
+              </li>
+            ) : null}
+          </ul>
         </div>
       ) : null}
     </div>

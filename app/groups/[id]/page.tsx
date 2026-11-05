@@ -11,14 +11,18 @@ import { Badge } from '@/components/ui/badge'
 import { groupRoleTone } from '@/lib/ui/chip-tones'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { GroupSmsComposer } from '@/components/groups/group-sms-composer'
+import { useToast } from '@/hooks/use-toast'
 import { dataService } from '@/lib/services/data-service'
-import { GROUP_MEMBERSHIP_ROLES, GROUP_MEMBERSHIP_ROLE_LABELS } from '@/lib/constants/groups'
+import { GROUP_MEMBERSHIP_ROLES, GROUP_MEMBERSHIP_ROLE_LABELS, GROUP_TYPES } from '@/lib/constants/groups'
+import { groupExportFilename, groupMembersToCsv } from '@/lib/groups/export'
+import { downloadCsv } from '@/lib/csv'
 import { AppUser, Group, GroupMembership } from '@/lib/types'
-import { 
+import {
   ArrowLeft,
   Users,
   Settings,
@@ -26,36 +30,49 @@ import {
   Star,
   Calendar,
   MapPin,
-  Phone,
-  Mail,
-  Globe,
   Shield,
   UserPlus,
   UserMinus,
   Edit,
-  MoreHorizontal,
   Search,
-  Filter,
   Download,
-  Send,
   MessageSquare,
-  CheckCircle,
-  XCircle,
-  Clock,
   Eye,
-  Trash2,
-  Mail as MailIcon,
-  Phone as PhoneIcon
 } from 'lucide-react'
+
+type GroupEditForm = {
+  name: string
+  description: string
+  group_type: Group['group_type']
+  meeting_schedule: string
+  meeting_location: string
+  max_members: string
+  is_active: boolean
+}
+
+function groupToForm(group: Group): GroupEditForm {
+  return {
+    name: group.name,
+    description: group.description ?? '',
+    group_type: group.group_type,
+    meeting_schedule: group.meeting_schedule ?? '',
+    meeting_location: group.meeting_location ?? '',
+    max_members: group.max_members ? String(group.max_members) : '',
+    is_active: group.is_active,
+  }
+}
 
 type GroupMemberRow = GroupMembership & {
   member?: GroupMembership['member']
 }
 
 export default function GroupDetailsPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, can } = useAuth()
   const router = useRouter()
   const params = useParams()
+  const { toast } = useToast()
+  const canManage = can('groups.manage')
+  const canText = can('sms.send')
 
   const [group, setGroup] = useState<Group | null>(null)
   const [members, setMembers] = useState<GroupMemberRow[]>([])
@@ -67,7 +84,8 @@ export default function GroupDetailsPage() {
   const [showAddMember, setShowAddMember] = useState(false)
   const [selectedMemberId, setSelectedMemberId] = useState('')
   const [selectedRole, setSelectedRole] = useState('member')
-  const [messageText, setMessageText] = useState('')
+  const [editForm, setEditForm] = useState<GroupEditForm | null>(null)
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const groupId = params.id as string
 
@@ -207,17 +225,55 @@ export default function GroupDetailsPage() {
     }
   }
 
-  const sendGroupMessage = async () => {
-    if (!messageText.trim() || !groupId) return
+  const exportMembers = () => {
+    if (!group) return
+    if (members.length === 0) {
+      toast({ title: 'Nothing to export', description: 'This group has no members yet.' })
+      return
+    }
+    downloadCsv(groupExportFilename(`${group.name}-members`), groupMembersToCsv(members))
+    toast({
+      title: 'Export ready',
+      description: `${members.length} member${members.length === 1 ? '' : 's'} saved to CSV.`,
+    })
+  }
 
+  const saveGroupEdit = async () => {
+    if (!editForm || !group) return
+    const name = editForm.name.trim()
+    if (!name) {
+      toast({ variant: 'destructive', title: 'Name is required' })
+      return
+    }
+    const max = editForm.max_members.trim() ? Number(editForm.max_members) : undefined
+    if (max !== undefined && (!Number.isInteger(max) || max < 1)) {
+      toast({ variant: 'destructive', title: 'Capacity must be a whole number above 0' })
+      return
+    }
+    setSavingEdit(true)
     try {
-      // This would integrate with your SMS system
-      // For now, we'll just show a success message
-      alert(`Message sent to ${members.length} group members!`)
-      setMessageText('')
+      const { data, error } = await dataService.updateGroup(group.id, {
+        name,
+        description: editForm.description.trim(),
+        group_type: editForm.group_type,
+        meeting_schedule: editForm.meeting_schedule.trim(),
+        meeting_location: editForm.meeting_location.trim(),
+        max_members: max,
+        is_active: editForm.is_active,
+      })
+      if (error) throw new Error(error)
+      if (data) setGroup((prev) => (prev ? { ...prev, ...data, leader: prev.leader, co_leader: prev.co_leader } : data))
+      else await fetchGroupDetails()
+      setEditForm(null)
+      toast({ title: 'Group updated' })
     } catch (error) {
-      console.error('Error sending message:', error)
-      alert('Failed to send message. Please try again.')
+      toast({
+        variant: 'destructive',
+        title: 'Could not save',
+        description: error instanceof Error ? error.message : 'Please try again.',
+      })
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -317,31 +373,33 @@ export default function GroupDetailsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => setShowAddMember(true)}>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add member
-            </Button>
-            <Button variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-11 w-11 shrink-0 p-0 sm:h-10 sm:w-10" aria-label="More actions">
-                  <MoreHorizontal className="h-4 w-4" />
+            {canManage ? (
+              <>
+                <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => setShowAddMember(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add member
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem className="min-h-11 gap-2">
-                  <Download className="h-4 w-4" />
-                  Export members
-                </DropdownMenuItem>
-                <DropdownMenuItem className="min-h-11 gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Schedule event
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <Button
+                  variant="outline"
+                  className="h-11 flex-1 sm:h-10 sm:flex-none"
+                  onClick={() => setEditForm(groupToForm(group))}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              </>
+            ) : null}
+            <Button
+              variant="outline"
+              className={canManage ? 'h-11 w-11 shrink-0 p-0 sm:h-10 sm:w-auto sm:px-4' : 'h-11 flex-1 sm:h-10 sm:flex-none'}
+              onClick={exportMembers}
+              disabled={membersLoading}
+              aria-label="Export members to CSV"
+              title="Export members to CSV"
+            >
+              <Download className={canManage ? 'h-4 w-4 sm:mr-2' : 'mr-2 h-4 w-4'} />
+              <span className={canManage ? 'hidden sm:inline' : undefined}>Export</span>
+            </Button>
           </div>
         </div>
 
@@ -385,7 +443,7 @@ export default function GroupDetailsPage() {
             <Tabs defaultValue="members" className="w-full">
               <ScrollableTabsList>
                 <TabsTrigger value="members">Members</TabsTrigger>
-                <TabsTrigger value="messages">Messages</TabsTrigger>
+                {canText ? <TabsTrigger value="messages">Message</TabsTrigger> : null}
                 <TabsTrigger value="settings">Settings</TabsTrigger>
               </ScrollableTabsList>
 
@@ -452,38 +510,45 @@ export default function GroupDetailsPage() {
                               <QuickContactButtons phone={person?.phone} whatsapp={person?.whatsapp} name={name} />
                             </div>
                             <div className="flex items-center gap-2 sm:justify-end">
-                              <Badge variant={groupRoleTone(groupMember.role)} className="hidden capitalize sm:inline-flex">
+                              <Badge
+                                variant={groupRoleTone(groupMember.role)}
+                                className={canManage ? 'hidden capitalize sm:inline-flex' : 'capitalize'}
+                              >
                                 {getRoleIcon(groupMember.role)}
                                 {GROUP_MEMBERSHIP_ROLE_LABELS[groupMember.role]}
                               </Badge>
-                              <Label htmlFor={`role-${groupMember.id}`} className="sr-only">
-                                Change role
-                              </Label>
-                              <Select
-                                value={groupMember.role}
-                                onValueChange={(value) => updateMemberRole(groupMember.id, value)}
-                              >
-                                <SelectTrigger id={`role-${groupMember.id}`} className="h-11 flex-1 sm:h-9 sm:w-36 sm:flex-none">
-                                  <SelectValue placeholder="Change role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {GROUP_MEMBERSHIP_ROLES.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
-                                      {item.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeMemberFromGroup(groupMember.id, name)}
-                                className="h-11 shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-400/30 dark:text-red-300 dark:hover:bg-red-400/10 dark:hover:text-red-200 sm:h-9"
-                                aria-label={`Remove ${name} from group`}
-                              >
-                                <UserMinus className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Remove</span>
-                              </Button>
+                              {canManage ? (
+                                <>
+                                  <Label htmlFor={`role-${groupMember.id}`} className="sr-only">
+                                    Change role
+                                  </Label>
+                                  <Select
+                                    value={groupMember.role}
+                                    onValueChange={(value) => updateMemberRole(groupMember.id, value)}
+                                  >
+                                    <SelectTrigger id={`role-${groupMember.id}`} className="h-11 flex-1 sm:h-9 sm:w-36 sm:flex-none">
+                                      <SelectValue placeholder="Change role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {GROUP_MEMBERSHIP_ROLES.map((item) => (
+                                        <SelectItem key={item.value} value={item.value}>
+                                          {item.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => removeMemberFromGroup(groupMember.id, name)}
+                                    className="h-11 shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-400/30 dark:text-red-300 dark:hover:bg-red-400/10 dark:hover:text-red-200 sm:h-9"
+                                    aria-label={`Remove ${name} from group`}
+                                  >
+                                    <UserMinus className="h-4 w-4 sm:mr-1" />
+                                    <span className="hidden sm:inline">Remove</span>
+                                  </Button>
+                                </>
+                              ) : null}
                             </div>
                           </li>
                         )
@@ -500,43 +565,22 @@ export default function GroupDetailsPage() {
                 </Card>
               </TabsContent>
 
-              {/* Messages Tab */}
-              <TabsContent value="messages" className="mt-4 space-y-6">
-                <Card>
-                  <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
-                    <CardTitle className="app-section-title flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
-                      Send group message
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
-                    <div>
-                      <Label htmlFor="message">Message</Label>
-                      <textarea
-                        id="message"
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        placeholder="Type your message here..."
-                        className="mt-1.5 w-full rounded-xl border border-neutral-200 bg-white p-3 text-base text-neutral-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 sm:text-sm"
-                        rows={4}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                        Goes to {members.length} member{members.length !== 1 ? 's' : ''}
-                      </p>
-                      <Button
-                        onClick={sendGroupMessage}
-                        disabled={!messageText.trim()}
-                        className="h-11 w-full sm:h-10 sm:w-auto"
-                      >
-                        <Send className="mr-2 h-4 w-4" />
-                        Send message
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+              {/* Message Tab: SMS to the whole group (sms.send only) */}
+              {canText ? (
+                <TabsContent value="messages" className="mt-4 space-y-6">
+                  <Card>
+                    <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
+                      <CardTitle className="app-section-title flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                        Text the group
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                      <GroupSmsComposer groupId={group.id} groupName={group.name} memberships={members} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              ) : null}
 
               {/* Settings Tab */}
               <TabsContent value="settings" className="mt-4 space-y-6">
@@ -604,6 +648,113 @@ export default function GroupDetailsPage() {
             </Card>
           ) : null}
         </div>
+
+        {/* Edit Group Dialog */}
+        <Dialog open={editForm != null} onOpenChange={(open) => (!open && !savingEdit ? setEditForm(null) : undefined)}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit group</DialogTitle>
+              <DialogDescription>Leaders are changed from the member list (Role).</DialogDescription>
+            </DialogHeader>
+            {editForm ? (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-group-name">Name</Label>
+                  <Input
+                    id="edit-group-name"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="h-11 sm:h-10"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-group-type">Type</Label>
+                  <Select
+                    value={editForm.group_type}
+                    onValueChange={(value) => setEditForm({ ...editForm, group_type: value as Group['group_type'] })}
+                  >
+                    <SelectTrigger id="edit-group-type" className="h-11 sm:h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GROUP_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-group-description">Description</Label>
+                  <Textarea
+                    id="edit-group-description"
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-group-schedule">Meets</Label>
+                    <Input
+                      id="edit-group-schedule"
+                      value={editForm.meeting_schedule}
+                      onChange={(e) => setEditForm({ ...editForm, meeting_schedule: e.target.value })}
+                      placeholder="e.g. Thursdays, 6pm"
+                      className="h-11 sm:h-10"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-group-location">Location</Label>
+                    <Input
+                      id="edit-group-location"
+                      value={editForm.meeting_location}
+                      onChange={(e) => setEditForm({ ...editForm, meeting_location: e.target.value })}
+                      className="h-11 sm:h-10"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-group-capacity">Capacity</Label>
+                    <Input
+                      id="edit-group-capacity"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      value={editForm.max_members}
+                      onChange={(e) => setEditForm({ ...editForm, max_members: e.target.value })}
+                      placeholder="No limit"
+                      className="h-11 sm:h-10"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-group-status">Status</Label>
+                    <Select
+                      value={editForm.is_active ? 'active' : 'inactive'}
+                      onValueChange={(value) => setEditForm({ ...editForm, is_active: value === 'active' })}
+                    >
+                      <SelectTrigger id="edit-group-status" className="h-11 sm:h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            <DialogFooter className="gap-2">
+              <Button variant="outline" className="h-11 sm:h-10" onClick={() => setEditForm(null)} disabled={savingEdit}>
+                Cancel
+              </Button>
+              <Button className="h-11 sm:h-10" onClick={saveGroupEdit} disabled={savingEdit || !editForm?.name.trim()}>
+                {savingEdit ? 'Saving…' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Add Member Dialog */}
         <Dialog

@@ -99,6 +99,7 @@ export async function getCallBoardAction(
           assigned_to: r.assigned_to,
           attendance_confirmation: r.attendance_confirmation,
           confirmation_note: r.confirmation_note,
+          confirmation_updated_by: r.confirmation_updated_by,
           call_attempts: r.call_attempts,
           last_called_at: r.last_called_at,
           qr_code: '',

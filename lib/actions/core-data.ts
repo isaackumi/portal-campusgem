@@ -417,7 +417,7 @@ export async function createUserRecord(userData: Partial<AppUser>): Promise<ApiR
       role,
       email: userData.email,
       membership_id: membershipId,
-      auth_uid: userData.auth_uid ?? crypto.randomUUID(),
+      auth_uid: crypto.randomUUID(),
       join_year: userData.join_year,
     })
     return { data, error: null, loading: false }

@@ -3,10 +3,13 @@ import { buildAccessWelcomeSms, gainedPermissions, phoneTail } from './access-we
 
 describe('access welcome sms', () => {
   test('admin message names the role, link and phone tail', () => {
-    const sms = buildAccessWelcomeSms({ fullName: 'Ama Owusu', role: 'admin', phone: '0244 123 482', siteUrl: 'https://gem.app/' })
+    const sms = buildAccessWelcomeSms({ fullName: 'Ama Owusu', role: 'admin', phone: '0244 123 482', siteUrl: 'https://gem.app/', codeMode: 'staff' })
     expect(sms).toBe(
-      "Hi Ama, you're now an Administrator on Campus Gem. Sign in at https://gem.app/auth with your phone number ending 482. No password needed."
+      "Hi Ama, you're now an Administrator on Campus Gem. Sign in at https://gem.app/auth with your phone number ending 482. We'll text you a code to confirm it's you."
     )
+    expect(
+      buildAccessWelcomeSms({ fullName: 'Ama', role: 'admin', phone: '0244123482', siteUrl: 'https://gem.app', codeMode: 'off' })
+    ).toContain('No password needed.')
   })
 
   test('caller-only grant points to Calls', () => {

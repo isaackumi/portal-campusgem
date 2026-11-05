@@ -15,7 +15,9 @@ import { useToast } from '@/hooks/use-toast'
 import { useBackgroundJobs } from '@/components/background-jobs'
 import type { CampRegistration } from '@/lib/types'
 import { CONFIRM_ATTENDANCE_SMS } from '@/lib/camp/call-campaign'
-import { personalizeCampMessage } from '@/lib/camp/sms-templates'
+import { CONFIRM_LINK_PLACEHOLDER, personalizeCampMessage } from '@/lib/camp/sms-templates'
+import { sampleConfirmLinkUrl } from '@/lib/camp/confirm-link'
+import { smsSegmentInfo } from '@/lib/comms/sms-segments'
 import { sendCampBulkSmsAction } from '@/lib/actions/camp'
 
 /** Ask the selected registrants themselves whether they are still coming. */
@@ -44,9 +46,18 @@ export function TextRegistrantsDialog({
 
   const withPhone = registrations.filter((r) => r.phone?.trim())
   const sample = withPhone[0]
+  const [origin, setOrigin] = useState('')
+  useEffect(() => setOrigin(window.location.origin), [])
+  const hasConfirmLink = CONFIRM_LINK_PLACEHOLDER.test(message)
   const preview = sample
-    ? personalizeCampMessage(message, { fullName: sample.full_name, firstName: sample.first_name, campYear })
+    ? personalizeCampMessage(message, {
+        fullName: sample.full_name,
+        firstName: sample.first_name,
+        campYear,
+        confirmLink: origin ? sampleConfirmLinkUrl(origin) : null,
+      })
     : message
+  const segments = smsSegmentInfo(preview).segments
 
   function send() {
     const batchId = crypto.randomUUID()
@@ -89,6 +100,7 @@ export function TextRegistrantsDialog({
           <DialogTitle className="app-section-title">Text registrants</DialogTitle>
           <DialogDescription>
             {withPhone.length} of {registrations.length} selected have a phone number. Use {'{{firstName}}'} and {'{{campYear}}'} to personalise.
+            {' '}{'{{confirmLink}}'} adds each person&apos;s own link to tap Yes / Not sure / No; answers show up here.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -101,11 +113,16 @@ export function TextRegistrantsDialog({
           />
           <div>
             <p className="app-overline mb-2">
-              Preview{sample ? ` for ${sample.full_name}` : ''} · {preview.length} characters
+              Preview{sample ? ` for ${sample.full_name}` : ''} · {preview.length} characters · {segments} SMS
             </p>
             <p className="whitespace-pre-wrap rounded-2xl rounded-bl-md bg-neutral-100 px-4 py-3 text-[13px] leading-relaxed text-neutral-800 dark:bg-neutral-700/60 dark:text-neutral-100">
               {preview}
             </p>
+            {!hasConfirmLink ? (
+              <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                No {'{{confirmLink}}'} in this message. People cannot reply to the sender ID, so they will have no way to answer.
+              </p>
+            ) : null}
           </div>
         </div>
         <DialogFooter>

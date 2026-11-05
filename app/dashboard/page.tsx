@@ -23,6 +23,7 @@ import { followUpBoardHref, summarizeFollowUpSla } from '@/lib/camp/follow-up-sl
 import { birthdayPartsFromDob, daysUntilNextBirthday } from '@/lib/birthdays/upcoming-birthdays'
 import { cn } from '@/lib/utils'
 import { StatCard } from '@/components/ui/stat-card'
+import { InstallAppCard } from '@/components/install-app'
 import { PersonLabel, displayName } from '@/components/ui/person'
 import {
   AlarmClock,
@@ -632,6 +633,8 @@ function DashboardContent() {
             />
           }
         />
+
+        <InstallAppCard />
 
         <section aria-label="Key figures" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           {kpis.map((kpi) => (

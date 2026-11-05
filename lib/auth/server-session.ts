@@ -36,7 +36,6 @@ export function toSessionPayload(user: AppUser) {
     permissions: user.permissions ?? [],
     effective_permissions: effectivePermissions(user.role, user.permissions),
     phone: user.phone,
-    auth_uid: user.auth_uid ?? '',
     membership_id: user.membership_id,
   }
 }
@@ -70,7 +69,7 @@ export async function getSessionUser(): Promise<AppUser | null> {
   const authUid = store.get(CHMS_AUTH_SESSION_COOKIE)?.value
   if (!authUid) return null
   const { findUserByAuthUidFromConvex } = await import('@/lib/convex/core-bridge')
-  return findUserByAuthUidFromConvex(authUid)
+  return findUserByAuthUidFromConvex(authUid, { withAuthUid: true })
 }
 
 /** Throws unless the signed-in user holds `permission` (role or per-user grant). */

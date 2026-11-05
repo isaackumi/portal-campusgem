@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as accessLog from "../accessLog.js";
 import type * as attendance from "../attendance.js";
+import type * as authCodes from "../authCodes.js";
 import type * as camp from "../camp.js";
 import type * as comms from "../comms.js";
 import type * as core from "../core.js";
@@ -38,7 +40,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accessLog: typeof accessLog;
   attendance: typeof attendance;
+  authCodes: typeof authCodes;
   camp: typeof camp;
   comms: typeof comms;
   core: typeof core;

@@ -17,7 +17,10 @@ import {
   shouldSendRegistrationConfirmationSms,
   type CampMessageTemplateId,
   getCampMessageTemplate,
+  CONFIRM_LINK_PLACEHOLDER,
 } from '@/lib/camp/sms-templates'
+import { confirmLinkUrl } from '@/lib/camp/confirm-link'
+import { siteOrigin } from '@/lib/site-url'
 
 function requireConvexEnv(): void {
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
@@ -609,7 +612,12 @@ function personalizeCampSms(
   template: string,
   registration: CampSmsRecipient,
   campYear?: number | null,
-  extras?: { theme?: string | null; venue?: string | null; registrationLink?: string | null }
+  extras?: {
+    theme?: string | null
+    venue?: string | null
+    registrationLink?: string | null
+    confirmLink?: string | null
+  }
 ): string {
   return personalizeCampMessage(template, {
     fullName: registration.full_name,
@@ -628,6 +636,7 @@ function personalizeCampSms(
     roomLeader: registration.room_leader,
     roommates: registration.roommates,
     registrationLink: extras?.registrationLink,
+    confirmLink: extras?.confirmLink,
   })
 }
 
@@ -1066,6 +1075,17 @@ export async function sendCampBulkSmsAction(input: {
     }
   }
 
+  // Personal tap-to-confirm links, created the first time someone is texted one.
+  let confirmTokens = new Map<string, string>()
+  if (CONFIRM_LINK_PLACEHOLDER.test(input.message_template)) {
+    const { ensureConfirmTokensInConvex } = await import('@/lib/convex/camp-bridge')
+    const ids = input.recipients
+      .filter((r) => !r.invite_only && r.source !== 'member' && r.source !== 'past_camper')
+      .map((r) => r.id)
+    if (ids.length) confirmTokens = await ensureConfirmTokensInConvex(ids)
+  }
+  const origin = siteOrigin()
+
   for (let i = 0; i < input.recipients.length; i++) {
     const registration = input.recipients[i]
     const label =
@@ -1086,10 +1106,12 @@ export async function sendCampBulkSmsAction(input: {
       continue
     }
 
+    const confirmToken = confirmTokens.get(registration.id)
     const message = personalizeCampSms(input.message_template, registration, input.camp_year, {
       theme,
       venue,
       registrationLink,
+      confirmLink: confirmToken ? confirmLinkUrl(origin, confirmToken) : null,
     })
     const to = normalizeSmsPhone(registration.phone)
 

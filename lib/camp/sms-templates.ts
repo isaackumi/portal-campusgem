@@ -30,7 +30,12 @@ export type CampTemplateVars = {
   roomLeader?: string | null
   roommates?: string | null
   registrationLink?: string | null
+  /** Personal tap-to-confirm attendance link (`/c/<token>`). */
+  confirmLink?: string | null
 }
+
+/** Templates containing this placeholder get a personal tap-to-confirm link per registrant. */
+export const CONFIRM_LINK_PLACEHOLDER = /\{\{\s*confirm(?:Link|_link)\s*\}\}/
 
 export type CampMessageTemplate = {
   id: CampMessageTemplateId
@@ -182,6 +187,8 @@ export function personalizeCampMessage(template: string, vars: CampTemplateVars)
     roommates,
     registrationLink: vars.registrationLink?.trim() || '',
     registration_link: vars.registrationLink?.trim() || '',
+    confirmLink: vars.confirmLink?.trim() || '',
+    confirm_link: vars.confirmLink?.trim() || '',
   }
 
   return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, key: string) => {

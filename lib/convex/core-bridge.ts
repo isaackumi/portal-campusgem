@@ -66,7 +66,14 @@ export function convexMemberDocToMember(doc: Record<string, unknown> | null | un
   }
 }
 
-export function convexUserDocToAppUser(doc: Record<string, unknown> | null | undefined): AppUser | null {
+/**
+ * `auth_uid` is the session secret (the cookie holds it), so it is left out unless
+ * the caller is signing someone in. Everyone else gets `has_login` instead.
+ */
+export function convexUserDocToAppUser(
+  doc: Record<string, unknown> | null | undefined,
+  options: { withAuthUid?: boolean } = {}
+): AppUser | null {
   if (!doc || typeof doc !== 'object') return null
   const id = String(doc._id ?? '')
   if (!id) return null
@@ -74,7 +81,8 @@ export function convexUserDocToAppUser(doc: Record<string, unknown> | null | und
   const ut = doc.updated_at as number | undefined
   return {
     id,
-    auth_uid: doc.auth_uid != null ? String(doc.auth_uid) : undefined,
+    auth_uid: options.withAuthUid && doc.auth_uid != null ? String(doc.auth_uid) : undefined,
+    has_login: Boolean(doc.auth_uid),
     membership_id: String(doc.membership_id ?? ''),
     phone: doc.phone != null ? String(doc.phone) : undefined,
     secondary_phone: doc.secondary_phone != null ? String(doc.secondary_phone) : undefined,
@@ -154,31 +162,43 @@ export function convexAttendanceDocToAttendance(
   }
 }
 
-export async function findUserByMembershipIdFromConvex(membershipId: string): Promise<AppUser | null> {
+/** Pass `withAuthUid` only when signing someone in. */
+export async function findUserByMembershipIdFromConvex(
+  membershipId: string,
+  options: { withAuthUid?: boolean } = {}
+): Promise<AppUser | null> {
   const client = getConvexHttpClient()
   const doc = (await client.query(api.core.findUserByMembershipIdWithSecret, {
     secret: requireCoreServerSecret(),
     membership_id: membershipId,
   })) as Record<string, unknown> | null
-  return convexUserDocToAppUser(doc)
+  return convexUserDocToAppUser(doc, options)
 }
 
-export async function findUserByPhoneFromConvex(phone: string): Promise<AppUser | null> {
+/** Pass `withAuthUid` only when signing someone in. */
+export async function findUserByPhoneFromConvex(
+  phone: string,
+  options: { withAuthUid?: boolean } = {}
+): Promise<AppUser | null> {
   const client = getConvexHttpClient()
   const doc = (await client.query(api.core.findUserByPhoneWithSecret, {
     secret: requireCoreServerSecret(),
     phone,
   })) as Record<string, unknown> | null
-  return convexUserDocToAppUser(doc)
+  return convexUserDocToAppUser(doc, options)
 }
 
-export async function findUserByAuthUidFromConvex(authUid: string): Promise<AppUser | null> {
+/** Pass `withAuthUid` only when signing someone in. */
+export async function findUserByAuthUidFromConvex(
+  authUid: string,
+  options: { withAuthUid?: boolean } = {}
+): Promise<AppUser | null> {
   const client = getConvexHttpClient()
   const doc = (await client.query(api.core.findUserByAuthUidWithSecret, {
     secret: requireCoreServerSecret(),
     auth_uid: authUid,
   })) as Record<string, unknown> | null
-  return convexUserDocToAppUser(doc)
+  return convexUserDocToAppUser(doc, options)
 }
 
 export async function setUserAccessInConvex(

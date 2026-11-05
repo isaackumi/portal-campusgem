@@ -233,5 +233,9 @@ export function buildCallListSms(input: {
   return parts.map((part, i) => `(${i + 1}/${parts.length}) ${part.join('\n')}`)
 }
 
-/** Default text when asking registrants themselves to confirm. */
-export const CONFIRM_ATTENDANCE_SMS = `Hi {{firstName}}, this is Campus Gem. Eagles Camp Meeting {{campYear}} is almost here! Are you still coming? A member of our team will call you to confirm, or reply YES / NO to this number. God bless you.`
+/**
+ * Default text when asking registrants themselves to confirm. Texts come from an
+ * alphanumeric sender ID nobody can reply to, so `{{confirmLink}}` gives each person
+ * their own tap-to-confirm page instead. One SMS segment with a typical name and link.
+ */
+export const CONFIRM_ATTENDANCE_SMS = `Hi {{firstName}}, are you still coming to Eagles Camp Meeting {{campYear}}? Please tap to let us know: {{confirmLink}}`

@@ -10,7 +10,8 @@ export interface TestUser {
   /** Per-user grants on top of the role. */
   permissions?: string[]
   phone?: string
-  auth_uid: string
+  /** No longer sent to the browser; the session lives in an httpOnly cookie. */
+  auth_uid?: string
   membership_id?: string
 }
 

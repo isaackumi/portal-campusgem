@@ -1,16 +1,46 @@
 'use server'
 
 import type { AppUser, UserRole } from '@/lib/types'
-import { isUserRole, sanitizePermissions, permissionsForRole } from '@/lib/auth/roles'
+import { effectivePermissions, isUserRole, sanitizePermissions, permissionsForRole } from '@/lib/auth/roles'
+import type { AccessLogEntry, AccessLogKind } from '@/lib/convex/auth-bridge'
 
-/**
- * Set a person's role plus any extra permissions on top of it. Extra grants that the
- * role already includes are dropped so the stored list only holds real exceptions.
- */
 export type SignInSmsResult = { sent: boolean; error?: string }
 
+/**
+ * Record an access change in the history. History must never block the change
+ * itself, so failures are logged and swallowed.
+ */
+async function recordAccessChange(args: {
+  kind: AccessLogKind
+  target: AppUser
+  actor: AppUser | null
+  before?: Pick<AppUser, 'role' | 'permissions'>
+  after?: Pick<AppUser, 'role' | 'permissions'>
+  note?: string
+}): Promise<void> {
+  try {
+    const { logAccessChangeInConvex } = await import('@/lib/convex/auth-bridge')
+    const had = args.before ? effectivePermissions(args.before.role, args.before.permissions) : []
+    const has = args.after ? effectivePermissions(args.after.role, args.after.permissions) : []
+    await logAccessChangeInConvex({
+      kind: args.kind,
+      user_id: args.target.id,
+      user_name: args.target.full_name,
+      actor_id: args.actor?.id,
+      actor_name: args.actor?.full_name ?? 'System',
+      from_role: args.before?.role,
+      to_role: args.after?.role,
+      added: has.filter((p) => !had.includes(p)),
+      removed: had.filter((p) => !has.includes(p)),
+      note: args.note,
+    })
+  } catch (error) {
+    console.error('[access history] could not record change', error)
+  }
+}
+
 /** Text someone where and how to sign in. Never throws; SMS trouble is reported back. */
-async function textSignInDetails(user: AppUser): Promise<SignInSmsResult> {
+async function textSignInDetails(user: AppUser, actor: AppUser | null): Promise<SignInSmsResult> {
   if (!user.phone?.trim()) return { sent: false, error: 'No phone number on file' }
   const { buildAccessWelcomeSms } = await import('@/lib/auth/access-welcome')
   const { siteOrigin } = await import('@/lib/site-url')
@@ -22,29 +52,40 @@ async function textSignInDetails(user: AppUser): Promise<SignInSmsResult> {
     phone: user.phone,
     siteUrl: siteOrigin(),
   })
+  let result: SignInSmsResult
   try {
     const res = await sendSms(user.phone, message)
-    return res.success ? { sent: true } : { sent: false, error: res.error ?? 'SMS failed' }
+    result = res.success ? { sent: true } : { sent: false, error: res.error ?? 'SMS failed' }
   } catch (error: unknown) {
-    return { sent: false, error: error instanceof Error ? error.message : 'SMS failed' }
+    result = { sent: false, error: error instanceof Error ? error.message : 'SMS failed' }
   }
+  await recordAccessChange({
+    kind: 'signin_text',
+    target: user,
+    actor,
+    note: result.sent ? 'Sign-in details texted' : `Sign-in text failed: ${result.error}`,
+  })
+  return result
 }
 
 /** Resend the "you have access, sign in here" text. */
 export async function sendSignInDetailsSms(userId: string): Promise<SignInSmsResult> {
   try {
     const { guard } = await import('@/lib/auth/action-guard')
-    await guard('users.manage')
+    const actor = await guard('users.manage')
     const { fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
     const user = await fetchUserFromConvex(userId)
     if (!user) return { sent: false, error: 'That person no longer exists.' }
-    return await textSignInDetails(user)
+    return await textSignInDetails(user, actor)
   } catch (error: unknown) {
     return { sent: false, error: error instanceof Error ? error.message : 'Failed to send' }
   }
 }
 
 /**
+ * Set a person's role plus any extra permissions on top of it. Extra grants that the
+ * role already includes are dropped so the stored list only holds real exceptions.
+ *
  * With `notify`, the person is texted their sign-in details, but only when the
  * change gives them access they did not have before (never on a downgrade).
  */
@@ -63,17 +104,39 @@ export async function updateUserAccess(
     const { requireAccessChange } = await import('@/lib/auth/server-session')
     const target = await fetchUserFromConvex(userId)
     if (!target) throw new Error('That person no longer exists.')
-    await requireAccessChange({ target, nextRole: role, nextPermissions: extra })
+    const actor = await requireAccessChange({ target, nextRole: role, nextPermissions: extra })
 
     const data = await setUserAccessInConvex(userId, { role, permissions: extra })
+    const { gainedPermissions } = await import('@/lib/auth/access-welcome')
+    const after = data ?? { ...target, role, permissions: extra }
+    const changed =
+      target.role !== after.role ||
+      gainedPermissions(target, after).length > 0 ||
+      gainedPermissions(after, target).length > 0
+    if (changed) await recordAccessChange({ kind: 'access', target, actor, before: target, after })
+
     let sms: SignInSmsResult | null = null
-    if (options.notify && data) {
-      const { gainedPermissions } = await import('@/lib/auth/access-welcome')
-      if (gainedPermissions(target, data).length > 0) sms = await textSignInDetails(data)
+    if (options.notify && data && gainedPermissions(target, data).length > 0) {
+      sms = await textSignInDetails(data, actor)
     }
     return { data, error: null, sms }
   } catch (error: unknown) {
     return { data: null, error: error instanceof Error ? error.message : 'Failed to update access' }
+  }
+}
+
+/** Access history, newest first. One person's when `userId` is given. */
+export async function listAccessHistory(
+  userId?: string,
+  limit = 100
+): Promise<{ data: AccessLogEntry[]; error: string | null }> {
+  try {
+    const { guard } = await import('@/lib/auth/action-guard')
+    await guard('users.manage')
+    const { listAccessLogFromConvex } = await import('@/lib/convex/auth-bridge')
+    return { data: await listAccessLogFromConvex(userId, limit), error: null }
+  } catch (error: unknown) {
+    return { data: [], error: error instanceof Error ? error.message : 'Failed to load history' }
   }
 }
 
@@ -106,11 +169,18 @@ export async function linkDuplicatePerson(
     const { requireAccessChange } = await import('@/lib/auth/server-session')
     const [keep, duplicate] = await Promise.all([fetchUserFromConvex(keepId), fetchUserFromConvex(duplicateId)])
     if (!keep || !duplicate) throw new Error('One of these records no longer exists.')
-    await requireAccessChange({ target: keep, nextRole: keep.role })
+    const actor = await requireAccessChange({ target: keep, nextRole: keep.role })
     if (duplicate.role === 'admin') {
       await requireAccessChange({ target: duplicate, nextRole: duplicate.role })
     }
-    return { data: await linkDuplicateUserInConvex(keepId, duplicateId), error: null }
+    const data = await linkDuplicateUserInConvex(keepId, duplicateId)
+    await recordAccessChange({
+      kind: 'link_duplicate',
+      target: keep,
+      actor,
+      note: `Merged ${duplicate.full_name}${duplicate.phone ? ` (${duplicate.phone})` : ''} into this record; that number now signs in here`,
+    })
+    return { data, error: null }
   } catch (error: unknown) {
     return { data: null, error: error instanceof Error ? error.message : 'Failed to link records' }
   }
@@ -125,8 +195,20 @@ export async function updateSecondaryPhone(
     const { requireAccessChange } = await import('@/lib/auth/server-session')
     const target = await fetchUserFromConvex(userId)
     if (!target) throw new Error('That person no longer exists.')
-    await requireAccessChange({ target, nextRole: target.role })
-    return { data: await setUserSecondaryPhoneInConvex(userId, secondaryPhone.trim() || undefined), error: null }
+    const actor = await requireAccessChange({ target, nextRole: target.role })
+    const next = secondaryPhone.trim() || undefined
+    const data = await setUserSecondaryPhoneInConvex(userId, next)
+    if ((target.secondary_phone ?? '') !== (next ?? '')) {
+      await recordAccessChange({
+        kind: 'secondary_phone',
+        target,
+        actor,
+        note: next
+          ? `Secondary sign-in phone set to ${next}${target.secondary_phone ? ` (was ${target.secondary_phone})` : ''}`
+          : `Secondary sign-in phone ${target.secondary_phone} removed`,
+      })
+    }
+    return { data, error: null }
   } catch (error: unknown) {
     return { data: null, error: error instanceof Error ? error.message : 'Failed to update phone' }
   }

@@ -14,28 +14,33 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { StatCard } from '@/components/ui/stat-card'
 import { QuickContactButtons } from '@/components/contact/phone-link'
-import { 
-  Users, 
-  Search, 
-  Plus, 
-  Download, 
+import { useToast } from '@/hooks/use-toast'
+import { exportGroupsSummaryAction } from '@/lib/actions/groups'
+import { groupExportFilename, groupsSummaryToCsv } from '@/lib/groups/export'
+import { downloadCsv } from '@/lib/csv'
+import {
+  Users,
+  Search,
+  Plus,
+  Download,
   Calendar,
   MapPin,
   User,
   ArrowLeft,
   Settings,
-  Eye,
   Edit,
-  MoreHorizontal,
   Crown,
   Star,
-  Filter
+  Loader2,
 } from 'lucide-react'
 
 function GroupsContent() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, can } = useAuth()
   const router = useRouter()
-  
+  const { toast } = useToast()
+  const canManage = can('groups.manage')
+  const [exporting, setExporting] = useState(false)
+
   // Data hooks
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('all')
@@ -65,6 +70,33 @@ function GroupsContent() {
     setFilterType(type)
     setCurrentPage(1)
     filter(type === 'all' ? '' : type)
+  }
+
+  // One row per group (leader, member count, schedule…), honouring the current search
+  // and type filter. Per-group rosters come from each group's own Export.
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await exportGroupsSummaryAction({ search: searchTerm, type: filterType })
+      if (res.error || !res.data) throw new Error(res.error ?? 'Export failed')
+      if (res.data.length === 0) {
+        toast({ title: 'Nothing to export', description: 'No groups match the current filter.' })
+        return
+      }
+      downloadCsv(groupExportFilename('groups'), groupsSummaryToCsv(res.data))
+      toast({
+        title: 'Export ready',
+        description: `${res.data.length} group${res.data.length === 1 ? '' : 's'} saved to CSV.`,
+      })
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Export failed',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      })
+    } finally {
+      setExporting(false)
+    }
   }
 
   // Show loading state
@@ -138,14 +170,26 @@ function GroupsContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none">
-              <Download className="mr-2 h-4 w-4" />
-              Export
+            <Button
+              variant="outline"
+              className="h-11 flex-1 sm:h-10 sm:flex-none"
+              onClick={handleExport}
+              disabled={exporting}
+              title="Download a CSV of these groups"
+            >
+              {exporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Download className="mr-2 h-4 w-4" aria-hidden />
+              )}
+              {exporting ? 'Exporting…' : 'Export'}
             </Button>
-            <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => router.push('/groups/add')}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create group
-            </Button>
+            {canManage ? (
+              <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => router.push('/groups/add')}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create group
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -209,18 +253,20 @@ function GroupsContent() {
                         {group.group_type.replace('_', ' ')}
                       </Badge>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 w-10 shrink-0 p-0"
-                      aria-label={`Edit ${group.name}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        router.push(`/groups/${group.id}`)
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    {canManage ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-11 w-11 shrink-0 p-0"
+                        aria-label={`Open ${group.name} to edit`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/groups/${group.id}`)
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    ) : null}
                   </div>
                   <CardTitle className="mt-2 break-words text-base font-semibold sm:text-lg">{group.name}</CardTitle>
                   {group.description && (
@@ -307,13 +353,12 @@ function GroupsContent() {
             }
             icon={<Users className="h-12 w-12" />}
             action={
-              <Button 
-                className="h-11 sm:h-10"
-                onClick={() => router.push('/groups/add')}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create group
-              </Button>
+              canManage ? (
+                <Button className="h-11 sm:h-10" onClick={() => router.push('/groups/add')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create group
+                </Button>
+              ) : undefined
             }
           />
         )}

@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils'
 import { roleTone } from '@/lib/ui/chip-tones'
 import { PersonAvatar } from '@/components/ui/person'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
+import { AccessHistoryList } from '@/components/admin/access-history'
 import { isValidPhone } from '@/lib/phone'
 
 const ROLE_SUMMARIES: Record<UserRole, string> = {
@@ -74,6 +75,7 @@ export default function AccessManagementPage() {
   const [editing, setEditing] = useState<AppUser | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [newPersonOpen, setNewPersonOpen] = useState(false)
+  const [historyKey, setHistoryKey] = useState(0)
 
   const staff = useMemo(
     () =>
@@ -112,6 +114,7 @@ export default function AccessManagementPage() {
 
   async function handleSaved(updated: AppUser) {
     setEditing(null)
+    setHistoryKey((k) => k + 1)
     await refetch()
     // If you changed your own access, apply it right away.
     if (updated.id === currentUser?.id) await refresh()
@@ -196,7 +199,7 @@ export default function AccessManagementPage() {
                             Invalid phone
                           </Badge>
                         )}
-                        {!person.auth_uid && (
+                        {!person.has_login && (
                           <Badge variant="danger" title="Saving access will enable sign-in for this person">
                             Can&apos;t sign in yet
                           </Badge>
@@ -232,6 +235,14 @@ export default function AccessManagementPage() {
         )}
       </div>
 
+      <section className="dashboard-panel p-4 sm:p-5" aria-labelledby="access-history-title">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="access-history-title" className="app-section-title">Recent changes</h2>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">Who changed whose access, and when</span>
+        </div>
+        <AccessHistoryList limit={30} reloadKey={historyKey} className="mt-2" />
+      </section>
+
       <PersonPicker
         open={pickerOpen}
         onOpenChange={setPickerOpen}
@@ -265,7 +276,11 @@ export default function AccessManagementPage() {
           onClose={() => setEditing(null)}
           onSaved={handleSaved}
           onError={(message) => toast({ variant: 'destructive', title: 'Could not save access', description: message })}
-          onSuccess={(message) => toast({ title: 'Access updated', description: message })}
+          onSuccess={(message) => {
+            setHistoryKey((k) => k + 1)
+            toast({ title: 'Access updated', description: message })
+          }}
+          historyKey={historyKey}
         />
       )}
     </div>
@@ -453,10 +468,12 @@ function AccessEditor({
   onSaved,
   onError,
   onSuccess,
+  historyKey,
 }: {
   person: AppUser
   canManageAdmins: boolean
   isSelf: boolean
+  historyKey: number
   onClose: () => void
   onSaved: (user: AppUser) => void
   onError: (message: string) => void
@@ -645,6 +662,15 @@ function AccessEditor({
             Send sign-in text now
           </Button>
         </section>
+
+        <details className="group rounded-xl border border-neutral-200 px-3 dark:border-white/10">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium text-neutral-800 dark:text-neutral-200 [&::-webkit-details-marker]:hidden">
+            History for {person.full_name.split(' ')[0]}
+            <span className="text-xs font-normal text-neutral-500 group-open:hidden dark:text-neutral-400">Show</span>
+            <span className="hidden text-xs font-normal text-neutral-500 group-open:inline dark:text-neutral-400">Hide</span>
+          </summary>
+          <AccessHistoryList userId={person.id} limit={20} reloadKey={historyKey} emptyText="No changes recorded for this person yet." className="pb-2" />
+        </details>
 
         <div className="flex gap-2 border-t border-neutral-200 pt-4 dark:border-white/10 sm:justify-end">
           <Button variant="outline" onClick={onClose} disabled={saving} className="h-11 flex-1 sm:h-10 sm:flex-none">Cancel</Button>

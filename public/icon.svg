@@ -1,32 +1,15 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  
-  <!-- Background circle -->
-  <circle cx="256" cy="256" r="240" fill="url(#grad1)" stroke="#fff" stroke-width="8"/>
-  
-  <!-- Cross symbol -->
-  <g fill="#fff">
-    <!-- Vertical part of cross -->
-    <rect x="240" y="120" width="32" height="272" rx="16"/>
-    <!-- Horizontal part of cross -->
-    <rect x="120" y="240" width="272" height="32" rx="16"/>
-  </g>
-  
-  <!-- Church building outline -->
-  <g fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round">
-    <!-- Main building -->
-    <path d="M160 380 L160 320 L200 320 L200 300 L240 300 L240 320 L280 320 L280 300 L320 300 L320 320 L360 320 L360 380 Z"/>
-    <!-- Roof -->
-    <path d="M140 320 L256 260 L372 320"/>
-    <!-- Door -->
-    <rect x="240" y="340" width="32" height="40" rx="4"/>
-  </g>
-  
-  <!-- Text "EA" -->
-  <text x="256" y="420" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="#fff">EA</text>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6366f1"/>
+    <stop offset="0.5" stop-color="#4f46e5"/>
+    <stop offset="1" stop-color="#6d28d9"/>
+  </linearGradient>
+  <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffffff" stop-opacity="0.14"/>
+    <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+  </linearGradient></defs>
+  <rect width="512" height="512" rx="112.64" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112.64" fill="url(#sheen)"/>
+  <g transform="translate(83.96799999999996 76.79999999999998) scale(14.336000000000002)" fill="none" stroke="#ffffff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></g>
 </svg>

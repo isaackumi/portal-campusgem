@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { PersonAvatar } from '@/components/ui/person'
 import { cn } from '@/lib/utils'
 import { CALL_OUTCOMES, effectiveOutcome, type CallOutcome } from '@/lib/camp/call-campaign'
+import { isSelfReported } from '@/lib/camp/confirm-link'
 import { OUTCOME_ICON, OutcomeBadge } from '@/components/camp/call-outcome'
 import { PhoneLink } from '@/components/contact/phone-link'
 
@@ -84,6 +85,9 @@ export function CallCard({
               <h3 className="truncate text-[15px] font-semibold text-neutral-900 dark:text-neutral-50">{registration.full_name}</h3>
             )}
             <OutcomeBadge outcome={outcome} />
+            {isSelfReported(registration) ? (
+              <span className="text-xs font-medium text-brand-700 dark:text-brand-300">via their link</span>
+            ) : null}
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-neutral-500 dark:text-neutral-400">
             <PhoneLink className="text-neutral-700 dark:text-neutral-200" phone={registration.phone} whatsapp={registration.whatsapp} name={registration.full_name} />

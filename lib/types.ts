@@ -43,7 +43,10 @@ export type AgeRange = '0_12' | '13_17' | '18_35' | '36_59' | '60_plus'
 
 export interface AppUser {
   id: string
+  /** Session secret. Only present on server-side sign-in lookups; never sent to browsers. */
   auth_uid?: string
+  /** Whether this person can sign in (has an auth identity). */
+  has_login?: boolean
   membership_id: string
   phone?: string
   secondary_phone?: string
@@ -908,6 +911,8 @@ export interface CampYear {
   registration_open: boolean
   flyer_image_url?: string | null
   venue?: string
+  /** Automatic 7-day / 1-day SMS reminders. Unset means on. */
+  auto_reminders?: boolean
   created_at: string
   updated_at: string
 }
@@ -970,6 +975,9 @@ export interface CampRegistration {
   confirmation_updated_by?: string
   call_attempts?: number
   last_called_at?: string
+  /** Automatic reminder markers (ISO), so nobody is texted twice. */
+  reminder_7d_sent_at?: string
+  reminder_1d_sent_at?: string
   qr_code: string
   created_at: string
   updated_at: string
