@@ -55,7 +55,7 @@ camp meeting, RLC (mother church), forms, SMS.
   `requireAuth` functions are unreachable from the browser.
 - Vercel deploys Convex for you: `vercel.json` runs `scripts/vercel-build.sh`, which runs
   `npx convex deploy --cmd 'bun run build'` on production builds (needs `CONVEX_DEPLOY_KEY`,
-  Production scope only). Production builds fail without the key, so app code never ships
+  Production scope only; the live site currently uses a dev deployment's key). Production builds fail without the key, so app code never ships
   ahead of its Convex functions; `SKIP_CONVEX_DEPLOY=1` overrides. Previews build against the
   existing deployment. Locally, use `npx convex dev`.
 - `patchCampRegistrationWithSecret` treats a `null` value as "remove this field".

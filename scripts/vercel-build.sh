@@ -2,8 +2,9 @@
 # Vercel build: deploy Convex (schema + functions) first, then build Next.js,
 # so new app code never goes live against old database functions.
 #
-# Needs CONVEX_DEPLOY_KEY in Vercel -> Settings -> Environment Variables, scoped to
-# Production only (Convex dashboard -> Settings -> Deploy keys -> Production).
+# Needs CONVEX_DEPLOY_KEY in Vercel -> Settings -> Environment Variables, Production
+# scope only. Any key type works: a production key, or (while the live site still runs
+# on a dev deployment) that dev deployment's key from its Settings page.
 set -euo pipefail
 
 env_name="${VERCEL_ENV:-local}"
@@ -24,9 +25,10 @@ if [[ -z "$key" ]]; then
   exec bun run build
 fi
 
-# A production key must never deploy from a preview branch.
-if [[ "$key" == prod:* && "$env_name" != "production" ]]; then
-  echo "[build] Production Convex key on a $env_name build: skipping Convex deploy."
+# Only production builds push to the shared deployment. Preview keys are the exception:
+# they create an isolated preview deployment per branch.
+if [[ "$env_name" != "production" && "$key" != preview:* ]]; then
+  echo "[build] $env_name build: skipping Convex deploy so branches can't change the live backend."
   exec bun run build
 fi
 
