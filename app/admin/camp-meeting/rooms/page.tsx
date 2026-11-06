@@ -11,44 +11,88 @@ import {
 } from '@/lib/actions/camp'
 import { campService } from '@/lib/services/camp-service'
 import type { CampRegistration, CampRoom, CampYear } from '@/lib/types'
-import { campRegistrationDisplayName } from '@/lib/camp/manual-check-in-search'
+import { displayName, groupRoomsByBuilding, personMatches, roomMatches } from '@/lib/camp/rooms-board'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
+import { RoomTile } from '@/components/camp/rooms/room-tile'
+import { AddPeopleDialog, PickRoomDialog } from '@/components/camp/rooms/room-pickers'
+import { RoomFormDialog, type RoomDraft } from '@/components/camp/rooms/room-form-dialog'
 import { useSmsPreview } from '@/components/comms/sms-preview'
 import { confirmCampTemplateSms } from '@/components/camp/camp-sms-preview'
-import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { StatCard } from '@/components/ui/stat-card'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { LoadingSpinner } from '@/components/ui/loading'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { LoadingSpinner } from '@/components/ui/loading'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
-import { BedDouble, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
+import { ChevronDown, MessageSquare, Plus, RefreshCw, Search, Shuffle, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-const GENDER_OPTIONS = ['Mixed', 'Male', 'Female'] as const
+type PeopleScope = 'unassigned' | 'assigned' | 'all'
+type SexFilter = 'all' | 'Male' | 'Female'
+type RoomFilter = 'all' | 'Male' | 'Female' | 'Mixed' | 'space' | 'full'
+
+function Chips<T extends string>({
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  value: T
+  onChange: (v: T) => void
+  options: Array<{ value: T; label: string }>
+  label: string
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={label}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={cn(
+            'min-h-8 rounded-full border px-3 text-[13px] font-medium transition-colors',
+            value === o.value
+              ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+              : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-white/10 dark:bg-transparent dark:text-neutral-300 dark:hover:border-white/20'
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder} className="h-11 pl-9 pr-9" />
+      {value ? (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          aria-label="Clear search"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      ) : null}
+    </div>
+  )
+}
 
 function CampRoomsPageContent() {
   const { toast } = useToast()
@@ -64,19 +108,25 @@ function CampRoomsPageContent() {
   const [rooms, setRooms] = useState<CampRoom[]>([])
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [assigning, setAssigning] = useState(false)
+  const [busyRoomIds, setBusyRoomIds] = useState<Set<string>>(new Set())
+  const [savingRooms, setSavingRooms] = useState(false)
   const [randomizing, setRandomizing] = useState(false)
-  const [leaderSavingRoomId, setLeaderSavingRoomId] = useState<string | null>(null)
-  const [sendingRoomSmsId, setSendingRoomSmsId] = useState<string | null>(null)
-  const [sendingAllRoomSms, setSendingAllRoomSms] = useState(false)
-  const [dialogOpen, setDialogOpen] = useState(false)
+
+  // Mobile: one panel at a time.
+  const [mobilePanel, setMobilePanel] = useState<'people' | 'rooms'>('rooms')
+  // People panel
+  const [peopleQuery, setPeopleQuery] = useState('')
+  const [scope, setScope] = useState<PeopleScope>('unassigned')
+  const [sexFilter, setSexFilter] = useState<SexFilter>('all')
+  const [selected, setSelected] = useState<string[]>([])
+  // Rooms panel
+  const [roomQuery, setRoomQuery] = useState('')
+  const [roomFilter, setRoomFilter] = useState<RoomFilter>('all')
+  // Dialogs
+  const [formOpen, setFormOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState<CampRoom | null>(null)
-  const [name, setName] = useState('')
-  const [building, setBuilding] = useState('')
-  const [capacity, setCapacity] = useState('4')
-  const [gender, setGender] = useState<(typeof GENDER_OPTIONS)[number]>('Mixed')
-  const [notes, setNotes] = useState('')
+  const [pickFor, setPickFor] = useState<CampRegistration[] | null>(null)
+  const [addTo, setAddTo] = useState<CampRoom | null>(null)
 
   const loadData = useCallback(async (year: CampYear) => {
     const [roomsRes, regsRes] = await Promise.all([
@@ -90,25 +140,15 @@ function CampRoomsPageContent() {
   useEffect(() => {
     void (async () => {
       setLoading(true)
-      const [{ data: years }, { data: active }] = await Promise.all([
-        getAllCampYears(),
-        getActiveCampYear(),
-      ])
+      const [{ data: years }, { data: active }] = await Promise.all([getAllCampYears(), getActiveCampYear()])
       const sorted = [...(years ?? [])].sort((a, b) => b.year - a.year)
       setAvailableYears(sorted)
       setActiveYear(active ?? null)
-
-      let selected: CampYear | null = null
-      if (yearIdParam) {
-        const { data: byId } = await getCampYearById(yearIdParam)
-        selected = byId ?? null
-      }
-      if (!selected) {
-        selected = active ?? sorted.find((y) => y.is_active) ?? sorted[0] ?? null
-      }
-
-      setCampYear(selected)
-      if (selected) await loadData(selected)
+      let chosen: CampYear | null = null
+      if (yearIdParam) chosen = (await getCampYearById(yearIdParam)).data ?? null
+      if (!chosen) chosen = active ?? sorted.find((y) => y.is_active) ?? sorted[0] ?? null
+      setCampYear(chosen)
+      if (chosen) await loadData(chosen)
       else {
         setRooms([])
         setRegistrations([])
@@ -117,242 +157,202 @@ function CampRoomsPageContent() {
     })()
   }, [yearIdParam, loadData])
 
-  function switchYear(yearId: string) {
-    router.push(`/admin/camp-meeting/rooms?year=${yearId}`)
-  }
-
-  const viewingActiveYear = Boolean(campYear && activeYear && campYear.id === activeYear.id)
-
+  // ---- derived -----------------------------------------------------------
+  const people = useMemo(() => registrations.filter((r) => r.status !== 'cancelled'), [registrations])
+  const roomsById = useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms])
   const occupantsByRoom = useMemo(() => {
     const map = new Map<string, CampRegistration[]>()
-    for (const reg of registrations) {
-      if (!reg.room_id || reg.status === 'cancelled') continue
+    for (const reg of people) {
+      if (!reg.room_id || !roomsById.has(reg.room_id)) continue
       const list = map.get(reg.room_id) ?? []
       list.push(reg)
       map.set(reg.room_id, list)
     }
-    for (const list of Array.from(map.values())) {
-      list.sort((a, b) => campRegistrationDisplayName(a).localeCompare(campRegistrationDisplayName(b)))
-    }
+    for (const list of Array.from(map.values())) list.sort((a, b) => displayName(a).localeCompare(displayName(b)))
     return map
-  }, [registrations])
-
-  const unassigned = useMemo(
-    () =>
-      registrations.filter(
-        (reg) => !reg.room_id && reg.status !== 'cancelled'
-      ),
-    [registrations]
-  )
+  }, [people, roomsById])
+  const occupancy = useMemo(() => {
+    const m = new Map<string, number>()
+    occupantsByRoom.forEach((list, id) => m.set(id, list.length))
+    return m
+  }, [occupantsByRoom])
 
   const stats = useMemo(() => {
-    const assigned = registrations.filter((r) => r.room_id && r.status !== 'cancelled').length
+    const assigned = people.filter((r) => r.room_id && roomsById.has(r.room_id)).length
     const totalBeds = rooms.reduce((sum, room) => sum + room.capacity, 0)
-    const usedBeds = assigned
-    return {
-      roomCount: rooms.length,
-      assigned,
-      unassigned: unassigned.length,
-      totalBeds,
-      usedBeds,
-    }
-  }, [registrations, rooms, unassigned.length])
+    return { rooms: rooms.length, assigned, unassigned: people.length - assigned, totalBeds, freeBeds: Math.max(0, totalBeds - assigned) }
+  }, [people, rooms, roomsById])
 
-  function resetForm() {
-    setEditingRoom(null)
-    setName('')
-    setBuilding('')
-    setCapacity('4')
-    setGender('Mixed')
-    setNotes('')
-  }
-
-  function openCreateDialog() {
-    resetForm()
-    setDialogOpen(true)
-  }
-
-  function openEditDialog(room: CampRoom) {
-    setEditingRoom(room)
-    setName(room.name)
-    setBuilding(room.building ?? '')
-    setCapacity(String(room.capacity ?? 4))
-    setGender(
-      room.gender === 'Male' || room.gender === 'Female' || room.gender === 'Mixed'
-        ? room.gender
-        : 'Mixed'
-    )
-    setNotes(room.notes ?? '')
-    setDialogOpen(true)
-  }
-
-  function handleDialogOpenChange(open: boolean) {
-    setDialogOpen(open)
-    if (!open) resetForm()
-  }
-
-  async function handleSaveRoom() {
-    if (!campYear || !name.trim()) {
-      toast({ variant: 'destructive', title: 'Room name required' })
-      return
-    }
-    const capacityValue = Math.max(1, Number(capacity) || 4)
-    const patch = {
-      name: name.trim(),
-      building: building.trim() || undefined,
-      capacity: capacityValue,
-      gender: (gender === 'Mixed' ? 'Mixed' : gender) as CampRoom['gender'],
-      notes: notes.trim() || undefined,
-    }
-
-    setSaving(true)
-    const result = editingRoom
-      ? await campService.updateRoom(editingRoom.id, patch)
-      : await campService.createRoom({
-          camp_year_id: campYear.id,
-          ...patch,
-        })
-    setSaving(false)
-
-    if (result.error || !result.data) {
-      toast({
-        variant: 'destructive',
-        title: editingRoom ? 'Update failed' : 'Create failed',
-        description: result.error ?? undefined,
+  const peopleList = useMemo(() => {
+    return people
+      .filter((p) => {
+        const placed = Boolean(p.room_id && roomsById.has(p.room_id))
+        if (scope === 'unassigned' && placed) return false
+        if (scope === 'assigned' && !placed) return false
+        if (sexFilter !== 'all' && p.sex !== sexFilter) return false
+        return personMatches(p, peopleQuery)
       })
+      .sort((a, b) => displayName(a).localeCompare(displayName(b)))
+  }, [people, roomsById, scope, sexFilter, peopleQuery])
+
+  const roomGroups = useMemo(() => {
+    const filtered = rooms.filter((room) => {
+      const used = occupancy.get(room.id) ?? 0
+      if (roomFilter === 'space' && used >= room.capacity) return false
+      if (roomFilter === 'full' && used < room.capacity) return false
+      if ((roomFilter === 'Male' || roomFilter === 'Female' || roomFilter === 'Mixed') && (room.gender ?? 'Mixed') !== roomFilter) return false
+      return roomMatches(room, roomQuery)
+    })
+    return groupRoomsByBuilding(filtered)
+  }, [rooms, occupancy, roomFilter, roomQuery])
+
+  const buildings = useMemo(
+    () => Array.from(new Set(rooms.map((r) => r.building?.trim()).filter((b): b is string => Boolean(b)))).sort(),
+    [rooms]
+  )
+
+  // ---- actions -----------------------------------------------------------
+  function markBusy(ids: string[], on: boolean) {
+    setBusyRoomIds((prev) => {
+      const next = new Set(prev)
+      for (const id of ids) {
+        if (on) next.add(id)
+        else next.delete(id)
+      }
+      return next
+    })
+  }
+
+  /**
+   * Put people in a room (or take them out with null). The board updates straight away;
+   * anything the server refuses (e.g. the room filled up meanwhile) is put back.
+   */
+  async function assign(regIds: string[], roomId: string | null) {
+    if (!campYear || regIds.length === 0) return
+    const before = new Map(registrations.filter((r) => regIds.includes(r.id)).map((r) => [r.id, r.room_id]))
+    const touched = Array.from(new Set([roomId, ...Array.from(before.values())].filter((x): x is string => Boolean(x))))
+    setRegistrations((prev) => prev.map((r) => (regIds.includes(r.id) ? { ...r, room_id: roomId ?? undefined } : r)))
+    markBusy(touched, true)
+    const failures: string[] = []
+    for (const id of regIds) {
+      const { error } = await campService.assignRegistrationRoom({ registration_id: id, room_id: roomId })
+      if (error) {
+        failures.push(error)
+        setRegistrations((prev) => prev.map((r) => (r.id === id ? { ...r, room_id: before.get(id) } : r)))
+      }
+    }
+    markBusy(touched, false)
+    setSelected((prev) => prev.filter((id) => !regIds.includes(id)))
+    const done = regIds.length - failures.length
+    const roomName = roomId ? roomsById.get(roomId)?.name : null
+    if (failures.length) {
+      toast({ variant: 'destructive', title: done ? `${done} placed, ${failures.length} not` : 'Not placed', description: failures[0] })
+    } else {
+      toast({ title: roomName ? `${done === 1 ? displayName(registrations.find((r) => r.id === regIds[0])!) : `${done} people`} → ${roomName}` : `${done} taken out of their room` })
+    }
+  }
+
+  async function setLeader(room: CampRoom, reg: CampRegistration | null) {
+    const previous = room.room_leader_id
+    setRooms((prev) => prev.map((r) => (r.id === room.id ? { ...r, room_leader_id: reg?.id } : r)))
+    const { error } = await campService.setRoomLeader({ room_id: room.id, registration_id: reg?.id ?? null })
+    if (error) {
+      setRooms((prev) => prev.map((r) => (r.id === room.id ? { ...r, room_leader_id: previous } : r)))
+      toast({ variant: 'destructive', title: 'Could not set the room leader', description: error })
       return
     }
+    toast({ title: reg ? `${displayName(reg)} leads ${room.name}` : `${room.name} has no leader now` })
+  }
 
-    handleDialogOpenChange(false)
-    toast({
-      title: editingRoom ? 'Room updated' : 'Room created',
-      description: result.data.name,
-    })
+  async function saveRooms(drafts: RoomDraft[]) {
+    if (!campYear) return
+    setSavingRooms(true)
+    if (editingRoom) {
+      const d = drafts[0]!
+      const { error } = await campService.updateRoom(editingRoom.id, d)
+      setSavingRooms(false)
+      if (error) {
+        toast({ variant: 'destructive', title: 'Could not save the room', description: error })
+        return
+      }
+      toast({ title: `${d.name} saved` })
+    } else {
+      let made = 0
+      let firstError: string | null = null
+      for (const d of drafts) {
+        const { error } = await campService.createRoom({ camp_year_id: campYear.id, ...d })
+        if (error) firstError ??= error
+        else made++
+      }
+      setSavingRooms(false)
+      toast(
+        firstError
+          ? { variant: 'destructive', title: `${made} of ${drafts.length} rooms added`, description: firstError }
+          : { title: made === 1 ? `${drafts[0]!.name} added` : `${made} rooms added` }
+      )
+    }
+    setFormOpen(false)
+    setEditingRoom(null)
     await loadData(campYear)
   }
 
-  async function handleDeleteRoom(room: CampRoom) {
+  async function deleteRoom(room: CampRoom) {
     if (!campYear) return
-    if (!window.confirm(`Delete ${room.name}? Campers in this room will be unassigned.`)) return
+    const n = occupancy.get(room.id) ?? 0
+    if (!window.confirm(`Delete ${room.name}?${n ? ` The ${n} ${n === 1 ? 'person' : 'people'} in it will have no room.` : ''}`)) return
     const { data, error } = await campService.deleteRoom(room.id)
     if (error || !data) {
-      toast({ variant: 'destructive', title: 'Delete failed', description: error ?? undefined })
+      toast({ variant: 'destructive', title: 'Could not delete the room', description: error ?? undefined })
       return
     }
-    toast({
-      title: 'Room deleted',
-      description: data.unassigned > 0 ? `${data.unassigned} camper(s) unassigned.` : undefined,
-    })
+    toast({ title: `${room.name} deleted` })
     await loadData(campYear)
   }
 
-  async function handleAssign(registrationId: string, roomId: string | null) {
+  async function autoAssign() {
     if (!campYear) return
-    setAssigning(true)
-    const { error } = await campService.assignRegistrationRoom({
-      registration_id: registrationId,
-      room_id: roomId,
-    })
-    setAssigning(false)
-    if (error) {
-      toast({ variant: 'destructive', title: 'Assignment failed', description: error })
-      return
-    }
-    await loadData(campYear)
-  }
-
-  async function handleSetLeader(roomId: string, registrationId: string | null) {
-    setLeaderSavingRoomId(roomId)
-    const { error } = await campService.setRoomLeader({
-      room_id: roomId,
-      registration_id: registrationId,
-    })
-    setLeaderSavingRoomId(null)
-    if (error) {
-      toast({ variant: 'destructive', title: 'Could not set leader', description: error })
-      return
-    }
-    toast({ title: 'Room leader updated' })
-    if (campYear) await loadData(campYear)
-  }
-
-  async function handleRandomAssign() {
-    if (!campYear) return
-    if (rooms.length === 0) {
-      toast({ variant: 'destructive', title: 'Create rooms first' })
-      return
-    }
+    if (!window.confirm(`Put the ${stats.unassigned} people without a room into rooms with space? Men and women go to matching rooms; people already placed stay where they are.`)) return
     setRandomizing(true)
-    const { data, error } = await campService.randomAssignRooms({
-      camp_year_id: campYear.id,
-      respect_gender: true,
-      only_unassigned: true,
-    })
+    const { data, error } = await campService.randomAssignRooms({ camp_year_id: campYear.id, respect_gender: true, only_unassigned: true })
     setRandomizing(false)
     if (error || !data) {
-      toast({ variant: 'destructive', title: 'Random assign failed', description: error ?? undefined })
+      toast({ variant: 'destructive', title: 'Could not fill rooms', description: error ?? undefined })
       return
     }
-    toast({
-      title: 'Random assignment complete',
-      description: `${data.assigned} assigned${data.skipped ? `, ${data.skipped} skipped (no space)` : ''}.`,
-    })
+    toast({ title: `${data.assigned} placed`, description: data.skipped ? `${data.skipped} still need a room (no matching space).` : undefined })
     await loadData(campYear)
   }
 
-  function openRoomSmsReview(registrationIds: string[], label: string, busyKey: string | null) {
-    if (!campYear?.id || !user?.id) {
-      toast({ variant: 'destructive', title: 'Sign in required' })
-      return
-    }
-    if (!registrationIds.length) {
-      toast({
-        variant: 'destructive',
-        title: 'No campers',
-        description: 'Assign campers to rooms first.',
-      })
-      return
-    }
-    void sendRoomSms(registrationIds, label, busyKey)
-  }
-
-  async function sendRoomSms(registrationIds: string[], label: string, busyKey: string | null) {
-    if (!campYear?.id || !user?.id) return
+  async function textRoom(registrationIds: string[], label: string) {
+    if (!campYear?.id || !user?.id || registrationIds.length === 0) return
     const check = await confirmCampTemplateSms(smsPreview, {
-      title: `Room SMS · ${label}`,
+      title: `Room details · ${label}`,
       camp_year_id: campYear.id,
       registration_ids: registrationIds,
       template_id: 'room_allocation',
     })
     if (!check.ok) {
-      if (check.error) toast({ variant: 'destructive', title: 'Room SMS not sent', description: check.error })
+      if (check.error) toast({ variant: 'destructive', title: 'Not sent', description: check.error })
       return
     }
-    if (busyKey === 'all') setSendingAllRoomSms(true)
-    else setSendingRoomSmsId(busyKey)
     const { data, error } = await sendCampTemplateSmsToRegistrationsAction({
       camp_year_id: campYear.id,
       sender_id: user.id,
       registration_ids: registrationIds,
       template_id: 'room_allocation',
     })
-    setSendingAllRoomSms(false)
-    setSendingRoomSmsId(null)
     if (error || !data) {
-      toast({ variant: 'destructive', title: 'Room SMS failed', description: error ?? 'Could not send' })
+      toast({ variant: 'destructive', title: 'Room texts failed', description: error ?? 'Could not send' })
       return
     }
     toast({
-      title: data.success_count > 0 ? `Sent ${data.success_count} room SMS` : 'No SMS delivered',
+      title: data.success_count > 0 ? `Sent ${data.success_count} room ${data.success_count === 1 ? 'text' : 'texts'}` : 'Nothing was sent',
       variant: data.success_count > 0 ? 'default' : 'destructive',
-      description: `${label}${
-        data.skipped_count || data.error_count
-          ? ` · ${data.skipped_count} skipped, ${data.error_count} failed`
-          : ''
-      }`,
+      description: data.skipped_count || data.error_count ? `${data.skipped_count} skipped, ${data.error_count} failed` : undefined,
     })
   }
 
+  // ---- render ------------------------------------------------------------
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -366,10 +366,7 @@ function CampRoomsPageContent() {
       <div className="mx-auto max-w-4xl">
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No camp year available for rooms.</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Set an active camp year, then create rooms for that season.
-            </p>
+            <p className="text-neutral-700 dark:text-neutral-300">There is no camp year to set up rooms for.</p>
             <Button className="mt-4" asChild>
               <Link href="/admin/camp-meeting/years">Manage camp years</Link>
             </Button>
@@ -379,435 +376,300 @@ function CampRoomsPageContent() {
     )
   }
 
-  return (
-    <div>
-      <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
-        <CampAdminPageHeader
-          title="Camp rooms & roommates"
-          campYear={campYear}
-          actions={
-            <>
-              <Button variant="outline" asChild>
-                <Link href={`/admin/camp-meeting/follow-up?year=${campYear.id}`}>
-                  Assignments
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/admin/camp-meeting/scan">Check-in hub</Link>
-              </Button>
-              <Button variant="outline" className="hidden sm:inline-flex" onClick={() => void loadData(campYear)}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="!flex-none sm:hidden" aria-label="More actions">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem className="min-h-11" onSelect={() => void loadData(campYear)}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          }
+  const viewingActive = Boolean(activeYear && campYear.id === activeYear.id)
+  const selectedPeople = people.filter((p) => selected.includes(p.id))
+  const assignedIds = people.filter((r) => r.room_id && roomsById.has(r.room_id)).map((r) => r.id)
+
+  const peoplePanel = (
+    <section aria-label="People" className="dashboard-panel flex min-h-0 flex-col p-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-7rem)]">
+      <div className="space-y-3 border-b border-neutral-200/80 p-3.5 dark:border-white/[0.06]">
+        <SearchInput value={peopleQuery} onChange={setPeopleQuery} placeholder="Search name, phone, school or hall" />
+        <Chips
+          label="Which people"
+          value={scope}
+          onChange={(v) => {
+            setScope(v)
+            setSelected([])
+          }}
+          options={[
+            { value: 'unassigned', label: `No room (${stats.unassigned})` },
+            { value: 'assigned', label: `In a room (${stats.assigned})` },
+            { value: 'all', label: 'Everyone' },
+          ]}
         />
-
-        <Card>
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Camp year for rooms</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Rooms and lodging assignments are scoped to one season. Defaults to the active year.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {viewingActiveYear ? (
-                <Badge variant="success">Active year</Badge>
-              ) : (
-                <Badge variant="secondary">Historical year</Badge>
-              )}
-              <Select value={campYear.id} onValueChange={switchYear}>
-                <SelectTrigger className="min-h-11 flex-1 sm:min-h-10 sm:w-[11rem] sm:flex-none">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableYears.map((year) => (
-                    <SelectItem key={year.id} value={year.id}>
-                      {year.year}
-                      {year.is_active || year.id === activeYear?.id ? ' (active)' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!viewingActiveYear && activeYear ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11 sm:min-h-10"
-                  onClick={() => switchYear(activeYear.id)}
-                >
-                  Jump to active
-                </Button>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <StatCard label="Rooms" value={stats.roomCount} icon={BedDouble} />
-          <StatCard label="Assigned campers" value={stats.assigned} tone="success" icon={Users} />
-          <StatCard label="Unassigned" value={stats.unassigned} tone={stats.unassigned > 0 ? 'warning' : 'default'} />
-          <StatCard label="Beds used" value={`${stats.usedBeds}/${stats.totalBeds || '—'}`} />
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap [&>button]:min-h-11 sm:[&>button]:min-h-10">
-          <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-            <Button onClick={openCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add room
-            </Button>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{editingRoom ? 'Edit room' : 'Create room'}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="room-name">Room name</Label>
-                  <Input
-                    id="room-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Room 12, Block A-3…"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="room-building">Building / block</Label>
-                  <Input
-                    id="room-building"
-                    value={building}
-                    onChange={(e) => setBuilding(e.target.value)}
-                    placeholder="Girls dorm, Main hall…"
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="room-capacity">Capacity (beds)</Label>
-                    <Input
-                      id="room-capacity"
-                      type="number"
-                      min={1}
-                      value={capacity}
-                      onChange={(e) => setCapacity(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Gender</Label>
-                    <Select value={gender} onValueChange={(v) => setGender(v as typeof gender)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GENDER_OPTIONS.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="room-notes">Notes</Label>
-                  <Textarea
-                    id="room-notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={2}
-                    placeholder="Near chapel, leaders room…"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => void handleSaveRoom()} disabled={saving}>
-                  {saving
-                    ? editingRoom
-                      ? 'Saving…'
-                      : 'Creating…'
-                    : editingRoom
-                      ? 'Save changes'
-                      : 'Create room'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Button
-            variant="secondary"
-            disabled={randomizing || rooms.length === 0}
-            onClick={() => void handleRandomAssign()}
-          >
-            {randomizing ? (
-              <LoadingSpinner className="mr-2 h-4 w-4" />
-            ) : (
-              <Shuffle className="mr-2 h-4 w-4" />
-            )}
-            Random assign unassigned
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-10 cursor-pointer"
-            disabled={sendingAllRoomSms || stats.assigned === 0}
-            onClick={() =>
-              openRoomSmsReview(
-                registrations.filter((r) => r.room_id && r.status !== 'cancelled').map((r) => r.id),
-                'All assigned campers',
-                'all'
-              )
-            }
-          >
-            {sendingAllRoomSms ? (
-              <LoadingSpinner className="mr-2 h-4 w-4" />
-            ) : (
-              <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
-            )}
-            <span className="truncate">SMS room to all assigned ({stats.assigned})</span>
-          </Button>
-        </div>
-
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
-            {rooms.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  No rooms yet. Add rooms, then assign campers manually or use random assign.
-                </CardContent>
-              </Card>
-            ) : (
-              rooms.map((room) => {
-                const occupants = occupantsByRoom.get(room.id) ?? []
-                const leaderId = room.room_leader_id ?? null
-                return (
-                  <Card key={room.id}>
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
-                            <BedDouble className="h-5 w-5" />
-                            {room.name}
-                            {leaderId ? (
-                              <Badge className="gap-1 text-xs">
-                                Leader set
-                              </Badge>
-                            ) : null}
-                          </CardTitle>
-                          <CardDescription>
-                            {room.building ? `${room.building} · ` : ''}
-                            {occupants.length}/{room.capacity} beds
-                            {room.gender ? ` · ${room.gender}` : ''}
-                          </CardDescription>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="min-h-11 cursor-pointer sm:min-h-9"
-                            disabled={sendingRoomSmsId === room.id || occupants.length === 0}
-                            title="SMS room details to everyone in this room"
-                            onClick={() =>
-                              openRoomSmsReview(
-                                occupants.map((o) => o.id),
-                                room.name,
-                                room.id
-                              )
-                            }
-                          >
-                            {sendingRoomSmsId === room.id ? (
-                              <LoadingSpinner className="mr-1 h-3.5 w-3.5" />
-                            ) : (
-                              <MessageSquare className="mr-1 h-3.5 w-3.5" aria-hidden />
-                            )}
-                            SMS room
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-11 w-11 sm:h-10 sm:w-10"
-                            title="Edit room"
-                            aria-label="Edit room"
-                            onClick={() => openEditDialog(room)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-11 w-11 text-destructive sm:h-10 sm:w-10"
-                            title="Delete room"
-                            aria-label="Delete room"
-                            onClick={() => void handleDeleteRoom(room)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {room.notes ? (
-                        <p className="text-sm text-muted-foreground">{room.notes}</p>
-                      ) : null}
-                      {occupants.length > 0 ? (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Room leader</p>
-                          <Select
-                            value={leaderId ?? '__none__'}
-                            disabled={leaderSavingRoomId === room.id}
-                            onValueChange={(v) =>
-                              void handleSetLeader(room.id, v === '__none__' ? null : v)
-                            }
-                          >
-                            <SelectTrigger className="min-h-11 sm:min-h-10">
-                              <SelectValue placeholder="Choose room leader…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">No leader assigned</SelectItem>
-                              {occupants.map((reg) => (
-                                <SelectItem key={reg.id} value={reg.id}>
-                                  {campRegistrationDisplayName(reg)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : null}
-                      {occupants.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No campers assigned yet.</p>
-                      ) : (
-                        <ul className="space-y-2">
-                          {occupants.map((reg) => (
-                            <li
-                              key={reg.id}
-                              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-neutral-200/80 bg-neutral-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03]"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                                  {campRegistrationDisplayName(reg)}
-                                  {reg.id === leaderId ? (
-                                    <Badge className="ml-2 gap-1 align-middle text-xs">
-                                      Leader
-                                    </Badge>
-                                  ) : null}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {reg.role}
-                                  {reg.sex ? ` · ${reg.sex}` : ''}
-                                  {reg.phone ? ' · ' : ''}
-                                  {reg.phone ? (
-                                    <PhoneLink phone={reg.phone} whatsapp={reg.whatsapp} name={campRegistrationDisplayName(reg)} />
-                                  ) : null}
-                                </p>
-                              </div>
-                              <div className="flex w-full items-center gap-2 sm:w-auto">
-                                <QuickContactButtons
-                                  phone={reg.phone}
-                                  whatsapp={reg.whatsapp}
-                                  name={campRegistrationDisplayName(reg)}
-                                  className="mr-auto sm:mr-0"
-                                />
-                                <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" asChild>
-                                  <Link href={`/admin/camp-meeting/registrations/${reg.id}?year=${campYear.id}`}>
-                                    View
-                                  </Link>
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="min-h-11 sm:min-h-9"
-                                  disabled={assigning}
-                                  onClick={() => void handleAssign(reg.id, null)}
-                                >
-                                  Unassign
-                                </Button>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
-              })
-            )}
-          </div>
-
-          <Card className="h-fit">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Unassigned campers
-              </CardTitle>
-              <CardDescription>
-                Assign each person to a room. Roommates share the same room.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 lg:max-h-[70vh] lg:overflow-y-auto">
-              {unassigned.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Everyone has a room.</p>
-              ) : (
-                unassigned.map((reg) => (
-                  <div key={reg.id} className="space-y-2 rounded-lg border border-neutral-200/80 p-3 dark:border-white/10">
-                    <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{campRegistrationDisplayName(reg)}</p>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-xs">
-                          {reg.role}
-                        </Badge>
-                        {reg.sex ? (
-                          <Badge variant="secondary" className="text-xs">
-                            {reg.sex}
-                          </Badge>
-                        ) : null}
-                      </div>
-                    </div>
-                    <QuickContactButtons phone={reg.phone} whatsapp={reg.whatsapp} name={campRegistrationDisplayName(reg)} />
-                    </div>
-                    <Select
-                      disabled={assigning || rooms.length === 0}
-                      onValueChange={(roomId) => void handleAssign(reg.id, roomId)}
-                    >
-                      <SelectTrigger className="min-h-11 sm:min-h-10">
-                        <SelectValue placeholder="Assign to room…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {rooms.map((room) => {
-                          const count = occupantsByRoom.get(room.id)?.length ?? 0
-                          const full = count >= room.capacity
-                          return (
-                            <SelectItem key={room.id} value={room.id} disabled={full}>
-                              {room.name} ({count}/{room.capacity})
-                              {full ? ' — full' : ''}
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <Chips
+          label="Men or women"
+          value={sexFilter}
+          onChange={setSexFilter}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'Male', label: 'Men' },
+            { value: 'Female', label: 'Women' },
+          ]}
+        />
       </div>
 
+      {selected.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200/80 bg-neutral-50 px-3.5 py-2.5 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <span className="mr-auto text-sm font-medium text-neutral-900 dark:text-white">{selected.length} selected</span>
+          <Button size="sm" className="h-9" disabled={rooms.length === 0} onClick={() => setPickFor(selectedPeople)}>
+            Put in a room
+          </Button>
+          {selectedPeople.some((p) => p.room_id) ? (
+            <Button size="sm" variant="outline" className="h-9" onClick={() => void assign(selected, null)}>
+              Take out
+            </Button>
+          ) : null}
+          <Button size="sm" variant="ghost" className="h-9" onClick={() => setSelected([])}>
+            Clear
+          </Button>
+        </div>
+      ) : null}
+
+      <ul className="min-h-0 flex-1 divide-y divide-neutral-100 overflow-y-auto dark:divide-white/[0.06]">
+        {peopleList.length === 0 ? (
+          <li className="p-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
+            {scope === 'unassigned' && !peopleQuery ? 'Everyone has a room.' : 'Nobody matches.'}
+          </li>
+        ) : (
+          peopleList.slice(0, 300).map((p) => {
+            const room = p.room_id ? roomsById.get(p.room_id) : null
+            const checked = selected.includes(p.id)
+            return (
+              <li key={p.id} className={cn('flex items-center gap-3 px-3.5 py-2.5', checked && 'bg-brand-50/60 dark:bg-brand-400/[0.06]')}>
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(v) => setSelected((prev) => (v ? [...prev, p.id] : prev.filter((id) => id !== p.id)))}
+                  aria-label={`Select ${displayName(p)}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{displayName(p)}</p>
+                  <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">
+                    {[p.sex, p.role, p.address_school_work || p.residence].filter(Boolean).join(' · ') || 'No details'}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={room ? 'outline' : 'default'}
+                  className="h-9 max-w-[9rem] shrink-0"
+                  disabled={rooms.length === 0}
+                  onClick={() => setPickFor([p])}
+                  title={room ? `In ${room.name}. Tap to move.` : 'Choose a room'}
+                >
+                  <span className="truncate">{room ? room.name : 'Place'}</span>
+                </Button>
+              </li>
+            )
+          })
+        )}
+        {peopleList.length > 300 ? (
+          <li className="p-3 text-center text-xs text-neutral-500 dark:text-neutral-400">Showing 300 of {peopleList.length}. Search to narrow down.</li>
+        ) : null}
+      </ul>
+    </section>
+  )
+
+  const roomsPanel = (
+    <section aria-label="Rooms" className="min-w-0 space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="sm:w-72">
+          <SearchInput value={roomQuery} onChange={setRoomQuery} placeholder="Search rooms or buildings" />
+        </div>
+        <Chips
+          label="Which rooms"
+          value={roomFilter}
+          onChange={setRoomFilter}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'space', label: 'Has space' },
+            { value: 'full', label: 'Full' },
+            { value: 'Male', label: 'Men' },
+            { value: 'Female', label: 'Women' },
+            { value: 'Mixed', label: 'Mixed' },
+          ]}
+        />
+      </div>
+
+      {rooms.length === 0 ? (
+        <div className="dashboard-panel p-8 text-center">
+          <p className="font-medium text-neutral-900 dark:text-white">No rooms yet</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-600 dark:text-neutral-400">
+            Add a block of numbered rooms in one go, for example Room 1 to Room 20 in Block A, 4 beds each.
+          </p>
+          <Button className="mt-4 h-11" onClick={() => setFormOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Add rooms
+          </Button>
+        </div>
+      ) : roomGroups.length === 0 ? (
+        <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">No rooms match.</p>
+      ) : (
+        roomGroups.map((group) => {
+          const beds = group.rooms.reduce((n, r) => n + r.capacity, 0)
+          const used = group.rooms.reduce((n, r) => n + (occupancy.get(r.id) ?? 0), 0)
+          return (
+            <div key={group.building} className="space-y-2.5">
+              <h2 className="flex items-baseline gap-2">
+                <span className="app-section-title">{group.building}</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {group.rooms.length} {group.rooms.length === 1 ? 'room' : 'rooms'} · {Math.max(0, beds - used)} beds free
+                </span>
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                {group.rooms.map((room) => {
+                  const occupants = occupantsByRoom.get(room.id) ?? []
+                  return (
+                    <RoomTile
+                      key={room.id}
+                      room={room}
+                      occupants={occupants}
+                      yearId={campYear.id}
+                      busy={busyRoomIds.has(room.id)}
+                      onAddPeople={() => setAddTo(room)}
+                      onRemove={(reg) => void assign([reg.id], null)}
+                      onMove={(reg) => setPickFor([reg])}
+                      onSetLeader={(reg) => void setLeader(room, reg)}
+                      onEdit={() => {
+                        setEditingRoom(room)
+                        setFormOpen(true)
+                      }}
+                      onDelete={() => void deleteRoom(room)}
+                      onSms={() => void textRoom(occupants.map((o) => o.id), room.name)}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })
+      )}
+    </section>
+  )
+
+  return (
+    <div className="mx-auto max-w-[1400px] space-y-4 sm:space-y-5">
+      <CampAdminPageHeader
+        title="Rooms"
+        campYear={campYear}
+        actions={
+          <>
+            <Select value={campYear.id} onValueChange={(id) => router.push(`/admin/camp-meeting/rooms?year=${id}`)}>
+              <SelectTrigger className="h-10 w-[8.5rem]" aria-label="Camp year">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((y) => (
+                  <SelectItem key={y.id} value={y.id}>
+                    {y.year}
+                    {y.id === activeYear?.id ? ' (current)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button className="h-10" onClick={() => { setEditingRoom(null); setFormOpen(true) }}>
+              <Plus className="mr-2 h-4 w-4" /> Add rooms
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-10 gap-1">
+                  More <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem className="min-h-10 gap-2" disabled={randomizing || rooms.length === 0 || stats.unassigned === 0} onSelect={() => void autoAssign()}>
+                  <Shuffle className="h-4 w-4" /> Fill rooms automatically ({stats.unassigned} without a room)
+                </DropdownMenuItem>
+                <DropdownMenuItem className="min-h-10 gap-2" disabled={assignedIds.length === 0} onSelect={() => void textRoom(assignedIds, 'everyone with a room')}>
+                  <MessageSquare className="h-4 w-4" /> Text everyone their room ({assignedIds.length})
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="min-h-10 gap-2" onSelect={() => void loadData(campYear)}>
+                  <RefreshCw className="h-4 w-4" /> Refresh
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
+
+      {!viewingActive ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
+          You are looking at {campYear.year}, not the current camp.
+          {activeYear ? (
+            <button type="button" className="ml-2 font-medium underline" onClick={() => router.push(`/admin/camp-meeting/rooms?year=${activeYear.id}`)}>
+              Go to {activeYear.year}
+            </button>
+          ) : null}
+        </p>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Rooms" value={stats.rooms} />
+        <StatCard label="Beds free" value={stats.freeBeds} sub={`of ${stats.totalBeds}`} />
+        <StatCard label="In a room" value={stats.assigned} tone="success" />
+        <StatCard label="Without a room" value={stats.unassigned} tone={stats.unassigned > 0 ? 'warning' : 'default'} />
+      </div>
+
+      {/* Phones: one panel at a time */}
+      <div className="flex gap-1 rounded-lg bg-neutral-200/60 p-1 text-sm dark:bg-white/[0.06] lg:hidden" role="tablist">
+        {(['rooms', 'people'] as const).map((p) => (
+          <button
+            key={p}
+            type="button"
+            role="tab"
+            aria-selected={mobilePanel === p}
+            onClick={() => setMobilePanel(p)}
+            className={cn(
+              'min-h-10 flex-1 rounded-md font-medium',
+              mobilePanel === p ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-white' : 'text-neutral-600 dark:text-neutral-400'
+            )}
+          >
+            {p === 'rooms' ? `Rooms (${stats.rooms})` : `People (${stats.unassigned} without a room)`}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(320px,380px)_1fr]">
+        <div className={cn(mobilePanel !== 'people' && 'hidden lg:block')}>{peoplePanel}</div>
+        <div className={cn(mobilePanel !== 'rooms' && 'hidden lg:block')}>{roomsPanel}</div>
+      </div>
+
+      <RoomFormDialog
+        open={formOpen}
+        onOpenChange={(o) => {
+          setFormOpen(o)
+          if (!o) setEditingRoom(null)
+        }}
+        editing={editingRoom}
+        existingNames={rooms.map((r) => r.name)}
+        buildings={buildings}
+        saving={savingRooms}
+        onSave={(d) => void saveRooms(d)}
+      />
+      <PickRoomDialog
+        open={Boolean(pickFor)}
+        onOpenChange={(o) => !o && setPickFor(null)}
+        people={pickFor ?? []}
+        rooms={rooms}
+        occupancy={occupancy}
+        onPick={(roomId) => {
+          const ids = (pickFor ?? []).map((p) => p.id)
+          setPickFor(null)
+          void assign(ids, roomId)
+        }}
+      />
+      <AddPeopleDialog
+        open={Boolean(addTo)}
+        onOpenChange={(o) => !o && setAddTo(null)}
+        room={addTo}
+        freeBeds={addTo ? Math.max(0, addTo.capacity - (occupancy.get(addTo.id) ?? 0)) : 0}
+        people={people}
+        roomsById={roomsById}
+        onAdd={(ids) => {
+          const roomId = addTo?.id ?? null
+          setAddTo(null)
+          if (roomId) void assign(ids, roomId)
+        }}
+      />
     </div>
   )
 }
