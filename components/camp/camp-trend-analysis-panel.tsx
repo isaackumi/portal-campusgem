@@ -28,7 +28,6 @@ import {
   Minus,
   TrendingUp,
   Users,
-  Zap,
 } from 'lucide-react'
 
 type Props = {
@@ -72,7 +71,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
     return (
       <Card className="border-dashed border-neutral-200 dark:border-white/10 bg-neutral-50/40 dark:bg-white/[0.03]">
         <CardContent className="py-8 text-center text-sm text-neutral-600 dark:text-neutral-400">
-          Add at least <strong>two camp years</strong> with registrations to unlock cross-year trend analysis.
+          Add at least <strong>two camp years</strong> with registrations to compare one year with another.
         </CardContent>
       </Card>
     )
@@ -161,7 +160,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
             Performance
           </TabsTrigger>
           <TabsTrigger value="velocity" className="flex-1 sm:flex-none">
-            Velocity
+            Pace
           </TabsTrigger>
           <TabsTrigger value="cohorts" className="flex-1 sm:flex-none">
             Cohorts
@@ -182,7 +181,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
             <Card>
               <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp className="h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
+                  <TrendingUp className="h-5 w-5 text-neutral-400 dark:text-neutral-500" aria-hidden />
                   Registration growth
                 </CardTitle>
                 <CardDescription>Total sign-ups per year with year-on-year % change</CardDescription>
@@ -209,7 +208,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           <Card>
             <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Activity className="h-5 w-5 text-violet-600 dark:text-violet-400" aria-hidden />
+                <Activity className="h-5 w-5 text-neutral-400 dark:text-neutral-500" aria-hidden />
                 Funnel conversion over time
               </CardTitle>
               <CardDescription>
@@ -311,8 +310,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           <Card>
             <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
-                Registration velocity overlay
+                How fast each year filled up
               </CardTitle>
               <CardDescription>
                 Cumulative sign-ups by days since each camp year&apos;s first registration — compare how fast
@@ -329,7 +327,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
           <Card>
             <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" aria-hidden />
+                <Users className="h-5 w-5 text-neutral-400 dark:text-neutral-500" aria-hidden />
                 First-time camper cohort retention
               </CardTitle>
               <CardDescription>
@@ -378,7 +376,7 @@ export function CampTrendAnalysisPanel({ trends, revenue, yearCount }: Props) {
             <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base">
                 <BarChart3 className="h-5 w-5 text-teal-600 dark:text-teal-400" aria-hidden />
-                Operations & planning signals
+                For planning
               </CardTitle>
               <CardDescription>
                 NHIS coverage, health reporting, parent contacts, payments, and follow-up — tracked year over year

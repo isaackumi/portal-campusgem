@@ -57,9 +57,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-800 to-neutral-900 px-4 py-14 text-white sm:px-6 sm:py-20">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/5" />
-        <div className="pointer-events-none absolute -bottom-32 right-10 h-96 w-96 rounded-full bg-white/5" />
+      <section className="relative overflow-hidden bg-brand-900 px-4 py-14 text-white sm:px-6 sm:py-20">
 
         <div className="relative mx-auto max-w-6xl">
           <p className="app-overliner text-white/60">

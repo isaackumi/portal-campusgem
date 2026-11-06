@@ -12,12 +12,9 @@ import {
 import { campService } from '@/lib/services/camp-service'
 import type { CampRegistration, CampRoom, CampYear } from '@/lib/types'
 import { campRegistrationDisplayName } from '@/lib/camp/manual-check-in-search'
-import {
-  getCampMessageTemplate,
-  personalizeCampMessage,
-} from '@/lib/camp/sms-templates'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
-import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { confirmCampTemplateSms } from '@/components/camp/camp-sms-preview'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { StatCard } from '@/components/ui/stat-card'
 import {
@@ -49,12 +46,13 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
-import { BedDouble, Crown, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
+import { BedDouble, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Shuffle, Trash2, Users } from 'lucide-react'
 
 const GENDER_OPTIONS = ['Mixed', 'Male', 'Female'] as const
 
 function CampRoomsPageContent() {
   const { toast } = useToast()
+  const smsPreview = useSmsPreview()
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -72,13 +70,6 @@ function CampRoomsPageContent() {
   const [leaderSavingRoomId, setLeaderSavingRoomId] = useState<string | null>(null)
   const [sendingRoomSmsId, setSendingRoomSmsId] = useState<string | null>(null)
   const [sendingAllRoomSms, setSendingAllRoomSms] = useState(false)
-  const [roomSmsReview, setRoomSmsReview] = useState<{
-    registrationIds: string[]
-    label: string
-    busyKey: string | null
-    sampleNames: string[]
-    previewBody: string
-  } | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState<CampRoom | null>(null)
   const [name, setName] = useState('')
@@ -322,48 +313,21 @@ function CampRoomsPageContent() {
       })
       return
     }
-    const targets = registrations.filter((r) => registrationIds.includes(r.id))
-    const sample = targets[0]
-    const room =
-      busyKey && busyKey !== 'all' ? rooms.find((r) => r.id === busyKey) : null
-    const occupants = room ? occupantsByRoom.get(room.id) ?? [] : []
-    const leader = room?.room_leader_id
-      ? occupants.find((o) => o.id === room.room_leader_id)
-      : undefined
-    const mates = sample
-      ? occupants
-          .filter((o) => o.id !== sample.id)
-          .map((o) => campRegistrationDisplayName(o))
-          .join(', ')
-      : ''
-    const previewBody = personalizeCampMessage(
-      getCampMessageTemplate('room_allocation')?.body ||
-        'Hi {{firstName}}! Your room is {{roomName}}. Code: {{checkInCode}}.',
-      {
-        fullName: sample?.full_name,
-        firstName: sample?.first_name,
-        lastName: sample?.last_name,
-        phone: sample?.phone,
-        checkInCode: sample?.check_in_code,
-        campYear: campYear.year,
-        roomName: room?.name || 'your room',
-        building: room?.building,
-        roomLeader: leader ? campRegistrationDisplayName(leader) : '',
-        roommates: mates,
-      }
-    )
-    setRoomSmsReview({
-      registrationIds,
-      label,
-      busyKey,
-      sampleNames: targets.slice(0, 8).map((r) => campRegistrationDisplayName(r)),
-      previewBody,
-    })
+    void sendRoomSms(registrationIds, label, busyKey)
   }
 
-  async function confirmRoomSms() {
-    if (!campYear?.id || !user?.id || !roomSmsReview) return
-    const { registrationIds, label, busyKey } = roomSmsReview
+  async function sendRoomSms(registrationIds: string[], label: string, busyKey: string | null) {
+    if (!campYear?.id || !user?.id) return
+    const check = await confirmCampTemplateSms(smsPreview, {
+      title: `Room SMS · ${label}`,
+      camp_year_id: campYear.id,
+      registration_ids: registrationIds,
+      template_id: 'room_allocation',
+    })
+    if (!check.ok) {
+      if (check.error) toast({ variant: 'destructive', title: 'Room SMS not sent', description: check.error })
+      return
+    }
     if (busyKey === 'all') setSendingAllRoomSms(true)
     else setSendingRoomSmsId(busyKey)
     const { data, error } = await sendCampTemplateSmsToRegistrationsAction({
@@ -387,7 +351,6 @@ function CampRoomsPageContent() {
           : ''
       }`,
     })
-    if (data.success_count > 0) setRoomSmsReview(null)
   }
 
   if (loading) {
@@ -641,7 +604,6 @@ function CampRoomsPageContent() {
                             {room.name}
                             {leaderId ? (
                               <Badge className="gap-1 text-xs">
-                                <Crown className="h-3 w-3" />
                                 Leader set
                               </Badge>
                             ) : null}
@@ -740,7 +702,6 @@ function CampRoomsPageContent() {
                                   {campRegistrationDisplayName(reg)}
                                   {reg.id === leaderId ? (
                                     <Badge className="ml-2 gap-1 align-middle text-xs">
-                                      <Crown className="h-3 w-3" />
                                       Leader
                                     </Badge>
                                   ) : null}
@@ -847,26 +808,6 @@ function CampRoomsPageContent() {
         </div>
       </div>
 
-      <CampSmsReviewDialog
-        open={Boolean(roomSmsReview)}
-        onOpenChange={(open) => {
-          if (!open && !sendingAllRoomSms && !sendingRoomSmsId) setRoomSmsReview(null)
-        }}
-        title="Review room SMS"
-        description="Nothing is sent until you confirm. Each camper gets a personalized room message."
-        recipientName={
-          roomSmsReview
-            ? `${roomSmsReview.label} · ${roomSmsReview.registrationIds.length} camper${
-                roomSmsReview.registrationIds.length === 1 ? '' : 's'
-              }`
-            : 'Recipients'
-        }
-        recipientCount={roomSmsReview?.registrationIds.length ?? 0}
-        sampleRecipientNames={roomSmsReview?.sampleNames ?? []}
-        previewBody={roomSmsReview?.previewBody ?? ''}
-        sending={sendingAllRoomSms || Boolean(sendingRoomSmsId)}
-        onConfirm={() => void confirmRoomSms()}
-      />
     </div>
   )
 }

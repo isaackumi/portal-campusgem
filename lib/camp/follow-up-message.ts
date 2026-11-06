@@ -42,7 +42,7 @@ export function buildCampFollowUpMessage(input: CampFollowUpMessageInput): strin
   const when = campWhen(input.camp)
 
   return [
-    `Hi ${who}, ${intro} 👋`,
+    `Hi ${who}, ${intro}.`,
     `I'm texting to confirm your registration for ${campLabel(input.camp)}${when ? `, ${when}` : ''}. Are you still coming? Just reply YES or NO, and let me know if anything has changed or you need help with anything.`,
     `We'd love you to stay connected with us before and after camp: our services, fellowship and WhatsApp updates are there for you. God bless you!`,
   ].join('\n\n')

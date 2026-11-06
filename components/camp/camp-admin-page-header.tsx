@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { CampYear } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { ArrowLeft, Calendar, MapPin, Sparkles } from 'lucide-react'
+import { ArrowLeft, Calendar, MapPin } from 'lucide-react'
 
 function formatShortDate(iso: string): string {
   const d = new Date(iso)
@@ -56,7 +56,6 @@ export function CampAdminPageHeader({
             </Badge>
             {campYear.theme ? (
               <Badge variant="brand" className="max-w-[min(100%,20rem)]" title={campYear.theme}>
-                <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
                 <span className="truncate">{campYear.theme}</span>
               </Badge>
             ) : null}

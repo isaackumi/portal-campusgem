@@ -19,6 +19,8 @@ import { CONFIRM_LINK_PLACEHOLDER, personalizeCampMessage } from '@/lib/camp/sms
 import { sampleConfirmLinkUrl } from '@/lib/camp/confirm-link'
 import { smsSegmentInfo } from '@/lib/comms/sms-segments'
 import { sendCampBulkSmsAction } from '@/lib/actions/camp'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { campSmsPreview } from '@/components/camp/camp-sms-preview'
 
 /** Ask the selected registrants themselves whether they are still coming. */
 export function TextRegistrantsDialog({
@@ -38,6 +40,7 @@ export function TextRegistrantsDialog({
 }) {
   const { toast } = useToast()
   const jobs = useBackgroundJobs()
+  const smsPreview = useSmsPreview()
   const [message, setMessage] = useState(CONFIRM_ATTENDANCE_SMS)
 
   useEffect(() => {
@@ -59,7 +62,12 @@ export function TextRegistrantsDialog({
     : message
   const segments = smsSegmentInfo(preview).segments
 
-  function send() {
+  async function send() {
+    const ok = await smsPreview({
+      title: 'Ask registrants if they are coming',
+      ...campSmsPreview(message, registrations, campYear),
+    })
+    if (!ok) return
     const batchId = crypto.randomUUID()
     jobs.start({
       title: `Confirmation SMS to ${withPhone.length} registrant${withPhone.length === 1 ? '' : 's'}`,
@@ -127,7 +135,7 @@ export function TextRegistrantsDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={send} disabled={!withPhone.length || !message.trim() || jobs.isRunning}>
+          <Button onClick={() => void send()} disabled={!withPhone.length || !message.trim() || jobs.isRunning}>
             <Send className="mr-1.5 h-4 w-4" aria-hidden />
             Send to {withPhone.length}
           </Button>

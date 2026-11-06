@@ -9,7 +9,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { sendTestSmsAction } from '@/lib/actions/comms'
 import { normalizeSmsPhone, isValidSmsPhone } from '@/lib/comms/sms-client'
 import { useToast } from '@/hooks/use-toast'
+import { useSmsPreview } from '@/components/comms/sms-preview'
 import { Beaker, MessageSquare, Radio } from 'lucide-react'
+
+const TEST_SMS_MESSAGE = 'Campus Gem SMS test — developer check. You can ignore this message.'
 
 export type SmsProviderStatus = {
   email?: string
@@ -46,6 +49,7 @@ export function SmsProviderBanner({
   const { toast } = useToast()
   const [testPhone, setTestPhone] = useState('')
   const [testing, setTesting] = useState(false)
+  const preview = useSmsPreview()
 
   if (!status) return null
 
@@ -61,9 +65,22 @@ export function SmsProviderBanner({
       })
       return
     }
+    const ok = await preview({
+      title: 'Test SMS',
+      message: TEST_SMS_MESSAGE,
+      recipients: [{ name: 'Test number', phone: normalizeSmsPhone(testPhone) }],
+      warnings: [
+        'This is a test send.',
+        ...(dryRun ? ['Dry run: nothing will actually be sent.'] : []),
+        ...(forceMock || status.forceMock ? ['Mock provider: no real SMS will be delivered.'] : []),
+      ],
+      sendLabel: dryRun ? 'Run dry run' : 'Send test SMS',
+    })
+    if (!ok) return
     setTesting(true)
     const result = await sendTestSmsAction({
       phone: testPhone,
+      message: TEST_SMS_MESSAGE,
       dry_run: dryRun,
       force_mock: forceMock || status.forceMock,
       sender_id: senderId,

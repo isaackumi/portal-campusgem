@@ -151,7 +151,7 @@ export function RlcAttendanceCalendarView({ onOpenSession }: RlcAttendanceCalend
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+              <CalendarDays className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
               {monthLabel}
             </CardTitle>
             <CardDescription>

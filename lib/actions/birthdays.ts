@@ -11,6 +11,8 @@ import {
   visitorToBirthdayEntry,
 } from '@/lib/birthdays/upcoming-birthdays'
 import {
+  birthdayMessageFor,
+  getBirthdayAdvanceSmsTemplate,
   getBirthdaySmsTemplate,
   ghanaCalendarDate,
   isBirthdaySmsAutoEnabled,
@@ -131,6 +133,58 @@ function entryToRecipient(entry: BirthdayEntry, module: CommsModule): CommsRecip
   }
 }
 
+/**
+ * The exact text for one person. "Happy Birthday" only on the day itself; earlier sends use
+ * the "in advance" wording. Days are counted on the Ghana calendar from the date of birth,
+ * never from what the browser says.
+ */
+function birthdayBodyFor(entry: BirthdayEntry, customTemplate?: string | null) {
+  const { year, month, day } = ghanaCalendarDate()
+  return birthdayMessageFor(
+    { name: entry.name, birthMonth: entry.birthMonth, birthDay: entry.birthDay, ageTurning: entry.ageTurning },
+    {
+      today: { year, month, day },
+      template: getBirthdaySmsTemplate(),
+      advanceTemplate: getBirthdayAdvanceSmsTemplate(),
+      customTemplate,
+    }
+  )
+}
+
+export type BirthdaySmsPreviewRow = {
+  id: string
+  name: string
+  phone?: string
+  body: string
+  daysUntil: number
+  kind: 'today' | 'advance'
+  birthdayDate: string
+  validPhone: boolean
+}
+
+/** What each person would get, for the check-before-sending screen. Sends nothing. */
+export async function previewBirthdaySmsAction(input: {
+  entries: BirthdayEntry[]
+  message_template?: string
+}): Promise<ApiResponse<BirthdaySmsPreviewRow[]>> {
+  await guard('sms.send')
+  const { isValidSmsPhone } = await import('@/lib/comms/sms-client')
+  const rows = (input.entries ?? []).slice(0, 500).map((entry) => {
+    const m = birthdayBodyFor(entry, input.message_template)
+    return {
+      id: entry.id,
+      name: entry.name,
+      phone: entry.phone,
+      body: m.body,
+      daysUntil: m.daysUntil,
+      kind: m.kind,
+      birthdayDate: m.birthdayDate,
+      validPhone: isValidSmsPhone(entry.phone),
+    }
+  })
+  return { data: rows, error: null, loading: false }
+}
+
 /** Send birthday SMS (Hubtel) to the given entries. */
 export async function sendBirthdaySmsAction(input: {
   sender_id: string
@@ -205,15 +259,7 @@ export async function sendBirthdaySmsAction(input: {
     const { sendCommunications } = await import('@/lib/comms/send')
     const personalizedBodies = new Map<string, string>()
     for (const entry of input.entries) {
-      const firstName = entry.name.trim().split(/\s+/)[0] || entry.name
-      personalizedBodies.set(
-        entry.id,
-        personalizeBirthdaySms(template, {
-          name: entry.name,
-          firstName,
-          ageTurning: entry.ageTurning,
-        })
-      )
+      personalizedBodies.set(entry.id, birthdayBodyFor(entry, input.message_template).body)
     }
 
     const withBody = recipients.map((r) => ({

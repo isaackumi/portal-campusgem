@@ -160,7 +160,7 @@ export function RlcCampBulkImportPanel() {
       <Card className="border-brand-100/80 dark:border-brand-400/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+            <Upload className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
             Bulk import from Camp Meeting
           </CardTitle>
           <CardDescription>

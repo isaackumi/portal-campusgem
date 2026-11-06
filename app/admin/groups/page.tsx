@@ -26,6 +26,7 @@ import {
   MapPin,
   Shield,
   Crown,
+  GraduationCap,
   User,
   UserPlus,
   UserMinus,
@@ -303,7 +304,7 @@ export default function GroupsManagementPage() {
 
   const getGroupTypeIcon = (type: string) => {
     switch (type) {
-      case 'campus': return <Crown className="h-4 w-4" />
+      case 'campus': return <GraduationCap className="h-4 w-4" />
       case 'activity': return <Calendar className="h-4 w-4" />
       case 'ministry': return <Users className="h-4 w-4" />
       case 'leadership': return <Shield className="h-4 w-4" />
@@ -704,7 +705,7 @@ export default function GroupsManagementPage() {
                     const name = person?.full_name || 'Unknown'
                     return (
                     <li key={member.id} className="flex min-h-14 items-center gap-3 px-3 py-2">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-white/[0.06] dark:text-neutral-400">
                           <User className="h-4 w-4" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -775,7 +776,7 @@ export default function GroupsManagementPage() {
                   {users.map((user) => (
                     <div key={user.id} className="flex min-h-14 items-center justify-between gap-3 rounded-lg border border-neutral-200/80 p-3 hover:bg-neutral-50 dark:border-white/[0.08] dark:hover:bg-white/[0.04]">
                       <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-white/[0.06] dark:text-neutral-400">
                           <User className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">

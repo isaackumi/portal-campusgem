@@ -35,7 +35,6 @@ import {
     LayoutGrid,
     List,
     ArrowUpDown,
-    Sparkles,
     Trash2,
 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -563,7 +562,7 @@ export default function CampYearsPage() {
                     <StatCard label="Total years" value={totalYears} sub="Camp years created" icon={Calendar} />
                     <StatCard label="Registrations" value={totalRegistrations} sub="Across all years" icon={Users} />
                     <StatCard label="Checked in" value={totalCheckedIn} sub="Participants attended" tone="success" icon={CheckCircle} />
-                    <StatCard label="Active year" value={activeYear ? activeYear.year : 'None'} sub={<span className="line-clamp-1">{activeYear?.theme || 'No active year'}</span>} icon={Sparkles} />
+                    <StatCard label="Active year" value={activeYear ? activeYear.year : 'None'} sub={<span className="line-clamp-1">{activeYear?.theme || 'No active year'}</span>} />
                 </div>
 
                 <Card>
@@ -703,8 +702,7 @@ export default function CampYearsPage() {
                                             onClick={() => router.push(`/admin/camp-meeting/years/${year.id}`)}
                                             className="h-11 w-full sm:h-9"
                                         >
-                                            <Sparkles className="mr-2 h-3 w-3" />
-                                            Year intelligence hub
+                                            Open year overview
                                         </Button>
                                     </div>
 

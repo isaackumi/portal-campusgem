@@ -108,11 +108,6 @@
     @apply font-display text-[26px] font-bold leading-[1.15] tracking-[-0.025em] text-neutral-900 dark:text-white sm:text-[30px];
   }
 
-  /* Accent word inside a page title, e.g. the person's name or the camp year. */
-  .app-display-accent {
-    @apply bg-gradient-to-r from-brand-600 to-violet-600 bg-clip-text text-transparent dark:from-brand-300 dark:to-violet-300;
-  }
-
   .app-page-description {
     @apply text-sm leading-relaxed text-neutral-600 dark:text-neutral-400;
   }
@@ -311,18 +306,6 @@
 }
 
 /* Brand washes */
-.church-gradient {
-  background: linear-gradient(135deg, #4338ca 0%, #1e1b4b 100%);
-}
-
-.profile-completion-gradient {
-  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
-}
-
-.attendance-gradient {
-  background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
-}
-
 .dark select,
 .dark input[type='date'],
 .dark input[type='time'],

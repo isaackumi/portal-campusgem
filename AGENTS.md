@@ -36,6 +36,14 @@ camp meeting, RLC (mother church), forms, SMS.
   is refused in production when the secret is unset). Replies land in `sms_inbox`, shown on
   `/admin/inbox` (`sms.send`). A STOP reply sets `users.sms_opt_out`, and every bulk SMS path skips
   those people (`lib/comms/opt-out.ts`). Add that check to any new bulk sender.
+- **Every SMS send is previewed first.** Before calling any action that texts people, call
+  `useSmsPreview()` (`components/comms/sms-preview.tsx`) with the exact text (per person when
+  personalised) and only send if it resolves `true`. No exceptions for "small" sends.
+- **Birthday texts:** the server words them from the date of birth: "Happy Birthday" only on the
+  day, otherwise the "in advance" template (`BIRTHDAY_SMS_ADVANCE_TEMPLATE` overrides it). A
+  daily heads-up texts every `admin` (plus `BIRTHDAY_HEADS_UP_PHONES`) the birthdays exactly one
+  week away, with phone and campus / Campus GEM / RLC / camper tags (`lib/birthdays/heads-up.ts`,
+  run by `/api/cron/birthday-sms`).
 - **`guard()` only checks once per request:** after it passes, nested calls are trusted, so a second
   `guard('x')` always passes. Check a second permission with `hasPermission(user.role, p, user.permissions)`.
 - **Campuses:** a campus is a `groups` row with `group_type: 'campus'` (plus `short_code`, `slug`,
@@ -98,8 +106,8 @@ camp meeting, RLC (mother church), forms, SMS.
 Set up in `app/layout.tsx` and `tailwind.config.ts`:
 
 - **Plus Jakarta Sans** (`font-sans`, also `font-display`): the whole interface. Page titles
-  use `.app-page-title` (bold, tight tracking) or `PageHeader`; `.app-display-accent` gives one
-  word an indigo→violet gradient.
+  use `.app-page-title` (bold, tight tracking) or `PageHeader`. Titles are plain ink: no
+  gradient or coloured accent words.
 - **JetBrains Mono** (`font-mono`): membership IDs, check-in codes, phone numbers in call lists,
   keyboard shortcuts.
 - **Colour:** indigo `brand-*` on cool slate greys. `neutral`, `slate` and `gray` all resolve to
@@ -108,5 +116,9 @@ Set up in `app/layout.tsx` and `tailwind.config.ts`:
 
 Use the type classes in `app/globals.css` (`app-section-title`, `app-overline`,
 `app-stat-label`, `app-stat-value`) rather than ad-hoc sizes. Chips are `Badge` with a tone
-variant; `app-overline` is the only uppercase style. Headline numbers are `StatCard` (optional
-`icon`, `trend`, `href`).
+variant; `app-overline` is the only uppercase style. Headline numbers are `StatCard` (`trend`,
+`href`; it shows no icon).
+
+**No "AI look":** no gradients, sparkle/magic/crown icons, glows, blur blobs, emoji in the UI,
+tinted icon tiles or hover lifts, and no "insights / intelligence hub" copy. Details in
+`design-system/campus-gem/MASTER.md` ("Keep it human").

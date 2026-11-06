@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import QRCode from 'react-qr-code'
-import { Check, ClipboardList, Copy, Link2, RefreshCw, Sparkles } from 'lucide-react'
+import { Check, ClipboardList, Copy, Link2, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -61,7 +61,7 @@ function JoinLinkCard({ label, joinUrl }: { label: string; joinUrl: string }) {
         </div>
         <div className="min-w-0 flex-1">
           <h2 id="join-link-title" className="app-section-title flex items-center gap-2">
-            <Link2 className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
+            <Link2 className="h-4 w-4 text-neutral-400 dark:text-neutral-500" aria-hidden />
             Join link for {label}
           </h2>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
@@ -126,7 +126,6 @@ function Suggestions({ groupId, label, onChanged }: { groupId: string; label: st
       <div className="flex flex-col gap-3 border-b border-neutral-200/80 p-5 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 id="suggest-title" className="app-section-title flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
             Probably at {label}
           </h2>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
@@ -278,7 +277,7 @@ function RosterImport({ groupId, label, onChanged }: { groupId: string; label: s
   return (
     <section className="dashboard-panel p-5" aria-labelledby="roster-title">
       <h2 id="roster-title" className="app-section-title flex items-center gap-2">
-        <ClipboardList className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
+        <ClipboardList className="h-4 w-4 text-neutral-400 dark:text-neutral-500" aria-hidden />
         Paste or import a list
       </h2>
       <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">

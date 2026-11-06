@@ -343,7 +343,6 @@ export default function ManualCheckInPage() {
                 {serviceTypes.map((service) => (
                   <SelectItem key={service.value} value={service.value}>
                     <span className="flex items-center">
-                      <span className="mr-2">{service.icon}</span>
                       {service.label}
                     </span>
                   </SelectItem>
@@ -509,7 +508,7 @@ export default function ManualCheckInPage() {
                   <div className="space-y-1 text-sm text-neutral-600 dark:text-neutral-300">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3.5 w-3.5" />
-                      {currentService?.icon} {currentService?.label}
+                      {currentService?.label}
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5" />

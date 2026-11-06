@@ -53,3 +53,13 @@ export function buildAccessWelcomeSms(args: {
 
   return `Hi ${name}, ${what}. Sign in at ${signInUrl} ${how}.${security}${after}`
 }
+
+/**
+ * The same text, built in the browser for the "check before sending" preview.
+ * The server links to siteOrigin(); here that is NEXT_PUBLIC_SITE_URL, else this page's origin.
+ */
+export function previewAccessWelcomeSms(args: Omit<Parameters<typeof buildAccessWelcomeSms>[0], 'siteUrl'>): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  const siteUrl = configured || (typeof window !== 'undefined' ? window.location.origin : '')
+  return buildAccessWelcomeSms({ ...args, siteUrl })
+}

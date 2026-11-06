@@ -37,7 +37,7 @@ export function RlcPageHeader({
           Back
         </button>
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-neutral-500 dark:text-neutral-400">
             <Church className="h-5 w-5" />
           </div>
           <div className="min-w-0">

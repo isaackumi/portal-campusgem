@@ -39,7 +39,7 @@ export function AddMemberToRlcPanel({ onAdded }: Props) {
       <Card className="border-brand-100/80 dark:border-brand-400/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Church className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+            <Church className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
             Link existing person
           </CardTitle>
           <CardDescription>

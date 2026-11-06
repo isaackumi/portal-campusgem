@@ -144,7 +144,7 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
             </div>
             <div>
               <CardTitle className="flex items-center gap-2 text-xl">
-                <Shield className="h-5 w-5 text-brand-700 dark:text-brand-300" aria-hidden />
+                <Shield className="h-5 w-5 text-neutral-400 dark:text-neutral-500" aria-hidden />
                 RLC membership type
               </CardTitle>
               <CardDescription className="mt-1.5">
@@ -206,7 +206,7 @@ export function RlcMemberForm({ member, form, onChange }: RlcMemberFormProps) {
             </div>
             <div>
               <CardTitle className="flex items-center gap-2 text-xl">
-                <UserRound className="h-5 w-5 text-brand-700 dark:text-brand-300" aria-hidden />
+                <UserRound className="h-5 w-5 text-neutral-400 dark:text-neutral-500" aria-hidden />
                 Ministry roles
               </CardTitle>
               <CardDescription className="mt-1.5">

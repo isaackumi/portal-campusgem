@@ -22,7 +22,7 @@ import type { ChurchFormField } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 
 type NavDirection = 'forward' | 'back'
 
@@ -286,7 +286,6 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
 
       {encouragement ? (
         <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
-          <Sparkles className="h-4 w-4" />
           {encouragement}
         </p>
       ) : null}

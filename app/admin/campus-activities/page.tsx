@@ -29,7 +29,6 @@ import {
   ClipboardList,
   MapPin,
   Plus,
-  Sparkles,
   Users,
 } from 'lucide-react'
 
@@ -83,15 +82,6 @@ function BoardGroupCard({ group }: { group: CampusActivityBoardGroup }) {
               {getGroupTypeLabel(group.group_type)}
             </Badge>
           </div>
-          {group.group_type === 'campus' ? (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300">
-              <Building2 className="h-5 w-5" />
-            </div>
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300">
-              <Sparkles className="h-5 w-5" />
-            </div>
-          )}
         </div>
         {group.description ? (
           <CardDescription className="line-clamp-2">{group.description}</CardDescription>

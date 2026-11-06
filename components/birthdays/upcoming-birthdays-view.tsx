@@ -16,7 +16,7 @@ import {
   sortBirthdaysByCalendarDay,
   sortBirthdaysByUpcoming,
 } from '@/lib/birthdays/upcoming-birthdays'
-import { sendBirthdaySmsAction } from '@/lib/actions/birthdays'
+import { useBirthdaySms } from '@/components/birthdays/use-birthday-sms'
 import type { CommsModule } from '@/lib/comms/types'
 import { isValidSmsPhone } from '@/lib/comms/sms-client'
 import { useAuth } from '@/components/providers'
@@ -55,6 +55,7 @@ export function UpcomingBirthdaysView({
   const [query, setQuery] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [sending, setSending] = useState(false)
+  const sendBirthdayTexts = useBirthdaySms()
 
   const stats = useMemo(() => {
     const today = filterBirthdaysByTime(entries, 'today').length
@@ -124,21 +125,19 @@ export function UpcomingBirthdaysView({
     }
 
     setSending(true)
-    const { data, error } = await sendBirthdaySmsAction({
-      sender_id: user.id,
-      module: smsModule,
-      entries: withPhone,
-    })
+    const outcome = await sendBirthdayTexts(withPhone, smsModule, `Birthday texts: ${label}`)
     setSending(false)
 
-    if (error || !data) {
+    if (outcome.status === 'cancelled') return
+    if (outcome.status === 'error') {
       toast({
         variant: 'destructive',
         title: 'Birthday SMS failed',
-        description: error ?? 'Unknown error',
+        description: outcome.error,
       })
       return
     }
+    const data = outcome.result
 
     toast({
       title:
@@ -190,7 +189,7 @@ export function UpcomingBirthdaysView({
 
       <section className="dashboard-panel p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 dark:bg-brand-400/10 dark:text-brand-300 dark:ring-brand-400/20">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400">
             <MessageSquare className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">

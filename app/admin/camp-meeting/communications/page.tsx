@@ -28,20 +28,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { CampAdminPageHeader } from '@/components/camp/camp-admin-page-header'
 import { PhoneLink } from '@/components/contact/phone-link'
 import { useAuth } from '@/components/providers'
 import { useBackgroundJobs } from '@/components/background-jobs'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { campSmsPreview } from '@/components/camp/camp-sms-preview'
 import { Check as CheckIcon } from 'lucide-react'
 import {
     Send, Mail, MessageSquare, Users, Filter,
@@ -75,6 +69,7 @@ function formatCommunicationWhen(iso: string | undefined): { absolute: string; r
 export default function BulkCommunicationsPage() {
     const router = useRouter()
     const { toast } = useToast()
+    const smsPreview = useSmsPreview()
     const { user, loading: authLoading } = useAuth()
     const { registrations, campYear, loading: registrationsLoading, refresh: refreshRegistrations } = useCampRegistrations()
     const [communications, setCommunications] = useState<CampCommunication[]>([])
@@ -100,7 +95,6 @@ export default function BulkCommunicationsPage() {
     const [forceMock, setForceMock] = useState(false)
     const [resendingId, setResendingId] = useState<string | null>(null)
     const [templateId, setTemplateId] = useState<CampMessageTemplateId | 'custom'>('custom')
-    const [smsReviewOpen, setSmsReviewOpen] = useState(false)
     const [audienceMode, setAudienceMode] = useState<'registered' | 'unregistered'>('registered')
     const [inviteRows, setInviteRows] = useState<CampInviteAudienceRow[]>([])
     const [historySearch, setHistorySearch] = useState('')
@@ -189,6 +183,20 @@ export default function BulkCommunicationsPage() {
         if (!canResend) return
         if (comm.communication_type === 'sms' && !comm.recipient_phone) return
         if (comm.communication_type === 'email' && !comm.recipient_email) return
+        if (
+            comm.communication_type === 'sms' &&
+            !(await smsPreview({
+                title: 'Resend SMS',
+                message: comm.message_body,
+                recipients: [
+                    {
+                        name: (comm.recipient_registration as { full_name?: string } | undefined)?.full_name ?? null,
+                        phone: comm.recipient_phone,
+                    },
+                ],
+            }))
+        )
+            return
 
         setResendingId(comm.id)
         const { data, error } = await resendCampCommunicationAction({
@@ -444,10 +452,6 @@ export default function BulkCommunicationsPage() {
 
     const requestSend = () => {
         if (!canStartSend()) return
-        if (communicationType === 'sms') {
-            setSmsReviewOpen(true)
-            return
-        }
         void handleSend()
     }
 
@@ -488,6 +492,22 @@ export default function BulkCommunicationsPage() {
                           check_in_code: r.check_in_code,
                           source: 'registration' as const,
                       }))
+            const planned = campSmsPreview(messageBody, recipients, campYear!.year, {
+                theme: campYear?.theme ?? '',
+                venue: campYear?.venue ?? '',
+                registrationLink: registrationLink || '',
+            })
+            const ok = await smsPreview({
+                title: audienceMode === 'unregistered' ? 'Camp invitations' : 'Camp SMS',
+                ...planned,
+                warnings: [
+                    ...(planned.warnings ?? []),
+                    ...(dryRun ? ['Dry run: nothing will actually be sent.'] : []),
+                    ...(forceMock ? ['Force mock is on: messages go to the mock provider, not real phones.'] : []),
+                ],
+                sendLabel: dryRun ? 'Run dry run' : undefined,
+            })
+            if (!ok) return
             const batchId = crypto.randomUUID()
             const request = {
                 camp_year_id: campYear!.id,
@@ -555,7 +575,6 @@ export default function BulkCommunicationsPage() {
                 onComplete: () => void refreshAfterSend(),
             })
         }
-        setSmsReviewOpen(false)
         setSelectedIds(new Set())
         setSelectAll(false)
         if (audienceMode === 'registered') {
@@ -578,7 +597,6 @@ export default function BulkCommunicationsPage() {
     const smsPreviewBody = smsPreviewRecipient
         ? replaceTemplateVariables(messageBody, smsPreviewRecipient)
         : messageBody
-    const smsRecipientPreview = recipients.filter((r) => isValidSmsPhone(r.phone)).slice(0, 12)
 
     if (loading || registrationsLoading) {
         return (
@@ -1489,120 +1507,6 @@ export default function BulkCommunicationsPage() {
                 </Tabs>
             </div>
 
-            <Dialog
-                open={smsReviewOpen}
-                onOpenChange={(open) => {
-                    if (!sending) setSmsReviewOpen(open)
-                }}
-            >
-                <DialogContent className="max-h-[90dvh] max-w-xl overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Review SMS before sending</DialogTitle>
-                        <DialogDescription>
-                            Confirm the message and recipients. Nothing is sent until you confirm.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-4 text-sm">
-                        <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary">{canSendSMS} will receive SMS</Badge>
-                            <Badge variant="outline">{selectedIds.size} selected</Badge>
-                            {dryRun ? <Badge variant="outline">Dry run</Badge> : null}
-                            {forceMock ? <Badge variant="outline">Force mock</Badge> : null}
-                            {smsStatus?.smsProvider ? (
-                                <Badge variant="outline">Provider: {smsStatus.smsProvider}</Badge>
-                            ) : null}
-                        </div>
-
-                        {(missingSmsPhones > 0 || invalidSmsPhones > 0) && (
-                            <p className="flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-400/20 bg-amber-50 dark:bg-amber-400/10 px-3 py-2 text-amber-900 dark:text-amber-200">
-                                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                                {[
-                                    missingSmsPhones > 0 ? `${missingSmsPhones} missing phone` : null,
-                                    invalidSmsPhones > 0 ? `${invalidSmsPhones} invalid phone` : null,
-                                ]
-                                    .filter(Boolean)
-                                    .join(' · ')}{' '}
-                                — skipped
-                            </p>
-                        )}
-
-                        <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.03] p-3">
-                            <p className="mb-1 app-overline">
-                                Sample message
-                                {smsPreviewRecipient?.full_name
-                                    ? ` · ${smsPreviewRecipient.full_name}`
-                                    : ''}
-                            </p>
-                            <p className="whitespace-pre-wrap break-words leading-relaxed text-neutral-900 dark:text-neutral-100">
-                                {smsPreviewBody || '—'}
-                            </p>
-                            <p className="mt-2 text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
-                                {smsPreviewBody.length} characters
-                                {smsPreviewBody.length > 160 ? ' · may split into multiple SMS' : ''}
-                            </p>
-                        </div>
-
-                        <div>
-                            <p className="mb-2 app-overline">
-                                Recipients
-                            </p>
-                            {smsRecipientPreview.length === 0 ? (
-                                <p className="text-neutral-500 dark:text-neutral-400">No valid phone numbers in this selection.</p>
-                            ) : (
-                                <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-800/60 p-3">
-                                    {smsRecipientPreview.map((r) => (
-                                        <li
-                                            key={r.id}
-                                            className="flex items-center justify-between gap-3 text-neutral-700 dark:text-neutral-200"
-                                        >
-                                            <span className="truncate font-medium">{r.full_name}</span>
-                                            <span className="shrink-0 font-mono text-xs text-neutral-500 dark:text-neutral-400">
-                                                {r.phone}
-                                            </span>
-                                        </li>
-                                    ))}
-                                    {canSendSMS > smsRecipientPreview.length ? (
-                                        <li className="pt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                                            +{canSendSMS - smsRecipientPreview.length} more
-                                        </li>
-                                    ) : null}
-                                </ul>
-                            )}
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 sm:gap-0">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="min-h-11 cursor-pointer"
-                            disabled={sending}
-                            onClick={() => setSmsReviewOpen(false)}
-                        >
-                            Back
-                        </Button>
-                        <Button
-                            type="button"
-                            className="min-h-11 cursor-pointer"
-                            disabled={sending || canSendSMS === 0}
-                            aria-busy={sending}
-                            onClick={() => void handleSend()}
-                        >
-                            {sending ? (
-                                <>
-                                    <LoadingSpinner size="sm" className="mr-2" />
-                                    Sending…
-                                </>
-                            ) : dryRun ? (
-                                `Confirm dry run (${canSendSMS})`
-                            ) : (
-                                `Confirm send (${canSendSMS})`
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     )
 }

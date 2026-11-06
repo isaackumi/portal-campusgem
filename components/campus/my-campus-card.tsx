@@ -63,7 +63,7 @@ export function MyCampusCard({ className }: { className?: string }) {
     <section className={['dashboard-panel p-5', className].filter(Boolean).join(' ')} aria-labelledby="my-campus-title">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 dark:bg-brand-400/10 dark:text-brand-300 dark:ring-brand-400/20">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400">
             <GraduationCap className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">

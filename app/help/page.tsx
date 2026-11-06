@@ -96,7 +96,7 @@ function GuidedToursContent() {
           return (
             <section key={group.id} aria-labelledby={`tour-group-${group.id}`}>
               <div className="mb-3 flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <div className="min-w-0">

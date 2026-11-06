@@ -72,7 +72,7 @@ export function FormAnalyticsDashboard({ fields, responses }: Props) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+              <PieChartIcon className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
               Demographics
             </CardTitle>
             <CardDescription>Distribution from mapped prefill fields (sex, age, education, etc.).</CardDescription>

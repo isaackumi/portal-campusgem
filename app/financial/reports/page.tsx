@@ -13,7 +13,7 @@ export default function FinancialReportsPage() {
         </div>
         <section className="dashboard-panel p-4 sm:p-5">
           <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 dark:bg-brand-400/10 dark:text-brand-300 dark:ring-brand-400/20">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400">
               <FileBarChart className="h-4 w-4" aria-hidden />
             </span>
             <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">

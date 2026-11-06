@@ -132,7 +132,7 @@ export default function KioskPage() {
           <div className="dashboard-panel min-w-0 p-4 sm:p-5" data-tour="kiosk-form">
             <div className="mb-4">
               <h2 className="app-section-title flex items-center gap-2">
-                <User className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+                <User className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
                 Member check-in
               </h2>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
@@ -201,7 +201,7 @@ export default function KioskPage() {
             ) : (
               <div className="dashboard-panel space-y-4 p-4 sm:p-5">
                 <h2 className="app-section-title flex items-center gap-2">
-                  <Monitor className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+                  <Monitor className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
                   How it works
                 </h2>
                 <ol className="space-y-3 text-sm text-neutral-600 dark:text-neutral-300">

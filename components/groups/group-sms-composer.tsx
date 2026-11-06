@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useBackgroundJobs } from '@/components/background-jobs'
+import { useSmsPreview } from '@/components/comms/sms-preview'
 import { getCommsProviderStatusAction } from '@/lib/actions/comms'
 import { sendGroupSmsAction } from '@/lib/actions/groups'
 import { loadHouseholdPrimariesAction } from '@/lib/actions/households'
@@ -43,6 +44,7 @@ export function GroupSmsComposer({
 }) {
   const { toast } = useToast()
   const jobs = useBackgroundJobs()
+  const smsPreview = useSmsPreview()
   const [message, setMessage] = useState('')
   const [dryRun, setDryRun] = useState(false)
   const [smsConfigured, setSmsConfigured] = useState<boolean | null>(null)
@@ -121,16 +123,31 @@ export function GroupSmsComposer({
     setMessage((current) => (current && !current.endsWith(' ') ? `${current} ${token}` : `${current}${token}`))
   }
 
-  function send() {
+  async function send() {
     const body = message.trim()
     if (!body || targets.length === 0) return
     const count = targets.length
-    if (
-      !effectiveDryRun &&
-      !window.confirm(`Text ${count} member${count === 1 ? '' : 's'} of ${groupName}? This sends real SMS.`)
-    ) {
-      return
-    }
+    const ok = await smsPreview({
+      title: `Text ${groupName}`,
+      message: body,
+      recipients: targets.map(({ recipient: r }) => ({
+        name: r.name,
+        phone: r.phone,
+        message: personalizeMessage(body, {
+          name: r.name.split(' ')[0] ?? r.name,
+          full_name: r.name,
+          ...(r.variables ?? {}),
+        }),
+      })),
+      warnings: [
+        ...(skipped.length > 0
+          ? [`${skipped.length} ${skipped.length === 1 ? 'member has' : 'members have'} no valid phone and will be skipped.`]
+          : []),
+        ...(effectiveDryRun ? ['Dry run: nothing will actually be sent.'] : []),
+      ],
+      sendLabel: effectiveDryRun ? `Dry run for ${count}` : undefined,
+    })
+    if (!ok) return
 
     const batchId = crypto.randomUUID()
     jobs.start({
@@ -276,7 +293,7 @@ export function GroupSmsComposer({
           </span>
         </label>
         <Button
-          onClick={send}
+          onClick={() => void send()}
           disabled={!message.trim() || targets.length === 0 || jobs.isRunning}
           className="h-11 w-full sm:h-10 sm:w-auto"
         >

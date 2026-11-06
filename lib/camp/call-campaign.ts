@@ -234,6 +234,45 @@ export function buildCallListSms(input: {
 }
 
 /**
+ * The texts `sendCallListsBySmsAction` will send, per caller, built from the same
+ * registrations: for the "check before sending" preview.
+ */
+export function planCallListSms(input: {
+  registrations: readonly CampRegistration[]
+  callers: ReadonlyArray<{ id: string; full_name: string; phone?: string | null; can_use_app?: boolean }>
+  callerIds?: readonly string[]
+  includeSettled?: boolean
+  campYear?: number | string | null
+  link: string
+}): Array<{ id: string; name: string; phone: string | null; parts: string[] }> {
+  const byCaller = new Map<string, CampRegistration[]>()
+  for (const reg of input.registrations) {
+    if (!reg.assigned_to || reg.status === 'cancelled') continue
+    if (!input.includeSettled && !isOpenCall(reg)) continue
+    if (input.callerIds?.length && !input.callerIds.includes(reg.assigned_to)) continue
+    byCaller.set(reg.assigned_to, [...(byCaller.get(reg.assigned_to) ?? []), reg])
+  }
+  const people = new Map(input.callers.map((c) => [c.id, c]))
+  return Array.from(byCaller.entries()).map(([id, list]) => {
+    const person = people.get(id)
+    const name = person?.full_name ?? 'Unknown caller'
+    return {
+      id,
+      name,
+      phone: person?.phone?.trim() || null,
+      parts: buildCallListSms({
+        callerName: name,
+        campYear: input.campYear,
+        entries: [...list]
+          .sort((a, b) => a.full_name.localeCompare(b.full_name))
+          .map((r) => ({ name: r.full_name, phone: r.phone, outcome: r.attendance_confirmation })),
+        link: person?.can_use_app ? input.link : null,
+      }),
+    }
+  })
+}
+
+/**
  * Default text when asking registrants themselves to confirm. Texts come from an
  * alphanumeric sender ID nobody can reply to, so `{{confirmLink}}` gives each person
  * their own tap-to-confirm page instead. One SMS segment with a typical name and link.

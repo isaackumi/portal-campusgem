@@ -11,6 +11,7 @@ import { AccessDenied } from '@/components/auth/access-denied'
 import { PhoneLink } from '@/components/contact/phone-link'
 import { useAuth } from '@/components/providers'
 import { useToast } from '@/hooks/use-toast'
+import { fillSmsPlaceholders, useSmsPreview } from '@/components/comms/sms-preview'
 import { refreshInboxUnreadBadge } from '@/components/inbox/inbox-unread-badge'
 import {
   archiveInboxThreadAction,
@@ -179,6 +180,7 @@ export default function InboxPage() {
 
 function ThreadView({ phone, onBack, onChanged }: { phone: string; onBack: () => void; onChanged: () => void }) {
   const { toast } = useToast()
+  const smsPreview = useSmsPreview()
   const [thread, setThread] = useState<InboxThread | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reply, setReply] = useState('')
@@ -204,9 +206,16 @@ function ThreadView({ phone, onBack, onChanged }: { phone: string; onBack: () =>
 
   const segments = smsSegmentInfo(reply)
 
-  function send() {
+  async function send() {
     const message = reply.trim()
     if (!message) return
+    const name = thread?.match.sender_name ?? null
+    const ok = await smsPreview({
+      title: 'Reply',
+      message,
+      recipients: [{ name: name ?? 'Unknown sender', phone: displayPhone(phone), message: fillSmsPlaceholders(message, { name }) }],
+    })
+    if (!ok) return
     startSend(async () => {
       const res = await replyInboxThreadAction({ phone, message })
       if (res.error) {
@@ -335,7 +344,7 @@ function ThreadView({ phone, onBack, onChanged }: { phone: string; onBack: () =>
         className="border-t border-neutral-200/80 p-4 dark:border-white/[0.06]"
         onSubmit={(e) => {
           e.preventDefault()
-          send()
+          void send()
         }}
       >
         <label htmlFor="inbox-reply" className="sr-only">
@@ -346,7 +355,7 @@ function ThreadView({ phone, onBack, onChanged }: { phone: string; onBack: () =>
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send()
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void send()
           }}
           rows={3}
           maxLength={918}

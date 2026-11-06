@@ -42,10 +42,10 @@ export default function PublicRlcJoinPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-brand-50/80 via-white to-white dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-950">
+    <div className="min-h-[100dvh] bg-neutral-50 dark:bg-neutral-950">
       <div className="mx-auto w-full max-w-lg px-3 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-4 sm:py-12">
         <div className="mb-6 px-1 text-center sm:mb-8">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-brand-800 dark:bg-brand-400/10 dark:text-brand-300">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-neutral-500 dark:text-neutral-400">
             <Church className="h-7 w-7" />
           </div>
           <p className="app-overline text-brand-700/80 dark:text-brand-300">{RLC_NAME}</p>

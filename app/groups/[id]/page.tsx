@@ -26,7 +26,6 @@ import {
   ArrowLeft,
   Users,
   Settings,
-  Crown,
   Star,
   Calendar,
   MapPin,
@@ -38,6 +37,8 @@ import {
   Download,
   MessageSquare,
   Eye,
+  UserCheck,
+  UserRound,
 } from 'lucide-react'
 
 type GroupEditForm = {
@@ -279,7 +280,7 @@ export default function GroupDetailsPage() {
 
   const getRoleIcon = (role: GroupMembership['role']) => {
     switch (role) {
-      case 'leader': return <Crown className="h-3 w-3" />
+      case 'leader': return <UserCheck className="h-3 w-3" />
       case 'co_leader': return <Star className="h-3 w-3" />
       case 'executive': return <Shield className="h-3 w-3" />
       default: return <Users className="h-3 w-3" />
@@ -342,8 +343,8 @@ export default function GroupDetailsPage() {
   }
 
   const leaders = [
-    { person: group.leader, label: 'Leader', icon: Crown, tone: 'bg-amber-50 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300' },
-    { person: group.co_leader, label: 'Co-leader', icon: Star, tone: 'bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300' },
+    { person: group.leader, label: 'Leader', icon: UserCheck, tone: 'bg-neutral-100 text-neutral-600 dark:bg-white/[0.06] dark:text-neutral-300' },
+    { person: group.co_leader, label: 'Co-leader', icon: UserRound, tone: 'bg-neutral-100 text-neutral-600 dark:bg-white/[0.06] dark:text-neutral-300' },
   ].filter((l) => l.person)
 
   return (
@@ -410,7 +411,6 @@ export default function GroupDetailsPage() {
             <Card className="lg:col-start-3 lg:row-start-1">
               <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
                 <CardTitle className="app-section-title flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
                   Leadership
                 </CardTitle>
               </CardHeader>
@@ -496,7 +496,7 @@ export default function GroupDetailsPage() {
                         return (
                           <li key={groupMember.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex min-w-0 items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-white/[0.06] dark:text-neutral-400">
                                 <Users className="h-5 w-5" />
                               </div>
                               <div className="min-w-0 flex-1">

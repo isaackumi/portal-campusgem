@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/providers'
 import { useBackgroundJobs } from '@/components/background-jobs'
-import { parseManualRecipients } from '@/lib/comms/recipients'
+import { parseManualRecipients, personalizeMessage } from '@/lib/comms/recipients'
+import { useSmsPreview } from '@/components/comms/sms-preview'
 import { householdIdsOf, onePerHousehold } from '@/lib/households/one-per-household'
 import { loadHouseholdPrimariesAction } from '@/lib/actions/households'
 import {
@@ -42,14 +43,6 @@ import { PageHeader } from '@/components/layout/page-header'
 import { PhoneLink } from '@/components/contact/phone-link'
 import { FormActionBar } from '@/components/admin/form-action-bar'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { isValidSmsPhone, normalizeSmsPhone } from '@/lib/comms/sms-client'
@@ -103,6 +96,7 @@ export function CommsCenterView() {
   const [loading, setLoading] = useState(true)
   // Sends run as a background job; the page stays usable and shows progress.
   const { start: startJob, isRunning: sending } = useBackgroundJobs()
+  const preview = useSmsPreview()
   const [dryRun, setDryRun] = useState(false)
   const [forceMock, setForceMock] = useState(false)
 
@@ -122,7 +116,6 @@ export function CommsCenterView() {
   const [manualRecipients, setManualRecipients] = useState('')
   const [searching, setSearching] = useState(false)
   const [resendingId, setResendingId] = useState<string | null>(null)
-  const [smsReviewOpen, setSmsReviewOpen] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -232,20 +225,6 @@ export function CommsCenterView() {
     ).length
   }, [effectiveRecipients, channel])
 
-  const smsRecipients = useMemo(
-    () => effectiveRecipients.filter((r) => isValidSmsPhone(r.phone)),
-    [effectiveRecipients]
-  )
-
-  const manualLineCount = useMemo(
-    () =>
-      manualRecipients
-        .split(/[\n,;]+/)
-        .map((line) => line.trim())
-        .filter(Boolean).length,
-    [manualRecipients]
-  )
-
   function canStartSend(): boolean {
     if (!user?.id) return false
     if (!messageBody.trim()) {
@@ -261,10 +240,6 @@ export function CommsCenterView() {
 
   function requestSend() {
     if (!canStartSend()) return
-    if (channel === 'sms') {
-      setSmsReviewOpen(true)
-      return
-    }
     void handleSend()
   }
 
@@ -309,6 +284,31 @@ export function CommsCenterView() {
     } as const
     const isDryRun = dryRun && channel === 'sms'
 
+    if (channel === 'sms') {
+      const deliverable = recipients.filter((r) => isValidSmsPhone(r.phone))
+      const skipped = recipients.length - deliverable.length
+      const ok = await preview({
+        title: `${COMMS_MODULE_LABELS[module]} SMS`,
+        message: messageBody,
+        recipients: deliverable.map((r) => ({
+          name: r.name,
+          phone: normalizeSmsPhone(r.phone!),
+          message: personalizeMessage(messageBody, {
+            name: r.name.split(' ')[0] ?? r.name,
+            full_name: r.name,
+            ...(r.variables ?? {}),
+          }),
+        })),
+        warnings: [
+          ...(skipped > 0 ? [`${skipped} ${skipped === 1 ? 'person has' : 'people have'} no valid phone and will be skipped.`] : []),
+          ...(isDryRun ? ['Dry run: nothing will actually be sent.'] : []),
+          ...(forceMock ? ['Force mock is on: messages go to the mock provider, not real phones.'] : []),
+        ],
+        sendLabel: isDryRun ? 'Run dry run' : undefined,
+      })
+      if (!ok) return
+    }
+
     startJob({
       title: `${isDryRun ? 'Dry run: ' : ''}${channel === 'sms' ? 'SMS' : 'Email'} to ${recipients.length}`,
       verb: isDryRun ? 'checked' : 'sent',
@@ -320,7 +320,6 @@ export function CommsCenterView() {
       },
       onComplete: () => void refresh(),
     })
-    setSmsReviewOpen(false)
     setMessageBody('')
     setSubject('')
     setManualRecipients('')
@@ -336,6 +335,15 @@ export function CommsCenterView() {
       row.status === 'failed' ||
       row.status === 'bounced'
     if (!canResend) return
+    if (
+      row.channel === 'sms' &&
+      !(await preview({
+        title: 'Resend SMS',
+        message: row.message_body,
+        recipients: [{ name: row.recipient_name, phone: row.recipient_phone }],
+      }))
+    )
+      return
 
     setResendingId(row.id)
     const { data, error } = await resendCommunicationAction({
@@ -785,108 +793,6 @@ export function CommsCenterView() {
         </TabsContent>
       </Tabs>
 
-      <Dialog
-        open={smsReviewOpen}
-        onOpenChange={(open) => {
-          if (!sending) setSmsReviewOpen(open)
-        }}
-      >
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Review SMS before sending</DialogTitle>
-            <DialogDescription>
-              Confirm the message and audience. Nothing is sent until you confirm.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                {audienceMode === 'manual'
-                  ? `${manualLineCount} manual line(s)`
-                  : `${deliverableCount} valid phone(s)`}
-              </Badge>
-              <Badge variant="outline">{COMMS_MODULE_LABELS[module]}</Badge>
-              {dryRun ? <Badge variant="outline">Dry run</Badge> : null}
-              {forceMock ? <Badge variant="outline">Force mock</Badge> : null}
-              {providers?.smsProvider ? (
-                <Badge variant="outline">Provider: {providers.smsProvider}</Badge>
-              ) : null}
-            </div>
-
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
-              <p className="mb-1 app-overline">
-                Message to send
-              </p>
-              <p className="whitespace-pre-wrap leading-relaxed text-neutral-900 dark:text-neutral-100">{messageBody || '—'}</p>
-              <p className="mt-2 text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
-                {messageBody.length} characters
-                {messageBody.length > 160 ? ' · may split into multiple SMS' : ''}
-              </p>
-            </div>
-
-            {audienceMode !== 'manual' ? (
-              <div>
-                <p className="mb-2 app-overline">
-                  Recipients
-                </p>
-                {smsRecipients.length === 0 ? (
-                  <p className="text-neutral-500 dark:text-neutral-400">No valid phone numbers selected.</p>
-                ) : (
-                  <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-neutral-800/60">
-                    {smsRecipients.slice(0, 12).map((r) => (
-                      <li
-                        key={`${r.entity_id}-${r.id}`}
-                        className="flex items-center justify-between gap-3 text-neutral-700 dark:text-neutral-300"
-                      >
-                        <span className="truncate font-medium">{r.name}</span>
-                        <span className="shrink-0 font-mono text-xs text-neutral-500 dark:text-neutral-400">
-                          {normalizeSmsPhone(r.phone!)}
-                        </span>
-                      </li>
-                    ))}
-                    {smsRecipients.length > 12 ? (
-                      <li className="pt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                        +{smsRecipients.length - 12} more
-                      </li>
-                    ) : null}
-                  </ul>
-                )}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-neutral-800/60">
-                <p className="mb-1 app-overline">
-                  Manual numbers
-                </p>
-                <p className="whitespace-pre-wrap font-mono text-xs text-neutral-700 dark:text-neutral-300">
-                  {manualRecipients.trim() || '—'}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={sending}
-              onClick={() => setSmsReviewOpen(false)}
-            >
-              Back
-            </Button>
-            <Button
-              type="button"
-              disabled={
-                sending ||
-                (audienceMode === 'manual' ? manualLineCount === 0 : deliverableCount === 0)
-              }
-              onClick={() => void handleSend()}
-            >
-              {sending ? 'Sending…' : dryRun ? 'Confirm dry run' : 'Confirm send'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </PageContainer>
   )
 }

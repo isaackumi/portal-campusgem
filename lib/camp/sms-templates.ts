@@ -217,3 +217,55 @@ export function shouldSendRegistrationConfirmationSms(campYear: number): boolean
   if (flag === 'true' || flag === '1' || flag === 'yes') return true
   return campYear >= 2026
 }
+
+/** The recipient fields camp sends personalise from (as passed to the camp SMS actions). */
+export type CampSmsPreviewRecipient = {
+  full_name?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  phone?: string | null
+  email?: string | null
+  role?: string | null
+  qr_code?: string | null
+  check_in_code?: string | null
+  room_name?: string | null
+  building?: string | null
+  room_leader?: string | null
+  roommates?: string | null
+  invite_only?: boolean
+  source?: 'member' | 'past_camper' | 'registration'
+}
+
+/**
+ * One person's camp SMS for the "check before sending" preview, filled in the way the
+ * camp SMS actions do. Values only the server knows stay as placeholders: the personal
+ * {{confirmLink}} (blank for invite-only rows, as on the server), and theme / venue when
+ * not given (the server reads them from the camp year).
+ */
+export function previewCampSms(
+  template: string,
+  r: CampSmsPreviewRecipient,
+  campYear?: number | string | null,
+  extras?: { theme?: string | null; venue?: string | null; registrationLink?: string | null }
+): string {
+  const getsConfirmLink = !r.invite_only && r.source !== 'member' && r.source !== 'past_camper'
+  return personalizeCampMessage(template, {
+    fullName: r.full_name,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    role: r.role,
+    campYear,
+    phone: r.phone,
+    email: r.email,
+    checkInCode: r.check_in_code,
+    qrCode: r.qr_code,
+    theme: extras?.theme ?? '{{theme}}',
+    venue: extras?.venue ?? '{{venue}}',
+    roomName: r.room_name,
+    building: r.building,
+    roomLeader: r.room_leader,
+    roommates: r.roommates,
+    registrationLink: extras?.registrationLink ?? '',
+    confirmLink: getsConfirmLink ? '{{confirmLink}}' : '',
+  })
+}

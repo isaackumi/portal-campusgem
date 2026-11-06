@@ -13,8 +13,8 @@ import {
 } from '@/lib/actions/camp'
 import { loadAllUsers } from '@/lib/actions/core-data'
 import type { AppUser, CampRegistration, CampYear } from '@/lib/types'
-import { personalizeCampMessage } from '@/lib/camp/sms-templates'
-import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { campSmsPreview } from '@/components/camp/camp-sms-preview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,7 +41,6 @@ import {
   MessageSquare,
   UserCheck,
   Users,
-  Sparkles,
   Phone,
   Mail,
   MoreHorizontal,
@@ -78,6 +77,7 @@ export default function CampYearHubPage() {
   const params = useParams<{ yearId: string }>()
   const router = useRouter()
   const { toast } = useToast()
+  const smsPreview = useSmsPreview()
   const { user } = useAuth()
   const yearId = params.yearId
 
@@ -89,7 +89,6 @@ export default function CampYearHubPage() {
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [smsBody, setSmsBody] = useState('')
-  const [smsReviewOpen, setSmsReviewOpen] = useState(false)
   const [assigneeId, setAssigneeId] = useState('')
   const [followUpStatus, setFollowUpStatus] = useState<'pending' | 'in_progress' | 'completed'>(
     'pending'
@@ -119,7 +118,7 @@ export default function CampYearHubPage() {
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
-        title: 'Failed to load year hub',
+        title: 'Could not load this camp year',
         description: error instanceof Error ? error.message : 'Unknown error',
       })
     } finally {
@@ -241,13 +240,27 @@ export default function CampYearHubPage() {
     }
   }
 
-  function openBulkSmsReview() {
+  async function sendBulkSms() {
     if (!user || selectedRows.length === 0 || !smsBody.trim() || !campYear) return
-    setSmsReviewOpen(true)
-  }
-
-  async function confirmBulkSms() {
-    if (!user || selectedRows.length === 0 || !smsBody.trim() || !campYear) return
+    const recipients = selectedRows.map((row) => ({
+      id: row.id,
+      full_name: row.full_name,
+      first_name: row.first_name,
+      last_name: row.last_name,
+      phone: row.phone,
+      email: row.email,
+      role: row.role,
+      check_in_code: row.check_in_code,
+      qr_code: row.qr_code,
+    }))
+    const ok = await smsPreview({
+      title: `Camp Meeting ${campYear.year} SMS`,
+      ...campSmsPreview(smsBody, recipients, campYear.year, {
+        theme: campYear.theme ?? '',
+        venue: campYear.venue ?? '',
+      }),
+    })
+    if (!ok) return
     setWorking(true)
     try {
       const { data, error } = await sendCampBulkSmsAction({
@@ -255,17 +268,7 @@ export default function CampYearHubPage() {
         sender_id: user.id,
         message_template: smsBody,
         camp_year: campYear.year,
-        recipients: selectedRows.map((row) => ({
-          id: row.id,
-          full_name: row.full_name,
-          first_name: row.first_name,
-          last_name: row.last_name,
-          phone: row.phone,
-          email: row.email,
-          role: row.role,
-          check_in_code: row.check_in_code,
-          qr_code: row.qr_code,
-        })),
+        recipients,
         filter_criteria: { role: segment === 'all' ? undefined : segment },
       })
       if (error || !data) {
@@ -281,7 +284,6 @@ export default function CampYearHubPage() {
       })
       if (data.success_count > 0) {
         setSmsBody('')
-        setSmsReviewOpen(false)
       }
     } catch (error: unknown) {
       toast({
@@ -329,11 +331,8 @@ export default function CampYearHubPage() {
             Camp years
           </button>
           <div className="flex items-start gap-3">
-            <div className="hidden shrink-0 rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 p-3 text-white shadow-sm sm:block">
-              <Sparkles className="h-6 w-6" aria-hidden />
-            </div>
             <div className="min-w-0">
-              <h1 className="app-page-title">Camp {campYear.year} intelligence hub</h1>
+              <h1 className="app-page-title">Camp {campYear.year} overview</h1>
               {campYear.theme ? <p className="app-page-description mt-1 break-words">{campYear.theme}</p> : null}
               <div className="mt-2">
                 {campYear.is_active ? <Badge variant="success">Active season</Badge> : <Badge variant="secondary">Historical season</Badge>}
@@ -458,7 +457,7 @@ export default function CampYearHubPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea value={smsBody} onChange={(event) => setSmsBody(event.target.value)} rows={5} placeholder="Hi {{name}}, thank you for joining Camp..." />
-              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={openBulkSmsReview} disabled={working || selectedRows.length === 0 || !smsBody.trim()}>
+              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => void sendBulkSms()} disabled={working || selectedRows.length === 0 || !smsBody.trim()}>
                 Review & send SMS to {selectedRows.length} selected
               </Button>
             </CardContent>
@@ -564,30 +563,6 @@ export default function CampYearHubPage() {
         </CardContent>
       </Card>
 
-      <CampSmsReviewDialog
-        open={smsReviewOpen}
-        onOpenChange={(open) => {
-          if (!open && !working) setSmsReviewOpen(false)
-        }}
-        title="Review bulk SMS"
-        description="Nothing is sent until you confirm. Each selected camper gets a personalized message."
-        recipientName={`${selectedRows.length} selected`}
-        recipientCount={selectedRows.length}
-        sampleRecipientNames={selectedRows.slice(0, 8).map((r) => r.full_name || 'Camper')}
-        previewBody={
-          selectedRows[0]
-            ? personalizeCampMessage(smsBody, {
-                fullName: selectedRows[0].full_name,
-                firstName: selectedRows[0].first_name,
-                lastName: selectedRows[0].last_name,
-                phone: selectedRows[0].phone,
-                campYear: campYear?.year,
-              })
-            : smsBody
-        }
-        sending={working}
-        onConfirm={() => void confirmBulkSms()}
-      />
     </div>
   )
 }

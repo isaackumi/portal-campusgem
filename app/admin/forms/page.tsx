@@ -68,7 +68,6 @@ import {
   FileText,
   Link2,
   Plus,
-  Sparkles,
   Trash2,
   UserRound,
 } from 'lucide-react'
@@ -658,7 +657,6 @@ function FormsAdminContent() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-amber-700 dark:text-amber-300" />
               Campus member registration
             </CardTitle>
             <CardDescription>
@@ -695,7 +693,7 @@ function FormsAdminContent() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <ClipboardList className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+              <ClipboardList className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
               Eagles camp meeting registration
             </CardTitle>
             <CardDescription>
@@ -745,7 +743,7 @@ function FormsAdminContent() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Church className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+                <Church className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
                 Redemption Light forms
               </CardTitle>
               <CardDescription>

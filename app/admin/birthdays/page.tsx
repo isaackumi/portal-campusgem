@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { loadCampusGemBirthdaysAction } from '@/lib/actions/birthdays'
 import type { BirthdayEntry } from '@/lib/birthdays/upcoming-birthdays'
 import { UpcomingBirthdaysView } from '@/components/birthdays/upcoming-birthdays-view'
+import { BirthdayHeadsUpCard } from '@/components/birthdays/birthday-heads-up-card'
+import { useAuth } from '@/components/providers'
 import { PageContainer } from '@/components/layout/page-container'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { ArrowLeft } from 'lucide-react'
@@ -13,6 +15,7 @@ export default function CampusGemBirthdaysPage() {
   const [entries, setEntries] = useState<BirthdayEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { can } = useAuth()
 
   useEffect(() => {
     void loadCampusGemBirthdaysAction().then((result) => {
@@ -44,6 +47,7 @@ export default function CampusGemBirthdaysPage() {
           {error}
         </p>
       ) : null}
+      {can('members.view') ? <BirthdayHeadsUpCard /> : null}
       <UpcomingBirthdaysView
         title="Campus Gem birthdays"
         subtitle="Upcoming birthdays for Campus Gem members. Filter by today, this week, next 30 days, or browse any calendar month."

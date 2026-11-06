@@ -16,7 +16,8 @@ import { useAuth } from '@/components/providers'
 import { useAllUsers } from '@/lib/hooks/use-data'
 import { dataService } from '@/lib/services/data-service'
 import { linkDuplicatePerson, listDuplicatePeople, sendSignInDetailsSms, updateSecondaryPhone, updateUserAccess } from '@/lib/actions/access'
-import { gainedPermissions } from '@/lib/auth/access-welcome'
+import { gainedPermissions, previewAccessWelcomeSms } from '@/lib/auth/access-welcome'
+import { useSmsPreview } from '@/components/comms/sms-preview'
 import type { DuplicatePeopleGroup } from '@/lib/people/duplicates'
 import {
   PERMISSION_GROUPS,
@@ -398,12 +399,29 @@ function NewPersonDialog({
   const [role, setRole] = useState<UserRole>('elder')
   const [saving, setSaving] = useState(false)
   const [notify, setNotify] = useState(true)
+  const smsPreview = useSmsPreview()
 
   async function submit() {
     if (!fullName.trim() || !phone.trim()) {
       toast({ variant: 'destructive', title: 'Name and phone are required' })
       return
     }
+    if (
+      notify &&
+      isStaffRole(role) &&
+      !(await smsPreview({
+        title: 'Sign-in details',
+        recipients: [
+          {
+            name: fullName.trim(),
+            phone: phone.trim(),
+            message: previewAccessWelcomeSms({ fullName: fullName.trim(), role, phone: phone.trim() }),
+          },
+        ],
+        sendLabel: 'Add and send text',
+      }))
+    )
+      return
     setSaving(true)
     const result = await dataService.createUser({ full_name: fullName.trim(), phone: phone.trim(), role })
     if (result.error || !result.data) {
@@ -462,7 +480,7 @@ function NewPersonDialog({
           )}
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving} className="h-11 sm:h-10">Cancel</Button>
-            <Button onClick={submit} disabled={saving} className="h-11 sm:h-10">
+            <Button onClick={() => void submit()} disabled={saving} className="h-11 sm:h-10">
               {saving ? <LoadingSpinner size="sm" className="mr-2" /> : null}
               Add person
             </Button>
@@ -498,6 +516,7 @@ function AccessEditor({
   const [saving, setSaving] = useState(false)
   const [notify, setNotify] = useState(true)
   const [resending, setResending] = useState(false)
+  const smsPreview = useSmsPreview()
 
   const fromRole = useMemo(() => new Set(permissionsForRole(role)), [role])
   const total = effectivePermissions(role, extra).length
@@ -506,6 +525,22 @@ function AccessEditor({
   const canText = Boolean(person.phone?.trim())
 
   async function resend() {
+    const ok = await smsPreview({
+      title: 'Resend sign-in details',
+      recipients: [
+        {
+          name: person.full_name,
+          phone: person.phone,
+          message: previewAccessWelcomeSms({
+            fullName: person.full_name,
+            role: person.role,
+            permissions: person.permissions,
+            phone: person.phone,
+          }),
+        },
+      ],
+    })
+    if (!ok) return
     setResending(true)
     const res = await sendSignInDetailsSms(person.id)
     setResending(false)
@@ -518,6 +553,26 @@ function AccessEditor({
   }
 
   async function save() {
+    const willText = notify && gainsAccess && canText
+    if (willText) {
+      const ok = await smsPreview({
+        title: 'Sign-in details',
+        recipients: [
+          {
+            name: person.full_name,
+            phone: person.phone,
+            message: previewAccessWelcomeSms({
+              fullName: person.full_name,
+              role,
+              permissions: extra.filter((p) => !fromRole.has(p)),
+              phone: person.phone,
+            }),
+          },
+        ],
+        sendLabel: 'Save and send text',
+      })
+      if (!ok) return
+    }
     setSaving(true)
     if (secondaryPhone.trim() !== (person.secondary_phone ?? '')) {
       const phoneResult = await updateSecondaryPhone(person.id, secondaryPhone)
@@ -528,7 +583,7 @@ function AccessEditor({
       }
     }
     const result = await updateUserAccess(person.id, role, extra.filter((p) => !fromRole.has(p)), {
-      notify: notify && gainsAccess && canText,
+      notify: willText,
     })
     setSaving(false)
     if (result.error || !result.data) {

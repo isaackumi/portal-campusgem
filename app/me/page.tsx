@@ -71,7 +71,7 @@ function Panel({
     <section className="dashboard-panel p-4 sm:p-5" data-tour={tour}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="app-section-title flex items-center gap-2">
-          <Icon className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
+          <Icon className="h-4 w-4 text-neutral-400 dark:text-neutral-500" aria-hidden />
           {title}
         </h2>
         {action}
@@ -186,7 +186,7 @@ function MyGemContent() {
             <div className="min-w-0">
               <p className="app-overline">My GEM</p>
               <h1 className="app-page-title mt-1 break-words">
-                Hello, <span className="app-display-accent">{firstName}</span>
+                Hello, {firstName}
               </h1>
               <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{me.full_name}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">

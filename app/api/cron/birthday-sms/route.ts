@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runTodaysBirthdaySmsJob } from '@/lib/actions/birthdays'
+import { runBirthdayHeadsUpJob } from '@/lib/actions/birthday-heads-up'
 import { asSystem } from '@/lib/auth/action-guard'
 
 export const runtime = 'nodejs'
@@ -20,7 +21,7 @@ function authorize(req: NextRequest): boolean {
 }
 
 /**
- * Daily birthday SMS (Hubtel).
+ * Daily birthday SMS (Hubtel), plus the one-week heads-up to admins.
  * Vercel Cron: GET /api/cron/birthday-sms with Authorization: Bearer CRON_SECRET
  * Manual: ?dry_run=1&force=1&secret=...
  */
@@ -35,10 +36,16 @@ export async function GET(req: NextRequest) {
   try {
     // Authorised by CRON_SECRET above, not a user session.
     const result = await asSystem(() => runTodaysBirthdaySmsJob({ dry_run: dryRun, force }))
+    // Admins: who has a birthday in one week (name, phone, campus / RLC / camper), for flyers.
+    // Runs even when today's birthday texts are switched off; its own failure doesn't hide theirs.
+    const headsUp = await asSystem(() => runBirthdayHeadsUpJob({ dry_run: dryRun })).catch((e: unknown) => ({
+      data: null,
+      error: e instanceof Error ? e.message : 'heads-up failed',
+    }))
     if (result.error) {
-      return NextResponse.json({ ok: false, error: result.error, data: result.data }, { status: 500 })
+      return NextResponse.json({ ok: false, error: result.error, data: result.data, heads_up: headsUp }, { status: 500 })
     }
-    return NextResponse.json({ ok: true, data: result.data })
+    return NextResponse.json({ ok: true, data: result.data, heads_up: headsUp })
   } catch (error: unknown) {
     return NextResponse.json(
       {

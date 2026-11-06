@@ -12,6 +12,8 @@ import { isValidPhone } from '@/lib/phone'
 import { parseIsoDob, MEMBER_DOB_PLACEHOLDER_YEAR } from '@/lib/camp/birthday'
 import { useAuth } from '@/components/providers'
 import { useToast } from '@/hooks/use-toast'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { gainedPermissions, previewAccessWelcomeSms } from '@/lib/auth/access-welcome'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -273,6 +275,7 @@ export type EditUserDialogProps = {
  */
 export function EditUserDialog({ open, onOpenChange, userId, onSaved }: EditUserDialogProps) {
   const { toast } = useToast()
+  const smsPreview = useSmsPreview()
   const { user: actor, can } = useAuth()
   const canManageUsers = can('users.manage')
   const canManageAdmins = can('admins.manage')
@@ -424,6 +427,29 @@ export function EditUserDialog({ open, onOpenChange, userId, onSaved }: EditUser
     const changedUser = new Set<keyof UserForm>(userDirty)
     const failures: string[] = []
     let latest: AppUser = person
+
+    // A role change that gives more access texts sign-in details: check that text first.
+    const textPhone = (changedUser.has('phone') ? u.phone.trim() : person.phone?.trim()) || ''
+    if (
+      changedUser.has('role') &&
+      textPhone &&
+      gainedPermissions(person, { role: u.role, permissions: person.permissions }).length > 0
+    ) {
+      const name = changedUser.has('full_name') ? u.full_name.trim() : person.full_name
+      const ok = await smsPreview({
+        title: 'Sign-in details',
+        recipients: [
+          {
+            name,
+            phone: textPhone,
+            message: previewAccessWelcomeSms({ fullName: name, role: u.role, permissions: person.permissions, phone: textPhone }),
+          },
+        ],
+        sendLabel: 'Save and send text',
+      })
+      if (!ok) return
+    }
+
     setSaving(true)
     try {
       // 1. Profile fields (never role — that goes through updateUserAccess below).

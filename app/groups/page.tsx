@@ -29,9 +29,11 @@ import {
   ArrowLeft,
   Settings,
   Edit,
-  Crown,
   Star,
   Loader2,
+  UserCheck,
+  UserRound,
+  Flag,
 } from 'lucide-react'
 
 function GroupsContent() {
@@ -129,7 +131,7 @@ function GroupsContent() {
       case 'fellowship': return <Users className="h-4 w-4" />
       case 'age_group': return <User className="h-4 w-4" />
       case 'special_interest': return <Star className="h-4 w-4" />
-      case 'leadership': return <Crown className="h-4 w-4" />
+      case 'leadership': return <Flag className="h-4 w-4" />
       default: return <Users className="h-4 w-4" />
     }
   }
@@ -281,8 +283,8 @@ function GroupsContent() {
                       <h4 className="app-overline mb-1.5">Leadership</h4>
                       <div className="space-y-1">
                         {[
-                          { person: group.leader, icon: <Crown className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-label="Leader" /> },
-                          { person: group.co_leader, icon: <Star className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-300" aria-label="Co-leader" /> },
+                          { person: group.leader, icon: <UserCheck className="h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" aria-label="Leader" /> },
+                          { person: group.co_leader, icon: <UserRound className="h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" aria-label="Co-leader" /> },
                         ]
                           .filter((l) => l.person)
                           .map(({ person, icon }) => (

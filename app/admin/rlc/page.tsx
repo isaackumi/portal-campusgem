@@ -101,7 +101,7 @@ export default function RlcDashboardPage() {
   return (
     <PageContainer className="space-y-6 sm:space-y-8">
       <RlcPageHeader
-        title="Mother Church Hub"
+        title="Mother church"
         subtitle={`Visitor pipeline, membership, attendance, and ministry records for ${RLC_NAME}.`}
         actions={
           <>
@@ -188,7 +188,7 @@ export default function RlcDashboardPage() {
       <div data-tour="rlc-pipeline" className="grid gap-3 sm:gap-4 lg:grid-cols-2">
         <section className="dashboard-panel p-4 sm:p-5">
           <h2 className="app-section-title flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
+            <TrendingUp className="h-4 w-4 text-neutral-400 dark:text-neutral-500" aria-hidden />
             Visitor pipeline
           </h2>
           <p className="app-meta">From first visit to full membership</p>
@@ -228,7 +228,7 @@ export default function RlcDashboardPage() {
             href={item.href}
             className="dashboard-panel flex min-h-[60px] items-center gap-3 p-3 transition-[box-shadow,border-color] hover:border-neutral-300 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:hover:border-white/[0.12] sm:p-4"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400">
               <item.icon className="h-5 w-5" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">

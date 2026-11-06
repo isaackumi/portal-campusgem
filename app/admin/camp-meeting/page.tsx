@@ -269,10 +269,6 @@ export default function CampAdminDashboard() {
     <div className="mx-auto max-w-7xl space-y-6">
       {/* Hero */}
       <header className="dashboard-panel relative overflow-hidden rounded-2xl px-5 py-5 sm:px-8 sm:py-7">
-        <div
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl dark:bg-brand-500/15"
-          aria-hidden
-        />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -283,7 +279,7 @@ export default function CampAdminDashboard() {
               </Badge>
             </div>
             <h1 className="app-page-title mt-4">
-              Camp meeting <span className="app-display-accent">{campYear.year}</span>
+              Camp meeting {campYear.year}
             </h1>
             <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
               {campYear.theme ? <span className="font-medium text-neutral-800 dark:text-neutral-200">“{campYear.theme}”</span> : null}
@@ -556,7 +552,7 @@ export default function CampAdminDashboard() {
                   href={q.href}
                   className="dashboard-panel group flex items-start gap-3 p-4 transition-colors hover:border-neutral-300 dark:hover:border-neutral-600"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 transition-colors group-hover:bg-brand-100 dark:bg-brand-950/50 dark:text-brand-300 dark:group-hover:bg-brand-900/50">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors group-hover:bg-brand-100 dark:group-hover:bg-brand-900/50 text-neutral-500 dark:text-neutral-400">
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
                   <span className="min-w-0">

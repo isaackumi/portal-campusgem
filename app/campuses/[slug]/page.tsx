@@ -203,7 +203,7 @@ function CampusView({ data, reload }: { data: CampusPageData; reload: () => Prom
             <TabsContent value="text" className="mt-4">
               <section className="dashboard-panel p-5">
                 <h2 className="app-section-title mb-3 flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
+                  <MessageSquare className="h-4 w-4 text-neutral-400 dark:text-neutral-500" aria-hidden />
                   Text everyone on {label}
                 </h2>
                 <GroupSmsComposer groupId={group.id} groupName={label} memberships={memberships} sendAction={sendCampusSmsAction} />

@@ -19,15 +19,9 @@ const toneDot: Record<StatTone, string> = {
   danger: 'bg-red-500',
 }
 
-const toneIcon: Record<StatTone, string> = {
-  default: 'bg-brand-50 text-brand-600 ring-brand-600/10 dark:bg-brand-400/10 dark:text-brand-300 dark:ring-brand-400/20',
-  success: 'bg-emerald-50 text-emerald-600 ring-emerald-600/10 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20',
-  warning: 'bg-amber-50 text-amber-600 ring-amber-600/10 dark:bg-amber-400/10 dark:text-amber-300 dark:ring-amber-400/20',
-  danger: 'bg-red-50 text-red-600 ring-red-600/10 dark:bg-red-400/10 dark:text-red-300 dark:ring-red-400/20',
-}
-
 /**
- * Headline number. Optional icon chip, trend (percentage change, shown with an
+ * Headline number, deliberately plain: no icon chip (the `icon` prop is accepted for
+ * older callers and ignored). Optional trend (percentage change, shown with an
  * arrow and sign so it never relies on colour) and link.
  */
 export function StatCard({
@@ -35,7 +29,7 @@ export function StatCard({
   value,
   sub,
   tone = 'default',
-  icon: Icon,
+  icon: _icon,
   trend,
   href,
   children,
@@ -56,11 +50,6 @@ export function StatCard({
     <>
       <div className="flex items-start justify-between gap-3">
         <p className="app-stat-label">{label}</p>
-        {Icon ? (
-          <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset sm:h-8 sm:w-8', toneIcon[tone])}>
-            <Icon className="h-4 w-4" aria-hidden />
-          </span>
-        ) : null}
       </div>
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <p className="app-stat-value max-sm:text-[24px]">{value}</p>
@@ -82,7 +71,7 @@ export function StatCard({
       {children}
       {sub ? (
         <p className={cn('flex items-center gap-1.5 text-[13px]', toneSub[tone])}>
-          {tone !== 'default' && !Icon && <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', toneDot[tone])} aria-hidden />}
+          {tone !== 'default' && <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', toneDot[tone])} aria-hidden />}
           <span className="truncate">{sub}</span>
         </p>
       ) : null}

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, Sparkles, Upload, ArrowRight } from 'lucide-react'
+import { Calendar, Upload, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -20,9 +20,6 @@ export function CampActiveYearEmpty({
     <div className="mx-auto max-w-4xl">
       <Card className="overflow-hidden">
         <CardHeader className="space-y-4 p-5 sm:p-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-sm">
-            <Sparkles className="h-6 w-6" aria-hidden />
-          </div>
           <div>
             <CardTitle className="app-section-title">{title}</CardTitle>
             <CardDescription className="mt-2 text-sm leading-relaxed sm:text-base">
@@ -50,7 +47,7 @@ export function CampActiveYearEmpty({
               <ArrowRight className="mb-2 h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
               <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Review past seasons</p>
               <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                Open any year hub for analytics, SMS, and outreach assignments.
+                Open any year for analytics, SMS, and outreach assignments.
               </p>
             </div>
           </div>

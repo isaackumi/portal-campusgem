@@ -91,7 +91,7 @@ export default function AdminPage() {
               href={section.href}
               className="dashboard-panel flex min-h-[72px] items-center gap-3 p-3 transition-[box-shadow,border-color] hover:border-neutral-300 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:hover:border-white/[0.12] sm:gap-4 sm:p-5"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-400/10 dark:text-brand-300">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400">
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">

@@ -182,7 +182,7 @@ function AuthPageContent() {
 
   return (
     <div className="flex min-h-screen bg-neutral-100 dark:bg-neutral-900">
-      <aside className="relative hidden w-[42%] max-w-xl flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-700 via-brand-800 to-neutral-900 p-10 text-white lg:flex">
+      <aside className="relative hidden w-[42%] max-w-xl flex-col justify-between overflow-hidden bg-brand-900 p-10 text-white lg:flex">
         <div className="flex items-center gap-3">
           <BrandMark size="lg" className="bg-white/15 from-transparent to-transparent shadow-none" />
           <span className="leading-tight">
@@ -191,7 +191,7 @@ function AuthPageContent() {
           </span>
         </div>
         <div>
-          <p className="max-w-md font-display text-[42px] font-bold leading-[1.08] tracking-[-0.03em]">Ministry management, without the <span className="bg-gradient-to-r from-brand-200 to-violet-200 bg-clip-text text-transparent">spreadsheet chase.</span></p>
+          <p className="max-w-md font-display text-[34px] font-bold leading-[1.12] tracking-[-0.025em]">Members, camp meeting and RLC in one place.</p>
           <ul className="mt-8 space-y-3 text-sm text-white/80">
             <li className="flex items-start gap-3">
               <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-[10px]">1</span>
@@ -204,8 +204,6 @@ function AuthPageContent() {
           </ul>
         </div>
         <p className="text-xs text-white/50">© {new Date().getFullYear()} Campus Gem Ministries</p>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/5" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-32 right-10 h-96 w-96 rounded-full bg-white/5" aria-hidden />
       </aside>
 
       <main className="relative flex flex-1 items-center justify-center px-4 py-10">
@@ -218,7 +216,7 @@ function AuthPageContent() {
             <BrandTitle />
           </div>
           <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 sm:p-8">
-            <h1 className="app-page-title">Welcome <span className="app-display-accent">back</span></h1>
+            <h1 className="app-page-title">Welcome back</h1>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
               Phone number or membership ID (e.g. CG-2024-XXXX)
             </p>

@@ -617,6 +617,8 @@ function CallsWorkspace() {
             currentLoad={openLoad}
             campYearId={year.id}
             canSms={data.canSms}
+            registrations={data.registrations}
+            campYear={year.year}
             onAssigned={() => {
               setSelected(new Set())
               void refresh()
@@ -647,7 +649,7 @@ function CallsWorkspace() {
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="mt-4 flex flex-col items-center rounded-xl border border-dashed border-neutral-300 px-6 py-14 text-center dark:border-neutral-700">
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-300">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-white/[0.06] dark:text-neutral-400">
         <PhoneCall className="h-5 w-5" aria-hidden />
       </span>
       <p className="app-section-title mt-4">{title}</p>

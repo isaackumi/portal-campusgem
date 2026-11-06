@@ -18,7 +18,6 @@ import {
   ArrowLeft,
   Users,
   Settings,
-  Crown,
   Star,
   Calendar,
   MapPin,
@@ -30,7 +29,8 @@ import {
   Target,
   Plus,
   X,
-  Save
+  Save,
+  Flag,
 } from 'lucide-react'
 
 interface GroupFormData {
@@ -225,7 +225,7 @@ export default function CreateGroupPage() {
       case 'fellowship': return <Users className="h-5 w-5" />
       case 'age_group': return <User className="h-5 w-5" />
       case 'special_interest': return <Star className="h-5 w-5" />
-      case 'leadership': return <Crown className="h-5 w-5" />
+      case 'leadership': return <Flag className="h-5 w-5" />
       default: return <Users className="h-5 w-5" />
     }
   }
@@ -276,7 +276,7 @@ export default function CreateGroupPage() {
           <Card>
             <CardHeader>
               <CardTitle className="app-section-title flex items-center gap-2">
-                <Users className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+                <Users className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
                 Basic Information
               </CardTitle>
             </CardHeader>
@@ -325,7 +325,6 @@ export default function CreateGroupPage() {
                       </SelectItem>
                       <SelectItem value="leadership">
                         <div className="flex items-center">
-                          <Crown className="h-4 w-4 mr-2" />
                           Leadership
                         </div>
                       </SelectItem>
@@ -385,7 +384,6 @@ export default function CreateGroupPage() {
           <Card>
             <CardHeader>
               <CardTitle className="app-section-title flex items-center gap-2">
-                <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 Leadership
               </CardTitle>
             </CardHeader>
@@ -539,7 +537,7 @@ export default function CreateGroupPage() {
           <Card>
             <CardHeader>
               <CardTitle className="app-section-title flex items-center gap-2">
-                <Phone className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+                <Phone className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
                 Contact Information
               </CardTitle>
             </CardHeader>
@@ -581,7 +579,7 @@ export default function CreateGroupPage() {
           <Card>
             <CardHeader>
               <CardTitle className="app-section-title flex items-center gap-2">
-                <Target className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                <Target className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
                 Tags
               </CardTitle>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">Add tags to help categorize this group</p>

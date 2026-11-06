@@ -144,7 +144,7 @@ export function HouseholdCard({ userId, fullName }: { userId: string; fullName: 
     <section className="dashboard-panel p-4 sm:p-5" data-tour="member-household">
       <div className="flex items-center justify-between gap-3">
         <h2 className="app-section-title flex items-center gap-2">
-          <Home className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
+          <Home className="h-4 w-4 text-neutral-400 dark:text-neutral-500" aria-hidden />
           Household
         </h2>
         {household ? <Badge variant="secondary">{household.members.length}</Badge> : null}

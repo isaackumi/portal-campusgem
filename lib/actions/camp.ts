@@ -839,33 +839,24 @@ export async function sendCampRegistrationConfirmationSms(
   }
 }
 
-/**
- * Send camp SMS templates to one or many registrations (confirmation or room allocation).
- * Enriches room fields when template needs them.
- */
-export async function sendCampTemplateSmsToRegistrationsAction(input: {
+type CampTemplateSmsInput = {
   camp_year_id: string
-  sender_id: string
   registration_ids: string[]
   template_id: Extract<CampMessageTemplateId, 'registration_confirmation' | 'room_allocation'>
-  dry_run?: boolean
-  force_mock?: boolean
-}): Promise<{
-  data: {
-    success_count: number
-    error_count: number
-    skipped_count: number
-    errors: string[]
-    batch_id: string
-    provider: string
-  } | null
-  error: string | null
-}> {
-  await guard('sms.send')
-  requireConvexEnv()
-  if (!input.sender_id) return { data: null, error: 'Sender is required' }
-  if (!input.registration_ids.length) return { data: null, error: 'Select at least one registration' }
+}
 
+/** Who a template send goes to and with what fields; shared by the send and its preview. */
+async function planCampTemplateSms(input: CampTemplateSmsInput): Promise<
+  | { error: string }
+  | {
+      error?: undefined
+      template: string
+      recipients: CampSmsRecipient[]
+      errors: string[]
+      skipped_count: number
+      yearDoc: CampYear | null
+    }
+> {
   const { fetchRegistrationsFromConvex, fetchCampRoomsFromConvex, fetchCampYearByIdFromConvex } =
     await import('@/lib/convex/camp-bridge')
   const { campRegistrationDisplayName } = await import('@/lib/camp/manual-check-in-search')
@@ -878,7 +869,7 @@ export async function sendCampTemplateSmsToRegistrationsAction(input: {
 
   const idSet = new Set(input.registration_ids)
   const selected = allRegs.filter((r) => idSet.has(r.id) && r.status !== 'cancelled')
-  if (!selected.length) return { data: null, error: 'No matching registrations found' }
+  if (!selected.length) return { error: 'No matching registrations found' }
 
   const roomById = new Map(rooms.map((r) => [r.id, r]))
   const occupantsByRoom = new Map<string, CampRegistration[]>()
@@ -953,11 +944,80 @@ export async function sendCampTemplateSmsToRegistrationsAction(input: {
   }
 
   if (!recipients.length) {
-    return {
-      data: null,
-      error: errors[0] || 'No recipients with valid phone/room',
-    }
+    return { error: errors[0] || 'No recipients with valid phone/room' }
   }
+  return { template, recipients, errors, skipped_count, yearDoc }
+}
+
+/**
+ * Exactly what `sendCampTemplateSmsToRegistrationsAction` would send, without sending,
+ * for the "check before sending" preview. Personal {{confirmLink}}s stay as placeholders.
+ */
+export async function previewCampTemplateSmsAction(input: CampTemplateSmsInput): Promise<{
+  data: { messages: Array<{ name: string; phone: string; text: string }>; skipped: string[] } | null
+  error: string | null
+}> {
+  await guard('sms.send')
+  try {
+    requireConvexEnv()
+    if (!input.registration_ids.length) return { data: null, error: 'Select at least one registration' }
+    const plan = await planCampTemplateSms(input)
+    if (plan.error !== undefined) return { data: null, error: plan.error }
+    const { isValidSmsPhone, normalizeSmsPhone } = await import('@/lib/comms/sms-client')
+    const { loadSmsOptOutSet, isOptedOut } = await import('@/lib/comms/opt-out')
+    const optedOut = plan.recipients.length > 1 ? await loadSmsOptOutSet() : new Set<string>()
+    const skipped = [...plan.errors]
+    const messages: Array<{ name: string; phone: string; text: string }> = []
+    for (const r of plan.recipients) {
+      const name = r.full_name?.trim() || `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() || 'Camper'
+      if (!isValidSmsPhone(r.phone)) skipped.push(`${name}: Invalid phone`)
+      else if (isOptedOut(optedOut, r.phone)) skipped.push(`${name}: Opted out (STOP)`)
+      else
+        messages.push({
+          name,
+          phone: normalizeSmsPhone(r.phone!),
+          text: personalizeCampSms(plan.template, r, plan.yearDoc?.year, {
+            theme: plan.yearDoc?.theme,
+            venue: plan.yearDoc?.venue,
+            confirmLink: '{{confirmLink}}',
+          }),
+        })
+    }
+    return { data: { messages, skipped }, error: null }
+  } catch (error: unknown) {
+    return { data: null, error: error instanceof Error ? error.message : 'Could not prepare the preview' }
+  }
+}
+
+/**
+ * Send camp SMS templates to one or many registrations (confirmation or room allocation).
+ * Enriches room fields when template needs them.
+ */
+export async function sendCampTemplateSmsToRegistrationsAction(
+  input: CampTemplateSmsInput & {
+    sender_id: string
+    dry_run?: boolean
+    force_mock?: boolean
+  }
+): Promise<{
+  data: {
+    success_count: number
+    error_count: number
+    skipped_count: number
+    errors: string[]
+    batch_id: string
+    provider: string
+  } | null
+  error: string | null
+}> {
+  await guard('sms.send')
+  requireConvexEnv()
+  if (!input.sender_id) return { data: null, error: 'Sender is required' }
+  if (!input.registration_ids.length) return { data: null, error: 'Select at least one registration' }
+
+  const plan = await planCampTemplateSms(input)
+  if (plan.error !== undefined) return { data: null, error: plan.error }
+  const { template, recipients, errors, skipped_count, yearDoc } = plan
 
   const bulk = await sendCampBulkSmsAction({
     camp_year_id: input.camp_year_id,

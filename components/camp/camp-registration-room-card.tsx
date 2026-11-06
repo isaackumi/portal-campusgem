@@ -10,10 +10,6 @@ import {
 } from '@/lib/camp/check-in-identity'
 import { campService } from '@/lib/services/camp-service'
 import { sendCampTemplateSmsToRegistrationsAction } from '@/lib/actions/camp'
-import {
-  getCampMessageTemplate,
-  personalizeCampMessage,
-} from '@/lib/camp/sms-templates'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,9 +23,10 @@ import {
 import { LoadingSpinner } from '@/components/ui/loading'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
-import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { confirmCampTemplateSms } from '@/components/camp/camp-sms-preview'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
-import { BedDouble, Copy, Crown, MessageSquare, Users } from 'lucide-react'
+import { BedDouble, Copy, MessageSquare, Users } from 'lucide-react'
 
 type Props = {
   registration: CampRegistration
@@ -71,7 +68,7 @@ export function CampRegistrationRoomCard({
   const [savingLeader, setSavingLeader] = useState(false)
   const [savingRoom, setSavingRoom] = useState(false)
   const [sendingSms, setSendingSms] = useState(false)
-  const [smsReviewOpen, setSmsReviewOpen] = useState(false)
+  const smsPreview = useSmsPreview()
   const [yearRooms, setYearRooms] = useState<CampRoom[]>([])
   const [roomsLoading, setRoomsLoading] = useState(true)
 
@@ -101,31 +98,6 @@ export function CampRegistrationRoomCard({
     }
   }, [registration.camp_year_id, registration.room_id])
 
-  const roomSmsPreview = useMemo(() => {
-    if (!room) return ''
-    const leader = occupants.find((o) => o.id === leaderId)
-    const mates = occupants
-      .filter((o) => o.id !== registration.id)
-      .map((o) => campRegistrationDisplayName(o))
-      .join(', ')
-    return personalizeCampMessage(
-      getCampMessageTemplate('room_allocation')?.body ||
-        'Hi {{firstName}}! Your room is {{roomName}}. Code: {{checkInCode}}.',
-      {
-        fullName: registration.full_name,
-        firstName: registration.first_name,
-        lastName: registration.last_name,
-        phone: registration.phone,
-        checkInCode: registration.check_in_code,
-        qrCode: registration.check_in_code || registration.qr_code,
-        roomName: room.name,
-        building: room.building,
-        roomLeader: leader ? campRegistrationDisplayName(leader) : '',
-        roommates: mates,
-      }
-    )
-  }, [registration, room, occupants, leaderId])
-
   async function copyRoomDetails() {
     if (!roomContext?.room) return
     try {
@@ -138,6 +110,16 @@ export function CampRegistrationRoomCard({
 
   async function sendRoomSms() {
     if (!user?.id || !room) return
+    const check = await confirmCampTemplateSms(smsPreview, {
+      title: 'Room SMS',
+      camp_year_id: registration.camp_year_id,
+      registration_ids: [registration.id],
+      template_id: 'room_allocation',
+    })
+    if (!check.ok) {
+      if (check.error) toast({ variant: 'destructive', title: 'Room SMS not sent', description: check.error })
+      return
+    }
     setSendingSms(true)
     const { data, error } = await sendCampTemplateSmsToRegistrationsAction({
       camp_year_id: registration.camp_year_id,
@@ -162,7 +144,6 @@ export function CampRegistrationRoomCard({
           ? `Sent via ${data.provider}`
           : data.errors[0] ?? 'Check phone number',
     })
-    if (data.success_count > 0) setSmsReviewOpen(false)
   }
 
   async function handleLeaderChange(value: string) {
@@ -207,7 +188,7 @@ export function CampRegistrationRoomCard({
     <Card className="border-brand-200 dark:border-brand-400/20">
       <CardHeader className="border-b border-brand-100 bg-brand-50/60 p-4 dark:border-white/10 dark:bg-brand-400/5 sm:p-6">
         <CardTitle className="flex items-center gap-2">
-          <BedDouble className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+          <BedDouble className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
           Room assignment
         </CardTitle>
         <CardDescription>
@@ -375,7 +356,6 @@ export function CampRegistrationRoomCard({
                             </div>
                             {isLeader ? (
                               <Badge className="shrink-0 gap-1">
-                                <Crown className="h-3 w-3" />
                                 Leader
                               </Badge>
                             ) : null}
@@ -407,7 +387,7 @@ export function CampRegistrationRoomCard({
                     type="button"
                     className="min-h-11 flex-1 cursor-pointer"
                     disabled={sendingSms || !registration.phone?.trim()}
-                    onClick={() => setSmsReviewOpen(true)}
+                    onClick={() => void sendRoomSms()}
                     aria-label="Review room allocation SMS"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
@@ -415,17 +395,6 @@ export function CampRegistrationRoomCard({
                   </Button>
                 </div>
 
-                <CampSmsReviewDialog
-                  open={smsReviewOpen}
-                  onOpenChange={setSmsReviewOpen}
-                  title="Review room SMS"
-                  recipientName={campRegistrationDisplayName(registration)}
-                  recipientPhone={registration.phone}
-                  previewBody={roomSmsPreview}
-                  sending={sendingSms}
-                  confirmLabel="Confirm send"
-                  onConfirm={() => void sendRoomSms()}
-                />
               </>
             )}
           </>

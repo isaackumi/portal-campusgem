@@ -83,7 +83,7 @@ export default function RlcAnalyticsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LineChart className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+            <LineChart className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
             Visitor arrivals over time
           </CardTitle>
           <CardDescription>Daily first visits and cumulative RLC visitors.</CardDescription>
@@ -97,10 +97,10 @@ export default function RlcAnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+              <BarChart3 className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
               Pipeline funnel
             </CardTitle>
-            <CardDescription>Stage counts across the RLC membership journey.</CardDescription>
+            <CardDescription>How many people are at each step, from first visit to member.</CardDescription>
           </CardHeader>
           <CardContent>
             <AnalyticsHorizontalBarChart data={funnelData} barColor="#4f46e5" />
@@ -110,7 +110,7 @@ export default function RlcAnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+              <PieChartIcon className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
               Visitor sources
             </CardTitle>
             <CardDescription>Where RLC visitors heard about the church.</CardDescription>
@@ -145,7 +145,7 @@ export default function RlcAnalyticsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Insights</CardTitle>
+          <CardTitle>Worth knowing</CardTitle>
           <CardDescription>
             Follow-up queue: {stats.pending_follow_up} pending ·{' '}
             <Link href={rlcFollowUpHref({ sla: 'overdue' })} className="text-brand-700 underline dark:text-brand-300">

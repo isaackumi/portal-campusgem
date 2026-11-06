@@ -16,8 +16,39 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { PersonAvatar } from '@/components/ui/person'
 import { useToast } from '@/hooks/use-toast'
 import type { CampRegistration } from '@/lib/types'
-import { buildCallListSms, isOpenCall } from '@/lib/camp/call-campaign'
+import { buildCallListSms, isOpenCall, planCallListSms } from '@/lib/camp/call-campaign'
 import { sendCallListsBySmsAction, type CallBoardCaller } from '@/lib/actions/camp-calls'
+import { isValidSmsPhone } from '@/lib/comms/sms-client'
+import { useSmsPreview, type SmsPreviewRequest } from '@/components/comms/sms-preview'
+
+/** Preview request for texting call lists: one row per SMS part, callers with no valid phone as warnings. */
+export function callListSmsPreview(
+  plan: ReturnType<typeof planCallListSms>
+): Pick<SmsPreviewRequest, 'recipients' | 'recipientCount' | 'warnings' | 'sendLabel'> {
+  const textable = plan.filter((c) => isValidSmsPhone(c.phone))
+  const missing = plan.filter((c) => !isValidSmsPhone(c.phone))
+  return {
+    // People counts callers; the list has one row per SMS part, so the SMS total stays exact.
+    recipientCount: textable.length,
+    sendLabel: `Text ${textable.length} caller${textable.length === 1 ? '' : 's'}`,
+    recipients: textable.flatMap((c) =>
+      c.parts.map((part, i) => ({
+        name: c.name,
+        phone: c.phone,
+        message: part,
+        note: c.parts.length > 1 ? `Message ${i + 1} of ${c.parts.length}` : undefined,
+      }))
+    ),
+    warnings: missing.length
+      ? [`No valid phone, will be skipped: ${missing.map((c) => c.name).join(', ')}.`]
+      : undefined,
+  }
+}
+
+/** Where callers mark outcomes; the server links to the site origin. */
+export function callListLink(): string {
+  return `${typeof window !== 'undefined' ? window.location.origin : ''}/admin/camp-meeting/calls`
+}
 
 /** Text each caller the names and numbers on their list. */
 export function TextCallListsDialog({
@@ -36,6 +67,7 @@ export function TextCallListsDialog({
   campYear?: number
 }) {
   const { toast } = useToast()
+  const smsPreview = useSmsPreview()
   const [includeSettled, setIncludeSettled] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
   const [sending, setSending] = useState(false)
@@ -70,6 +102,21 @@ export function TextCallListsDialog({
     : []
 
   async function send(dryRun: boolean) {
+    if (!dryRun) {
+      const plan = planCallListSms({
+        registrations,
+        callers: people,
+        callerIds: selected,
+        includeSettled,
+        campYear,
+        link: callListLink(),
+      })
+      const ok = await smsPreview({
+        title: 'Call lists',
+        ...callListSmsPreview(plan),
+      })
+      if (!ok) return
+    }
     setSending(true)
     try {
       const res = await sendCallListsBySmsAction({

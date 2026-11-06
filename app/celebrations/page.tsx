@@ -15,7 +15,11 @@ import { ErrorDisplay } from '@/components/ui/error-display'
 import { Cake, Heart, Send, Mail, Search } from 'lucide-react'
 import { dataService } from '@/lib/services/data-service'
 import { useQuery } from '@tanstack/react-query'
-import { smsService } from '@/lib/services/sms-service'
+import { useBirthdaySms } from '@/components/birthdays/use-birthday-sms'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { sendCommsAction } from '@/lib/actions/comms'
+import { isValidSmsPhone } from '@/lib/comms/sms-client'
+import type { BirthdayEntry } from '@/lib/birthdays/upcoming-birthdays'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 
@@ -57,6 +61,8 @@ export default function CelebrationsPage() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [sendingSMS, setSendingSMS] = useState(false)
   const { toast } = useToast()
+  const sendBirthdayTexts = useBirthdaySms()
+  const previewSms = useSmsPreview()
 
   const celebrationsQuery = useQuery({
     queryKey: ['celebrations', timeFilter, user?.id],
@@ -191,45 +197,87 @@ export default function CelebrationsPage() {
       const selectedCelebrations = members.filter(m => selectedMembers.includes(m.id))
       const birthdayMembers = selectedCelebrations.filter(m => m.type === 'birthday')
       const anniversaryMembers = selectedCelebrations.filter(m => m.type === 'anniversary')
-
-      const smsPromises = []
+      let sent = 0
+      let failed = 0
 
       if (birthdayMembers.length > 0) {
-        smsPromises.push(smsService.sendBirthdayMessages(
-          birthdayMembers.map(m => ({
+        // Real birthday sender: the server picks "Happy Birthday" (on the day) or
+        // "Happy birthday in advance", and the texts are shown for review first.
+        const entries: BirthdayEntry[] = birthdayMembers.map((m) => {
+          const [, mm, dd] = m.celebration_date.split('-').map(Number)
+          return {
+            id: m.id.replace(/-birthday$/, ''),
             name: m.name,
-            phone: m.phone || '',
-            membership_id: m.membership_id
-          }))
-        ))
+            dob: m.celebration_date,
+            birthMonth: mm,
+            birthDay: dd,
+            hasRealBirthYear: false,
+            phone: m.phone,
+            email: m.email,
+            membershipId: m.membership_id,
+            kind: 'member',
+            nextCelebrationDate: m.celebration_date,
+            daysUntil: 0,
+          }
+        })
+        const outcome = await sendBirthdayTexts(entries, 'church', 'Birthday texts')
+        if (outcome.status === 'cancelled') return
+        if (outcome.status === 'error') throw new Error(outcome.error)
+        sent += outcome.result.success_count
+        failed += outcome.result.error_count
       }
 
       if (anniversaryMembers.length > 0) {
-        smsPromises.push(smsService.sendAnniversaryMessages(
-          anniversaryMembers.map(m => ({
+        const withPhone = anniversaryMembers.filter((m) => isValidSmsPhone(m.phone))
+        const bodies = withPhone.map((m) => {
+          const first = m.name.trim().split(/\s+/)[0] || m.name
+          const spouse = m.spouse_name?.trim().split(/\s+/)[0]
+          return `Happy anniversary ${first}${spouse ? ` and ${spouse}` : ''}! May God continue to bless your marriage with love and joy. Warm wishes from Campus Gem Ministries.`
+        })
+        const ok = await previewSms({
+          title: 'Anniversary texts',
+          recipients: withPhone.map((m, i) => ({ name: m.name, phone: m.phone, message: bodies[i] })),
+          warnings:
+            withPhone.length < anniversaryMembers.length
+              ? [`${anniversaryMembers.length - withPhone.length} without a valid mobile number will be skipped.`]
+              : [],
+        })
+        if (!ok) return
+        const { data, error } = await sendCommsAction({
+          sender_id: user!.id,
+          module: 'church',
+          channel: 'sms',
+          audience_type: withPhone.length > 1 ? 'bulk' : 'individual',
+          message_body: '{{body}}',
+          recipients: withPhone.map((m, i) => ({
+            id: m.id,
             name: m.name,
-            spouse_name: m.spouse_name || 'Spouse',
-            phone: m.phone || '',
-            membership_id: m.membership_id
-          }))
-        ))
+            phone: m.phone,
+            email: m.email,
+            entity_type: 'member',
+            entity_id: m.id.replace(/-anniversary$/, ''),
+            module: 'church',
+            variables: { body: bodies[i] },
+          })),
+          metadata: { type: 'anniversary' },
+        })
+        if (error || !data) throw new Error(error ?? 'Anniversary texts failed')
+        sent += data.success_count
+        failed += data.error_count
       }
 
-      await Promise.all(smsPromises)
-
       toast({
-        title: "SMS Sent Successfully",
-        description: `SMS messages sent to ${selectedMembers.length} members.`,
-        variant: "default"
+        title: sent > 0 ? `Sent ${sent} text${sent === 1 ? '' : 's'}` : 'Nothing was sent',
+        description: failed ? `${failed} failed.` : undefined,
+        variant: sent > 0 ? 'default' : 'destructive',
       })
 
       setSelectedMembers([])
-      // Data will refresh automatically via React Query
     } catch (err) {
       console.error('Error sending SMS:', err)
       toast({
         title: "SMS Failed",
-        description: "Failed to send SMS messages. Please try again.",
+        description: err instanceof Error ? err.message : "Failed to send SMS messages. Please try again.",
         variant: "destructive"
       })
     } finally {

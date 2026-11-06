@@ -52,7 +52,7 @@ function SuccessContent() {
 
 export default function PublicRlcVisitSuccessPage() {
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-gradient-to-b from-brand-50/80 via-white to-white px-4 py-12 dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-950">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-neutral-50 px-4 py-12 dark:bg-neutral-950">
       <div className="mb-6 flex items-center gap-2 text-brand-800 dark:text-brand-300">
         <Church className="h-5 w-5" />
         <span className="text-sm font-medium">{RLC_NAME}</span>

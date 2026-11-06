@@ -23,7 +23,6 @@ import {
   Briefcase,
   ClipboardList,
   Plus,
-  Sparkles,
   UserPlus,
   Users,
 } from 'lucide-react'
@@ -57,7 +56,7 @@ function BoardGroupCard({ group }: { group: CorporateGemBoardGroup }) {
               {getGroupTypeLabel(group.group_type)}
             </Badge>
           </div>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-800 dark:bg-violet-400/10 dark:text-violet-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-500 dark:text-neutral-400">
             <Briefcase className="h-5 w-5" />
           </div>
         </div>
@@ -197,7 +196,6 @@ export default function CorporateGemAdminPage() {
               </Link>
             </Button>
             <Button disabled={bootstrapping} onClick={() => void bootstrapCorporateGem()}>
-              <Sparkles className="mr-2 h-4 w-4" />
               {bootstrapping ? 'Setting up...' : (
                 <>
                   <span className="sm:hidden">Set up</span>

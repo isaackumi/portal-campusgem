@@ -1,4 +1,3 @@
-import { Gem } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function BrandMark({
@@ -10,18 +9,19 @@ export function BrandMark({
 }) {
   const box =
     size === 'sm' ? 'h-8 w-8' : size === 'lg' ? 'h-12 w-12' : 'h-9 w-9'
-  const icon = size === 'sm' ? 'h-4 w-4' : size === 'lg' ? 'h-6 w-6' : 'h-[18px] w-[18px]'
+  const text = size === 'sm' ? 'text-[13px]' : size === 'lg' ? 'text-lg' : 'text-sm'
 
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 via-brand-600 to-violet-700 text-white shadow-[0_4px_12px_-2px_rgb(79_70_229/0.45),inset_0_1px_0_rgb(255_255_255/0.2)]',
+        'flex shrink-0 select-none items-center justify-center rounded-lg bg-brand-700 font-display font-extrabold leading-none tracking-[-0.06em] text-white dark:bg-brand-600',
+        text,
         box,
         className
       )}
       aria-hidden
     >
-      <Gem className={icon} strokeWidth={2.25} />
+      CG
     </div>
   )
 }

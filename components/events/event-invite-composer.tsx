@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useBackgroundJobs } from '@/components/background-jobs'
+import { useSmsPreview } from '@/components/comms/sms-preview'
 import { getCommsProviderStatusAction } from '@/lib/actions/comms'
 import { sendEventInvitesAction } from '@/lib/actions/events'
 import { personalizeMessage } from '@/lib/comms/recipients'
@@ -44,6 +45,7 @@ export function EventInviteComposer({
 }) {
   const { toast } = useToast()
   const jobs = useBackgroundJobs()
+  const smsPreview = useSmsPreview()
   const [mode, setMode] = useState<InviteMode>('new')
   const [messages, setMessages] = useState<Record<InviteMode, string>>({
     new: DEFAULT_INVITE_TEMPLATE,
@@ -93,14 +95,27 @@ export function EventInviteComposer({
     setMessages((m) => ({ ...m, [mode]: m[mode] && !m[mode].endsWith(' ') ? `${m[mode]} ${token}` : `${m[mode]}${token}` }))
   }
 
-  function send() {
+  async function send() {
     const body = message.trim()
     if (!body || targets.length === 0 || missingLink) return
     const count = targets.length
-    const what = mode === 'new' ? 'invitation' : 'reminder'
-    if (!effectiveDryRun && !window.confirm(`Text ${count} ${what}${count === 1 ? '' : 's'} for ${event.title}? This sends real SMS.`)) {
-      return
-    }
+    const ok = await smsPreview({
+      title: `${mode === 'new' ? 'Invitations' : 'Reminders'} for ${event.title}`,
+      message: body,
+      recipients: targets.map((r) => ({
+        name: r.name,
+        phone: r.phone,
+        // Each person's RSVP link is made on the server, so {{link}} stays as a placeholder here.
+        message: personalizeMessage(body, inviteVariables(event, r.name.split(' ')[0] ?? r.name, '{{link}}')),
+      })),
+      warnings: [
+        ...(noPhone ? [`${noPhone} ${noPhone === 1 ? 'person has' : 'people have'} no valid phone and will be skipped.`] : []),
+        ...(optedOut ? [`${optedOut} opted out (STOP) and will be skipped.`] : []),
+        ...(effectiveDryRun ? ['Dry run: nothing will actually be sent.'] : []),
+      ],
+      sendLabel: effectiveDryRun ? `Dry run for ${count}` : undefined,
+    })
+    if (!ok) return
     const batchId = crypto.randomUUID()
     jobs.start({
       title: `${effectiveDryRun ? 'Dry run: ' : ''}${mode === 'new' ? 'Invites' : 'Reminders'} for ${event.title} (${count})`,
@@ -216,7 +231,7 @@ export function EventInviteComposer({
           </span>
         </label>
         <Button
-          onClick={send}
+          onClick={() => void send()}
           disabled={!message.trim() || missingLink || targets.length === 0 || jobs.isRunning || notPublished}
           className="h-11 w-full sm:h-10 sm:w-auto"
         >

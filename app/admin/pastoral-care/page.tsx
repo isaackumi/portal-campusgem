@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { PersonAvatar } from '@/components/ui/person'
@@ -16,11 +15,13 @@ import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { AccessDenied } from '@/components/auth/access-denied'
 import { useAuth } from '@/components/providers'
 import { useToast } from '@/hooks/use-toast'
+import { useSmsPreview } from '@/components/comms/sms-preview'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import type { UserRole } from '@/lib/types'
 import { shortDate } from '@/lib/pastoral/absence'
 import {
   getPastoralCareOverviewAction,
+  runPastoralCareJob,
   savePastoralSettingsAction,
   sendPastoralTextsNowAction,
   type PastoralCareOverview,
@@ -35,12 +36,12 @@ function roleLabel(role: string): string {
 export default function PastoralCarePage() {
   const { loading: authLoading, can } = useAuth()
   const { toast } = useToast()
+  const smsPreview = useSmsPreview()
   const [data, setData] = useState<PastoralCareOverview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [saving, setSaving] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
   const [sending, setSending] = useState(false)
 
   const load = useCallback(async () => {
@@ -94,10 +95,35 @@ export default function PastoralCarePage() {
   }
 
   async function sendNow() {
+    // Dry run first so the preview shows exactly what each leader will get.
+    setSending(true)
+    const planned = await runPastoralCareJob({ dry_run: true })
+    setSending(false)
+    if (planned.error || !planned.data) {
+      toast({ title: 'Could not prepare the texts', description: planned.error ?? 'Unknown error', variant: 'destructive' })
+      return
+    }
+    const messages = planned.data.messages ?? []
+    if (!messages.length) {
+      toast({
+        title: 'Nothing to send',
+        description: planned.data.skipped === 'disabled' ? 'Alerts and the summary are both turned off.' : undefined,
+      })
+      return
+    }
+    const ok = await smsPreview({
+      title: "This week's pastoral care texts",
+      recipients: messages.map((m) => ({ name: m.name, phone: m.phone, message: m.text })),
+      warnings: [
+        'Alerts sent now will not repeat on Monday.',
+        ...(dirty ? ['You have unsaved settings. These texts use the saved settings.'] : []),
+      ],
+    })
+    if (!ok) return
+
     setSending(true)
     const res = await sendPastoralTextsNowAction()
     setSending(false)
-    setConfirmOpen(false)
     if (res.error || !res.data) {
       toast({ title: 'Send failed', description: res.error ?? 'Unknown error', variant: 'destructive' })
       return
@@ -131,7 +157,7 @@ export default function PastoralCarePage() {
         description="Every Monday at 07:30 each group leader gets one text: how their group did on Sunday, birthdays this week, and anyone who has stopped coming. People in no group go to the fallback contacts."
         actions={
           canSend ? (
-            <Button onClick={() => setConfirmOpen(true)} disabled={loading || !previewCount}>
+            <Button onClick={() => void sendNow()} disabled={loading || sending || !previewCount}>
               <Send className="mr-2 h-4 w-4" aria-hidden />
               Send now
             </Button>
@@ -351,24 +377,6 @@ export default function PastoralCarePage() {
         </>
       ) : null}
 
-      <Dialog open={confirmOpen} onOpenChange={(o) => !sending && setConfirmOpen(o)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send {previewCount} text{previewCount === 1 ? '' : 's'} now?</DialogTitle>
-            <DialogDescription>
-              This sends this week&apos;s preview to the leaders and contacts listed, using the saved settings. Alerts sent now won&apos;t repeat on Monday.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={sending}>
-              Cancel
-            </Button>
-            <Button onClick={() => void sendNow()} disabled={sending}>
-              {sending ? 'Sending…' : 'Send texts'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

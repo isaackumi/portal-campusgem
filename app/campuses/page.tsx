@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, GraduationCap, MapPin, RefreshCw, Search, Sparkles, Users } from 'lucide-react'
+import { ArrowRight, GraduationCap, MapPin, RefreshCw, Search, Users } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { AccessDenied } from '@/components/auth/access-denied'
@@ -218,7 +218,6 @@ function UnassignedStudents({ onChanged }: { onChanged: () => void }) {
       <div className="flex flex-col gap-3 border-b border-neutral-200/80 p-5 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 id="unassigned-title" className="app-section-title flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-brand-600 dark:text-brand-300" aria-hidden />
             Unassigned students
           </h2>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">

@@ -26,7 +26,6 @@ import {
   DollarSign,
   GraduationCap,
   Heart,
-  Lightbulb,
   Mail,
   MapPin,
   Phone,
@@ -113,10 +112,9 @@ export function InsightsPanel({ title, insights }: { title: string; insights: st
     <Card>
       <CardHeader className="border-b border-neutral-200/80 p-4 pb-3 dark:border-white/[0.06] sm:p-6 sm:pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Lightbulb className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
           {title}
         </CardTitle>
-        <CardDescription>Patterns and planning signals from normalized camp data</CardDescription>
+        <CardDescription>Things worth knowing from the registrations</CardDescription>
       </CardHeader>
       <CardContent className="p-4 sm:p-6 sm:pt-4">
         <ul className="space-y-2.5">
@@ -161,7 +159,7 @@ function momentumLabel(momentum: LiveRegistrationPulse['momentum']): string {
   if (momentum === 'accelerating') return 'Accelerating'
   if (momentum === 'slowing') return 'Slowing'
   if (momentum === 'steady') return 'Steady'
-  return 'No signal yet'
+  return 'Not enough data yet'
 }
 
 function LivePulsePanel({
@@ -189,7 +187,7 @@ function LivePulsePanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Activity className="h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
+              <Activity className="h-5 w-5 text-neutral-400 dark:text-neutral-500" aria-hidden />
               Live registration pulse
             </CardTitle>
             <CardDescription>How the open form is performing right now</CardDescription>
@@ -396,7 +394,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <AnalyticsBreakdownCard
           title="Gender"
-          description="Normalized gender distribution"
+          description="Men and women"
           icon={Users}
           iconClassName="text-brand-600 dark:text-brand-300"
           slices={demographics.gender}
@@ -475,7 +473,7 @@ function YearReportSections({ report }: { report: CampYearAnalyticsReport }) {
         <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
-            Registration velocity
+            How fast people registered
           </CardTitle>
           <CardDescription>Daily sign-ups and cumulative curve for the full registration window</CardDescription>
         </CardHeader>
@@ -656,7 +654,7 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
       <Card>
         <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
           <CardTitle className="text-base">All-years registration funnel</CardTitle>
-          <CardDescription>Combined journey across every camp year in the system</CardDescription>
+          <CardDescription>Every camp year side by side</CardDescription>
         </CardHeader>
         <CardContent className="p-4 pt-5 sm:p-6">
           <CampFunnelSteps steps={combined.overallFunnel} />
@@ -666,7 +664,7 @@ export function CampAnalyticsDashboard({ report }: { report: CampAnalyticsReport
       <Card>
         <CardHeader className="border-b border-neutral-200/80 p-4 dark:border-white/[0.06] sm:p-6">
           <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart3 className="h-5 w-5 text-brand-600 dark:text-brand-300" aria-hidden />
+            <BarChart3 className="h-5 w-5 text-neutral-400 dark:text-neutral-500" aria-hidden />
             Registrations by camp year
           </CardTitle>
           <CardDescription>Total volume per year with year-on-year growth</CardDescription>

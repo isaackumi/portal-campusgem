@@ -538,7 +538,7 @@ export default function RlcAttendancePage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Search className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+                  <Search className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
                   Manual check-in
                 </CardTitle>
                 <CardDescription>

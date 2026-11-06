@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { loadRlcBirthdaysAction } from '@/lib/actions/birthdays'
 import type { BirthdayEntry } from '@/lib/birthdays/upcoming-birthdays'
 import { UpcomingBirthdaysView } from '@/components/birthdays/upcoming-birthdays-view'
+import { BirthdayHeadsUpCard } from '@/components/birthdays/birthday-heads-up-card'
+import { useAuth } from '@/components/providers'
 import { PageContainer } from '@/components/layout/page-container'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -15,6 +17,7 @@ export default function RlcBirthdaysPage() {
   const [entries, setEntries] = useState<BirthdayEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { can } = useAuth()
 
   useEffect(() => {
     void loadRlcBirthdaysAction().then((result) => {
@@ -37,7 +40,7 @@ export default function RlcBirthdaysPage() {
       <Button variant="ghost" size="sm" asChild className="-ml-2 h-11 w-fit px-2 sm:h-8">
         <Link href="/admin/rlc">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          RLC hub
+          RLC
         </Link>
       </Button>
       {error ? (
@@ -45,6 +48,7 @@ export default function RlcBirthdaysPage() {
           {error}
         </p>
       ) : null}
+      {can('members.view') ? <BirthdayHeadsUpCard /> : null}
       <UpcomingBirthdaysView
         title={`${RLC_NAME} Birthdays`}
         subtitle="RLC members and active visitors with birthdays on file — includes today, weekly, 30-day upcoming, and month browse."

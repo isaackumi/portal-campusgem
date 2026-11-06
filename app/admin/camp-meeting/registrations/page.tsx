@@ -5,10 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { CampRegistration, CampYear } from '@/lib/types'
 import { campRegistrationsToGoogleFormCsv } from '@/lib/camp/google-form-import'
 import { backfillCampCheckInCodes, sendCampTemplateSmsToRegistrationsAction } from '@/lib/actions/camp'
-import {
-  getCampMessageTemplate,
-  personalizeCampMessage,
-} from '@/lib/camp/sms-templates'
 import { useCampRegistrations } from '@/lib/hooks/use-camp'
 import { useAuth } from '@/components/providers'
 import { Input } from '@/components/ui/input'
@@ -20,7 +16,8 @@ import { Badge } from '@/components/ui/badge'
 import { ImportContactWarningsBadge } from '@/components/camp/import-contact-warnings'
 import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/ui/loading'
-import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { confirmCampTemplateSms } from '@/components/camp/camp-sms-preview'
 import { EditRegistrationDialog } from '@/components/camp/edit-registration-dialog'
 import { StatCard } from '@/components/ui/stat-card'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
@@ -69,6 +66,7 @@ function RegistrationsPageContent() {
     const searchParams = useSearchParams()
     const campYearId = searchParams.get('year')
     const { toast } = useToast()
+    const smsPreview = useSmsPreview()
     const { user, loading: authLoading, can } = useAuth()
     const canEditRegistrations = can('camp.manage') || can('camp.payments')
     const [editingRegistration, setEditingRegistration] = useState<CampRegistration | null>(null)
@@ -90,11 +88,6 @@ function RegistrationsPageContent() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [backfillingCodes, setBackfillingCodes] = useState(false)
     const [sendingBulkSms, setSendingBulkSms] = useState(false)
-    const [bulkSmsReview, setBulkSmsReview] = useState<{
-        template_id: 'registration_confirmation' | 'room_allocation'
-        previewBody: string
-        sampleNames: string[]
-    } | null>(null)
 
     // Redirect to auth if not logged in
     useEffect(() => {
@@ -305,7 +298,7 @@ function RegistrationsPageContent() {
         }
     }
 
-    function openBulkSmsReview(template_id: 'registration_confirmation' | 'room_allocation') {
+    async function sendBulkSms(template_id: 'registration_confirmation' | 'room_allocation') {
         if (!campYear?.id || !user?.id) return
         if (selectedIds.size === 0) {
             toast({
@@ -315,36 +308,23 @@ function RegistrationsPageContent() {
             })
             return
         }
-        const selected = registrations.filter((r) => selectedIds.has(r.id))
-        const sample = selected[0]
-        const previewBody = personalizeCampMessage(
-            getCampMessageTemplate(template_id)?.body || '',
-            {
-                fullName: sample?.full_name,
-                firstName: sample?.first_name,
-                lastName: sample?.last_name,
-                phone: sample?.phone,
-                checkInCode: sample?.check_in_code,
-                campYear: campYear.year,
-                theme: campYear.theme,
-                venue: campYear.venue,
-            }
-        )
-        setBulkSmsReview({
+        const registration_ids = Array.from(selectedIds)
+        const check = await confirmCampTemplateSms(smsPreview, {
+            title: template_id === 'room_allocation' ? 'Room SMS' : 'Confirmation SMS',
+            camp_year_id: campYear.id,
+            registration_ids,
             template_id,
-            previewBody,
-            sampleNames: selected.slice(0, 8).map((r) => r.full_name || 'Camper'),
         })
-    }
-
-    async function confirmBulkSms() {
-        if (!campYear?.id || !user?.id || !bulkSmsReview) return
+        if (!check.ok) {
+            if (check.error) toast({ variant: 'destructive', title: 'SMS not sent', description: check.error })
+            return
+        }
         setSendingBulkSms(true)
         const { data, error } = await sendCampTemplateSmsToRegistrationsAction({
             camp_year_id: campYear.id,
             sender_id: user.id,
-            registration_ids: Array.from(selectedIds),
-            template_id: bulkSmsReview.template_id,
+            registration_ids,
+            template_id,
         })
         setSendingBulkSms(false)
         if (error || !data) {
@@ -361,13 +341,12 @@ function RegistrationsPageContent() {
                     ? `Sent ${data.success_count} SMS`
                     : 'No SMS delivered',
             variant: data.success_count > 0 ? 'default' : 'destructive',
-            description: `${bulkSmsReview.template_id === 'room_allocation' ? 'Room' : 'Confirmation'}${
+            description: `${template_id === 'room_allocation' ? 'Room' : 'Confirmation'}${
                 data.skipped_count || data.error_count
                     ? ` · ${data.skipped_count} skipped, ${data.error_count} failed`
                     : ''
             }${data.errors[0] ? ` · ${data.errors[0]}` : ''}`,
         })
-        if (data.success_count > 0) setBulkSmsReview(null)
     }
 
     const missingCheckInCodes = registrations.filter((r) => !r.check_in_code?.trim()).length
@@ -912,7 +891,7 @@ function RegistrationsPageContent() {
                                 size="sm"
                                 className="min-h-11 cursor-pointer sm:min-h-9"
                                 disabled={sendingBulkSms}
-                                onClick={() => openBulkSmsReview('registration_confirmation')}
+                                onClick={() => void sendBulkSms('registration_confirmation')}
                             >
                                 <MessageSquare className="mr-1 h-4 w-4" aria-hidden />
                                 {sendingBulkSms ? 'Sending…' : 'SMS confirmation'}
@@ -922,7 +901,7 @@ function RegistrationsPageContent() {
                                 variant="secondary"
                                 className="min-h-11 cursor-pointer sm:min-h-9"
                                 disabled={sendingBulkSms}
-                                onClick={() => openBulkSmsReview('room_allocation')}
+                                onClick={() => void sendBulkSms('room_allocation')}
                             >
                                 <BedDouble className="mr-1 h-4 w-4" aria-hidden />
                                 SMS room
@@ -949,24 +928,6 @@ function RegistrationsPageContent() {
                 onSaved={() => refresh()}
             />
 
-            <CampSmsReviewDialog
-                open={Boolean(bulkSmsReview)}
-                onOpenChange={(open) => {
-                    if (!open && !sendingBulkSms) setBulkSmsReview(null)
-                }}
-                title={
-                    bulkSmsReview?.template_id === 'room_allocation'
-                        ? 'Review room SMS'
-                        : 'Review confirmation SMS'
-                }
-                description="Nothing is sent until you confirm. Each selected camper gets a personalized message."
-                recipientName={`${selectedIds.size} selected`}
-                recipientCount={selectedIds.size}
-                sampleRecipientNames={bulkSmsReview?.sampleNames ?? []}
-                previewBody={bulkSmsReview?.previewBody ?? ''}
-                sending={sendingBulkSms}
-                onConfirm={() => void confirmBulkSms()}
-            />
         </>
     )
 }

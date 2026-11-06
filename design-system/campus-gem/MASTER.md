@@ -17,7 +17,7 @@ Indigo brand on cool slate. `neutral`, `slate` and `gray` all resolve to the sla
 | Ink: secondary | `neutral-600`/`700` | `neutral-300` | Body |
 | Ink: muted | `neutral-500` | `neutral-400` | Meta, labels |
 | Brand action | `brand-600` | `brand-500` (button), `brand-300` (text) | Primary buttons, links |
-| Accent gradient | `brand-500 → violet-600` | same | Icon tiles, logo, one title word |
+| Logo | `brand-700` solid, "CG" monogram | `brand-600` | `BrandMark` only |
 
 - **Status colours are reserved:** emerald = good, amber = needs attention, red = problem.
   Always pair them with an icon or a label.
@@ -27,6 +27,22 @@ Indigo brand on cool slate. `neutral`, `slate` and `gray` all resolve to the sla
   `bg-{hue}-400/10 text-{hue}-300 ring-{hue}-400/20` (see `Badge`).
 - Categorical chart palette (fixed order, validated on white and slate-800):
   `#6366f1 #0d9488 #ea580c #db2777 #0284c7 #65a30d #a855f7 #b45309` in `lib/charts/theme.ts`.
+
+## Keep it human (no "AI look")
+
+People here can tell a generated UI at a glance. Avoid:
+
+- **Gradients** on buttons, logos, icon tiles, text or page backgrounds. Solid colours only.
+  (Allowed: edge fades on scroll strips, the dark scrim under text on a camera image.)
+- **Gradient or coloured "accent" words** in titles. Titles are plain ink.
+- **Sparkle, magic wand, lightning, lightbulb, crown, rocket icons**, and emoji in the interface.
+  Emoji are fine inside messages people send (SMS, WhatsApp).
+- **Glows and blur blobs:** no coloured shadows, no `blur-3xl` circles, no decorative circles.
+- **An icon on everything.** No icon chips on stat cards; no tinted icon tiles beside titles.
+  If a heading has an icon it is small and muted (`text-neutral-400`, dark `neutral-500`).
+- **Hover lifts** (`-translate-y`) on cards; change the border colour instead.
+- **AI-style copy:** "intelligence hub", "insights", "signals", "velocity", "journey",
+  "unlock", "seamless", "in one place" slogans. Say what it is in plain words.
 
 ## Type
 

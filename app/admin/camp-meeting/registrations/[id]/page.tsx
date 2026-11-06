@@ -21,12 +21,13 @@ import {
     User, Phone, Mail, Calendar, MessageSquare, ArrowLeft, 
     Download, QrCode, CheckCircle2, XCircle, Edit, DollarSign,
     UserPlus, UserMinus, FileText, MapPin, GraduationCap,
-    Heart, Shield, Clock, CreditCard, Send, Cake, Sparkles, Pencil, ExternalLink, MoreHorizontal
+    Heart, Shield, Clock, CreditCard, Send, Cake, Pencil, ExternalLink, MoreHorizontal
 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { ImportContactWarningsBadge, ImportContactWarningsList } from '@/components/camp/import-contact-warnings'
 import { CampRegistrationRoomCard } from '@/components/camp/camp-registration-room-card'
-import { CampSmsReviewDialog } from '@/components/camp/camp-sms-review-dialog'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { confirmCampTemplateSms } from '@/components/camp/camp-sms-preview'
 import { EditRegistrationDialog } from '@/components/camp/edit-registration-dialog'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import {
@@ -39,10 +40,6 @@ import {
     memberDobIsoFromCampRegistration,
     MEMBER_DOB_PLACEHOLDER_YEAR,
 } from '@/lib/camp/birthday'
-import {
-    getCampMessageTemplate,
-    personalizeCampMessage,
-} from '@/lib/camp/sms-templates'
 import { formatRelativeWhen } from '@/lib/camp/relative-time'
 import { campRegistrationRoleOptions } from '@/lib/camp/registration-roles'
 import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
@@ -54,6 +51,7 @@ export default function RegistrationDetailPage() {
     const { id } = useParams() as { id: string }
     const router = useRouter()
     const { toast } = useToast()
+    const smsPreview = useSmsPreview()
     const { user, can } = useAuth()
     const canEdit = can('camp.manage') || can('camp.payments')
     const [editOpen, setEditOpen] = useState(false)
@@ -81,7 +79,6 @@ export default function RegistrationDetailPage() {
     const [savingBirth, setSavingBirth] = useState(false)
     const [syncingDob, setSyncingDob] = useState(false)
     const [sendingConfirmSms, setSendingConfirmSms] = useState(false)
-    const [confirmSmsReviewOpen, setConfirmSmsReviewOpen] = useState(false)
     
     // Payment form
     const [paymentForm, setPaymentForm] = useState({
@@ -454,6 +451,16 @@ export default function RegistrationDetailPage() {
 
     async function sendRegistrationConfirmSms() {
         if (!data || !user?.id) return
+        const check = await confirmCampTemplateSms(smsPreview, {
+            title: 'Registration confirmation',
+            camp_year_id: data.camp_year_id,
+            registration_ids: [data.id],
+            template_id: 'registration_confirmation',
+        })
+        if (!check.ok) {
+            if (check.error) toast({ variant: 'destructive', title: 'Confirmation SMS not sent', description: check.error })
+            return
+        }
         setSendingConfirmSms(true)
         try {
             const { sendCampTemplateSmsToRegistrationsAction } = await import('@/lib/actions/camp')
@@ -479,28 +486,10 @@ export default function RegistrationDetailPage() {
                         ? `Sent via ${result.provider}`
                         : result.errors[0] ?? 'Check phone number',
             })
-            if (result.success_count > 0) setConfirmSmsReviewOpen(false)
         } finally {
             setSendingConfirmSms(false)
         }
     }
-
-    const confirmationSmsPreview = data
-        ? personalizeCampMessage(
-              getCampMessageTemplate('registration_confirmation')?.body ||
-                  'Hi {{firstName}}! You are registered. Code: {{checkInCode}}',
-              {
-                  fullName: data.full_name,
-                  firstName: data.first_name,
-                  lastName: data.last_name,
-                  phone: data.phone,
-                  email: data.email,
-                  role: data.role,
-                  checkInCode: data.check_in_code,
-                  qrCode: data.check_in_code || data.qr_code,
-              }
-          )
-        : ''
 
     const downloadQRCode = () => {
         if (!data) return
@@ -1091,7 +1080,7 @@ export default function RegistrationDetailPage() {
                                         type="button"
                                         className="w-full min-h-11 cursor-pointer"
                                         disabled={sendingConfirmSms || !data.phone?.trim()}
-                                        onClick={() => setConfirmSmsReviewOpen(true)}
+                                        onClick={() => void sendRegistrationConfirmSms()}
                                         aria-label="Review registration confirmation SMS"
                                     >
                                         <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
@@ -1108,18 +1097,6 @@ export default function RegistrationDetailPage() {
                             onSaved={() => void loadData()}
                         />
 
-                        <CampSmsReviewDialog
-                            open={confirmSmsReviewOpen}
-                            onOpenChange={setConfirmSmsReviewOpen}
-                            title="Review confirmation SMS"
-                            recipientName={data.full_name || `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim()}
-                            recipientPhone={data.phone}
-                            previewBody={confirmationSmsPreview}
-                            sending={sendingConfirmSms}
-                            confirmLabel="Confirm send"
-                            onConfirm={() => void sendRegistrationConfirmSms()}
-                        />
-
                         <CampRegistrationRoomCard
                             registration={data}
                             roomContext={roomContext}
@@ -1131,7 +1108,6 @@ export default function RegistrationDetailPage() {
                         <Card>
                             <CardHeader className="border-b border-neutral-200/80 dark:border-white/[0.06]">
                                 <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Sparkles className="h-5 w-5 text-brand-600 dark:text-brand-300" />
                                     Church directory
                                 </CardTitle>
                                 <CardDescription>

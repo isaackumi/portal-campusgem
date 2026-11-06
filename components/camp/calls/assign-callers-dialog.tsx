@@ -17,7 +17,11 @@ import { PersonAvatar } from '@/components/ui/person'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/providers'
 import { cn } from '@/lib/utils'
-import { distributeEvenly } from '@/lib/camp/call-campaign'
+import { distributeEvenly, planCallListSms } from '@/lib/camp/call-campaign'
+import type { CampRegistration } from '@/lib/types'
+import { previewAccessWelcomeSms } from '@/lib/auth/access-welcome'
+import { useSmsPreview } from '@/components/comms/sms-preview'
+import { callListLink, callListSmsPreview } from '@/components/camp/calls/text-call-lists-dialog'
 import {
   assignCallersAction,
   grantCallAccessAction,
@@ -44,6 +48,8 @@ export function AssignCallersDialog({
   campYearId,
   canSms,
   onAssigned,
+  registrations = [],
+  campYear,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -54,8 +60,12 @@ export function AssignCallersDialog({
   campYearId: string
   canSms: boolean
   onAssigned: () => void
+  /** The year's registrations, to preview the call-list texts before sending. */
+  registrations?: CampRegistration[]
+  campYear?: number
 }) {
   const { toast } = useToast()
+  const smsPreview = useSmsPreview()
   const { can } = useAuth()
   const [mode, setMode] = useState<Mode>('single')
   const [query, setQuery] = useState('')
@@ -134,6 +144,24 @@ export function AssignCallersDialog({
   }
 
   async function grantAccess() {
+    // Granting access texts each person how to sign in.
+    const texted = withoutAccess.filter((p) => p.phone?.trim())
+    if (texted.length) {
+      const ok = await smsPreview({
+        title: 'Sign-in details for new callers',
+        recipients: texted.map((p) => ({
+          name: p.full_name,
+          phone: p.phone,
+          message: previewAccessWelcomeSms({ fullName: p.full_name, role: p.role, permissions: ['camp.calls'], phone: p.phone }),
+        })),
+        warnings:
+          texted.length < withoutAccess.length
+            ? [`${withoutAccess.length - texted.length} with no phone will get access but no text.`]
+            : undefined,
+        sendLabel: 'Grant access and send',
+      })
+      if (!ok) return
+    }
     const res = await grantCallAccessAction(withoutAccess.map((p) => p.id))
     if (res.error) {
       toast({ variant: 'destructive', title: 'Could not grant access', description: res.error })
@@ -146,6 +174,27 @@ export function AssignCallersDialog({
 
   async function submit() {
     if (!callerIds.length) return
+    if (textNow) {
+      // Each caller's list after this assignment (same split as the server).
+      const plan =
+        mode === 'single'
+          ? registrationIds.map((id) => ({ registration_id: id, assigned_to: callerIds[0] }))
+          : distributeEvenly(registrationIds, callerIds, currentLoad)
+      const assigned = new Map(plan.map((a) => [a.registration_id, a.assigned_to]))
+      const lists = planCallListSms({
+        registrations: registrations.map((r) => (assigned.has(r.id) ? { ...r, assigned_to: assigned.get(r.id) } : r)),
+        callers: people,
+        callerIds,
+        campYear,
+        link: callListLink(),
+      })
+      const ok = await smsPreview({
+        title: 'Call lists',
+        ...callListSmsPreview(lists),
+        sendLabel: 'Assign and send',
+      })
+      if (!ok) return
+    }
     setSaving(true)
     try {
       const res = await assignCallersAction({
