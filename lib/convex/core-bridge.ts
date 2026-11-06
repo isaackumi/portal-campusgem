@@ -343,6 +343,19 @@ export async function fetchGroupsFromConvex(includeInactive = false): Promise<Gr
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
+export type GroupOverviewRow = {
+  group_id: string
+  member_count: number
+  leaders: Array<{ name: string; role: string; user_id?: string }>
+}
+
+/** Member counts and leaders for every group, in one call. */
+export async function fetchGroupsOverviewFromConvex(): Promise<GroupOverviewRow[]> {
+  return (await getConvexHttpClient().query(api.core.groupsOverviewWithSecret, {
+    secret: requireCoreServerSecret(),
+  })) as GroupOverviewRow[]
+}
+
 export async function fetchGroupFromConvex(id: string): Promise<Group | null> {
   const client = getConvexHttpClient()
   const doc = (await client.query(api.core.getGroupWithSecret, {

@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast'
 import { dataService } from '@/lib/services/data-service'
 import { GROUP_MEMBERSHIP_ROLES, GROUP_MEMBERSHIP_ROLE_LABELS, GROUP_TYPES } from '@/lib/constants/groups'
 import { groupExportFilename, groupMembersToCsv } from '@/lib/groups/export'
+import { AddGroupMembersDialog } from '@/components/groups/add-group-members-dialog'
 import { downloadCsv } from '@/lib/csv'
 import { AppUser, Group, GroupMembership } from '@/lib/types'
 import {
@@ -74,6 +75,12 @@ export default function GroupDetailsPage() {
   const { toast } = useToast()
   const canManage = can('groups.manage')
   const canText = can('sms.send')
+  // ?tab=messages / ?tab=settings opens that tab (links from the groups index).
+  const [tab, setTab] = useState('members')
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('tab')
+    if (wanted === 'messages' || wanted === 'settings' || wanted === 'members') setTab(wanted)
+  }, [])
 
   const [group, setGroup] = useState<Group | null>(null)
   const [members, setMembers] = useState<GroupMemberRow[]>([])
@@ -83,8 +90,6 @@ export default function GroupDetailsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [showAddMember, setShowAddMember] = useState(false)
-  const [selectedMemberId, setSelectedMemberId] = useState('')
-  const [selectedRole, setSelectedRole] = useState('member')
   const [editForm, setEditForm] = useState<GroupEditForm | null>(null)
   const [savingEdit, setSavingEdit] = useState(false)
 
@@ -162,28 +167,25 @@ export default function GroupDetailsPage() {
     }
   }
 
-  const addMemberToGroup = async () => {
-    if (!selectedMemberId || !groupId || selectedMemberId === 'no-members') return
-
-    try {
-      const { error } = await dataService.addUserToGroup(groupId, selectedMemberId, selectedRole)
-
-      if (error) {
-        console.error('Error adding member:', error)
-        alert('Failed to add member. They might already be in the group.')
-        return
-      }
-
-      // Refresh members list
-      fetchGroupMembers()
-      setShowAddMember(false)
-      setSelectedMemberId('')
-      setSelectedRole('member')
-      alert('Member added successfully!')
-    } catch (error) {
-      console.error('Error adding member:', error)
-      alert('Failed to add member. Please try again.')
+  const [addingMembers, setAddingMembers] = useState(false)
+  const addMembersToGroup = async (userIds: string[], role: GroupMembership['role']) => {
+    if (!groupId || userIds.length === 0) return
+    setAddingMembers(true)
+    let added = 0
+    let firstError: string | null = null
+    for (const id of userIds) {
+      const { error } = await dataService.addUserToGroup(groupId, id, role)
+      if (error) firstError ??= error
+      else added++
     }
+    setAddingMembers(false)
+    await fetchGroupMembers()
+    setShowAddMember(false)
+    toast(
+      firstError
+        ? { variant: 'destructive', title: `${added} of ${userIds.length} added`, description: firstError }
+        : { title: added === 1 ? 'Added to the group' : `${added} people added` }
+    )
   }
 
   const removeMemberFromGroup = async (membershipId: string, memberName: string) => {
@@ -194,16 +196,16 @@ export default function GroupDetailsPage() {
 
       if (error) {
         console.error('Error removing member:', error)
-        alert('Failed to remove member. Please try again.')
+        toast({ variant: 'destructive', title: 'Could not remove them' })
         return
       }
 
       // Refresh members list
       fetchGroupMembers()
-      alert('Member removed successfully!')
+      toast({ title: `${memberName} removed` })
     } catch (error) {
       console.error('Error removing member:', error)
-      alert('Failed to remove member. Please try again.')
+      toast({ variant: 'destructive', title: 'Could not remove them' })
     }
   }
 
@@ -213,16 +215,16 @@ export default function GroupDetailsPage() {
 
       if (error) {
         console.error('Error updating role:', error)
-        alert('Failed to update role. Please try again.')
+        toast({ variant: 'destructive', title: 'Could not change the role' })
         return
       }
 
       // Refresh members list
       fetchGroupMembers()
-      alert('Role updated successfully!')
+      toast({ title: 'Role changed' })
     } catch (error) {
       console.error('Error updating role:', error)
-      alert('Failed to update role. Please try again.')
+      toast({ variant: 'destructive', title: 'Could not change the role' })
     }
   }
 
@@ -441,7 +443,7 @@ export default function GroupDetailsPage() {
 
           {/* Main Content */}
           <div className="min-w-0 space-y-6 lg:col-span-2 lg:col-start-1 lg:row-span-3 lg:row-start-1">
-            <Tabs defaultValue="members" className="w-full">
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
               <ScrollableTabsList data-tour="group-tabs">
                 <TabsTrigger value="members">Members</TabsTrigger>
                 {canText ? <TabsTrigger value="messages" data-tour="group-message-tab">Message</TabsTrigger> : null}
@@ -757,84 +759,14 @@ export default function GroupDetailsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Add Member Dialog */}
-        <Dialog
+        <AddGroupMembersDialog
           open={showAddMember}
-          onOpenChange={(open) => {
-            setShowAddMember(open)
-            if (!open) {
-              setSelectedMemberId('')
-              setSelectedRole('member')
-            }
-          }}
-        >
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add member to group</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="member-select">Member</Label>
-                <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
-                  <SelectTrigger id="member-select" className="h-11 sm:h-10">
-                    <SelectValue placeholder="Choose a member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableMembers.length === 0 ? (
-                      <SelectItem value="no-members" disabled>No available members</SelectItem>
-                    ) : (
-                      availableMembers.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          <div>
-                            <p className="font-medium">{member.full_name}</p>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                              <span className="font-mono">{member.membership_id}</span> · {member.role}
-                            </p>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="role-select">Role</Label>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger id="role-select" className="h-11 sm:h-10">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GROUP_MEMBERSHIP_ROLES.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                className="h-11 sm:h-10"
-                onClick={() => {
-                  setShowAddMember(false)
-                  setSelectedMemberId('')
-                  setSelectedRole('member')
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="h-11 sm:h-10"
-                onClick={addMemberToGroup}
-                disabled={!selectedMemberId || selectedMemberId === 'no-members'}
-              >
-                Add member
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          onOpenChange={setShowAddMember}
+          groupName={group?.name ?? 'this group'}
+          candidates={availableMembers}
+          adding={addingMembers}
+          onAdd={(ids, role) => void addMembersToGroup(ids, role)}
+        />
       </div>
     </DashboardLayout>
   )

@@ -480,6 +480,73 @@ export const listGroupsWithSecret = query({
   },
 })
 
+/**
+ * For the groups index: per group, active member count and who leads it (leader /
+ * co-leader memberships plus the group's own leader_id / co_leader_id), in one call.
+ */
+export const groupsOverviewWithSecret = query({
+  args: { secret: v.string() },
+  returns: v.array(
+    v.object({
+      group_id: v.string(),
+      member_count: v.number(),
+      leaders: v.array(v.object({ name: v.string(), role: v.string(), user_id: v.optional(v.string()) })),
+    })
+  ),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    const groups = await ctx.db.query('groups').collect()
+    const memberships = (await ctx.db.query('group_memberships').collect()).filter((m) => m.is_active)
+
+    const counts = new Map<string, number>()
+    const leaderRows = new Map<string, Array<{ member_id: string; role: string }>>()
+    for (const m of memberships) {
+      counts.set(m.group_id, (counts.get(m.group_id) ?? 0) + 1)
+      if (m.role === 'leader' || m.role === 'co_leader') {
+        const list = leaderRows.get(m.group_id) ?? []
+        list.push({ member_id: m.member_id, role: m.role })
+        leaderRows.set(m.group_id, list)
+      }
+    }
+
+    const userName = new Map<string, string>()
+    const nameForUser = async (userId: string): Promise<string | null> => {
+      if (userName.has(userId)) return userName.get(userId) ?? null
+      const id = ctx.db.normalizeId('users', userId)
+      const user = id ? await ctx.db.get('users', id) : null
+      const name = user?.full_name ?? null
+      userName.set(userId, name ?? '')
+      return name
+    }
+    const userForMember = async (memberId: string): Promise<string | null> => {
+      const id = ctx.db.normalizeId('members', memberId)
+      const member = id ? await ctx.db.get('members', id) : null
+      return member?.user_id ?? null
+    }
+
+    const out = []
+    for (const g of groups) {
+      const leaders: Array<{ name: string; role: string; user_id?: string }> = []
+      const seen = new Set<string>()
+      const push = async (userId: string | null | undefined, role: string) => {
+        if (!userId || seen.has(userId)) return
+        const name = await nameForUser(userId)
+        if (!name) return
+        seen.add(userId)
+        leaders.push({ name, role, user_id: userId })
+      }
+      for (const row of leaderRows.get(String(g._id)) ?? []) {
+        await push(await userForMember(row.member_id), row.role)
+      }
+      await push(g.leader_id, 'leader')
+      await push(g.co_leader_id, 'co_leader')
+      leaders.sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name) : a.role === 'leader' ? -1 : 1))
+      out.push({ group_id: String(g._id), member_count: counts.get(String(g._id)) ?? 0, leaders })
+    }
+    return out
+  },
+})
+
 export const getGroupWithSecret = query({
   args: { secret: v.string(), id: v.id('groups') },
   returns: v.any(),
