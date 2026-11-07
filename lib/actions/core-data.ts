@@ -5,6 +5,7 @@ import type { AppUser, Attendance, DashboardStats, Group, GroupMembership, Membe
 import type { ApiResponse, PaginatedResponse } from '@/lib/services/api-types'
 import { generateMembershipId, normalizeMembershipId } from '@/lib/membershipId'
 import { isValidPhone } from '@/lib/phone'
+import { labelOf, logActivity } from '@/lib/activity/log'
 
 function isConvexDataSource(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_CONVEX_URL)
@@ -293,6 +294,7 @@ export async function createGroupAction(groupData: Partial<Group>): Promise<ApiR
   try {
     const { createGroupInConvex } = await import('@/lib/convex/core-bridge')
     const data = await createGroupInConvex(groupData)
+    await logActivity({ category: 'groups', action: 'groups.create', summary: `Created the group ${labelOf(data) ?? ''}`.trim(), target: { type: 'group', id: data?.id, label: labelOf(data) } })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -311,6 +313,7 @@ export async function updateGroupAction(groupId: string, updates: Partial<Group>
   try {
     const { updateGroupInConvex } = await import('@/lib/convex/core-bridge')
     const data = await updateGroupInConvex(groupId, updates)
+    await logActivity({ category: 'groups', action: 'groups.update', summary: `Updated the group ${labelOf(data) ?? ''}`.trim(), target: { type: 'group', id: groupId, label: labelOf(data) } })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -370,6 +373,7 @@ export async function updateUserRecord(
       throw new Error('Enter a valid Ghana phone number (e.g. 024 123 4567).')
     }
     const data = await updateUserInConvex(userId, updates)
+    await logActivity({ category: 'people', action: 'people.update', summary: `Updated ${labelOf(data) ?? 'someone'}'s details`, target: { type: 'user', id: userId, label: labelOf(data) }, details: { fields: Object.keys(updates ?? {}).slice(0, 20) } })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -420,6 +424,7 @@ export async function createUserRecord(userData: Partial<AppUser>): Promise<ApiR
       auth_uid: crypto.randomUUID(),
       join_year: userData.join_year,
     })
+    await logActivity({ category: 'people', action: 'people.create', summary: `Added ${labelOf(data) ?? 'a person'}`, target: { type: 'user', id: data?.id, label: labelOf(data) } })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -616,6 +621,7 @@ export async function createVisitorAction(visitor: Partial<Visitor>): Promise<Ap
   try {
     const { createVisitorInConvex } = await import('@/lib/convex/core-bridge')
     const data = await createVisitorInConvex(visitor)
+    await logActivity({ category: 'people', action: 'people.visitor', summary: `Added the visitor ${labelOf(data) ?? ''}`.trim(), target: { type: 'visitor', id: data?.id, label: labelOf(data) } })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -684,6 +690,7 @@ export async function addUserToGroupAction(
   try {
     const { addGroupMembershipForUserInConvex } = await import('@/lib/convex/core-bridge')
     const data = await addGroupMembershipForUserInConvex(groupId, userId, role)
+    await logActivity({ category: 'groups', action: 'groups.add_member', summary: `Added someone to a group as ${role}`, target: { type: 'group', id: groupId }, details: { user_id: userId } })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -702,6 +709,7 @@ export async function removeGroupMemberAction(membershipId: string): Promise<Api
   try {
     const { deactivateGroupMembershipInConvex } = await import('@/lib/convex/core-bridge')
     await deactivateGroupMembershipInConvex(membershipId)
+    await logActivity({ category: 'groups', action: 'groups.remove_member', summary: 'Removed someone from a group', details: { membership_id: membershipId } })
     return { data: true, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -723,6 +731,7 @@ export async function removeUserFromGroupAction(
   try {
     const { removeGroupMembershipForUserInConvex } = await import('@/lib/convex/core-bridge')
     await removeGroupMembershipForUserInConvex(groupId, userId)
+    await logActivity({ category: 'groups', action: 'groups.remove_member', summary: 'Removed someone from a group', target: { type: 'group', id: groupId }, details: { user_id: userId } })
     return { data: true, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -762,6 +771,7 @@ export async function deleteGroupAction(groupId: string): Promise<ApiResponse<bo
   try {
     const { deleteGroupInConvex } = await import('@/lib/convex/core-bridge')
     await deleteGroupInConvex(groupId)
+    await logActivity({ category: 'groups', action: 'groups.delete', summary: 'Deleted a group', target: { type: 'group', id: groupId } })
     return { data: true, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -780,6 +790,7 @@ export async function deleteUserAction(userId: string): Promise<ApiResponse<bool
   try {
     const { deleteUserInConvex } = await import('@/lib/convex/core-bridge')
     await deleteUserInConvex(userId)
+    await logActivity({ category: 'people', action: 'people.delete', summary: 'Deleted a person', target: { type: 'user', id: userId } })
     return { data: true, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -802,6 +813,7 @@ export async function createMemberAction(memberData: Partial<Member>): Promise<A
       const user = await fetchUserFromConvex(member.user_id)
       if (user) return { data: { ...member, user }, error: null, loading: false }
     }
+    await logActivity({ category: 'people', action: 'people.member_create', summary: `Added the member ${labelOf(member) ?? ''}`.trim(), target: { type: 'member', id: member?.id, label: labelOf(member) } })
     return { data: member, error: null, loading: false }
   } catch (error: unknown) {
     return {
@@ -823,6 +835,7 @@ export async function updateMemberAction(
   try {
     const { patchMemberInConvex } = await import('@/lib/convex/core-bridge')
     const data = await patchMemberInConvex(id, updates)
+    await logActivity({ category: 'people', action: 'people.member_update', summary: `Updated ${labelOf(data) ?? 'a member'}'s profile`, target: { type: 'member', id, label: labelOf(data) }, details: { fields: Object.keys(updates ?? {}).slice(0, 20) } })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {

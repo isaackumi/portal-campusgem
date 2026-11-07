@@ -157,6 +157,7 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission | Permis
   { prefix: '/admin/groups', permission: 'groups.manage' },
   { prefix: '/admin/campus-activities', permission: 'groups.manage' },
   { prefix: '/admin/corporate-gem', permission: 'groups.manage' },
+  { prefix: '/admin/activity', permission: 'users.manage' },
   { prefix: '/admin/communications', permission: 'sms.send' },
   { prefix: '/admin/events', permission: 'groups.manage' },
   { prefix: '/admin/inbox', permission: 'sms.send' },

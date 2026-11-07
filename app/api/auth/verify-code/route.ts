@@ -3,6 +3,7 @@ import { applySessionCookies, toSessionPayload } from '@/lib/auth/server-session
 import { loginErrorResponse, lookupLoginUser } from '@/lib/auth/login-lookup'
 import { hashSigninCode, normalizeCodeInput } from '@/lib/auth/signin-code'
 import { signinCodeSecret } from '@/lib/auth/send-signin-code'
+import { logActivity } from '@/lib/activity/log'
 
 /** Step 2 of sign-in for people who were texted a code. */
 export async function POST(request: NextRequest) {
@@ -21,6 +22,13 @@ export async function POST(request: NextRequest) {
     const { verifySigninCodeInConvex } = await import('@/lib/convex/auth-bridge')
     const result = await verifySigninCodeInConvex(found.user.id, hashSigninCode(found.user.id, digits, signinCodeSecret()))
     if (!result.ok) {
+      await logActivity({
+        category: 'auth',
+        action: 'auth.code_failed',
+        outcome: 'failed',
+        actor: { id: found.user.id, name: found.user.full_name },
+        summary: result.reason === 'wrong' ? 'Typed a wrong sign-in code' : result.reason === 'locked' ? 'Sign-in code locked after too many wrong tries' : 'Tried an expired sign-in code',
+      })
       const error =
         result.reason === 'wrong'
           ? `That code isn't right. ${result.attempts_left} ${result.attempts_left === 1 ? 'try' : 'tries'} left.`
@@ -35,6 +43,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    await logActivity({ category: 'auth', action: 'auth.signin', actor: { id: found.user.id, name: found.user.full_name }, summary: 'Signed in with a texted code' })
     const response = NextResponse.json({ success: true, user: toSessionPayload(found.user) })
     applySessionCookies(response, found.user)
     return response

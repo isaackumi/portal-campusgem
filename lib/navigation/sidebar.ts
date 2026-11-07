@@ -48,9 +48,29 @@ export type SidebarNavItem = {
   badge?: 'inbox-unread'
 }
 
+/** A section's colour: its icons wear it (components/sidebar.tsx, app/globals.css). */
+export type SidebarTone = 'brand' | 'teal' | 'emerald' | 'amber' | 'rose' | 'sky' | 'lime' | 'violet'
+
 export type SidebarNavSection = {
   title: string
   items: SidebarNavItem[]
+  tone?: SidebarTone
+}
+
+/** Each section's colour, matching the workspace switcher where they share an area (camp emerald, RLC amber). */
+const SECTION_TONES: Record<string, SidebarTone> = {
+  Main: 'brand',
+  Attendance: 'teal',
+  'Camp meeting': 'emerald',
+  RLC: 'amber',
+  Outreach: 'rose',
+  Communications: 'sky',
+  Finance: 'lime',
+  Administration: 'violet',
+}
+
+export function sectionTone(section: Pick<SidebarNavSection, 'title' | 'tone'>): SidebarTone {
+  return section.tone ?? SECTION_TONES[section.title] ?? 'brand'
 }
 
 /** Lean sidebar IA — deep links live on each module dashboard. */
@@ -286,6 +306,7 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
       },
       { name: 'Users', href: '/admin/users', icon: PersonIcon },
       { name: 'Access & roles', href: '/admin/admins', icon: LockClosedIcon },
+      { name: 'Activity', href: '/admin/activity', icon: ClockIcon, permission: 'users.manage', description: 'Sign-ins and changes across the app' },
       { name: 'Pastoral care', href: '/admin/pastoral-care', icon: HeartIcon, permission: 'members.manage' },
       { name: 'Groups', href: '/admin/groups', icon: GroupIcon },
     ],
