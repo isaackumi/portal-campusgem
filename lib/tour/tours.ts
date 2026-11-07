@@ -562,6 +562,39 @@ export const TOURS: Tour[] = [
     ],
   },
 
+  {
+    id: 'campus-outreach',
+    group: 'groups',
+    title: 'Campus outreach',
+    description: 'Record the students you meet on Sunday, then follow them up.',
+    route: '/outreach',
+    steps: [
+      {
+        title: 'Sunday outreach',
+        body: 'Everyone on a campus records the students they meet here, and follows up the ones given to them.',
+      },
+      {
+        element: 'outreach-qr',
+        side: 'bottom',
+        title: 'Show your QR code',
+        body: 'Hold your phone out: the student scans it and fills in their own details. They are recorded as met by you.',
+      },
+      {
+        element: 'outreach-add',
+        side: 'bottom',
+        title: 'Or fill it in yourself',
+        body: 'No data on their phone? Type their details on yours. “Save and add another” keeps the form open for the next person.',
+      },
+      {
+        element: 'outreach-list',
+        side: 'top',
+        fallback: 'center',
+        title: 'Follow up',
+        body: 'My follow-ups are the people given to you, oldest first. Tap a name to call or WhatsApp them, then tap how it went. Campus leaders also see everyone and can assign or share people out evenly.',
+      },
+    ],
+  },
+
   // ── Camp meeting ───────────────────────────────────────────────────────────
   {
     id: 'camp-overview',

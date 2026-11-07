@@ -17,6 +17,7 @@ import { PhoneLink } from '@/components/contact/phone-link'
 import { GroupSmsComposer } from '@/components/groups/group-sms-composer'
 import { CampusMembersPanel } from '@/components/campus/campus-members-panel'
 import { CampusOnboardingPanel } from '@/components/campus/campus-onboarding-panel'
+import { CampusOutreachPanel } from '@/components/outreach/campus-outreach-panel'
 import { useToast } from '@/hooks/use-toast'
 import { GROUP_MEMBERSHIP_ROLE_LABELS } from '@/lib/constants/groups'
 import { groupRoleTone } from '@/lib/ui/chip-tones'
@@ -123,6 +124,7 @@ function CampusView({ data, reload }: { data: CampusPageData; reload: () => Prom
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="leaders">Leaders &amp; executives</TabsTrigger>
+            <TabsTrigger value="outreach">Outreach</TabsTrigger>
             <TabsTrigger value="forms">Forms</TabsTrigger>
             {canManage ? <TabsTrigger value="onboarding">Onboarding</TabsTrigger> : null}
             {data.canText ? <TabsTrigger value="text">Text the campus</TabsTrigger> : null}
@@ -187,6 +189,10 @@ function CampusView({ data, reload }: { data: CampusPageData; reload: () => Prom
               leadersOnly
               onChanged={reload}
             />
+          </TabsContent>
+
+          <TabsContent value="outreach" className="mt-4">
+            <CampusOutreachPanel groupId={group.id} campusKey={data.key} />
           </TabsContent>
 
           <TabsContent value="forms" className="mt-4">

@@ -57,6 +57,10 @@ camp meeting, RLC (mother church), forms, SMS.
   always acts on the session user; members cannot change phone, role or permissions.
 - **QR self check-in (`/i/<token>`):** `checkin_sessions` token, the member is always the session user.
   Households: `households` + `users.household_id` (`members.manage` to change).
+- **Campus outreach (`/outreach`, public form `/o/<slug>?by=<ref>`):** `lib/actions/outreach.ts`, Convex
+  `outreach_contacts` / `outreach_events`. Actions start with `guardCampusMember(campusId)` (any active campus
+  member; leaders `manage`); members see and work only contacts they met or were given. The `by` ref is
+  `lib/outreach/ref.ts` (user id + campus-bound HMAC): never put a membership ID or bare user id in a link.
 - **Header workspace switcher:** `lib/navigation/workspaces.ts` (church, RLC, camp, Corporate GEM,
   each campus). Add new top-level areas there.
 - **Permissions** live in `lib/auth/roles.ts`. A user has a role (`ROLE_PERMISSIONS`) plus

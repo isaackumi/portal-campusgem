@@ -22,6 +22,8 @@ const protectedPrefixes = [
   '/settings',
   '/recommendations',
   '/campuses',
+  // Campus outreach (any signed-in role; the public form is /o/<slug>, not under this prefix).
+  '/outreach',
 ]
 
 function legacyVisitorsRedirect(request: NextRequest): NextResponse | null {

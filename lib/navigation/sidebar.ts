@@ -79,6 +79,7 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
     title: 'Main',
     items: [
       { name: 'My GEM', href: '/me', icon: StarIcon, description: 'Your groups, attendance, camp and household' },
+      { name: 'Campus outreach', href: '/outreach', icon: ChatBubbleIcon, description: 'Students met on campus and their follow-up' },
       { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
       { name: 'Members', href: '/members', icon: PersonIcon },
       { name: 'Groups', href: '/groups', icon: GroupIcon },

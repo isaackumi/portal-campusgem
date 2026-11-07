@@ -925,4 +925,71 @@ export default defineSchema({
     /** Where it was changed, e.g. "camp call". */
     context: v.optional(v.string()),
   }).index('by_from', ['from_phone']),
+
+  /**
+   * Campus outreach (Sunday evangelism on a campus): one row per student met, per campus
+   * (deduplicated by campus + phone). convex/outreach.ts, lib/actions/outreach.ts.
+   */
+  outreach_contacts: defineTable({
+    campus_id: v.string(),
+    full_name: v.string(),
+    /** +233… */
+    phone: v.string(),
+    whatsapp: v.optional(v.string()),
+    student_id: v.optional(v.string()),
+    level: v.optional(v.string()),
+    programme: v.optional(v.string()),
+    residence: v.optional(v.union(v.literal('hall'), v.literal('non_resident'))),
+    hall: v.optional(v.string()),
+    room: v.optional(v.string()),
+    area: v.optional(v.string()),
+    ministry_interests: v.optional(v.array(v.string())),
+    ministry_other: v.optional(v.string()),
+    bible_study: v.optional(v.union(v.literal('yes'), v.literal('no'))),
+    prayer_request: v.optional(v.string()),
+    /** Ghana calendar date (YYYY-MM-DD) they were last met. */
+    met_on: v.string(),
+    met_by_user_id: v.optional(v.string()),
+    met_by_name: v.optional(v.string()),
+    source: v.union(v.literal('qr'), v.literal('member')),
+    status: v.union(
+      v.literal('new'),
+      v.literal('contacted'),
+      v.literal('bible_study'),
+      v.literal('joined'),
+      v.literal('not_interested')
+    ),
+    assigned_to: v.optional(v.string()),
+    assigned_name: v.optional(v.string()),
+    assigned_at: v.optional(v.number()),
+    attempts: v.optional(v.number()),
+    last_contact_at: v.optional(v.number()),
+    last_outcome: v.optional(v.string()),
+    /** Directory user once they join the campus fellowship. */
+    user_id: v.optional(v.string()),
+    created_at: v.number(),
+    updated_at: v.number(),
+  })
+    .index('by_campus_met', ['campus_id', 'met_on'])
+    .index('by_campus_phone', ['campus_id', 'phone'])
+    .index('by_assigned', ['assigned_to'])
+    .index('by_met_by', ['met_by_user_id']),
+
+  /** Timeline of one outreach contact: met, calls, WhatsApps, notes, status and assignment changes. */
+  outreach_events: defineTable({
+    contact_id: v.id('outreach_contacts'),
+    at: v.number(),
+    by_user_id: v.optional(v.string()),
+    by_name: v.optional(v.string()),
+    kind: v.union(
+      v.literal('met'),
+      v.literal('call'),
+      v.literal('whatsapp'),
+      v.literal('note'),
+      v.literal('status'),
+      v.literal('assign')
+    ),
+    outcome: v.optional(v.string()),
+    note: v.optional(v.string()),
+  }).index('by_contact', ['contact_id']),
 })

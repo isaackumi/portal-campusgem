@@ -68,3 +68,57 @@ export async function visibleCampusIds(user: AppUser): Promise<'all' | string[]>
   if (isCampusAdmin(user)) return 'all'
   return viewableCampusIdsFrom(user, await loadMemberships(user))
 }
+
+export type CampusMemberAccess = CampusAccessLevel | 'member'
+
+export type CampusMemberGuard = {
+  group: Group
+  /** Null only when already inside a trusted scope (nested call). */
+  user: AppUser | null
+  /** `manage` / `view` as in `guardCampus`; `member` for any other active member of the campus. */
+  access: CampusMemberAccess
+  isAdmin: boolean
+}
+
+/**
+ * Like `guardCampus(groupId, 'view')`, but also lets in any ACTIVE member of that campus, in any
+ * role (campus outreach: every GEM member on the campus records the students they meet). Same
+ * order as `guardCampus`: the id is verified to be a campus, then the user's own access is
+ * checked, and only then is the trusted scope entered. The caller must still limit a `member`
+ * to their own records: after this, nested `guard()` calls pass.
+ */
+export async function guardCampusMember(groupId: string): Promise<CampusMemberGuard> {
+  if (typeof groupId !== 'string' || !/^[a-z0-9]{10,64}$/i.test(groupId)) throw new Error('Campus not found.')
+  const { fetchGroupFromConvex } = await import('@/lib/convex/core-bridge')
+  let group: Group | null = null
+  try {
+    group = await fetchGroupFromConvex(groupId)
+  } catch {
+    group = null
+  }
+  if (!group || group.group_type !== 'campus') throw new Error('Campus not found.')
+
+  let access: CampusMemberAccess | null = null
+  let admin = false
+  const user = await guardWith(async (u) => {
+    admin = isCampusAdmin(u)
+    if (admin) {
+      access = 'manage'
+      return true
+    }
+    const memberships = await loadMemberships(u)
+    const level = campusAccessLevel(u, memberships, group!.id)
+    if (level) access = level
+    else if (memberships.some((m) => m.is_active && m.group_id === group!.id && m.group_type === 'campus')) access = 'member'
+    return access != null
+  }, 'Only members of this campus can do this.')
+
+  if (!user) return { group, user: null, access: 'manage', isAdmin: true }
+  return { group, user, access: access ?? 'member', isAdmin: admin }
+}
+
+/** Active campus group ids a user belongs to (any role). */
+export async function memberCampusIds(user: AppUser): Promise<string[]> {
+  const rows = await loadMemberships(user)
+  return Array.from(new Set(rows.filter((m) => m.is_active && m.group_type === 'campus').map((m) => m.group_id)))
+}

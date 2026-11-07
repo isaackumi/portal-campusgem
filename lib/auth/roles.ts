@@ -190,6 +190,8 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission | Permis
   { prefix: '/dashboard', permission: 'dashboard.view' },
   // "My GEM" (every role has dashboard.view). Last, so '/me' never shadows '/members'.
   { prefix: '/me', permission: 'dashboard.view' },
+  // Campus outreach: every signed-in role; which campus and whose contacts is checked per action.
+  { prefix: '/outreach', permission: 'dashboard.view' },
   // Guided tours (every signed-in role). Last, so it never shadows another rule.
   { prefix: '/help', permission: 'dashboard.view' },
 ]

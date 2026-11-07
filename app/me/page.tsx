@@ -28,6 +28,7 @@ import { PersonAvatar } from '@/components/ui/person'
 import { AttendanceWeeks } from '@/components/me/attendance-weeks'
 import { MyEvents } from '@/components/events/my-events'
 import { MyCampusCard } from '@/components/campus/my-campus-card'
+import { MyOutreachCard } from '@/components/outreach/my-outreach-card'
 import { MyDetailsForm, type MyDetailsValues } from '@/components/me/my-details-form'
 import { useToast } from '@/hooks/use-toast'
 import { loadMyGemAction } from '@/lib/actions/me'
@@ -338,6 +339,7 @@ function MyGemContent() {
 
         <div className="space-y-6">
           <MyCampusCard />
+          <MyOutreachCard />
           <Panel icon={Tent} title="Camp meeting">
             {!camp ? (
               <p className="text-sm text-neutral-500 dark:text-neutral-400">No camp meeting is scheduled right now.</p>

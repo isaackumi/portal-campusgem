@@ -37,6 +37,7 @@ import type * as lib_rlcCheckInCode from "../lib/rlcCheckInCode.js";
 import type * as lib_serverSecret from "../lib/serverSecret.js";
 import type * as members from "../members.js";
 import type * as myGem from "../myGem.js";
+import type * as outreach from "../outreach.js";
 import type * as pastoral from "../pastoral.js";
 import type * as rlc from "../rlc.js";
 import type * as smsInbox from "../smsInbox.js";
@@ -79,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   "lib/serverSecret": typeof lib_serverSecret;
   members: typeof members;
   myGem: typeof myGem;
+  outreach: typeof outreach;
   pastoral: typeof pastoral;
   rlc: typeof rlc;
   smsInbox: typeof smsInbox;
