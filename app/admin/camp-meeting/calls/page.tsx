@@ -5,9 +5,13 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  ArrowRight,
   ArrowUpRight,
+  ListChecks,
+  MessageCircle,
   MessageSquareText,
   PhoneCall,
+  Radio,
   RefreshCw,
   Search,
   Send,
@@ -49,6 +53,8 @@ import { TextRegistrantsDialog } from '@/components/camp/calls/text-registrants-
 import { OutcomeBadge, outcomeSegments } from '@/components/camp/call-outcome'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
+import { getLiveSessionInfoAction } from '@/lib/actions/call-center'
+import { CALL_SEGMENTS, isCallSegment, matchesSegment, type CallSegment } from '@/lib/calls/queue'
 
 type View = 'team' | 'mine'
 type CallerFilter = 'all' | 'unassigned' | string
@@ -92,6 +98,10 @@ function CallsWorkspace() {
     const o = params.get('outcome')
     return o === 'open' || isCallOutcome(o) ? (o as OutcomeFilter) : 'all'
   })
+  const [segment, setSegment] = useState<CallSegment>(() => {
+    const s = params.get('group')
+    return isCallSegment(s) ? s : 'all'
+  })
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [limit, setLimit] = useState(PAGE_SIZE)
   const [savingId, setSavingId] = useState<string | null>(null)
@@ -103,7 +113,13 @@ function CallsWorkspace() {
     if (data && !data.canManage) setView('mine')
   }, [data])
 
-  useEffect(() => setLimit(PAGE_SIZE), [query, callerFilter, outcomeFilter, view])
+  useEffect(() => setLimit(PAGE_SIZE), [query, callerFilter, outcomeFilter, view, segment])
+
+  const live = useQuery({
+    queryKey: ['call-session-live', yearParam ?? 'active'],
+    queryFn: async () => (await getLiveSessionInfoAction(yearParam)).data,
+    refetchInterval: 30_000,
+  })
 
   const regs = useMemo(() => data?.registrations ?? [], [data])
   const peopleById = useMemo(() => new Map((data?.people ?? []).map((p) => [p.id, p])), [data])
@@ -132,6 +148,7 @@ function CallsWorkspace() {
         if (outcomeFilter === 'open') return isOpenCall(r)
         return effectiveOutcome(r) === outcomeFilter
       })
+      .filter((r) => matchesSegment(r, segment))
       .filter((r) => matchesQuery(r, query.trim()))
       .sort((a, b) => {
         // Open calls first, then fewest attempts, then name.
@@ -139,7 +156,11 @@ function CallsWorkspace() {
         const bo = isOpenCall(b) ? 0 : 1
         return ao - bo || (a.call_attempts ?? 0) - (b.call_attempts ?? 0) || a.full_name.localeCompare(b.full_name)
       })
-  }, [view, mine, regs, callerFilter, outcomeFilter, query])
+  }, [view, mine, regs, callerFilter, outcomeFilter, query, segment])
+  const segmentCounts = useMemo(() => {
+    const active = (view === 'mine' ? mine : regs).filter((r) => r.status !== 'cancelled')
+    return Object.fromEntries(CALL_SEGMENTS.map((s) => [s.id, active.filter((r) => matchesSegment(r, s.id)).length])) as Record<CallSegment, number>
+  }, [view, mine, regs])
 
   const selectedRegs = useMemo(() => regs.filter((r) => selected.has(r.id)), [regs, selected])
   const allVisibleSelected = visible.length > 0 && visible.every((r) => selected.has(r.id))
@@ -252,6 +273,22 @@ function CallsWorkspace() {
               <RefreshCw className={cn('h-4 w-4 sm:mr-2', board.isFetching && 'animate-spin')} aria-hidden />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/camp-meeting/calls/mine">
+                <ListChecks className="h-4 w-4 sm:mr-2" aria-hidden />
+                <span className="hidden sm:inline">My calls</span>
+                <span className="sr-only sm:hidden">My calls</span>
+              </Link>
+            </Button>
+            {data.canManage ? (
+              <Button asChild variant="outline">
+                <Link href="/admin/camp-meeting/calls/templates">
+                  <MessageCircle className="h-4 w-4 sm:mr-2" aria-hidden />
+                  <span className="hidden sm:inline">WhatsApp messages</span>
+                  <span className="sr-only sm:hidden">WhatsApp messages</span>
+                </Link>
+              </Button>
+            ) : null}
             {data.canManage && data.canSms ? (
               <Button className="flex-1 sm:flex-none" onClick={() => setTextListsOpen(true)}>
                 <MessageSquareText className="mr-2 h-4 w-4" aria-hidden />
@@ -261,6 +298,30 @@ function CallsWorkspace() {
           </>
         }
       />
+
+      {/* The team calling together: join if it's live; managers start one. */}
+      {live.data || data.canManage ? (
+        <Link
+          href="/admin/camp-meeting/calls/session"
+          className={cn(
+            'mb-4 flex items-center gap-3 rounded-xl border p-4 transition-colors',
+            live.data
+              ? 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:bg-emerald-950/60'
+              : 'border-neutral-200 bg-white text-neutral-900 hover:border-brand-300 dark:border-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-100 dark:hover:border-brand-700'
+          )}
+        >
+          <Radio className={cn('h-5 w-5 shrink-0', live.data ? 'animate-pulse motion-reduce:animate-none' : 'text-brand-600 dark:text-brand-400')} aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{live.data ? `Calling session live: ${live.data.title}` : 'Start a calling session'}</span>
+            <span className="block text-sm opacity-80">
+              {live.data
+                ? 'Join on your phone and take people from the shared list.'
+                : 'Get the team together: everyone taps "Next person" and gets someone nobody else is calling, with a live board.'}
+            </span>
+          </span>
+          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
+        </Link>
+      ) : null}
 
       {data.canManage ? (
         <section data-tour="calls-progress" aria-label="Campaign progress" className="grid gap-4 lg:grid-cols-3">
@@ -426,9 +487,29 @@ function CallsWorkspace() {
             </select>
           ) : null}
         </div>
+        <div role="radiogroup" aria-label="New or returning" className="flex flex-wrap gap-2">
+          {CALL_SEGMENTS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="radio"
+              aria-checked={segment === s.id}
+              onClick={() => setSegment(s.id)}
+              title={s.description}
+              className={cn(
+                'h-9 rounded-full border px-3.5 text-[13px] font-medium transition-colors',
+                segment === s.id
+                  ? 'border-brand-600 bg-brand-600 text-white dark:border-brand-500 dark:bg-brand-600'
+                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-brand-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+              )}
+            >
+              {s.label} · {segmentCounts[s.id]}
+            </button>
+          ))}
+        </div>
         <p className="text-[13px] text-neutral-500 dark:text-neutral-400" aria-live="polite">
           {visible.length} {visible.length === 1 ? 'person' : 'people'}
-          {query || outcomeFilter !== 'all' || (callerFilter !== 'all' && view === 'team') ? (
+          {query || outcomeFilter !== 'all' || segment !== 'all' || (callerFilter !== 'all' && view === 'team') ? (
             <button
               type="button"
               className="ml-2 font-medium text-brand-700 hover:underline dark:text-brand-400"
@@ -436,6 +517,7 @@ function CallsWorkspace() {
                 setQuery('')
                 setOutcomeFilter('all')
                 setCallerFilter('all')
+                setSegment('all')
               }}
             >
               Clear filters

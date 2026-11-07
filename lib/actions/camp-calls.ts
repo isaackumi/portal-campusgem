@@ -265,7 +265,8 @@ export async function sendCallListsBySmsAction(input: {
     }
     if (byCaller.size === 0) throw new Error('No open calls are assigned to the chosen callers.')
 
-    const link = `${appOrigin()}/admin/camp-meeting/calls`
+    // Their own list, phone-first; signing in brings them straight back to it.
+    const link = `${appOrigin()}/admin/camp-meeting/calls/mine`
     const failed: CallListSmsResult['failed'] = []
     let messages = 0
     let callers = 0

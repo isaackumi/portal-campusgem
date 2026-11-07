@@ -47,7 +47,7 @@ export function callListSmsPreview(
 
 /** Where callers mark outcomes; the server links to the site origin. */
 export function callListLink(): string {
-  return `${typeof window !== 'undefined' ? window.location.origin : ''}/admin/camp-meeting/calls`
+  return `${typeof window !== 'undefined' ? window.location.origin : ''}/admin/camp-meeting/calls/mine`
 }
 
 /** Text each caller the names and numbers on their list. */
@@ -97,7 +97,7 @@ export function TextCallListsDialog({
         callerName: sample.person?.full_name ?? 'Caller',
         campYear,
         entries: sample.regs.map((r) => ({ name: r.full_name, phone: r.phone, outcome: r.attendance_confirmation })),
-        link: sample.person?.can_use_app ? `${typeof window !== 'undefined' ? window.location.origin : ''}/admin/camp-meeting/calls` : null,
+        link: sample.person?.can_use_app ? `${typeof window !== 'undefined' ? window.location.origin : ''}/admin/camp-meeting/calls/mine` : null,
       })
     : []
 
