@@ -8,10 +8,13 @@ import {
   ArrowRight,
   ArrowUpRight,
   ListChecks,
+  MoreHorizontal,
   MessageCircle,
   MessageSquareText,
   PhoneCall,
   Radio,
+  Sparkles,
+  UsersRound,
   RefreshCw,
   Search,
   Send,
@@ -25,6 +28,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Meter, SegmentedBar } from '@/components/ui/meter'
 import { PersonAvatar } from '@/components/ui/person'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -53,7 +57,8 @@ import { TextRegistrantsDialog } from '@/components/camp/calls/text-registrants-
 import { OutcomeBadge, outcomeSegments } from '@/components/camp/call-outcome'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
-import { getLiveSessionInfoAction } from '@/lib/actions/call-center'
+import { getCallTeamAction, getLiveSessionInfoAction } from '@/lib/actions/call-center'
+import { ShareOutDialog } from '@/components/calls/share-out-dialog'
 import { CALL_SEGMENTS, isCallSegment, matchesSegment, type CallSegment } from '@/lib/calls/queue'
 
 type View = 'team' | 'mine'
@@ -108,6 +113,7 @@ function CallsWorkspace() {
   const [assignOpen, setAssignOpen] = useState(false)
   const [textListsOpen, setTextListsOpen] = useState(false)
   const [textRegsOpen, setTextRegsOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   useEffect(() => {
     if (data && !data.canManage) setView('mine')
@@ -115,6 +121,12 @@ function CallsWorkspace() {
 
   useEffect(() => setLimit(PAGE_SIZE), [query, callerFilter, outcomeFilter, view, segment])
 
+  const team = useQuery({
+    queryKey: ['call-team'],
+    enabled: !!data?.canManage,
+    queryFn: async () => (await getCallTeamAction(yearParam)).data,
+    staleTime: 30_000,
+  })
   const live = useQuery({
     queryKey: ['call-session-live', yearParam ?? 'active'],
     queryFn: async () => (await getLiveSessionInfoAction(yearParam)).data,
@@ -273,28 +285,65 @@ function CallsWorkspace() {
               <RefreshCw className={cn('h-4 w-4 sm:mr-2', board.isFetching && 'animate-spin')} aria-hidden />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button asChild variant="outline">
-              <Link href="/admin/camp-meeting/calls/mine">
-                <ListChecks className="h-4 w-4 sm:mr-2" aria-hidden />
-                <span className="hidden sm:inline">My calls</span>
-                <span className="sr-only sm:hidden">My calls</span>
-              </Link>
-            </Button>
+            {/* Occasional places live in one menu; the two main actions stay as buttons. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" aria-label="More">
+                  <MoreHorizontal className="h-4 w-4 sm:mr-2" aria-hidden />
+                  <span className="hidden sm:inline">More</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
+                  <Link href="/admin/camp-meeting/calls/mine">
+                    <ListChecks className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />
+                    My calls
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
+                  <Link href="/admin/camp-meeting/calls/session">
+                    <Radio className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                    Calling session
+                  </Link>
+                </DropdownMenuItem>
+                {data.canManage ? (
+                  <>
+                    <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
+                      <Link href="/admin/camp-meeting/calls/team">
+                        <UsersRound className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+                        Call team
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
+                      <Link href="/admin/camp-meeting/calls/templates">
+                        <MessageCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                        WhatsApp messages
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {data.canManage && data.canSms ? (
+              <Button variant="outline" onClick={() => setTextListsOpen(true)}>
+                <MessageSquareText className="h-4 w-4 sm:mr-2" aria-hidden />
+                <span className="hidden sm:inline">Text call lists</span>
+                <span className="sr-only sm:hidden">Text call lists</span>
+              </Button>
+            ) : null}
             {data.canManage ? (
-              <Button asChild variant="outline">
-                <Link href="/admin/camp-meeting/calls/templates">
-                  <MessageCircle className="h-4 w-4 sm:mr-2" aria-hidden />
-                  <span className="hidden sm:inline">WhatsApp messages</span>
-                  <span className="sr-only sm:hidden">WhatsApp messages</span>
+              <Button className="flex-1 sm:flex-none" onClick={() => setShareOpen(true)}>
+                <Sparkles className="mr-2 h-4 w-4" aria-hidden />
+                Share out the calls
+              </Button>
+            ) : (
+              <Button asChild className="flex-1 sm:flex-none">
+                <Link href="/admin/camp-meeting/calls/mine">
+                  <ListChecks className="mr-2 h-4 w-4" aria-hidden />
+                  My calls
                 </Link>
               </Button>
-            ) : null}
-            {data.canManage && data.canSms ? (
-              <Button className="flex-1 sm:flex-none" onClick={() => setTextListsOpen(true)}>
-                <MessageSquareText className="mr-2 h-4 w-4" aria-hidden />
-                Text call lists
-              </Button>
-            ) : null}
+            )}
           </>
         }
       />
@@ -704,6 +753,21 @@ function CallsWorkspace() {
             onAssigned={() => {
               setSelected(new Set())
               void refresh()
+            }}
+          />
+          <ShareOutDialog
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            yearId={yearParam}
+            sessionLive={!!live.data}
+            sessionPeople={team.data?.sessionPeople.length ?? 0}
+            teamActive={(team.data?.team ?? []).filter((t) => t.active).length}
+            counts={{ unassigned: regs.filter((r) => isOpenCall(r) && !r.assigned_to).length, open: summary.open }}
+            canSms={data.canSms}
+            onShared={(textLists) => {
+              void refresh()
+              void team.refetch()
+              if (textLists) setTextListsOpen(true)
             }}
           />
           <TextCallListsDialog

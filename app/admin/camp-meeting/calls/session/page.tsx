@@ -8,7 +8,7 @@
 import { Suspense, useCallback, useState } from 'react'
 import Link from 'next/link'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, MapPin, Phone, PhoneCall, Radio, SkipForward, Square, Users } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, PhoneCall, Radio, SkipForward, Square, UserPlus, Users } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
 import { Button } from '@/components/ui/button'
@@ -36,6 +36,7 @@ import { OutcomeBadge } from '@/components/camp/call-outcome'
 import { CallFeedbackPanel } from '@/components/calls/call-feedback'
 import { WhatsAppButton } from '@/components/calls/whatsapp-button'
 import { useAfterCallPrompt } from '@/components/calls/use-after-call-prompt'
+import { InviteTeamDialog } from '@/components/calls/invite-team-dialog'
 
 const SKIP_KEY = 'call-session-skipped'
 
@@ -61,7 +62,9 @@ function Session() {
   const [busy, setBusy] = useState<null | 'next' | 'save' | 'skip' | 'start' | 'end'>(null)
   const [done, setDone] = useState(false)
   const [segment, setSegment] = useState<CallSegment>('all')
+  const [sameGender, setSameGender] = useState(true)
   const [confirmEnd, setConfirmEnd] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const after = useAfterCallPrompt<CallTarget>()
 
   const state = useQuery({
@@ -135,7 +138,7 @@ function Session() {
 
   async function start() {
     setBusy('start')
-    const res = await startCallSessionAction({ segment })
+    const res = await startCallSessionAction({ segment, sameGender })
     setBusy(null)
     if (res.error) {
       toast({ variant: 'destructive', title: 'Could not start', description: res.error })
@@ -147,6 +150,8 @@ function Session() {
       // Nothing to clear.
     }
     await state.refetch()
+    // Started: the next thing is getting everyone in.
+    setInviteOpen(true)
   }
 
   async function end() {
@@ -160,9 +165,9 @@ function Session() {
     void state.refetch()
   }
 
-  async function changeSegment(next: CallSegment) {
+  async function changeSegment(next: CallSegment, gender = data?.session?.sameGender) {
     if (!data?.session) return
-    const res = await setSessionSegmentAction({ sessionId: data.session.id, segment: next })
+    const res = await setSessionSegmentAction({ sessionId: data.session.id, segment: next, sameGender: gender })
     if (res.error) toast({ variant: 'destructive', title: 'Not changed', description: res.error })
     else void state.refetch()
   }
@@ -227,6 +232,21 @@ function Session() {
                 </button>
               ))}
             </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={sameGender}
+              onClick={() => setSameGender((v) => !v)}
+              className="mt-4 flex w-full items-center gap-3 rounded-xl border border-neutral-200 p-4 text-left hover:border-brand-300 dark:border-neutral-700 dark:hover:border-brand-700"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-neutral-900 dark:text-neutral-50">Men call men, women call women</span>
+                <span className="block text-[13px] text-neutral-600 dark:text-neutral-400">&quot;Next person&quot; gives each caller their own first; nobody waits if none are left.</span>
+              </span>
+              <span className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', sameGender ? 'bg-brand-600' : 'bg-neutral-300 dark:bg-neutral-600')} aria-hidden>
+                <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-[left]', sameGender ? 'left-[22px]' : 'left-0.5')} />
+              </span>
+            </button>
             <Button className="mt-5 h-12 w-full text-[15px]" onClick={() => void start()} disabled={busy === 'start' || data.remaining[segment] === 0}>
               <Radio className="mr-2 h-4 w-4" aria-hidden />
               {busy === 'start' ? 'Starting…' : 'Start the session'}
@@ -254,12 +274,19 @@ function Session() {
     <div className="mx-auto max-w-5xl pb-28">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {back}
-        {data.canManage ? (
-          <Button variant="outline" className="h-10" onClick={() => setConfirmEnd(true)}>
-            <Square className="mr-2 h-3.5 w-3.5" aria-hidden />
-            End session
+        <div className="flex gap-2">
+          {/* Anyone in the session can bring others in: QR, link, share; managers can text the team. */}
+          <Button className="h-10" onClick={() => setInviteOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" aria-hidden />
+            Invite the team
           </Button>
-        ) : null}
+          {data.canManage ? (
+            <Button variant="outline" className="h-10" onClick={() => setConfirmEnd(true)}>
+              <Square className="mr-2 h-3.5 w-3.5" aria-hidden />
+              End
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <header className="mt-2">
@@ -300,6 +327,20 @@ function Session() {
                 {x.label} · {data.remaining[x.id]}
               </button>
             ))}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={s.sameGender}
+              onClick={() => void changeSegment(s.segment, !s.sameGender)}
+              className={cn(
+                'h-9 rounded-full border px-3.5 text-[13px] font-medium',
+                s.sameGender
+                  ? 'border-violet-600 bg-violet-600 text-white dark:border-violet-500 dark:bg-violet-600'
+                  : 'border-neutral-200 text-neutral-700 hover:border-violet-300 dark:border-neutral-700 dark:text-neutral-300'
+              )}
+            >
+              Men call men, women call women
+            </button>
           </div>
         ) : null}
       </section>
@@ -426,6 +467,8 @@ function Session() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <InviteTeamDialog open={inviteOpen} onOpenChange={setInviteOpen} />
 
       <Dialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <DialogContent>
