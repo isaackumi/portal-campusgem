@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { AlertTriangle, Check, MessageSquareText, Shuffle, Sparkles, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -97,7 +96,7 @@ export function ShareOutDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-brand-600 dark:text-brand-400" aria-hidden />
-            Share out the calls
+            Split people among callers
           </DialogTitle>
           <DialogDescription>Shared at random but evenly, following your rules. Check the preview, then share.</DialogDescription>
         </DialogHeader>
@@ -150,12 +149,9 @@ export function ShareOutDialog({
               <button type="button" className={option(source === 'team', teamActive === 0)} disabled={teamActive === 0} onClick={() => setSource('team')}>
                 <Users className="mt-0.5 h-5 w-5 shrink-0 text-brand-600 dark:text-brand-400" aria-hidden />
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-neutral-900 dark:text-neutral-50">The call team · {teamActive}</span>
+                  <span className="block font-semibold text-neutral-900 dark:text-neutral-50">Your callers · {teamActive}</span>
                   <span className="block text-[13px] text-neutral-600 dark:text-neutral-400">
-                    Everyone you&apos;ve added to the call center.{' '}
-                    <Link href="/admin/camp-meeting/calls/team" className="font-medium text-brand-700 underline-offset-2 hover:underline dark:text-brand-400" onClick={() => onOpenChange(false)}>
-                      {teamActive ? 'Edit the team' : 'Add people'}
-                    </Link>
+                    {teamActive ? 'Everyone on the Callers board who is taking calls.' : 'Add callers on the calls page first.'}
                   </span>
                 </span>
               </button>
