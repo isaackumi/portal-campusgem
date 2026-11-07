@@ -557,6 +557,7 @@ export async function textTeamSessionLinkAction(input: { userIds: string[] }): P
       if (result.success) sent += 1
       else failed.push({ name: person.name, reason: result.error ?? 'Not sent' })
     }
+    await logActivity({ category: 'sms', action: 'sms.session_invite', outcome: sent === 0 && failed.length ? 'failed' : 'ok', summary: `Texted ${sent} ${sent === 1 ? 'caller' : 'callers'} the calling session link${failed.length ? ` (${failed.length} not sent)` : ''}` })
     return { data: { sent, failed }, error: null }
   } catch (error: unknown) {
     return { data: null, error: errorOf(error, 'Could not text the team') }
@@ -648,6 +649,7 @@ export async function saveCallTeamMemberAction(input: {
     const max = input.max == null || input.max === 0 ? undefined : Math.max(1, Math.min(500, Math.round(input.max)))
     const cc = await import('@/lib/convex/call-center-bridge')
     await cc.saveCallTeamMember({ user_id: input.user_id, gender: input.gender ?? undefined, takes: input.takes, max, active: input.active }, user.id)
+    await logActivity({ category: 'calls', action: 'calls.team_save', summary: `Updated the call team (${input.active ? 'taking calls' : 'paused'}, ${input.takes === 'all' ? 'everyone' : input.takes === 'new' ? 'new campers' : 'returning campers'})`, target: { type: 'user', id: input.user_id } })
     return { error: null }
   } catch (error: unknown) {
     return { error: errorOf(error, 'Could not save') }
@@ -659,6 +661,7 @@ export async function removeCallTeamMemberAction(input: { user_id: string }): Pr
     await guard('camp.manage')
     const cc = await import('@/lib/convex/call-center-bridge')
     await cc.removeCallTeamMember(input.user_id)
+    await logActivity({ category: 'calls', action: 'calls.team_remove', summary: 'Took someone off the call team', target: { type: 'user', id: input.user_id } })
     return { error: null }
   } catch (error: unknown) {
     return { error: errorOf(error, 'Could not remove') }
@@ -749,6 +752,7 @@ export async function applyShareAction(input: { yearId?: string | null; source: 
     if (!result.assignments.length) throw new Error('Nobody to share out.')
     const bridge = await import('@/lib/convex/camp-bridge')
     const assigned = await bridge.setCallAssignmentsInConvex(result.assignments.map((a) => ({ registration_id: a.personId, assigned_to: a.callerId })))
+    await logActivity({ category: 'calls', action: 'calls.share_out', summary: `Shared out ${assigned} calls among ${new Set(result.assignments.map((a) => a.callerId)).size} ${input.source === 'session' ? 'people in the session' : 'call team members'}`, details: { scope: input.scope, sameGender: input.sameGender, matchTakes: input.matchTakes, relaxed: result.relaxed, unplaced: result.unplaced.length } })
     revalidatePath('/admin/camp-meeting/calls')
     return { data: { assigned, callers: new Set(result.assignments.map((a) => a.callerId)).size }, error: null }
   } catch (error: unknown) {
