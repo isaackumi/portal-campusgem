@@ -827,7 +827,27 @@ export default defineSchema({
     started_at: v.number(),
     ended_at: v.optional(v.number()),
     status: v.union(v.literal('live'), v.literal('ended')),
+    /** "Next person" gives men to men and women to women (when both are known). */
+    same_gender: v.optional(v.boolean()),
   }).index('by_list_status', ['list_key', 'status']),
+
+  /**
+   * The call team: who gets call lists when calls are shared out with no session running, and how
+   * each likes to be given them (lib/calls/distribute.ts).
+   */
+  call_team: defineTable({
+    user_id: v.string(),
+    /** For "men call men, women call women"; unset never blocks a match. */
+    gender: v.optional(v.union(v.literal('Male'), v.literal('Female'))),
+    /** Who they take: everyone, only first-time campers, or only returning ones. */
+    takes: v.union(v.literal('all'), v.literal('new'), v.literal('returning')),
+    /** The most open calls to give them (unset: no limit). */
+    max: v.optional(v.number()),
+    /** Off: kept on the team, but given nobody for now. */
+    active: v.boolean(),
+    added_by: v.string(),
+    added_at: v.number(),
+  }).index('by_user', ['user_id']),
 
   /** Who is in a session, and when each was last seen (the board shows who is still calling). */
   call_session_people: defineTable({

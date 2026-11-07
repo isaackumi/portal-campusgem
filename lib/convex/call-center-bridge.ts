@@ -20,6 +20,7 @@ export type CallSessionRecord = {
   started_at: number
   ended_at?: number
   status: string
+  same_gender?: boolean
 }
 
 export type SessionBoardRecord = {
@@ -46,12 +47,17 @@ export async function getLiveSession(list_key: string): Promise<CallSessionRecor
   return (await client().query(api.callCenter.getLiveSessionWithSecret, { secret: secret(), list_key })) as CallSessionRecord | null
 }
 
-export async function startSession(args: { list_key: string; title: string; segment: string; started_by: string }): Promise<CallSessionRecord> {
+export async function startSession(args: { list_key: string; title: string; segment: string; started_by: string; same_gender?: boolean }): Promise<CallSessionRecord> {
   return (await client().mutation(api.callCenter.startSessionWithSecret, { secret: secret(), ...args })) as CallSessionRecord
 }
 
-export async function setSessionSegment(session_id: string, segment: string): Promise<void> {
-  await client().mutation(api.callCenter.setSessionSegmentWithSecret, { secret: secret(), session_id: session_id as Id<'call_sessions'>, segment })
+export async function setSessionSegment(session_id: string, segment: string, same_gender?: boolean): Promise<void> {
+  await client().mutation(api.callCenter.setSessionSegmentWithSecret, {
+    secret: secret(),
+    session_id: session_id as Id<'call_sessions'>,
+    segment,
+    ...(same_gender !== undefined ? { same_gender } : {}),
+  })
 }
 
 export async function endSession(session_id: string): Promise<void> {
@@ -108,4 +114,28 @@ export async function listNumberChanges(): Promise<Array<{ from_phone: string; t
 
 export async function setNumberChange(args: { from_phone: string; to_phone: string; set_by: string; context?: string }): Promise<void> {
   await client().mutation(api.callCenter.setNumberChangeWithSecret, { secret: secret(), ...args })
+}
+
+export type CallTeamRecord = { user_id: string; gender?: 'Male' | 'Female'; takes: 'all' | 'new' | 'returning'; max?: number; active: boolean }
+
+export async function listCallTeam(): Promise<CallTeamRecord[]> {
+  return (await client().query(api.callCenter.listCallTeamWithSecret, { secret: secret() })) as CallTeamRecord[]
+}
+
+export async function saveCallTeamMember(member: CallTeamRecord, added_by: string): Promise<void> {
+  await client().mutation(api.callCenter.saveCallTeamMemberWithSecret, {
+    secret: secret(),
+    member: {
+      user_id: member.user_id,
+      takes: member.takes,
+      active: member.active,
+      ...(member.gender ? { gender: member.gender } : {}),
+      ...(member.max != null ? { max: member.max } : {}),
+    },
+    added_by,
+  })
+}
+
+export async function removeCallTeamMember(user_id: string): Promise<void> {
+  await client().mutation(api.callCenter.removeCallTeamMemberWithSecret, { secret: secret(), user_id })
 }

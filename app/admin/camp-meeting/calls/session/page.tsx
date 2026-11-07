@@ -62,6 +62,7 @@ function Session() {
   const [busy, setBusy] = useState<null | 'next' | 'save' | 'skip' | 'start' | 'end'>(null)
   const [done, setDone] = useState(false)
   const [segment, setSegment] = useState<CallSegment>('all')
+  const [sameGender, setSameGender] = useState(true)
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
   const after = useAfterCallPrompt<CallTarget>()
@@ -137,7 +138,7 @@ function Session() {
 
   async function start() {
     setBusy('start')
-    const res = await startCallSessionAction({ segment })
+    const res = await startCallSessionAction({ segment, sameGender })
     setBusy(null)
     if (res.error) {
       toast({ variant: 'destructive', title: 'Could not start', description: res.error })
@@ -164,9 +165,9 @@ function Session() {
     void state.refetch()
   }
 
-  async function changeSegment(next: CallSegment) {
+  async function changeSegment(next: CallSegment, gender = data?.session?.sameGender) {
     if (!data?.session) return
-    const res = await setSessionSegmentAction({ sessionId: data.session.id, segment: next })
+    const res = await setSessionSegmentAction({ sessionId: data.session.id, segment: next, sameGender: gender })
     if (res.error) toast({ variant: 'destructive', title: 'Not changed', description: res.error })
     else void state.refetch()
   }
@@ -231,6 +232,21 @@ function Session() {
                 </button>
               ))}
             </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={sameGender}
+              onClick={() => setSameGender((v) => !v)}
+              className="mt-4 flex w-full items-center gap-3 rounded-xl border border-neutral-200 p-4 text-left hover:border-brand-300 dark:border-neutral-700 dark:hover:border-brand-700"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-neutral-900 dark:text-neutral-50">Men call men, women call women</span>
+                <span className="block text-[13px] text-neutral-600 dark:text-neutral-400">&quot;Next person&quot; gives each caller their own first; nobody waits if none are left.</span>
+              </span>
+              <span className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', sameGender ? 'bg-brand-600' : 'bg-neutral-300 dark:bg-neutral-600')} aria-hidden>
+                <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-[left]', sameGender ? 'left-[22px]' : 'left-0.5')} />
+              </span>
+            </button>
             <Button className="mt-5 h-12 w-full text-[15px]" onClick={() => void start()} disabled={busy === 'start' || data.remaining[segment] === 0}>
               <Radio className="mr-2 h-4 w-4" aria-hidden />
               {busy === 'start' ? 'Starting…' : 'Start the session'}
@@ -311,6 +327,20 @@ function Session() {
                 {x.label} · {data.remaining[x.id]}
               </button>
             ))}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={s.sameGender}
+              onClick={() => void changeSegment(s.segment, !s.sameGender)}
+              className={cn(
+                'h-9 rounded-full border px-3.5 text-[13px] font-medium',
+                s.sameGender
+                  ? 'border-violet-600 bg-violet-600 text-white dark:border-violet-500 dark:bg-violet-600'
+                  : 'border-neutral-200 text-neutral-700 hover:border-violet-300 dark:border-neutral-700 dark:text-neutral-300'
+              )}
+            >
+              Men call men, women call women
+            </button>
           </div>
         ) : null}
       </section>
