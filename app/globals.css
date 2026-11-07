@@ -225,6 +225,19 @@
     @apply text-brand-600 dark:text-brand-400;
   }
 
+  /* Each section's icons wear its colour (lib/navigation/sidebar.ts › sectionTone), softly at rest
+     and full on hover or when active, so the sidebar reads by area at a glance. */
+  .sidebar-panel .sidebar-nav-item[data-tone] .sidebar-nav-icon { @apply opacity-80 group-hover:opacity-100; }
+  .sidebar-panel .sidebar-nav-item[data-active='true'][data-tone] .sidebar-nav-icon { @apply opacity-100; }
+  .sidebar-panel .sidebar-nav-item[data-tone='brand'] .sidebar-nav-icon { @apply text-brand-600 dark:text-brand-400; }
+  .sidebar-panel .sidebar-nav-item[data-tone='teal'] .sidebar-nav-icon { @apply text-teal-600 dark:text-teal-400; }
+  .sidebar-panel .sidebar-nav-item[data-tone='emerald'] .sidebar-nav-icon { @apply text-emerald-600 dark:text-emerald-400; }
+  .sidebar-panel .sidebar-nav-item[data-tone='amber'] .sidebar-nav-icon { @apply text-amber-600 dark:text-amber-400; }
+  .sidebar-panel .sidebar-nav-item[data-tone='rose'] .sidebar-nav-icon { @apply text-rose-600 dark:text-rose-400; }
+  .sidebar-panel .sidebar-nav-item[data-tone='sky'] .sidebar-nav-icon { @apply text-sky-600 dark:text-sky-400; }
+  .sidebar-panel .sidebar-nav-item[data-tone='lime'] .sidebar-nav-icon { @apply text-lime-700 dark:text-lime-400; }
+  .sidebar-panel .sidebar-nav-item[data-tone='violet'] .sidebar-nav-icon { @apply text-violet-600 dark:text-violet-400; }
+
   .sidebar-panel .sidebar-sign-out {
     @apply text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-white/[0.06] dark:hover:text-white;
   }

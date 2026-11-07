@@ -828,4 +828,81 @@ export default defineSchema({
     .index('by_at', ['at'])
     .index('by_actor', ['actor_id', 'at'])
     .index('by_category', ['category', 'at']),
+
+  /**
+   * Call center: who is calling whom right now. Claimed in one transaction (callCenter.claimNext),
+   * so two callers never get the same person; a claim ends with an outcome, a skip, or on its own
+   * at `expires_at` (a phone that died mid-call). `list_key` e.g. `camp:<yearId>`.
+   */
+  call_claims: defineTable({
+    list_key: v.string(),
+    target_id: v.string(),
+    caller_id: v.string(),
+    claimed_at: v.number(),
+    expires_at: v.number(),
+  })
+    .index('by_list_target', ['list_key', 'target_id'])
+    .index('by_list', ['list_key'])
+    .index('by_caller', ['caller_id']),
+
+  /** A calling session: the team meeting to make the calls together, working one shared queue. */
+  call_sessions: defineTable({
+    list_key: v.string(),
+    title: v.string(),
+    /** Who the queue works through: all | new | returning. */
+    segment: v.string(),
+    started_by: v.string(),
+    started_at: v.number(),
+    ended_at: v.optional(v.number()),
+    status: v.union(v.literal('live'), v.literal('ended')),
+  }).index('by_list_status', ['list_key', 'status']),
+
+  /** Who is in a session, and when each was last seen (the board shows who is still calling). */
+  call_session_people: defineTable({
+    session_id: v.id('call_sessions'),
+    user_id: v.string(),
+    name: v.string(),
+    joined_at: v.number(),
+    last_seen: v.number(),
+  })
+    .index('by_session', ['session_id'])
+    .index('by_session_user', ['session_id', 'user_id']),
+
+  /** Each outcome recorded during a session: the board's tally and its recent calls. */
+  call_session_outcomes: defineTable({
+    session_id: v.id('call_sessions'),
+    caller_id: v.string(),
+    target_id: v.string(),
+    target_name: v.string(),
+    outcome: v.string(),
+    at: v.number(),
+  }).index('by_session', ['session_id']),
+
+  /**
+   * WhatsApp templates managers edited or added (lib/calls/templates.ts). One row per key; a row
+   * with a default's key replaces that default.
+   */
+  message_templates: defineTable({
+    key: v.string(),
+    name: v.string(),
+    body: v.string(),
+    audience: v.union(v.literal('camp'), v.literal('members'), v.literal('any')),
+    position: v.number(),
+    archived: v.optional(v.boolean()),
+    updated_by: v.string(),
+    updated_at: v.number(),
+  }).index('by_key', ['key']),
+
+  /**
+   * Someone's SMS number changed: every text to `from_phone` goes to `to_phone` instead (applied in
+   * sendSms). Keys are 233… digits (lib/comms/sms-number.ts). Sign-in is unaffected.
+   */
+  sms_number_changes: defineTable({
+    from_phone: v.string(),
+    to_phone: v.string(),
+    set_by: v.string(),
+    set_at: v.number(),
+    /** Where it was changed, e.g. "camp call". */
+    context: v.optional(v.string()),
+  }).index('by_from', ['from_phone']),
 })

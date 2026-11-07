@@ -372,6 +372,18 @@ async function sendViaMock(phone: string, message: string): Promise<SmsSendResul
   }
 }
 
+/**
+ * Where a text for a number should really go, when its owner has changed number (sms_number_changes).
+ * Filled in on the server at start-up (instrumentation.ts → lib/comms/sms-reroute.ts), so this file
+ * stays safe for the browser bundles that import its helpers.
+ */
+type SmsNumberResolver = (phone: string) => Promise<string>
+let smsNumberResolver: SmsNumberResolver | null = null
+
+export function registerSmsNumberResolver(resolver: SmsNumberResolver | null): void {
+  smsNumberResolver = resolver
+}
+
 export async function sendSms(
   phone: string,
   message: string,
@@ -379,6 +391,14 @@ export async function sendSms(
 ): Promise<SmsSendResult> {
   if (!phone?.trim()) {
     return { success: false, error: 'Phone number is required', provider: 'mock' }
+  }
+  // Someone who changed number gets the text on the new one, whichever list it was sent from.
+  if (smsNumberResolver) {
+    try {
+      phone = await smsNumberResolver(phone)
+    } catch {
+      // The lookup failed: send to the number given, as before.
+    }
   }
   if (!message?.trim()) {
     return { success: false, error: 'Message is required', provider: 'mock' }

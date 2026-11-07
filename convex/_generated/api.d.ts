@@ -13,6 +13,7 @@ import type * as activity from "../activity.js";
 import type * as attendance from "../attendance.js";
 import type * as authCodes from "../authCodes.js";
 import type * as camp from "../camp.js";
+import type * as callCenter from "../callCenter.js";
 import type * as campuses from "../campuses.js";
 import type * as checkinSessions from "../checkinSessions.js";
 import type * as comms from "../comms.js";
@@ -54,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   attendance: typeof attendance;
   authCodes: typeof authCodes;
   camp: typeof camp;
+  callCenter: typeof callCenter;
   campuses: typeof campuses;
   checkinSessions: typeof checkinSessions;
   comms: typeof comms;

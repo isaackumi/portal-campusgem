@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { MapPin, MessageCircle, Phone, StickyNote } from 'lucide-react'
+import { MapPin, Phone, StickyNote } from 'lucide-react'
 import type { CampRegistration } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { PersonAvatar } from '@/components/ui/person'
@@ -12,6 +12,7 @@ import { isSelfReported } from '@/lib/camp/confirm-link'
 import { OUTCOME_ICON, OutcomeBadge } from '@/components/camp/call-outcome'
 import { PhoneLink } from '@/components/contact/phone-link'
 import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
+import { WhatsAppButton } from '@/components/calls/whatsapp-button'
 
 const OUTCOME_BUTTON: Record<Exclude<CallOutcome, 'unconfirmed'>, string> = {
   confirmed:
@@ -26,12 +27,6 @@ const OUTCOME_BUTTON: Record<Exclude<CallOutcome, 'unconfirmed'>, string> = {
 
 function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`
-}
-
-function whatsappHref(phone: string): string {
-  let digits = phone.replace(/\D/g, '')
-  if (digits.startsWith('0')) digits = `233${digits.slice(1)}`
-  return `https://wa.me/${digits}`
 }
 
 function relative(iso?: string): string | null {
@@ -123,12 +118,8 @@ export function CallCard({
                 Call
               </a>
             </Button>
-            <Button asChild size="sm" variant="outline" className="h-11 flex-1 sm:h-8 sm:flex-none">
-              <a href={whatsappHref(registration.whatsapp || registration.phone)} target="_blank" rel="noreferrer">
-                <MessageCircle className="mr-1.5 h-4 w-4" aria-hidden />
-                WhatsApp
-              </a>
-            </Button>
+            {/* Pick a ready message (managers edit them under Calls › WhatsApp messages). */}
+            <WhatsAppButton person={registration} size="compact" className="h-11 flex-1 sm:h-8 sm:flex-none" />
           </>
         ) : null}
         <Button
