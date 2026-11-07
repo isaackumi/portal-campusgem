@@ -628,9 +628,9 @@ function CampRoomsPageContent() {
         ))}
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(320px,380px)_1fr]">
-        <div className={cn(mobilePanel !== 'people' && 'hidden lg:block')}>{peoplePanel}</div>
-        <div className={cn(mobilePanel !== 'rooms' && 'hidden lg:block')}>{roomsPanel}</div>
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(320px,380px)_1fr]">
+        <div className={cn('min-w-0', mobilePanel !== 'people' && 'hidden lg:block')}>{peoplePanel}</div>
+        <div className={cn('min-w-0', mobilePanel !== 'rooms' && 'hidden lg:block')}>{roomsPanel}</div>
       </div>
 
       <RoomFormDialog

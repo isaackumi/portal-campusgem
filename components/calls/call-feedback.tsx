@@ -99,7 +99,7 @@ export function CallFeedbackPanel({
         value={note}
         onChange={(e) => setNote(e.target.value)}
         maxLength={300}
-        placeholder="Add a note (optional): goes with what you tap"
+        placeholder="Note (optional)"
         aria-label="Note"
         className="h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 sm:h-10 sm:text-sm"
       />

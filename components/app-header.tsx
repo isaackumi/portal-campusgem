@@ -100,7 +100,8 @@ export function AppHeader({
         >
           <Search className="h-4 w-4 shrink-0 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300" aria-hidden />
           <span className="min-w-0 flex-1 truncate">
-            <span className="sm:hidden">Search</span>
+            {/* Very narrow phones: just the magnifier, never a cut-off "Sea…". */}
+            <span className="sm:hidden max-[400px]:sr-only">Search</span>
             <span className="hidden sm:inline">Search people, campers, pages…</span>
           </span>
           <kbd className="hidden h-5 items-center rounded border border-neutral-200 bg-neutral-50 px-1.5 font-mono text-[11px] font-medium text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 sm:inline-flex">

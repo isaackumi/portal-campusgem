@@ -69,7 +69,7 @@ export function WhatsAppButton({
                     className="w-full rounded-xl border border-neutral-200 bg-white p-3 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:border-neutral-700 dark:bg-neutral-800/60 dark:hover:border-brand-700 dark:hover:bg-brand-950/30"
                   >
                     <span className="block text-sm font-semibold text-neutral-900 dark:text-neutral-50">{t.name}</span>
-                    <span className="mt-1 line-clamp-3 block text-[13px] leading-snug text-neutral-600 dark:text-neutral-300">{text}</span>
+                    <span className="mt-1 block whitespace-pre-line break-words text-[13px] leading-snug text-neutral-600 dark:text-neutral-300">{text}</span>
                   </button>
                 </li>
               )

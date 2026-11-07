@@ -319,7 +319,7 @@ function Session() {
           </span>
           Live{s.started_by_name ? ` · started by ${s.started_by_name.split(' ')[0]}` : ''} · {ago(s.started_at)}
         </p>
-        <h1 className="app-page-title mt-1">{s.title}</h1>
+        <h1 className="app-page-title mt-1 break-words">{s.title}</h1>
       </header>
 
       <section className="dashboard-panel mt-4 p-4" aria-label="How the camp is going">
@@ -340,7 +340,7 @@ function Session() {
                 aria-checked={s.segment === x.id}
                 onClick={() => void changeSegment(x.id)}
                 className={cn(
-                  'h-9 rounded-full border px-3.5 text-[13px] font-medium',
+                  'min-h-9 rounded-full border px-3.5 py-1 text-left text-[13px] font-medium',
                   s.segment === x.id
                     ? 'border-brand-600 bg-brand-600 text-white dark:border-brand-500 dark:bg-brand-600'
                     : 'border-neutral-200 text-neutral-700 hover:border-brand-300 dark:border-neutral-700 dark:text-neutral-300'
@@ -355,7 +355,7 @@ function Session() {
               aria-checked={s.sameGender}
               onClick={() => void changeSegment(s.segment, !s.sameGender)}
               className={cn(
-                'h-9 rounded-full border px-3.5 text-[13px] font-medium',
+                'min-h-9 rounded-full border px-3.5 py-1 text-left text-[13px] font-medium',
                 s.sameGender
                   ? 'border-violet-600 bg-violet-600 text-white dark:border-violet-500 dark:bg-violet-600'
                   : 'border-neutral-200 text-neutral-700 hover:border-violet-300 dark:border-neutral-700 dark:text-neutral-300'
@@ -367,27 +367,32 @@ function Session() {
         ) : null}
       </section>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <section aria-label="Your call">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <section aria-label="Your call" className="min-w-0">
           {current ? (
             <article className="dashboard-panel p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="app-overline">Your call</p>
                   <p className="mt-1 flex flex-wrap items-center gap-2">
-                    <span className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">{current.full_name}</span>
+                    <span className="break-words text-xl font-semibold text-neutral-900 dark:text-neutral-50">{current.full_name}</span>
                     <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', current.is_new_registrant ? 'bg-brand-100 text-brand-800 dark:bg-brand-950/60 dark:text-brand-200' : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300')}>
                       {current.is_new_registrant ? 'First camp' : `Returning${current.times_attended ? ` · ${current.times_attended} camps` : ''}`}
+                    </span>
+                    <span className="sm:hidden">
+                      <OutcomeBadge outcome={current.attendance_confirmation ?? 'unconfirmed'} />
                     </span>
                   </p>
                   <p className="mt-1 font-mono text-[17px] text-neutral-800 dark:text-neutral-100">{current.phone}</p>
                   <p className="mt-1 flex flex-wrap gap-x-3 text-[13px] text-neutral-500 dark:text-neutral-400">
-                    {current.residence ? <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" aria-hidden />{current.residence}</span> : null}
+                    {current.residence ? <span className="inline-flex min-w-0 items-start gap-1"><MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden /><span className="break-words">{current.residence}</span></span> : null}
                     {current.call_attempts ? <span>Called {current.call_attempts}× before</span> : <span>Not called yet</span>}
                   </p>
-                  {current.confirmation_note ? <p className="mt-1.5 text-[13px] text-neutral-700 dark:text-neutral-300">Last time: “{current.confirmation_note}”</p> : null}
+                  {current.confirmation_note ? <p className="mt-1.5 break-words text-[13px] text-neutral-700 dark:text-neutral-300">Last time: “{current.confirmation_note}”</p> : null}
                 </div>
-                <OutcomeBadge outcome={current.attendance_confirmation ?? 'unconfirmed'} />
+                <span className="hidden shrink-0 sm:block">
+                  <OutcomeBadge outcome={current.attendance_confirmation ?? 'unconfirmed'} />
+                </span>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {telHref(current.phone) ? (
@@ -434,7 +439,7 @@ function Session() {
           )}
 
           <section className="dashboard-panel mt-4 p-4" aria-labelledby="my-calls-title">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="my-calls-title" className="app-section-title flex items-center gap-2">
                 <History className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />
                 Your calls
@@ -451,17 +456,19 @@ function Session() {
                     <button
                       type="button"
                       onClick={() => setUpdating(target)}
-                      className="flex min-h-14 w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-neutral-50 dark:hover:bg-white/[0.04]"
+                      className="flex min-h-14 w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-neutral-50 dark:hover:bg-white/[0.04]"
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{target.full_name}</span>
-                        <span className="block truncate text-[12px] text-neutral-500 dark:text-neutral-400">
+                        <span className="block break-words text-sm font-medium text-neutral-900 dark:text-neutral-100">{target.full_name}</span>
+                        <span className="mt-0.5 line-clamp-2 break-words text-[12px] text-neutral-500 dark:text-neutral-400">
                           {ago(at)}
                           {target.confirmation_note ? ` · ${target.confirmation_note}` : ''}
                         </span>
+                        <span className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <OutcomeBadge outcome={target.attendance_confirmation ?? 'unconfirmed'} />
+                        </span>
                       </span>
-                      <OutcomeBadge outcome={target.attendance_confirmation ?? 'unconfirmed'} />
-                      <span className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-brand-700 dark:text-brand-400">
+                      <span className="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-brand-700 dark:text-brand-400">
                         <Pencil className="h-3.5 w-3.5" aria-hidden />
                         Update
                       </span>
@@ -477,7 +484,7 @@ function Session() {
           </section>
         </section>
 
-        <aside className="grid content-start gap-4" aria-label="The team">
+        <aside className="grid min-w-0 content-start gap-4" aria-label="The team">
           <section className="dashboard-panel p-4">
             <h2 className="app-section-title flex items-center gap-2">
               <Users className="h-4 w-4" aria-hidden />
@@ -485,10 +492,10 @@ function Session() {
             </h2>
             <ul className="mt-3 grid gap-2">
               {(board?.present ?? []).map((m) => (
-                <li key={m.user_id} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium text-neutral-900 dark:text-neutral-100">{m.user_id === data.me.id ? 'You' : m.name}</span>
-                    <span className="block truncate text-[12px] text-neutral-500 dark:text-neutral-400">{m.on ? `On ${m.on}` : 'Between calls'}</span>
+                <li key={m.user_id} className="flex items-start justify-between gap-2 text-sm">
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words font-medium text-neutral-900 dark:text-neutral-100">{m.user_id === data.me.id ? 'You' : m.name}</span>
+                    <span className="block break-words text-[12px] text-neutral-500 dark:text-neutral-400">{m.on ? `On ${m.on}` : 'Between calls'}</span>
                   </span>
                   <span className="shrink-0 text-right text-[12px] tabular-nums text-neutral-600 dark:text-neutral-300">
                     {m.calls} calls
