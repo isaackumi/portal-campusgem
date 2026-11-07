@@ -55,7 +55,8 @@ export default function MemberProfilePage() {
   const { toast } = useToast()
 
   const [attendanceHistory, setAttendanceHistory] = useState<Attendance[]>([])
-  const [loading, setLoading] = useState(true)
+  /** A save is under way (the page's own data loads through memberQuery). Started at true, it kept Save off for good. */
+  const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -110,7 +111,7 @@ export default function MemberProfilePage() {
     if (!memberQuery.data?.data?.user) return
 
     try {
-      setLoading(true)
+      setSaving(true)
       
       const userId = memberQuery.data.data.user.id
       const memberId = memberQuery.data.data.id
@@ -153,7 +154,7 @@ export default function MemberProfilePage() {
         variant: "destructive"
       })
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
   }
 
@@ -361,9 +362,9 @@ export default function MemberProfilePage() {
                 <Button variant="outline" onClick={handleCancelEdit} className="h-11 flex-1">
                   Cancel
                 </Button>
-                <Button onClick={handleSaveEdit} disabled={loading} className="h-11 flex-1">
+                <Button onClick={handleSaveEdit} disabled={saving} className="h-11 flex-1">
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Save
+                  {saving ? 'Saving…' : 'Save'}
                 </Button>
               </>
             ) : (
@@ -574,9 +575,9 @@ export default function MemberProfilePage() {
                     <Button variant="outline" onClick={handleCancelEdit}>
                       Cancel
                     </Button>
-                    <Button onClick={handleSaveEdit} disabled={loading}>
+                    <Button onClick={handleSaveEdit} disabled={saving}>
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Save changes
+                      {saving ? 'Saving…' : 'Save changes'}
                     </Button>
                   </div>
                 </div>
