@@ -66,3 +66,19 @@ export const listWithSecret = query({
     }
   },
 })
+
+/** Delete up to `limit` entries from before `cutoff` (oldest first); `more` says whether any are left. */
+export const pruneBeforeWithSecret = mutation({
+  args: { secret: v.string(), cutoff: v.number(), limit: v.optional(v.number()) },
+  returns: v.object({ deleted: v.number(), more: v.boolean() }),
+  handler: async (ctx, { secret, cutoff, limit }) => {
+    assertServerSecret(secret)
+    const batch = Math.min(Math.max(limit ?? 400, 1), 1000)
+    const old = await ctx.db
+      .query('activity_log')
+      .withIndex('by_at', (q) => q.lt('at', cutoff))
+      .take(batch + 1)
+    for (const row of old.slice(0, batch)) await ctx.db.delete(row._id)
+    return { deleted: Math.min(old.length, batch), more: old.length > batch }
+  },
+})

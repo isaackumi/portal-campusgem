@@ -75,6 +75,11 @@ camp meeting, RLC (mother church), forms, SMS.
 - **Callers:** `camp.calls` lets a volunteer open `/admin/camp-meeting/calls` and see only
   the registrants assigned to them (`assigned_to`). Assigning, and texting call lists, needs
   `camp.manage` (+ `sms.send` for SMS). Logic lives in `lib/camp/call-campaign.ts`.
+- **Activity log:** \`logActivity()\` (\`lib/activity/log.ts\`) records who did what, from which device and IP,
+  into Convex \`activity_log\`; shown on \`/admin/activity\` (\`users.manage\`). It never throws or blocks the
+  action. Call it after any new action that changes data, signs people in or out, or sends texts (not on
+  dry runs). Mask phone numbers with \`maskPhone\` where nobody is signed in. \`/api/cron/activity-cleanup\`
+  (monthly) removes entries older than \`ACTIVITY_RETENTION_DAYS\` (default 365).
 - **Access management UI:** `/admin/admins` ("Access & roles"). Role or grant changes go
   through `updateUserAccess` / `requireAccessChange`: `users.manage` is required, and
   `admins.manage` too for anything touching admin rights.
