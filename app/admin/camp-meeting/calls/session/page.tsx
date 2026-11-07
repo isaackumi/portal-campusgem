@@ -8,7 +8,7 @@
 import { Suspense, useCallback, useState } from 'react'
 import Link from 'next/link'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, MapPin, Phone, PhoneCall, Radio, SkipForward, Square, UserPlus, Users } from 'lucide-react'
+import { ArrowLeft, History, MapPin, Pencil, Phone, PhoneCall, PhoneIncoming, Radio, SkipForward, Square, UserPlus, Users } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,7 @@ import { CallFeedbackPanel } from '@/components/calls/call-feedback'
 import { WhatsAppButton } from '@/components/calls/whatsapp-button'
 import { useAfterCallPrompt } from '@/components/calls/use-after-call-prompt'
 import { InviteTeamDialog } from '@/components/calls/invite-team-dialog'
+import { FindPersonDialog, UpdateCallDialog } from '@/components/calls/update-call-dialog'
 
 const SKIP_KEY = 'call-session-skipped'
 
@@ -65,6 +66,8 @@ function Session() {
   const [sameGender, setSameGender] = useState(true)
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [updating, setUpdating] = useState<CallTarget | null>(null)
+  const [findOpen, setFindOpen] = useState(false)
   const after = useAfterCallPrompt<CallTarget>()
 
   const state = useQuery({
@@ -112,6 +115,25 @@ function Session() {
     toast({ title: `${target.full_name.split(' ')[0]}: ${callOutcomeMeta(outcome).label.toLowerCase()}`, description: note || undefined })
     setCurrent(null)
     void next()
+    void queryClient.invalidateQueries({ queryKey: ['call-board'] })
+  }
+
+  /** Going back to someone (they called back): saves without moving you on to the next person. */
+  async function update(target: CallTarget, outcome: Exclude<CallOutcome, 'unconfirmed'>, note: string) {
+    if (target.id === current?.id) {
+      setUpdating(null)
+      return record(target, outcome, note)
+    }
+    setBusy('save')
+    const res = await recordSessionCallAction({ registrationId: target.id, outcome, note })
+    setBusy(null)
+    if (res.error) {
+      toast({ variant: 'destructive', title: 'Not saved', description: res.error })
+      return
+    }
+    setUpdating(null)
+    toast({ title: `${target.full_name.split(' ')[0]} updated: ${callOutcomeMeta(outcome).label.toLowerCase()}`, description: note || undefined })
+    void state.refetch()
     void queryClient.invalidateQueries({ queryKey: ['call-board'] })
   }
 
@@ -410,6 +432,49 @@ function Session() {
               )}
             </div>
           )}
+
+          <section className="dashboard-panel mt-4 p-4" aria-labelledby="my-calls-title">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="my-calls-title" className="app-section-title flex items-center gap-2">
+                <History className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />
+                Your calls
+              </h2>
+              <Button variant="outline" className="h-10" onClick={() => setFindOpen(true)}>
+                <PhoneIncoming className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                Called back?
+              </Button>
+            </div>
+            {board?.mine.length ? (
+              <ul className="-mx-2 mt-2 divide-y divide-neutral-100 dark:divide-neutral-700/70">
+                {board.mine.map(({ target, at }) => (
+                  <li key={target.id}>
+                    <button
+                      type="button"
+                      onClick={() => setUpdating(target)}
+                      className="flex min-h-14 w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-neutral-50 dark:hover:bg-white/[0.04]"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{target.full_name}</span>
+                        <span className="block truncate text-[12px] text-neutral-500 dark:text-neutral-400">
+                          {ago(at)}
+                          {target.confirmation_note ? ` · ${target.confirmation_note}` : ''}
+                        </span>
+                      </span>
+                      <OutcomeBadge outcome={target.attendance_confirmation ?? 'unconfirmed'} />
+                      <span className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-brand-700 dark:text-brand-400">
+                        <Pencil className="h-3.5 w-3.5" aria-hidden />
+                        Update
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-[13px] text-neutral-500 dark:text-neutral-400">
+                People you call show here, so you can change what you recorded if they call back or reply on WhatsApp.
+              </p>
+            )}
+          </section>
         </section>
 
         <aside className="grid content-start gap-4" aria-label="The team">
@@ -469,6 +534,16 @@ function Session() {
       </Dialog>
 
       <InviteTeamDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+
+      <UpdateCallDialog target={updating} saving={busy === 'save'} onClose={() => setUpdating(null)} onRecord={(t, o, n) => void update(t, o, n)} onNewNumber={newNumber} />
+      <FindPersonDialog
+        open={findOpen}
+        onOpenChange={setFindOpen}
+        onPick={(t) => {
+          setFindOpen(false)
+          setUpdating(t)
+        }}
+      />
 
       <Dialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <DialogContent>

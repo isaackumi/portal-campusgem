@@ -49,6 +49,8 @@ export type SessionState = {
   board: {
     present: Array<{ user_id: string; name: string; calls: number; confirmed: number; on: string | null }>
     recent: Array<{ caller: string; name: string; outcome: string; at: number }>
+    /** My own calls this session, latest first, one per person: to go back and update. */
+    mine: Array<{ target: CallTarget; at: number }>
     calls: number
     byOutcome: Record<string, number>
   } | null
@@ -130,6 +132,19 @@ export async function getSessionStateAction(yearId?: string | null): Promise<{ d
           .sort((a, b) => b.at - a.at)
           .slice(0, 12)
           .map((o) => ({ caller: names.get(o.caller_id) ?? 'Someone', name: o.target_name, outcome: o.outcome, at: o.at })),
+        mine: (() => {
+          const regById = new Map(registrations.map((r) => [r.id, r]))
+          const seen = new Set<string>()
+          const rows: Array<{ target: CallTarget; at: number }> = []
+          for (const o of [...record.outcomes].sort((a, b) => b.at - a.at)) {
+            if (o.caller_id !== user.id || seen.has(o.target_id)) continue
+            seen.add(o.target_id)
+            const r = regById.get(o.target_id)
+            if (r) rows.push({ target: toTarget(r), at: o.at })
+            if (rows.length >= 15) break
+          }
+          return rows
+        })(),
         calls: tally.total,
         byOutcome: tally.byOutcome,
       }
@@ -317,10 +332,10 @@ export async function recordSessionCallAction(input: {
     const cc = await import('@/lib/convex/call-center-bridge')
     const canManage = hasPermission(user.role, 'camp.manage', user.permissions)
     if (!canManage) {
-      const claims = await cc.listClaims(listKey)
-      if (!claims.some((c) => c.target_id === reg.id && c.caller_id === user.id)) {
-        throw new Error('Someone else has this person now. Tap Next person.')
-      }
+      // A result can be changed later (they called back, the WhatsApp reply came): only blocked
+      // while another caller is on the phone with them right now.
+      const other = (await cc.listClaims(listKey)).find((c) => c.target_id === reg.id && c.caller_id !== user.id)
+      if (other) throw new Error('Someone else is calling them right now. Try again in a few minutes.')
     }
     await bridge.recordCallOutcomeInConvex({
       registration_id: reg.id,
@@ -338,6 +353,33 @@ export async function recordSessionCallAction(input: {
     return { error: null }
   } catch (error: unknown) {
     return { error: errorOf(error, 'Could not save the call') }
+  }
+}
+
+/**
+ * "They called back": find anyone in this camp's list by name or phone, so a caller can record what
+ * they said without waiting for them to come round in the queue.
+ */
+export async function findCallTargetsAction(input: { yearId?: string | null; query: string }): Promise<{ data: CallTarget[] | null; error: string | null }> {
+  try {
+    await guard('camp.calls')
+    const q = input.query.trim().toLowerCase()
+    if (q.length < 2) return { data: [], error: null }
+    const digits = q.replace(/\D/g, '')
+    const tail = digits.length >= 4 ? digits.slice(-9) : ''
+    const { registrations } = await campContext(input.yearId)
+    const found = registrations
+      .filter((r) => r.status !== 'cancelled')
+      .filter((r) => {
+        if (r.full_name.toLowerCase().includes(q)) return true
+        if (!tail) return false
+        return [r.phone, r.whatsapp].some((ph) => (ph ?? '').replace(/\D/g, '').includes(tail))
+      })
+      .slice(0, 8)
+      .map(toTarget)
+    return { data: found, error: null }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not search') }
   }
 }
 
