@@ -3,6 +3,8 @@ import { applySessionCookies, toSessionPayload } from '@/lib/auth/server-session
 import { loginErrorResponse, lookupLoginUser } from '@/lib/auth/login-lookup'
 import { requiresSigninCode } from '@/lib/auth/signin-code'
 import { sendSigninCode } from '@/lib/auth/send-signin-code'
+import { logActivity } from '@/lib/activity/log'
+import { maskPhone } from '@/lib/activity/describe'
 
 /**
  * Step 1 of sign-in. Members go straight in. People with more access (see
@@ -17,7 +19,17 @@ export async function POST(request: NextRequest) {
 
     const { phoneOrId } = await request.json()
     const found = await lookupLoginUser(phoneOrId)
-    if (!found.ok) return NextResponse.json({ error: found.error }, { status: found.status })
+    if (!found.ok) {
+      await logActivity({
+        category: 'auth',
+        action: 'auth.signin_failed',
+        outcome: 'failed',
+        actor: null,
+        summary: `Sign-in refused for ${maskPhone(String(phoneOrId ?? '')) || 'a blank number'}: ${found.error}`,
+      })
+      return NextResponse.json({ error: found.error }, { status: found.status })
+    }
+    const who = { id: found.user.id, name: found.user.full_name }
 
     if (requiresSigninCode(found.user)) {
       const sent = await sendSigninCode(found.user, found.codePhone)
@@ -27,9 +39,11 @@ export async function POST(request: NextRequest) {
           { status: sent.status }
         )
       }
+      await logActivity({ category: 'auth', action: 'auth.code_sent', actor: who, summary: 'Was texted a sign-in code' })
       return NextResponse.json({ codeRequired: true, sentTo: sent.sentTo, resendInSeconds: sent.resendInSeconds })
     }
 
+    await logActivity({ category: 'auth', action: 'auth.signin', actor: who, summary: 'Signed in' })
     const response = NextResponse.json({ success: true, user: toSessionPayload(found.user) })
     applySessionCookies(response, found.user)
     return response

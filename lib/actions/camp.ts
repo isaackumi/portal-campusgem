@@ -21,6 +21,7 @@ import {
 } from '@/lib/camp/sms-templates'
 import { confirmLinkUrl } from '@/lib/camp/confirm-link'
 import { siteOrigin } from '@/lib/site-url'
+import { labelOf, logActivity } from '@/lib/activity/log'
 
 function requireConvexEnv(): void {
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
@@ -371,6 +372,7 @@ export async function mergeCampDirectoryContacts(args: {
   try {
     const { mergeCampDirectoryContactsInConvex } = await import('@/lib/convex/camp-bridge')
     const data = await mergeCampDirectoryContactsInConvex(args)
+    await logActivity({ category: 'camp', action: 'camp.merge', summary: 'Merged camp contacts' })
     return { data, error: null }
   } catch (error: unknown) {
     return {
@@ -1237,6 +1239,15 @@ export async function sendCampBulkSmsAction(input: {
   } catch (err) {
     console.warn('[camp-bulk-sms] revalidatePath skipped', err)
   }
+  if (!dryRun) {
+    await logActivity({
+      category: 'sms',
+      action: 'sms.camp_bulk',
+      outcome: success_count === 0 && error_count > 0 ? 'failed' : 'ok',
+      summary: `Texted ${success_count} camp ${success_count === 1 ? 'contact' : 'contacts'}${error_count ? ` (${error_count} not sent)` : ''}`,
+      details: { batch_id, success_count, error_count },
+    })
+  }
   return {
     data: {
       success_count,
@@ -1448,6 +1459,7 @@ export async function createCampYear(yearData: {
     const { createCampYearInConvex } = await import('@/lib/convex/camp-bridge')
     const data = await createCampYearInConvex(yearData)
     revalidatePath('/admin/camp-meeting/years')
+    await logActivity({ category: 'camp', action: 'camp.year_create', summary: `Created camp year ${(data as { year?: number } | null)?.year ?? ''}`.trim(), target: { type: 'camp_year', id: (data as { id?: string } | null)?.id } })
     return { success: true, data }
   } catch (error: unknown) {
     return {
@@ -1475,6 +1487,7 @@ export async function updateCampYear(
     const { updateCampYearInConvex } = await import('@/lib/convex/camp-bridge')
     const data = await updateCampYearInConvex(yearId, yearData)
     revalidatePath('/admin/camp-meeting/years')
+    await logActivity({ category: 'camp', action: 'camp.year_update', summary: `Updated camp year ${(data as { year?: number } | null)?.year ?? ''}`.trim(), target: { type: 'camp_year', id: yearId } })
     return { success: true, data }
   } catch (error: unknown) {
     return {
@@ -1560,6 +1573,7 @@ export async function deleteCampYear(args: {
     if (args.yearId) {
       revalidatePath(`/admin/camp-meeting/years/${args.yearId}`)
     }
+    await logActivity({ category: 'camp', action: 'camp.year_delete', summary: 'Deleted a camp year' })
     return { success: true, data, error: null }
   } catch (error: unknown) {
     return {
@@ -1669,6 +1683,7 @@ export async function promoteCampRegistrant(
     })
     revalidatePath('/admin/camp-meeting')
     revalidatePath(`/admin/camp-meeting/registrations/${registrationId}`)
+    await logActivity({ category: 'camp', action: 'camp.promote', summary: `Made ${labelOf(registration) ?? 'a camper'} a member`, target: { type: 'camp_registration', id: registrationId, label: labelOf(registration) } })
     return { data: registration, error: null }
   } catch (error: unknown) {
     return {
@@ -1732,6 +1747,7 @@ export async function recordCampSessionCheckIn(args: {
     const data = await recordCampSessionCheckInInConvex(args)
     revalidatePath('/admin/camp-meeting/scan')
     revalidatePath('/admin/camp-meeting/registrations')
+    await logActivity({ category: 'camp', action: 'camp.check_in', summary: 'Checked someone in at camp' })
     return { data, error: null }
   } catch (error: unknown) {
     return {
@@ -1835,6 +1851,7 @@ export async function deleteCampRoom(id: string): Promise<{
     const { deleteCampRoomInConvex } = await import('@/lib/convex/camp-bridge')
     const data = await deleteCampRoomInConvex(id)
     revalidatePath('/admin/camp-meeting/rooms')
+    await logActivity({ category: 'camp', action: 'camp.room_delete', summary: 'Deleted a camp room', target: { type: 'camp_room', id } })
     return { data, error: null }
   } catch (error: unknown) {
     return {

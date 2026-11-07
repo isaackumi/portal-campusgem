@@ -16,6 +16,7 @@ import type { AppUser, CampAttendanceConfirmation, CampRegistration, CampYear } 
 import { isCallOutcome, summarizeCallCampaign } from '@/lib/camp/call-campaign'
 import { CLAIM_TTL_MS, isCallSegment, orderQueue, remainingFor, tallySession, type CallSegment } from '@/lib/calls/queue'
 import { cleanTemplateInput, templatesFor, type CallTemplate, type TemplateAudience } from '@/lib/calls/templates'
+import { logActivity } from '@/lib/activity/log'
 
 /** A session's board treats anyone seen within this as still in the room. */
 const PRESENT_MS = 90_000
@@ -202,6 +203,7 @@ export async function startCallSessionAction(input: { yearId?: string | null; se
     })
     if (session.segment !== segment) await cc.setSessionSegment(session.id, segment)
     await cc.heartbeat({ session_id: session.id, user_id: user.id, name: user.full_name })
+    await logActivity({ category: 'calls', action: 'calls.session_start', summary: `Started a calling session for ${segment === 'all' ? 'everyone' : segment === 'new' ? 'new campers' : 'returning campers'}`, target: { type: 'call_session', id: session.id, label: session.title } })
     revalidatePath('/admin/camp-meeting/calls')
     return { error: null }
   } catch (error: unknown) {
@@ -228,6 +230,7 @@ export async function endCallSessionAction(input: { sessionId: string }): Promis
     await guard('camp.manage')
     const cc = await import('@/lib/convex/call-center-bridge')
     await cc.endSession(input.sessionId)
+    await logActivity({ category: 'calls', action: 'calls.session_end', summary: 'Ended the calling session', target: { type: 'call_session', id: input.sessionId } })
     revalidatePath('/admin/camp-meeting/calls')
     return { error: null }
   } catch (error: unknown) {
@@ -310,6 +313,7 @@ export async function recordSessionCallAction(input: {
       await cc.recordSessionOutcome({ session_id: live.id, caller_id: user.id, target_id: reg.id, target_name: reg.full_name, outcome: input.outcome })
     }
     await cc.releaseClaim({ list_key: listKey, caller_id: user.id, target_id: reg.id })
+    await logActivity({ category: 'calls', action: 'calls.outcome', summary: `Called ${reg.full_name}: ${input.outcome === 'confirmed' ? 'coming' : input.outcome === 'declined' ? 'not coming' : input.outcome === 'maybe' ? 'not sure' : 'no answer'}`, target: { type: 'camp_registration', id: reg.id, label: reg.full_name }, details: input.note ? { note: input.note.slice(0, 200) } : undefined })
     revalidatePath('/admin/camp-meeting/calls')
     return { error: null }
   } catch (error: unknown) {
@@ -356,6 +360,7 @@ export async function saveCallTemplateAction(input: {
       throw new Error('That is a lot of templates. Hide or reuse one first.')
     }
     await cc.saveTemplate(template, user.id)
+    await logActivity({ category: 'calls', action: 'calls.template_save', summary: `Saved the WhatsApp message "${template.name}"${template.archived ? ' (hidden)' : ''}`, target: { type: 'message_template', id: template.key, label: template.name } })
     return { error: null, key: template.key }
   } catch (error: unknown) {
     return { error: errorOf(error, 'Could not save the template'), key: null }
@@ -368,6 +373,7 @@ export async function resetCallTemplateAction(input: { key: string }): Promise<{
     await guard('camp.manage')
     const cc = await import('@/lib/convex/call-center-bridge')
     await cc.resetTemplate(input.key)
+    await logActivity({ category: 'calls', action: 'calls.template_reset', summary: 'Put a WhatsApp message back as it was', target: { type: 'message_template', id: input.key } })
     return { error: null }
   } catch (error: unknown) {
     return { error: errorOf(error, 'Could not reset the template') }
@@ -411,6 +417,7 @@ export async function setRegistrantNumberAction(input: { yearId?: string | null;
     if (oldKey) await cc.setNumberChange({ from_phone: oldKey, to_phone: newKey, set_by: user.id, context: 'camp call' })
     const { forgetNumberChanges } = await import('@/lib/comms/sms-reroute')
     forgetNumberChanges()
+    await logActivity({ category: 'calls', action: 'calls.number_change', summary: `Saved a new number for ${reg.full_name}`, target: { type: 'camp_registration', id: reg.id, label: reg.full_name } })
     revalidatePath('/admin/camp-meeting/calls')
     return { error: null, phone: next }
   } catch (error: unknown) {
@@ -448,6 +455,7 @@ export async function setMySmsNumberAction(input: { phone: string }): Promise<{ 
     await cc.setNumberChange({ from_phone: smsNumberKey(user.phone), to_phone: smsNumberKey(normalizeSmsPhone(input.phone)), set_by: user.id, context: 'own number' })
     const { forgetNumberChanges } = await import('@/lib/comms/sms-reroute')
     forgetNumberChanges()
+    await logActivity({ category: 'access', action: 'access.own_sms_number', summary: 'Changed the number their texts go to' })
     return { error: null }
   } catch (error: unknown) {
     return { error: errorOf(error, 'Could not save your number') }

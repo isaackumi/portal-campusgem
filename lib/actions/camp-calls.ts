@@ -18,6 +18,7 @@ import {
   isOpenCall,
   progressByCaller,
 } from '@/lib/camp/call-campaign'
+import { logActivity } from '@/lib/activity/log'
 
 export type CallBoardCaller = {
   id: string
@@ -180,6 +181,7 @@ export async function assignCallersAction(input: {
     revalidatePath('/admin/camp-meeting')
     revalidatePath('/admin/camp-meeting/calls')
     revalidatePath('/admin/camp-meeting/follow-up')
+    await logActivity({ category: 'calls', action: input.mode === 'clear' ? 'calls.unassign' : 'calls.assign', summary: input.mode === 'clear' ? `Took the caller off ${updated} ${updated === 1 ? 'person' : 'people'}` : `Gave ${updated} ${updated === 1 ? 'person' : 'people'} to ${input.mode === 'spread' ? `${input.caller_ids.length} callers` : 'a caller'}` })
     return { updated, error: null }
   } catch (error: unknown) {
     return { updated: 0, error: error instanceof Error ? error.message : 'Failed to assign callers' }
@@ -213,6 +215,7 @@ export async function recordCallOutcomeAction(input: {
       performed_by: user.id,
       count_attempt: input.count_attempt,
     })
+    await logActivity({ category: 'calls', action: 'calls.outcome', summary: `Called ${reg.full_name}: ${input.outcome === 'confirmed' ? 'coming' : input.outcome === 'declined' ? 'not coming' : input.outcome === 'maybe' ? 'not sure' : input.outcome === 'unreachable' ? 'no answer' : 'reset'}`, target: { type: 'camp_registration', id: reg.id, label: reg.full_name }, details: input.note ? { note: input.note.slice(0, 200) } : undefined })
     revalidatePath('/admin/camp-meeting/calls')
     return { data, error: null }
   } catch (error: unknown) {
@@ -321,6 +324,14 @@ export async function sendCallListsBySmsAction(input: {
     }
 
     revalidatePath('/admin/camp-meeting/communications')
+    if (!dryRun) {
+      await logActivity({
+        category: 'sms',
+        action: 'sms.call_lists',
+        outcome: callers === 0 && failed.length ? 'failed' : 'ok',
+        summary: `Texted ${callers} ${callers === 1 ? 'caller' : 'callers'} their call list${failed.length ? ` (${failed.length} not sent)` : ''}`,
+      })
+    }
     return { data: { callers, messages, failed, dry_run: dryRun }, error: null }
   } catch (error: unknown) {
     return { data: null, error: error instanceof Error ? error.message : 'Failed to text call lists' }

@@ -3,6 +3,7 @@
 import type { AppUser, UserRole } from '@/lib/types'
 import { effectivePermissions, isUserRole, sanitizePermissions, permissionsForRole } from '@/lib/auth/roles'
 import type { AccessLogEntry, AccessLogKind } from '@/lib/convex/auth-bridge'
+import { labelOf, logActivity } from '@/lib/activity/log'
 
 export type SignInSmsResult = { sent: boolean; error?: string }
 
@@ -76,7 +77,9 @@ export async function sendSignInDetailsSms(userId: string): Promise<SignInSmsRes
     const { fetchUserFromConvex } = await import('@/lib/convex/core-bridge')
     const user = await fetchUserFromConvex(userId)
     if (!user) return { sent: false, error: 'That person no longer exists.' }
-    return await textSignInDetails(user, actor)
+    const result = await textSignInDetails(user, actor)
+    if (result.sent) await logActivity({ category: 'access', action: 'access.signin_text', summary: `Texted ${user.full_name} how to sign in`, target: { type: 'user', id: userId, label: user.full_name } })
+    return result
   } catch (error: unknown) {
     return { sent: false, error: error instanceof Error ? error.message : 'Failed to send' }
   }
@@ -119,6 +122,7 @@ export async function updateUserAccess(
     if (options.notify && data && gainedPermissions(target, data).length > 0) {
       sms = await textSignInDetails(data, actor)
     }
+    await logActivity({ category: 'access', action: 'access.change', summary: `Changed ${labelOf(data) ?? 'someone'}'s access to ${role}`, target: { type: 'user', id: userId, label: labelOf(data) }, details: { role, permissions } })
     return { data, error: null, sms }
   } catch (error: unknown) {
     return { data: null, error: error instanceof Error ? error.message : 'Failed to update access' }
@@ -180,6 +184,7 @@ export async function linkDuplicatePerson(
       actor,
       note: `Merged ${duplicate.full_name}${duplicate.phone ? ` (${duplicate.phone})` : ''} into this record; that number now signs in here`,
     })
+    await logActivity({ category: 'access', action: 'access.link_duplicate', summary: 'Linked two records of the same person', target: { type: 'user', id: keepId }, details: { duplicate_id: duplicateId } })
     return { data, error: null }
   } catch (error: unknown) {
     return { data: null, error: error instanceof Error ? error.message : 'Failed to link records' }
@@ -208,6 +213,7 @@ export async function updateSecondaryPhone(
           : `Secondary sign-in phone ${target.secondary_phone} removed`,
       })
     }
+    await logActivity({ category: 'access', action: 'access.secondary_phone', summary: 'Changed a second sign-in number', target: { type: 'user', id: userId } })
     return { data, error: null }
   } catch (error: unknown) {
     return { data: null, error: error instanceof Error ? error.message : 'Failed to update phone' }
