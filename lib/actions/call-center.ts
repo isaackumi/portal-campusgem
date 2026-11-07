@@ -42,7 +42,7 @@ export type CallTarget = Pick<
 export type SessionState = {
   year: Pick<CampYear, 'id' | 'year' | 'theme' | 'start_date' | 'end_date' | 'venue'> | null
   listKey: string | null
-  session: { id: string; title: string; segment: CallSegment; started_at: number; started_by_name: string } | null
+  session: { id: string; title: string; segment: CallSegment; sameGender: boolean; started_at: number; started_by_name: string } | null
   /** People still to reach, by segment (including those resting after no answer). */
   remaining: Record<CallSegment, number>
   progress: { total: number; confirmed: number; declined: number; open: number; expected: number }
@@ -145,7 +145,7 @@ export async function getSessionStateAction(yearId?: string | null): Promise<{ d
         year: year ? { id: year.id, year: year.year, theme: year.theme, start_date: year.start_date, end_date: year.end_date, venue: year.venue } : null,
         listKey,
         session: live
-          ? { id: live.id, title: live.title, segment: isCallSegment(live.segment) ? live.segment : 'all', started_at: live.started_at, started_by_name: startedByName }
+          ? { id: live.id, title: live.title, segment: isCallSegment(live.segment) ? live.segment : 'all', sameGender: live.same_gender === true, started_at: live.started_at, started_by_name: startedByName }
           : null,
         remaining: {
           all: remainingFor(registrations, 'all'),
@@ -187,7 +187,7 @@ export async function getLiveSessionInfoAction(yearId?: string | null): Promise<
 }
 
 /** Start the team's calling session (or open the one already live). */
-export async function startCallSessionAction(input: { yearId?: string | null; segment: CallSegment; title?: string }): Promise<{ error: string | null }> {
+export async function startCallSessionAction(input: { yearId?: string | null; segment: CallSegment; title?: string; sameGender?: boolean }): Promise<{ error: string | null }> {
   try {
     const user = (await guard('camp.manage')) as AppUser | null
     if (!user) throw new Error('Sign in to start a session.')
@@ -200,8 +200,11 @@ export async function startCallSessionAction(input: { yearId?: string | null; se
       title: input.title?.trim() || `Camp Meeting ${year.year} calls`,
       segment,
       started_by: user.id,
+      same_gender: input.sameGender === true,
     })
-    if (session.segment !== segment) await cc.setSessionSegment(session.id, segment)
+    if (session.segment !== segment || (session.same_gender === true) !== (input.sameGender === true)) {
+      await cc.setSessionSegment(session.id, segment, input.sameGender === true)
+    }
     await cc.heartbeat({ session_id: session.id, user_id: user.id, name: user.full_name })
     await logActivity({ category: 'calls', action: 'calls.session_start', summary: `Started a calling session for ${segment === 'all' ? 'everyone' : segment === 'new' ? 'new campers' : 'returning campers'}`, target: { type: 'call_session', id: session.id, label: session.title } })
     revalidatePath('/admin/camp-meeting/calls')
@@ -212,12 +215,12 @@ export async function startCallSessionAction(input: { yearId?: string | null; se
 }
 
 /** Change who the live session works through. */
-export async function setSessionSegmentAction(input: { sessionId: string; segment: CallSegment }): Promise<{ error: string | null }> {
+export async function setSessionSegmentAction(input: { sessionId: string; segment: CallSegment; sameGender?: boolean }): Promise<{ error: string | null }> {
   try {
     await guard('camp.manage')
     if (!isCallSegment(input.segment)) throw new Error('Choose who to call.')
     const cc = await import('@/lib/convex/call-center-bridge')
-    await cc.setSessionSegment(input.sessionId, input.segment)
+    await cc.setSessionSegment(input.sessionId, input.segment, input.sameGender)
     return { error: null }
   } catch (error: unknown) {
     return { error: errorOf(error, 'Could not change the session') }
@@ -252,7 +255,24 @@ export async function nextCallAction(input: { yearId?: string | null; skip?: str
     const live = await cc.getLiveSession(listKey)
     if (!live) throw new Error('The session has ended.')
     const segment = isCallSegment(live.segment) ? live.segment : 'all'
-    const candidates = orderQueue(registrations, { segment, skip: (input.skip ?? []).slice(0, 500) })
+    const ordered = orderQueue(registrations, { segment, skip: (input.skip ?? []).slice(0, 500) })
+    // This caller's rules: who they take (call team), and men to men / women to women when the
+    // session says so. People who fit come first; the rest follow, so nobody sits idle.
+    const team = (await cc.listCallTeam()).find((t) => t.user_id === user.id)
+    let gender = team?.gender ?? null
+    if (live.same_gender && !gender) {
+      const { fetchMembersFromConvex } = await import('@/lib/convex/core-bridge')
+      gender = toGender((await fetchMembersFromConvex().catch(() => [])).find((m) => m.user_id === user.id)?.gender)
+    }
+    const byId = new Map(registrations.map((r) => [r.id, r]))
+    const fits = (id: string) => {
+      const r = byId.get(id)
+      if (!r) return false
+      if (team && team.takes !== 'all' && (team.takes === 'new') !== (r.is_new_registrant === true)) return false
+      if (live.same_gender && gender && r.sex && r.sex !== gender) return false
+      return true
+    }
+    const candidates = [...ordered.filter(fits), ...ordered.filter((id) => !fits(id))]
     const id = await cc.claimNext({ list_key: listKey, caller_id: user.id, candidate_ids: candidates, ttl_ms: CLAIM_TTL_MS })
     const reg = id ? registrations.find((r) => r.id === id) : undefined
     return { data: reg ? toTarget(reg) : null, done: !reg, error: null }
@@ -459,5 +479,283 @@ export async function setMySmsNumberAction(input: { phone: string }): Promise<{ 
     return { error: null }
   } catch (error: unknown) {
     return { error: errorOf(error, 'Could not save your number') }
+  }
+}
+
+// --- Inviting the team -------------------------------------------------------------------------
+
+export type SessionInvitee = { id: string; name: string; phone: string; message: string }
+
+/** Everyone who can make calls and has a number, minus anyone who replied STOP (and the sender). */
+async function inviteesFor(sender: AppUser): Promise<{ link: string; invitees: SessionInvitee[]; optedOut: number }> {
+  const { fetchUsersFromConvex } = await import('@/lib/convex/core-bridge')
+  const { isValidSmsPhone } = await import('@/lib/comms/sms-client')
+  const { loadSmsOptOutSet, isOptedOut } = await import('@/lib/comms/opt-out')
+  const { siteOrigin } = await import('@/lib/site-url')
+  const { buildSessionInviteSms, sessionLink } = await import('@/lib/calls/invite')
+  const link = sessionLink(siteOrigin())
+  const [users, optOut] = await Promise.all([fetchUsersFromConvex(), loadSmsOptOutSet()])
+  let optedOut = 0
+  const invitees: SessionInvitee[] = []
+  for (const u of users) {
+    if (u.id === sender.id || !u.phone || !isValidSmsPhone(u.phone)) continue
+    if (!hasPermission(u.role, 'camp.calls', u.permissions)) continue
+    if (isOptedOut(optOut, u.phone)) {
+      optedOut += 1
+      continue
+    }
+    invitees.push({ id: u.id, name: u.full_name, phone: u.phone, message: buildSessionInviteSms({ name: u.full_name, starter: sender.full_name, link }) })
+  }
+  invitees.sort((a, b) => a.name.localeCompare(b.name))
+  return { link, invitees, optedOut }
+}
+
+/** The link to join, and who "Text the team" would reach (for the preview). */
+export async function getSessionInviteAction(): Promise<{
+  data: { link: string; invitees: SessionInvitee[]; optedOut: number; canText: boolean } | null
+  error: string | null
+}> {
+  try {
+    const user = (await guard('camp.calls')) as AppUser | null
+    if (!user) throw new Error('Sign in first.')
+    const { siteOrigin } = await import('@/lib/site-url')
+    const { sessionLink } = await import('@/lib/calls/invite')
+    const canText = hasPermission(user.role, 'camp.manage', user.permissions) && hasPermission(user.role, 'sms.send', user.permissions)
+    if (!canText) return { data: { link: sessionLink(siteOrigin()), invitees: [], optedOut: 0, canText }, error: null }
+    const { link, invitees, optedOut } = await inviteesFor(user)
+    return { data: { link, invitees, optedOut, canText }, error: null }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not load the team') }
+  }
+}
+
+/**
+ * Text the session link to the chosen callers. The list is worked out again here (only people who
+ * can make calls, with a number, who haven't opted out), whatever the page sent.
+ */
+export async function textTeamSessionLinkAction(input: { userIds: string[] }): Promise<{
+  data: { sent: number; failed: Array<{ name: string; reason: string }> } | null
+  error: string | null
+}> {
+  try {
+    const user = (await guard('camp.manage')) as AppUser | null
+    if (!user) throw new Error('Sign in first.')
+    if (!hasPermission(user.role, 'sms.send', user.permissions)) throw new Error('You need the "Send SMS" permission to text the team.')
+    const { sendSms, isSmsConfigured } = await import('@/lib/comms/sms-client')
+    if (!isSmsConfigured()) throw new Error('SMS is not configured on this server.')
+    const { listKey } = await campContext(null)
+    const cc = await import('@/lib/convex/call-center-bridge')
+    if (!listKey || !(await cc.getLiveSession(listKey))) throw new Error('Start the session first, then invite the team.')
+    const wanted = new Set(input.userIds)
+    const { invitees } = await inviteesFor(user)
+    const chosen = invitees.filter((i) => wanted.has(i.id))
+    if (!chosen.length) throw new Error('Choose who to text.')
+    let sent = 0
+    const failed: Array<{ name: string; reason: string }> = []
+    for (const person of chosen) {
+      const result = await sendSms(person.phone, person.message)
+      if (result.success) sent += 1
+      else failed.push({ name: person.name, reason: result.error ?? 'Not sent' })
+    }
+    await logActivity({ category: 'sms', action: 'sms.session_invite', outcome: sent === 0 && failed.length ? 'failed' : 'ok', summary: `Texted ${sent} ${sent === 1 ? 'caller' : 'callers'} the calling session link${failed.length ? ` (${failed.length} not sent)` : ''}` })
+    return { data: { sent, failed }, error: null }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not text the team') }
+  }
+}
+
+// --- Call team and sharing out ------------------------------------------------------------------
+
+export type TeamMemberView = {
+  user_id: string
+  name: string
+  phone: string | null
+  gender: 'Male' | 'Female' | null
+  takes: 'all' | 'new' | 'returning'
+  max: number | null
+  active: boolean
+  /** Holds camp.calls, so they can open their list in the app (else: texts only). */
+  canUseApp: boolean
+  /** Open calls already theirs this camp. */
+  open: number
+}
+
+export type TeamCandidate = { id: string; name: string; phone: string | null; canUseApp: boolean; gender: 'Male' | 'Female' | null }
+
+const toGender = (g: unknown): 'Male' | 'Female' | null => (g === 'male' || g === 'Male' ? 'Male' : g === 'female' || g === 'Female' ? 'Female' : null)
+
+/** The call team, everyone who could join it, and each caller's open calls. */
+export async function getCallTeamAction(yearId?: string | null): Promise<{
+  data: { team: TeamMemberView[]; candidates: TeamCandidate[]; sessionPeople: Array<{ user_id: string; name: string }> } | null
+  error: string | null
+}> {
+  try {
+    await guard('camp.manage')
+    const { fetchUsersFromConvex, fetchMembersFromConvex } = await import('@/lib/convex/core-bridge')
+    const cc = await import('@/lib/convex/call-center-bridge')
+    const { registrations, listKey } = await campContext(yearId)
+    const { progressByCaller } = await import('@/lib/camp/call-campaign')
+    const [users, members, team] = await Promise.all([fetchUsersFromConvex(), fetchMembersFromConvex().catch(() => []), cc.listCallTeam()])
+    const genderOf = new Map(members.map((m) => [m.user_id, toGender(m.gender)]))
+    const progress = progressByCaller(registrations)
+    const byId = new Map(users.map((u) => [u.id, u]))
+    const live = listKey ? await cc.getLiveSession(listKey) : null
+    const sessionPeople = live
+      ? (await cc.getSessionBoard(live.id)).people.filter((p) => Date.now() - p.last_seen < PRESENT_MS).map((p) => ({ user_id: p.user_id, name: p.name }))
+      : []
+    return {
+      data: {
+        team: team
+          .map((t) => {
+            const u = byId.get(t.user_id)
+            return {
+              user_id: t.user_id,
+              name: u?.full_name ?? 'Former user',
+              phone: u?.phone ?? null,
+              gender: t.gender ?? genderOf.get(t.user_id) ?? null,
+              takes: t.takes,
+              max: t.max ?? null,
+              active: t.active,
+              canUseApp: !!u && hasPermission(u.role, 'camp.calls', u.permissions),
+              open: progress.get(t.user_id)?.open ?? 0,
+            }
+          })
+          .sort((a, b) => a.name.localeCompare(b.name)),
+        candidates: users
+          .filter((u) => u.role !== 'visitor')
+          .map((u) => ({ id: u.id, name: u.full_name, phone: u.phone ?? null, canUseApp: hasPermission(u.role, 'camp.calls', u.permissions), gender: genderOf.get(u.id) ?? null }))
+          .sort((a, b) => Number(b.canUseApp) - Number(a.canUseApp) || a.name.localeCompare(b.name)),
+        sessionPeople,
+      },
+      error: null,
+    }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not load the call team') }
+  }
+}
+
+export async function saveCallTeamMemberAction(input: {
+  user_id: string
+  gender: 'Male' | 'Female' | null
+  takes: 'all' | 'new' | 'returning'
+  max: number | null
+  active: boolean
+}): Promise<{ error: string | null }> {
+  try {
+    const user = (await guard('camp.manage')) as AppUser | null
+    if (!user) throw new Error('Sign in first.')
+    if (!input.user_id) throw new Error('Choose someone.')
+    if (!['all', 'new', 'returning'].includes(input.takes)) throw new Error('Choose who they call.')
+    const max = input.max == null || input.max === 0 ? undefined : Math.max(1, Math.min(500, Math.round(input.max)))
+    const cc = await import('@/lib/convex/call-center-bridge')
+    await cc.saveCallTeamMember({ user_id: input.user_id, gender: input.gender ?? undefined, takes: input.takes, max, active: input.active }, user.id)
+    await logActivity({ category: 'calls', action: 'calls.team_save', summary: `Updated the call team (${input.active ? 'taking calls' : 'paused'}, ${input.takes === 'all' ? 'everyone' : input.takes === 'new' ? 'new campers' : 'returning campers'})`, target: { type: 'user', id: input.user_id } })
+    return { error: null }
+  } catch (error: unknown) {
+    return { error: errorOf(error, 'Could not save') }
+  }
+}
+
+export async function removeCallTeamMemberAction(input: { user_id: string }): Promise<{ error: string | null }> {
+  try {
+    await guard('camp.manage')
+    const cc = await import('@/lib/convex/call-center-bridge')
+    await cc.removeCallTeamMember(input.user_id)
+    await logActivity({ category: 'calls', action: 'calls.team_remove', summary: 'Took someone off the call team', target: { type: 'user', id: input.user_id } })
+    return { error: null }
+  } catch (error: unknown) {
+    return { error: errorOf(error, 'Could not remove') }
+  }
+}
+
+export type ShareSource = 'session' | 'team'
+export type ShareScope = 'unassigned' | 'open'
+
+export type SharePlan = {
+  seed: number
+  source: ShareSource
+  people: number
+  callers: Array<{ id: string; name: string; total: number; male: number; female: number; newcomers: number; returning: number; alreadyOpen: number }>
+  relaxed: { gender: number; takes: number }
+  unplaced: number
+}
+
+async function planShare(input: { yearId?: string | null; source: ShareSource; scope: ShareScope; sameGender: boolean; matchTakes: boolean; seed: number }) {
+  const { registrations, listKey } = await campContext(input.yearId)
+  const cc = await import('@/lib/convex/call-center-bridge')
+  const { fetchUsersFromConvex, fetchMembersFromConvex } = await import('@/lib/convex/core-bridge')
+  const { isOpenCall, progressByCaller } = await import('@/lib/camp/call-campaign')
+  const { shareOut, summarizeShare } = await import('@/lib/calls/distribute')
+  const [users, members, team] = await Promise.all([fetchUsersFromConvex(), fetchMembersFromConvex().catch(() => []), cc.listCallTeam()])
+  const names = new Map(users.map((u) => [u.id, u.full_name]))
+  const genderOf = new Map(members.map((m) => [m.user_id, toGender(m.gender)]))
+  const teamBy = new Map(team.map((t) => [t.user_id, t]))
+
+  // Who calls: the people in the live session, or the call team (those switched on).
+  let callerIds: string[]
+  if (input.source === 'session') {
+    const live = listKey ? await cc.getLiveSession(listKey) : null
+    if (!live) throw new Error('No session is running. Share among the call team instead.')
+    callerIds = (await cc.getSessionBoard(live.id)).people.filter((p) => Date.now() - p.last_seen < PRESENT_MS).map((p) => p.user_id)
+  } else {
+    callerIds = team.filter((t) => t.active).map((t) => t.user_id)
+  }
+  if (!callerIds.length) throw new Error(input.source === 'session' ? 'Nobody has joined the session yet.' : 'Add people to the call team first.')
+
+  // Who gets a call: still to reach, and (unless re-sharing) without a caller.
+  const open = registrations.filter((r) => isOpenCall(r))
+  const toShare = input.scope === 'open' ? open : open.filter((r) => !r.assigned_to)
+  const keep = input.scope === 'open' ? [] : registrations
+  const load = progressByCaller(keep)
+  const callers = callerIds.map((id) => {
+    const t = teamBy.get(id)
+    return { id, gender: t?.gender ?? genderOf.get(id) ?? null, takes: t?.takes ?? 'all', max: t?.max ?? null, load: load.get(id)?.open ?? 0 }
+  })
+  const people = toShare.map((r) => ({ id: r.id, sex: r.sex ?? null, isNew: r.is_new_registrant === true }))
+  const result = shareOut(people, callers, { sameGender: input.sameGender, matchTakes: input.matchTakes }, input.seed)
+  const summary = summarizeShare(result, people)
+  const plan: SharePlan = {
+    seed: input.seed,
+    source: input.source,
+    people: people.length,
+    callers: callers
+      .map((c) => ({ id: c.id, name: names.get(c.id) ?? 'Former user', alreadyOpen: c.load, ...(summary.get(c.id) ?? { total: 0, male: 0, female: 0, newcomers: 0, returning: 0 }) }))
+      .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)),
+    relaxed: result.relaxed,
+    unplaced: result.unplaced.length,
+  }
+  return { plan, result }
+}
+
+/** What sharing out would do (nothing is changed): for the preview. */
+export async function previewShareAction(input: { yearId?: string | null; source: ShareSource; scope: ShareScope; sameGender: boolean; matchTakes: boolean; seed?: number }): Promise<{
+  data: SharePlan | null
+  error: string | null
+}> {
+  try {
+    await guard('camp.manage')
+    const { plan } = await planShare({ ...input, seed: input.seed ?? Math.floor(Math.random() * 2 ** 31) })
+    return { data: plan, error: null }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not plan the share') }
+  }
+}
+
+/** Share out for real, with the seed the preview used, so what was checked is what happens. */
+export async function applyShareAction(input: { yearId?: string | null; source: ShareSource; scope: ShareScope; sameGender: boolean; matchTakes: boolean; seed: number }): Promise<{
+  data: { assigned: number; callers: number } | null
+  error: string | null
+}> {
+  try {
+    await guard('camp.manage')
+    const { result } = await planShare(input)
+    if (!result.assignments.length) throw new Error('Nobody to share out.')
+    const bridge = await import('@/lib/convex/camp-bridge')
+    const assigned = await bridge.setCallAssignmentsInConvex(result.assignments.map((a) => ({ registration_id: a.personId, assigned_to: a.callerId })))
+    await logActivity({ category: 'calls', action: 'calls.share_out', summary: `Shared out ${assigned} calls among ${new Set(result.assignments.map((a) => a.callerId)).size} ${input.source === 'session' ? 'people in the session' : 'call team members'}`, details: { scope: input.scope, sameGender: input.sameGender, matchTakes: input.matchTakes, relaxed: result.relaxed, unplaced: result.unplaced.length } })
+    revalidatePath('/admin/camp-meeting/calls')
+    return { data: { assigned, callers: new Set(result.assignments.map((a) => a.callerId)).size }, error: null }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not share out the calls') }
   }
 }

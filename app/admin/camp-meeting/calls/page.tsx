@@ -8,6 +8,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   ListChecks,
+  MoreHorizontal,
   MessageCircle,
   MessageSquareText,
   PhoneCall,
@@ -25,6 +26,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Meter, SegmentedBar } from '@/components/ui/meter'
 import { PersonAvatar } from '@/components/ui/person'
 import { LoadingSpinner } from '@/components/ui/loading'
@@ -53,7 +55,9 @@ import { TextRegistrantsDialog } from '@/components/camp/calls/text-registrants-
 import { OutcomeBadge, outcomeSegments } from '@/components/camp/call-outcome'
 import { PhoneLink, QuickContactButtons } from '@/components/contact/phone-link'
 import { useCampFollowUpMessage } from '@/components/camp/use-camp-follow-up-message'
-import { getLiveSessionInfoAction } from '@/lib/actions/call-center'
+import { getCallTeamAction, getLiveSessionInfoAction } from '@/lib/actions/call-center'
+import { ShareOutDialog } from '@/components/calls/share-out-dialog'
+import { CallersBoard } from '@/components/calls/callers-board'
 import { CALL_SEGMENTS, isCallSegment, matchesSegment, type CallSegment } from '@/lib/calls/queue'
 
 type View = 'team' | 'mine'
@@ -108,6 +112,7 @@ function CallsWorkspace() {
   const [assignOpen, setAssignOpen] = useState(false)
   const [textListsOpen, setTextListsOpen] = useState(false)
   const [textRegsOpen, setTextRegsOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   useEffect(() => {
     if (data && !data.canManage) setView('mine')
@@ -115,6 +120,12 @@ function CallsWorkspace() {
 
   useEffect(() => setLimit(PAGE_SIZE), [query, callerFilter, outcomeFilter, view, segment])
 
+  const team = useQuery({
+    queryKey: ['call-team'],
+    enabled: !!data?.canManage,
+    queryFn: async () => (await getCallTeamAction(yearParam)).data,
+    staleTime: 30_000,
+  })
   const live = useQuery({
     queryKey: ['call-session-live', yearParam ?? 'active'],
     queryFn: async () => (await getLiveSessionInfoAction(yearParam)).data,
@@ -130,6 +141,15 @@ function CallsWorkspace() {
     callerProgress.forEach((row, id) => m.set(id, row.open))
     return m
   }, [callerProgress])
+
+  const unassignedOpen = useMemo(() => regs.filter((r) => isOpenCall(r) && !r.assigned_to).length, [regs])
+
+  const callerOptions = useMemo(() => {
+    const names = new Map<string, string>()
+    for (const m of team.data?.team ?? []) names.set(m.user_id, m.name)
+    callerProgress.forEach((_, id) => { if (!names.has(id)) names.set(id, peopleById.get(id)?.full_name ?? 'Former user') })
+    return Array.from(names, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+  }, [team.data, callerProgress, peopleById])
 
   const myId = data?.me.id ?? user?.id
   const mine = useMemo(() => regs.filter((r) => r.assigned_to === myId), [regs, myId])
@@ -273,28 +293,54 @@ function CallsWorkspace() {
               <RefreshCw className={cn('h-4 w-4 sm:mr-2', board.isFetching && 'animate-spin')} aria-hidden />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button asChild variant="outline">
-              <Link href="/admin/camp-meeting/calls/mine">
-                <ListChecks className="h-4 w-4 sm:mr-2" aria-hidden />
-                <span className="hidden sm:inline">My calls</span>
-                <span className="sr-only sm:hidden">My calls</span>
-              </Link>
-            </Button>
-            {data.canManage ? (
-              <Button asChild variant="outline">
-                <Link href="/admin/camp-meeting/calls/templates">
-                  <MessageCircle className="h-4 w-4 sm:mr-2" aria-hidden />
-                  <span className="hidden sm:inline">WhatsApp messages</span>
-                  <span className="sr-only sm:hidden">WhatsApp messages</span>
+            {/* Occasional places live in one menu; the two main actions stay as buttons. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" aria-label="More">
+                  <MoreHorizontal className="h-4 w-4 sm:mr-2" aria-hidden />
+                  <span className="hidden sm:inline">More</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
+                  <Link href="/admin/camp-meeting/calls/mine">
+                    <ListChecks className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />
+                    My calls
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
+                  <Link href="/admin/camp-meeting/calls/session">
+                    <Radio className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                    Calling session
+                  </Link>
+                </DropdownMenuItem>
+                {data.canManage ? (
+                  <>
+                    <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
+                      <Link href="/admin/camp-meeting/calls/templates">
+                        <MessageCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                        WhatsApp messages
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {data.canManage && data.canSms ? (
+              <Button variant="outline" onClick={() => setTextListsOpen(true)}>
+                <MessageSquareText className="h-4 w-4 sm:mr-2" aria-hidden />
+                <span className="hidden sm:inline">Text call lists</span>
+                <span className="sr-only sm:hidden">Text call lists</span>
+              </Button>
+            ) : null}
+            {data.canManage ? null : (
+              <Button asChild className="flex-1 sm:flex-none">
+                <Link href="/admin/camp-meeting/calls/mine">
+                  <ListChecks className="mr-2 h-4 w-4" aria-hidden />
+                  My calls
                 </Link>
               </Button>
-            ) : null}
-            {data.canManage && data.canSms ? (
-              <Button className="flex-1 sm:flex-none" onClick={() => setTextListsOpen(true)}>
-                <MessageSquareText className="mr-2 h-4 w-4" aria-hidden />
-                Text call lists
-              </Button>
-            ) : null}
+            )}
           </>
         }
       />
@@ -324,8 +370,8 @@ function CallsWorkspace() {
       ) : null}
 
       {data.canManage ? (
-        <section data-tour="calls-progress" aria-label="Campaign progress" className="grid gap-4 lg:grid-cols-3">
-          <div className="dashboard-panel p-5 lg:col-span-2">
+        <section data-tour="calls-progress" aria-label="Campaign progress">
+          <div className="dashboard-panel p-5">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="app-stat-label">Confirmed coming</p>
@@ -360,55 +406,30 @@ function CallsWorkspace() {
             />
           </div>
 
-          <div className="dashboard-panel flex flex-col p-5">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="app-section-title">Callers</h2>
-              <span className="text-[13px] text-neutral-500 dark:text-neutral-400">{callerProgress.size} active</span>
-            </div>
-            {callerProgress.size === 0 ? (
-              <div className="flex flex-1 flex-col items-start justify-center gap-3 py-4">
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  No one has a call list yet. Select people below and choose <span className="font-medium text-neutral-800 dark:text-neutral-200">Assign</span>.
-                </p>
-              </div>
-            ) : (
-              <ul className="-mx-2 mt-3 max-h-56 space-y-0.5 overflow-y-auto">
-                {Array.from(callerProgress.values())
-                  .sort((a, b) => b.open - a.open)
-                  .map((row) => {
-                    const person = peopleById.get(row.callerId)
-                    const done = row.total - row.open
-                    const active = callerFilter === row.callerId
-                    return (
-                      <li key={row.callerId}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setView('team')
-                            setCallerFilter(active ? 'all' : row.callerId)
-                          }}
-                          aria-pressed={active}
-                          className={cn(
-                            'flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors',
-                            active ? 'bg-neutral-100 dark:bg-neutral-700/60' : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/40'
-                          )}
-                        >
-                          <PersonAvatar name={person?.full_name} seed={row.callerId} size="sm" />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center justify-between gap-2 text-sm">
-                              <span className="truncate font-medium text-neutral-900 dark:text-neutral-100">{person?.full_name ?? 'Former user'}</span>
-                              <span className="shrink-0 tabular-nums text-neutral-500 dark:text-neutral-400">{done}/{row.total}</span>
-                            </span>
-                            <Meter className="mt-1.5 h-1.5" value={done} max={row.total} tone={row.open === 0 ? 'success' : 'brand'} label={`${person?.full_name ?? 'Caller'} progress`} />
-                          </span>
-                        </button>
-                      </li>
-                    )
-                  })}
-              </ul>
-            )}
-          </div>
         </section>
+      ) : null}
+
+      {data.canManage ? (
+        <CallersBoard
+          team={team.data}
+          loading={team.isLoading}
+          progress={callerProgress}
+          nameOf={(id) => peopleById.get(id)?.full_name}
+          unassignedOpen={unassignedOpen}
+          callerFilter={callerFilter}
+          onFilter={(value) => {
+            setView('team')
+            setCallerFilter(value)
+            if (value !== 'all' && typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches) {
+              document.getElementById('call-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }}
+          onSplit={() => setShareOpen(true)}
+          onChanged={() => {
+            void team.refetch()
+            void refresh()
+          }}
+        />
       ) : null}
 
       <div className="mt-6 flex flex-col gap-3">
@@ -446,7 +467,7 @@ function CallsWorkspace() {
           </div>
         )}
 
-        <div data-tour="calls-filters" className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div id="call-list" data-tour="calls-filters" className="scroll-mt-20 flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden />
             <input
@@ -481,8 +502,8 @@ function CallsWorkspace() {
             >
               <option value="all">All callers</option>
               <option value="unassigned">No caller yet</option>
-              {Array.from(callerProgress.keys()).map((id) => (
-                <option key={id} value={id}>{peopleById.get(id)?.full_name ?? 'Former user'}</option>
+              {callerOptions.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           ) : null}
@@ -704,6 +725,21 @@ function CallsWorkspace() {
             onAssigned={() => {
               setSelected(new Set())
               void refresh()
+            }}
+          />
+          <ShareOutDialog
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            yearId={yearParam}
+            sessionLive={!!live.data}
+            sessionPeople={team.data?.sessionPeople.length ?? 0}
+            teamActive={(team.data?.team ?? []).filter((t) => t.active).length}
+            counts={{ unassigned: unassignedOpen, open: summary.open }}
+            canSms={data.canSms}
+            onShared={(textLists) => {
+              void refresh()
+              void team.refetch()
+              if (textLists) setTextListsOpen(true)
             }}
           />
           <TextCallListsDialog

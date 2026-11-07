@@ -98,6 +98,7 @@ const sessionShape = v.object({
   started_at: v.number(),
   ended_at: v.optional(v.number()),
   status: v.string(),
+  same_gender: v.optional(v.boolean()),
 })
 
 function sessionOut(doc: {
@@ -109,6 +110,7 @@ function sessionOut(doc: {
   started_at: number
   ended_at?: number
   status: string
+  same_gender?: boolean
 }) {
   return {
     id: doc._id as string,
@@ -119,6 +121,7 @@ function sessionOut(doc: {
     started_at: doc.started_at,
     ...(doc.ended_at !== undefined ? { ended_at: doc.ended_at } : {}),
     status: doc.status,
+    ...(doc.same_gender !== undefined ? { same_gender: doc.same_gender } : {}),
   }
 }
 
@@ -138,9 +141,9 @@ export const getLiveSessionWithSecret = query({
 
 /** Start a session for a list (or return the one already live, so two managers can't start two). */
 export const startSessionWithSecret = mutation({
-  args: { secret: v.string(), list_key: v.string(), title: v.string(), segment: v.string(), started_by: v.string() },
+  args: { secret: v.string(), list_key: v.string(), title: v.string(), segment: v.string(), started_by: v.string(), same_gender: v.optional(v.boolean()) },
   returns: sessionShape,
-  handler: async (ctx, { secret, list_key, title, segment, started_by }) => {
+  handler: async (ctx, { secret, list_key, title, segment, started_by, same_gender }) => {
     assertServerSecret(secret)
     const live = await ctx.db
       .query('call_sessions')
@@ -154,6 +157,7 @@ export const startSessionWithSecret = mutation({
       started_by,
       started_at: Date.now(),
       status: 'live',
+      ...(same_gender !== undefined ? { same_gender } : {}),
     })
     const doc = await ctx.db.get(id)
     if (!doc) throw new Error('Could not start the session')
@@ -161,13 +165,13 @@ export const startSessionWithSecret = mutation({
   },
 })
 
-/** Change who the live session works through (all / new / returning). */
+/** Change who the live session works through (all / new / returning), and the gender rule. */
 export const setSessionSegmentWithSecret = mutation({
-  args: { secret: v.string(), session_id: v.id('call_sessions'), segment: v.string() },
+  args: { secret: v.string(), session_id: v.id('call_sessions'), segment: v.string(), same_gender: v.optional(v.boolean()) },
   returns: v.null(),
-  handler: async (ctx, { secret, session_id, segment }) => {
+  handler: async (ctx, { secret, session_id, segment, same_gender }) => {
     assertServerSecret(secret)
-    await ctx.db.patch(session_id, { segment })
+    await ctx.db.patch(session_id, { segment, ...(same_gender !== undefined ? { same_gender } : {}) })
     return null
   },
 })
@@ -355,6 +359,79 @@ export const setNumberChangeWithSecret = mutation({
       .withIndex('by_from', (q) => q.eq('from_phone', to_phone))
       .first()
     if (back) await ctx.db.delete(back._id)
+    return null
+  },
+})
+
+// --- Call team ---------------------------------------------------------------------------------
+
+const teamShape = v.object({
+  user_id: v.string(),
+  gender: v.optional(v.union(v.literal('Male'), v.literal('Female'))),
+  takes: v.union(v.literal('all'), v.literal('new'), v.literal('returning')),
+  max: v.optional(v.number()),
+  active: v.boolean(),
+})
+
+export const listCallTeamWithSecret = query({
+  args: { secret: v.string() },
+  returns: v.array(teamShape),
+  handler: async (ctx, { secret }) => {
+    assertServerSecret(secret)
+    const rows = await ctx.db.query('call_team').collect()
+    return rows.map((r) => ({
+      user_id: r.user_id,
+      takes: r.takes,
+      active: r.active,
+      ...(r.gender ? { gender: r.gender } : {}),
+      ...(r.max !== undefined ? { max: r.max } : {}),
+    }))
+  },
+})
+
+/** Add someone to the call team, or change how they're given calls. */
+export const saveCallTeamMemberWithSecret = mutation({
+  args: { secret: v.string(), member: teamShape, added_by: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { secret, member, added_by }) => {
+    assertServerSecret(secret)
+    const row = await ctx.db
+      .query('call_team')
+      .withIndex('by_user', (q) => q.eq('user_id', member.user_id))
+      .first()
+    const doc = {
+      user_id: member.user_id,
+      takes: member.takes,
+      active: member.active,
+      gender: member.gender,
+      max: member.max,
+    }
+    // A patch clears gender or max when they come back empty; a new row simply leaves them out.
+    if (row) await ctx.db.patch(row._id, doc)
+    else
+      await ctx.db.insert('call_team', {
+        user_id: member.user_id,
+        takes: member.takes,
+        active: member.active,
+        ...(member.gender ? { gender: member.gender } : {}),
+        ...(member.max !== undefined ? { max: member.max } : {}),
+        added_by,
+        added_at: Date.now(),
+      })
+    return null
+  },
+})
+
+export const removeCallTeamMemberWithSecret = mutation({
+  args: { secret: v.string(), user_id: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { secret, user_id }) => {
+    assertServerSecret(secret)
+    const row = await ctx.db
+      .query('call_team')
+      .withIndex('by_user', (q) => q.eq('user_id', user_id))
+      .first()
+    if (row) await ctx.db.delete(row._id)
     return null
   },
 })
