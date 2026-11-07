@@ -800,4 +800,32 @@ export default defineSchema({
     last_run_at: v.optional(v.number()),
     last_run_summary: v.optional(v.any()),
   }),
+
+  /**
+   * What happened, by whom: sign-ins (and failed ones), sign-outs, and changes across the app
+   * (lib/activity/log.ts). Shown on /admin/activity. Never holds secrets: phone numbers on failed
+   * sign-ins are masked.
+   */
+  activity_log: defineTable({
+    at: v.number(),
+    /** auth | access | people | groups | camp | calls | sms | settings */
+    category: v.string(),
+    /** e.g. auth.signin, people.update, camp.check_in */
+    action: v.string(),
+    /** One plain sentence: "Updated Ama Mensah's profile". */
+    summary: v.string(),
+    outcome: v.union(v.literal('ok'), v.literal('failed')),
+    actor_id: v.optional(v.string()),
+    actor_name: v.optional(v.string()),
+    target_type: v.optional(v.string()),
+    target_id: v.optional(v.string()),
+    target_label: v.optional(v.string()),
+    ip: v.optional(v.string()),
+    /** "Chrome on Android" */
+    device: v.optional(v.string()),
+    details: v.optional(v.any()),
+  })
+    .index('by_at', ['at'])
+    .index('by_actor', ['actor_id', 'at'])
+    .index('by_category', ['category', 'at']),
 })

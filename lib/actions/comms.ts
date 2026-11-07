@@ -27,6 +27,7 @@ import {
   resolveSmsProvider,
   sendSms,
 } from '@/lib/comms/sms-client'
+import { labelOf, logActivity } from '@/lib/activity/log'
 
 function isConvexDataSource(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_CONVEX_URL)
@@ -373,6 +374,7 @@ export async function sendCommsAction(
       force_mock: request.force_mock,
       batch_id: request.batch_id,
     })
+    await logActivity({ category: 'sms', action: 'sms.send', summary: `Sent a text${typeof (data as { success_count?: number } | null)?.success_count === 'number' ? ` to ${(data as { success_count: number }).success_count}` : ''}` })
     return { data, error: null, loading: false }
   } catch (error: unknown) {
     return {

@@ -286,6 +286,7 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
       },
       { name: 'Users', href: '/admin/users', icon: PersonIcon },
       { name: 'Access & roles', href: '/admin/admins', icon: LockClosedIcon },
+      { name: 'Activity', href: '/admin/activity', icon: ClockIcon, permission: 'users.manage', description: 'Sign-ins and changes across the app' },
       { name: 'Pastoral care', href: '/admin/pastoral-care', icon: HeartIcon, permission: 'members.manage' },
       { name: 'Groups', href: '/admin/groups', icon: GroupIcon },
     ],

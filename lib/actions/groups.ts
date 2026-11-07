@@ -88,7 +88,17 @@ export async function sendGroupSmsAction(input: {
   const sender = await guard('sms.send')
   if (!sender) return { data: null, error: 'Sign in again to send messages.', loading: false }
   const { sendGroupSms } = await import('@/lib/groups/send-group-sms')
-  return sendGroupSms(sender, input)
+  const result = await sendGroupSms(sender, input)
+  if (!input.dry_run && result.data) {
+    const { logActivity } = await import('@/lib/activity/log')
+    await logActivity({
+      category: 'sms',
+      action: 'sms.group',
+      summary: `Texted ${input.member_ids.length} ${input.member_ids.length === 1 ? 'person' : 'people'} in a group`,
+      target: { type: 'group', id: input.group_id },
+    })
+  }
+  return result
 }
 
 export type GroupOverview = import('@/lib/types').Group & {
