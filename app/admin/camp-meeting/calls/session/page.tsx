@@ -8,7 +8,7 @@
 import { Suspense, useCallback, useState } from 'react'
 import Link from 'next/link'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, MapPin, Phone, PhoneCall, Radio, SkipForward, Square, Users } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, PhoneCall, Radio, SkipForward, Square, UserPlus, Users } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
 import { Button } from '@/components/ui/button'
@@ -36,6 +36,7 @@ import { OutcomeBadge } from '@/components/camp/call-outcome'
 import { CallFeedbackPanel } from '@/components/calls/call-feedback'
 import { WhatsAppButton } from '@/components/calls/whatsapp-button'
 import { useAfterCallPrompt } from '@/components/calls/use-after-call-prompt'
+import { InviteTeamDialog } from '@/components/calls/invite-team-dialog'
 
 const SKIP_KEY = 'call-session-skipped'
 
@@ -62,6 +63,7 @@ function Session() {
   const [done, setDone] = useState(false)
   const [segment, setSegment] = useState<CallSegment>('all')
   const [confirmEnd, setConfirmEnd] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const after = useAfterCallPrompt<CallTarget>()
 
   const state = useQuery({
@@ -147,6 +149,8 @@ function Session() {
       // Nothing to clear.
     }
     await state.refetch()
+    // Started: the next thing is getting everyone in.
+    setInviteOpen(true)
   }
 
   async function end() {
@@ -254,12 +258,19 @@ function Session() {
     <div className="mx-auto max-w-5xl pb-28">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {back}
-        {data.canManage ? (
-          <Button variant="outline" className="h-10" onClick={() => setConfirmEnd(true)}>
-            <Square className="mr-2 h-3.5 w-3.5" aria-hidden />
-            End session
+        <div className="flex gap-2">
+          {/* Anyone in the session can bring others in: QR, link, share; managers can text the team. */}
+          <Button className="h-10" onClick={() => setInviteOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" aria-hidden />
+            Invite the team
           </Button>
-        ) : null}
+          {data.canManage ? (
+            <Button variant="outline" className="h-10" onClick={() => setConfirmEnd(true)}>
+              <Square className="mr-2 h-3.5 w-3.5" aria-hidden />
+              End
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <header className="mt-2">
@@ -426,6 +437,8 @@ function Session() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <InviteTeamDialog open={inviteOpen} onOpenChange={setInviteOpen} />
 
       <Dialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <DialogContent>

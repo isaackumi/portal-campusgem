@@ -453,3 +453,84 @@ export async function setMySmsNumberAction(input: { phone: string }): Promise<{ 
     return { error: errorOf(error, 'Could not save your number') }
   }
 }
+
+// --- Inviting the team -------------------------------------------------------------------------
+
+export type SessionInvitee = { id: string; name: string; phone: string; message: string }
+
+/** Everyone who can make calls and has a number, minus anyone who replied STOP (and the sender). */
+async function inviteesFor(sender: AppUser): Promise<{ link: string; invitees: SessionInvitee[]; optedOut: number }> {
+  const { fetchUsersFromConvex } = await import('@/lib/convex/core-bridge')
+  const { isValidSmsPhone } = await import('@/lib/comms/sms-client')
+  const { loadSmsOptOutSet, isOptedOut } = await import('@/lib/comms/opt-out')
+  const { siteOrigin } = await import('@/lib/site-url')
+  const { buildSessionInviteSms, sessionLink } = await import('@/lib/calls/invite')
+  const link = sessionLink(siteOrigin())
+  const [users, optOut] = await Promise.all([fetchUsersFromConvex(), loadSmsOptOutSet()])
+  let optedOut = 0
+  const invitees: SessionInvitee[] = []
+  for (const u of users) {
+    if (u.id === sender.id || !u.phone || !isValidSmsPhone(u.phone)) continue
+    if (!hasPermission(u.role, 'camp.calls', u.permissions)) continue
+    if (isOptedOut(optOut, u.phone)) {
+      optedOut += 1
+      continue
+    }
+    invitees.push({ id: u.id, name: u.full_name, phone: u.phone, message: buildSessionInviteSms({ name: u.full_name, starter: sender.full_name, link }) })
+  }
+  invitees.sort((a, b) => a.name.localeCompare(b.name))
+  return { link, invitees, optedOut }
+}
+
+/** The link to join, and who "Text the team" would reach (for the preview). */
+export async function getSessionInviteAction(): Promise<{
+  data: { link: string; invitees: SessionInvitee[]; optedOut: number; canText: boolean } | null
+  error: string | null
+}> {
+  try {
+    const user = (await guard('camp.calls')) as AppUser | null
+    if (!user) throw new Error('Sign in first.')
+    const { siteOrigin } = await import('@/lib/site-url')
+    const { sessionLink } = await import('@/lib/calls/invite')
+    const canText = hasPermission(user.role, 'camp.manage', user.permissions) && hasPermission(user.role, 'sms.send', user.permissions)
+    if (!canText) return { data: { link: sessionLink(siteOrigin()), invitees: [], optedOut: 0, canText }, error: null }
+    const { link, invitees, optedOut } = await inviteesFor(user)
+    return { data: { link, invitees, optedOut, canText }, error: null }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not load the team') }
+  }
+}
+
+/**
+ * Text the session link to the chosen callers. The list is worked out again here (only people who
+ * can make calls, with a number, who haven't opted out), whatever the page sent.
+ */
+export async function textTeamSessionLinkAction(input: { userIds: string[] }): Promise<{
+  data: { sent: number; failed: Array<{ name: string; reason: string }> } | null
+  error: string | null
+}> {
+  try {
+    const user = (await guard('camp.manage')) as AppUser | null
+    if (!user) throw new Error('Sign in first.')
+    if (!hasPermission(user.role, 'sms.send', user.permissions)) throw new Error('You need the "Send SMS" permission to text the team.')
+    const { sendSms, isSmsConfigured } = await import('@/lib/comms/sms-client')
+    if (!isSmsConfigured()) throw new Error('SMS is not configured on this server.')
+    const { listKey } = await campContext(null)
+    const cc = await import('@/lib/convex/call-center-bridge')
+    if (!listKey || !(await cc.getLiveSession(listKey))) throw new Error('Start the session first, then invite the team.')
+    const wanted = new Set(input.userIds)
+    const { invitees } = await inviteesFor(user)
+    const chosen = invitees.filter((i) => wanted.has(i.id))
+    if (!chosen.length) throw new Error('Choose who to text.')
+    let sent = 0
+    const failed: Array<{ name: string; reason: string }> = []
+    for (const person of chosen) {
+      const result = await sendSms(person.phone, person.message)
+      if (result.success) sent += 1
+      else failed.push({ name: person.name, reason: result.error ?? 'Not sent' })
+    }
+    return { data: { sent, failed }, error: null }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not text the team') }
+  }
+}
