@@ -6,7 +6,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { BrandMark, BrandTitle } from '@/components/brand-mark'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { activeNavHref, type SidebarNavItem, type SidebarNavSection } from '@/lib/navigation/sidebar'
+import { activeNavHref, sectionTone, type SidebarNavItem, type SidebarNavSection, type SidebarTone } from '@/lib/navigation/sidebar'
 import { navItemTourId, navSectionTourId } from '@/lib/tour/anchors'
 import { useVisibleNav } from '@/lib/navigation/use-visible-nav'
 import { InstallAppNavItem } from '@/components/install-app'
@@ -59,11 +59,14 @@ function NavItem({
   active,
   collapsed,
   onSelect,
+  tone,
 }: {
   item: SidebarNavItem
   active: boolean
   collapsed: boolean
   onSelect: (href: string) => void
+  /** The section's colour, worn by the icon. */
+  tone?: SidebarTone
 }) {
   const Icon = item.icon
   return (
@@ -74,6 +77,7 @@ function NavItem({
         title={collapsed ? item.name : item.description}
         aria-current={active ? 'page' : undefined}
         data-active={active ? 'true' : 'false'}
+        data-tone={tone}
         data-tour={navItemTourId(item.href)}
         className={cn('sidebar-nav-item group', collapsed && 'justify-center px-0')}
       >
@@ -162,7 +166,7 @@ function SidebarNavInner({
     onNavigate?.()
   }
 
-  const renderItems = (items: SidebarNavItem[]) =>
+  const renderItems = (items: SidebarNavItem[], tone?: SidebarTone) =>
     items.map((item) => (
       <NavItem
         key={item.href}
@@ -170,6 +174,7 @@ function SidebarNavInner({
         active={item.href === activeHref}
         collapsed={collapsed}
         onSelect={go}
+        tone={tone}
       />
     ))
 
@@ -187,7 +192,7 @@ function SidebarNavInner({
           collapsed ? (
             <div key={section.title} data-tour={navSectionTourId(section.title)}>
               {index > 0 && <div className="mx-2 mb-3 h-px bg-neutral-200 dark:bg-neutral-800" aria-hidden />}
-              <ul className="flex flex-col gap-px">{renderItems(section.items)}</ul>
+              <ul className="flex flex-col gap-px">{renderItems(section.items, sectionTone(section))}</ul>
             </div>
           ) : (
             <NavGroup
@@ -198,7 +203,7 @@ function SidebarNavInner({
               open={groups.isOpen(section.title)}
               onToggle={() => groups.toggle(section.title)}
             >
-              {renderItems(section.items)}
+              {renderItems(section.items, sectionTone(section))}
             </NavGroup>
           )
         )}
