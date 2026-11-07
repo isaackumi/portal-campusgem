@@ -90,3 +90,31 @@ export async function sendGroupSmsAction(input: {
   const { sendGroupSms } = await import('@/lib/groups/send-group-sms')
   return sendGroupSms(sender, input)
 }
+
+export type GroupOverview = import('@/lib/types').Group & {
+  member_count: number
+  leaders: Array<{ name: string; role: string; user_id?: string }>
+}
+
+/**
+ * Groups index: every group (inactive too, for people who manage groups) with its active
+ * member count and leaders, in one round trip.
+ */
+export async function loadGroupsOverviewAction(): Promise<ApiResponse<GroupOverview[]>> {
+  const user = await guard('groups.view')
+  try {
+    const { fetchGroupsFromConvex, fetchGroupsOverviewFromConvex } = await import('@/lib/convex/core-bridge')
+    const { hasPermission } = await import('@/lib/auth/roles')
+    const manage = user ? hasPermission(user.role, 'groups.manage', user.permissions) : true
+    const [groups, overview] = await Promise.all([fetchGroupsFromConvex(manage), fetchGroupsOverviewFromConvex()])
+    const byId = new Map(overview.map((o) => [o.group_id, o]))
+    const data = groups.map((g) => ({
+      ...g,
+      member_count: byId.get(g.id)?.member_count ?? 0,
+      leaders: byId.get(g.id)?.leaders ?? [],
+    }))
+    return { data, error: null, loading: false }
+  } catch (error: unknown) {
+    return { data: null, error: error instanceof Error ? error.message : 'Could not load groups', loading: false }
+  }
+}

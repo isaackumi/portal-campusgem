@@ -208,7 +208,7 @@ export function buildCallListSms(input: {
   const max = input.maxChars ?? MAX_SMS_CHARS
   const yearLabel = input.campYear ? ` ${input.campYear}` : ''
   const intro = `Hi ${firstName(input.callerName)}, your Camp Meeting${yearLabel} call list (${input.entries.length}). Please call to confirm if they are coming:`
-  const outro = input.link ? `Mark each call here: ${input.link}` : 'Thank you!'
+  const outro = input.link ? `Sign in, then mark each call here: ${input.link}` : 'Thank you!'
   const lines = input.entries.map((entry, index) => {
     const tag = entry.outcome && entry.outcome !== 'unconfirmed' ? ` [${callOutcomeMeta(entry.outcome).label}]` : ''
     return `${index + 1}. ${entry.name.trim()} ${entry.phone.trim()}${tag}`
