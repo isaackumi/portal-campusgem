@@ -741,3 +741,58 @@ export async function setPersonCampusAction(input: {
     return fail(error, 'Could not change their campus')
   }
 }
+
+// ---------------------------------------------------------------------------
+// Groups that should be campuses (saved as another kind)
+// ---------------------------------------------------------------------------
+
+export type CampusCandidate = { id: string; name: string; kind: string; suggested_code: string }
+
+/** Active groups that look like a university or college but aren't set up as a campus. Admins only. */
+export async function listCampusCandidatesAction(): Promise<Result<CampusCandidate[]>> {
+  await guard('groups.manage')
+  try {
+    const { fetchGroupsFromConvex } = await import('@/lib/convex/core-bridge')
+    const { looksLikeCampus, suggestShortCode } = await import('@/lib/campus/setup')
+    const groups = await fetchGroupsFromConvex(false)
+    return ok(
+      groups
+        .filter((g) => g.is_active !== false && g.group_type !== 'campus' && looksLikeCampus(g.name))
+        .map((g) => ({ id: g.id, name: g.name, kind: g.group_type, suggested_code: suggestShortCode(g.name) }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    )
+  } catch (error) {
+    return fail(error, 'Could not check groups')
+  }
+}
+
+/** Turn an existing group into a campus fellowship and give it a short code (its link, e.g. /o/ug). */
+export async function makeGroupACampusAction(groupId: string, shortCode: string): Promise<Result<{ key: string }>> {
+  await guard('groups.manage')
+  try {
+    if (typeof groupId !== 'string' || !groupId) return { data: null, error: 'Group not found.' }
+    const code = normalizeShortCode(shortCode)
+    if (!code) return { data: null, error: 'Short code: 2–10 letters or digits, e.g. UG.' }
+    const core = await import('@/lib/convex/core-bridge')
+    const group = await core.fetchGroupFromConvex(groupId)
+    if (!group) return { data: null, error: 'Group not found.' }
+    if (group.group_type !== 'campus') await core.updateGroupInConvex(group.id, { group_type: 'campus' })
+    const slug = code.toLowerCase()
+    try {
+      await (await bridge()).setCampusIdentityInConvex(group.id, { short_code: code, slug })
+    } catch (e) {
+      // The group is a campus now; only the code clashed. Say so, so it can be fixed in Group settings.
+      return { data: null, error: `${group.name} is now a campus, but its code was not saved: ${e instanceof Error ? e.message : 'try another code'}` }
+    }
+    const { logActivity } = await import('@/lib/activity/log')
+    await logActivity({
+      category: 'groups',
+      action: 'campus.convert',
+      summary: `Made ${group.name} a campus (${code})`,
+      target: { type: 'group', id: group.id, label: group.name },
+    })
+    return ok({ key: slug })
+  } catch (error) {
+    return fail(error, 'Could not make it a campus')
+  }
+}

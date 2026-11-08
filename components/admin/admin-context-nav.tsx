@@ -20,9 +20,9 @@ const adminLinks = [
     match: (path: string) => path.startsWith('/admin/camp-meeting'),
   },
   {
-    href: '/admin/campus-activities',
-    label: 'Campus',
-    match: (path: string) => path === '/admin/campus-activities',
+    href: '/campuses',
+    label: 'Campuses',
+    match: (path: string) => path.startsWith('/campuses'),
   },
   {
     href: '/admin/corporate-gem',

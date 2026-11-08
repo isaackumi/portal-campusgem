@@ -10,7 +10,6 @@ import {
   CheckboxIcon,
   ClipboardIcon,
   ClockIcon,
-  CubeIcon,
   DashboardIcon,
   DesktopIcon,
   EnvelopeClosedIcon,
@@ -235,11 +234,6 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
   {
     title: 'Outreach',
     items: [
-      {
-        name: 'Campus activities',
-        href: '/admin/campus-activities',
-        icon: CubeIcon,
-      },
       {
         name: 'Corporate Gem',
         href: '/admin/corporate-gem',

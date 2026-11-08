@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, GraduationCap, MapPin, RefreshCw, Search, Users } from 'lucide-react'
+import { ChevronRight, RefreshCw, Search } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { AccessDenied } from '@/components/auth/access-denied'
@@ -13,14 +14,17 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
-import { StatCard } from '@/components/ui/stat-card'
 import { PersonAvatar } from '@/components/ui/person'
 import { PhoneLink } from '@/components/contact/phone-link'
 import { useToast } from '@/hooks/use-toast'
+import { getGroupTypeLabel } from '@/lib/constants/groups'
 import {
   addCampusMembersAction,
+  listCampusCandidatesAction,
   listCampusesAction,
+  makeGroupACampusAction,
   unassignedStudentsAction,
+  type CampusCandidate,
   type CampusCard,
   type CampusSuggestion,
 } from '@/lib/actions/campuses'
@@ -72,90 +76,150 @@ export default function CampusesPage() {
     (acc, c) => ({ members: acc.members + c.member_count, leaders: acc.leaders + c.leader_count }),
     { members: 0, leaders: 0 }
   )
+  const summary =
+    campuses && campuses.length > 0
+      ? `${campuses.length} ${campuses.length === 1 ? 'campus' : 'campuses'} · ${totals.members} ${totals.members === 1 ? 'student' : 'students'} · ${totals.leaders} ${totals.leaders === 1 ? 'leader' : 'leaders'}`
+      : null
 
   return (
     <DashboardLayout>
       <PageHeader
-        eyebrow="Campus Gem"
         title="Campuses"
-        description={isAdmin ? 'Every campus fellowship, its people and forms.' : 'The campus fellowships you lead.'}
+        description={summary ?? (isAdmin ? 'Every campus fellowship, its people and forms.' : 'The campus fellowships you lead.')}
         actions={
           isAdmin ? (
             <Button asChild variant="outline" className="h-11 sm:h-10">
-              <Link href="/admin/groups">Add or edit campuses</Link>
+              <Link href="/admin/groups?type=campus">Add or edit campuses</Link>
             </Button>
           ) : null
         }
       />
 
-      {error ? (
-        <div className="dashboard-panel p-5 text-sm text-red-700 dark:text-red-300">{error}</div>
-      ) : campuses === null ? (
-        <div className="flex min-h-[200px] items-center justify-center"><LoadingSpinner /></div>
-      ) : campuses.length === 0 ? (
-        <div className="dashboard-panel p-8 text-center">
-          <GraduationCap className="mx-auto h-10 w-10 text-neutral-400 dark:text-neutral-500" aria-hidden />
-          <h2 className="app-section-title mt-3">{isAdmin ? 'No campuses yet' : 'You don’t lead a campus yet'}</h2>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-            {isAdmin
-              ? 'Create a group of type “Campus fellowship” under Groups.'
-              : 'Ask an administrator to make you leader or co-leader of your campus.'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {isAdmin ? (
-            <section aria-label="Campus totals" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-              <StatCard label="Campuses" value={campuses.length} icon={GraduationCap} />
-              <StatCard label="Students tagged" value={totals.members} icon={Users} sub="Active campus members" />
-              <StatCard label="Leaders" value={totals.leaders} sub="Leaders and co-leaders" className="col-span-2 lg:col-span-1" />
-            </section>
-          ) : null}
+      <div className="space-y-6">
+        {isAdmin ? <CampusCandidates onConverted={load} /> : null}
 
-          <ul data-tour="campus-list" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {campuses.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/campuses/${encodeURIComponent(c.key)}`}
-                  className="dashboard-panel group flex h-full flex-col p-5 transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="app-section-title truncate">{c.name}</h2>
-                      {c.meeting_location ? (
-                        <p className="mt-1 flex items-center gap-1 text-[13px] text-neutral-500 dark:text-neutral-400">
-                          <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                          <span className="truncate">{c.meeting_location}</span>
-                        </p>
-                      ) : null}
-                    </div>
-                    {c.short_code ? <Badge variant="brand" className="font-mono">{c.short_code}</Badge> : null}
-                  </div>
-                  <dl className="mt-4 grid grid-cols-3 gap-2">
-                    {[
-                      ['Members', c.member_count],
-                      ['Leaders', c.leader_count],
-                      ['Executives', c.executive_count],
-                    ].map(([label, value]) => (
-                      <div key={label as string}>
-                        <dt className="app-stat-label">{label}</dt>
-                        <dd className="text-lg font-semibold tabular-nums text-neutral-900 dark:text-white">{value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-600 dark:text-brand-300">
-                    Open campus
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {error ? (
+          <div className="dashboard-panel p-5 text-sm text-red-700 dark:text-red-300">{error}</div>
+        ) : campuses === null ? (
+          <div className="flex min-h-[200px] items-center justify-center"><LoadingSpinner /></div>
+        ) : campuses.length === 0 ? (
+          <div className="dashboard-panel p-8 text-center">
+            <h2 className="app-section-title">{isAdmin ? 'No campuses yet' : 'You don’t lead a campus yet'}</h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              {isAdmin
+                ? 'Under Groups, create a group and set its kind to “Campus fellowship”.'
+                : 'Ask an administrator to make you leader or co-leader of your campus.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <ul
+              data-tour="campus-list"
+              className="dashboard-panel divide-y divide-neutral-100 overflow-hidden max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 dark:divide-white/[0.06]"
+            >
+              {campuses.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/campuses/${encodeURIComponent(c.key)}`}
+                    className="flex min-h-[64px] items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-none dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.04] sm:px-5"
+                  >
+                    <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg border border-neutral-200 font-mono text-xs font-bold text-neutral-700 dark:border-white/10 dark:text-neutral-200">
+                      {c.short_code || '—'}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-neutral-900 dark:text-neutral-50">{c.name}</span>
+                      <span className="block truncate text-[13px] text-neutral-500 dark:text-neutral-400">
+                        {c.member_count} {c.member_count === 1 ? 'member' : 'members'}
+                        {c.leader_count ? ` · ${c.leader_count} ${c.leader_count === 1 ? 'leader' : 'leaders'}` : ' · no leader yet'}
+                        {c.meeting_location ? <span className="max-sm:hidden"> · {c.meeting_location}</span> : null}
+                      </span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
 
-          {isAdmin ? <UnassignedStudents onChanged={load} /> : null}
-        </div>
-      )}
+            {isAdmin ? <UnassignedStudents onChanged={load} /> : null}
+          </>
+        )}
+      </div>
     </DashboardLayout>
+  )
+}
+
+/**
+ * Admins: groups that look like a university but were saved as another kind (the group form
+ * defaults to "Fellowship"), so they don't show as campuses. One tap fixes it.
+ */
+function CampusCandidates({ onConverted }: { onConverted: () => Promise<void> | void }) {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [items, setItems] = useState<CampusCandidate[]>([])
+  const [codes, setCodes] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    const res = await listCampusCandidatesAction()
+    if (res.data) {
+      setItems(res.data)
+      setCodes(Object.fromEntries(res.data.map((c) => [c.id, c.suggested_code])))
+    }
+  }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  if (items.length === 0) return null
+
+  async function convert(c: CampusCandidate) {
+    setBusy(c.id)
+    const res = await makeGroupACampusAction(c.id, codes[c.id] ?? '')
+    setBusy(null)
+    if (res.error) {
+      toast({ variant: 'destructive', title: 'Not done', description: res.error })
+    } else {
+      toast({ title: `${c.name} is now a campus` })
+    }
+    await queryClient.invalidateQueries({ queryKey: ['workspace-campuses'] })
+    await Promise.all([load(), onConverted()])
+  }
+
+  return (
+    <section aria-labelledby="candidates-title" className="rounded-xl border border-amber-300/70 bg-amber-50/60 p-4 dark:border-amber-400/30 dark:bg-amber-400/[0.06] sm:p-5">
+      <h2 id="candidates-title" className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+        {items.length === 1 ? 'This group isn’t set up as a campus yet' : 'These groups aren’t set up as campuses yet'}
+      </h2>
+      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        They were saved as another kind of group, so they don’t show here. Check the short code (it becomes the link, e.g. /o/ug) and tap the button.
+      </p>
+      <ul className="mt-3 space-y-2">
+        {items.map((c) => (
+          <li key={c.id} className="flex flex-col gap-2 rounded-lg border border-neutral-200/80 bg-white p-3 dark:border-white/10 dark:bg-neutral-900 sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-neutral-900 dark:text-neutral-100">{c.name}</p>
+              <p className="text-[13px] text-neutral-500 dark:text-neutral-400">Saved as {getGroupTypeLabel(c.kind)}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="sr-only" htmlFor={`code-${c.id}`}>Short code for {c.name}</label>
+              <Input
+                id={`code-${c.id}`}
+                value={codes[c.id] ?? ''}
+                onChange={(e) => setCodes((prev) => ({ ...prev, [c.id]: e.target.value.toUpperCase() }))}
+                placeholder="Code"
+                maxLength={10}
+                className="h-11 w-24 font-mono uppercase sm:h-10"
+              />
+              <Button onClick={() => void convert(c)} disabled={busy !== null || !(codes[c.id] ?? '').trim()} className="h-11 flex-1 sm:h-10 sm:flex-none">
+                {busy === c.id ? <LoadingSpinner size="sm" className="mr-2" /> : null}
+                Make it a campus
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { Group } from '@/lib/types'
 import { GROUP_TYPES } from '@/lib/constants/groups'
+import { looksLikeCampus, suggestShortCode } from '@/lib/campus/setup'
 import {
   CampusIdentityFields,
   EMPTY_CAMPUS_IDENTITY,
@@ -113,7 +114,27 @@ export function GroupFormDialog({
                 </SelectContent>
               </Select>
             </div>
-            {typeInfo?.description ? (
+            {values.group_type !== 'campus' && looksLikeCampus(values.name) ? (
+              <div className="-mt-1 flex flex-col gap-2 rounded-lg border border-amber-300/70 bg-amber-50/60 p-3 text-sm dark:border-amber-400/30 dark:bg-amber-400/[0.06] sm:col-span-2 sm:flex-row sm:items-center">
+                <p className="flex-1 text-neutral-700 dark:text-neutral-300">
+                  This looks like a campus. Only “Campus fellowship” groups show under Campuses and get an outreach form.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 shrink-0"
+                  onClick={() => {
+                    set('group_type', 'campus')
+                    if (!campus.short_code) {
+                      const code = suggestShortCode(values.name)
+                      if (code) setCampus((c) => ({ ...c, short_code: code }))
+                    }
+                  }}
+                >
+                  Make it a campus
+                </Button>
+              </div>
+            ) : typeInfo?.description ? (
               <p className="-mt-2 text-xs text-neutral-500 dark:text-neutral-400 sm:col-span-2">{typeInfo.description}</p>
             ) : null}
           </div>

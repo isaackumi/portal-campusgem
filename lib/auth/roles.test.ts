@@ -37,7 +37,7 @@ describe('admins see everything admins should', () => {
     expect(hrefs).toContain('/admin/users')
     expect(hrefs).toContain('/admin/admins')
     expect(hrefs).toContain('/admin/camp-meeting/years')
-    expect(hrefs).toContain('/admin/campus-activities')
+    expect(hrefs).toContain('/campuses')
   })
 
   test('nav visibility matches route access', () => {

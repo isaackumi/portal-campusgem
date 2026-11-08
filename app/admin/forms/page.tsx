@@ -498,9 +498,9 @@ function FormsAdminContent() {
           <div className="flex gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             {!activeModule ? (
               <Button variant="outline" className="h-11 sm:h-10" asChild>
-                <Link href="/admin/campus-activities">
+                <Link href="/campuses">
                   <Building2 className="mr-2 h-4 w-4" />
-                  Campus board
+                  Campuses
                 </Link>
               </Button>
             ) : null}

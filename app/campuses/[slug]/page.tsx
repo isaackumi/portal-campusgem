@@ -3,24 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, ClipboardList, Crown, ExternalLink, FileText, MapPin, MessageSquare, UserPlus, Users } from 'lucide-react'
+import { ArrowLeft, ExternalLink, FileText, UserPlus } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading'
-import { StatCard } from '@/components/ui/stat-card'
 import { Tabs, TabsContent, ScrollableTabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PersonAvatar } from '@/components/ui/person'
-import { PhoneLink } from '@/components/contact/phone-link'
 import { GroupSmsComposer } from '@/components/groups/group-sms-composer'
 import { CampusMembersPanel } from '@/components/campus/campus-members-panel'
 import { CampusOnboardingPanel } from '@/components/campus/campus-onboarding-panel'
 import { CampusOutreachPanel } from '@/components/outreach/campus-outreach-panel'
 import { useToast } from '@/hooks/use-toast'
-import { GROUP_MEMBERSHIP_ROLE_LABELS } from '@/lib/constants/groups'
-import { groupRoleTone } from '@/lib/ui/chip-tones'
 import { loadCampusPageAction, sendCampusSmsAction, setupCampusFormAction, type CampusPageData } from '@/lib/actions/campuses'
 import { CAMPUS_MEMBER_REGISTRATION_CATEGORY } from '@/lib/forms/campus-member-registration'
 import { STUDENT_REGISTRATION_CATEGORY } from '@/lib/constants/corporate-gem'
@@ -81,92 +76,63 @@ function CampusView({ data, reload }: { data: CampusPageData; reload: () => Prom
   const { group, memberships, access } = data
   const label = group.short_code || group.name
   const canManage = access === 'manage'
-  const leaders = memberships.filter((m) => m.role === 'leader' || m.role === 'co_leader')
-  const executives = memberships.filter((m) => m.role === 'executive')
-  const responses = data.forms.reduce((sum, f) => sum + (f.response_count ?? 0), 0)
+  const leaders = memberships.filter((m) => m.role === 'leader' || m.role === 'co_leader').length
+  const [tab, setTab] = useState('members')
+
+  // /campuses/ug?tab=outreach opens that tab.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t) setTab(t)
+  }, [])
+
+  const facts = [
+    `${memberships.length} ${memberships.length === 1 ? 'member' : 'members'}`,
+    leaders ? `${leaders} ${leaders === 1 ? 'leader' : 'leaders'}` : 'no leader yet',
+    group.meeting_location,
+    group.meeting_schedule,
+  ].filter(Boolean)
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <div>
-          <Link
-            href="/campuses"
-            className="inline-flex min-h-9 items-center gap-1 text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            Campuses
-          </Link>
-          <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <p className="app-overline mb-2">Campus fellowship</p>
-              <h1 className="app-page-title flex flex-wrap items-center gap-2">
-                {group.name}
-                {group.short_code ? <Badge variant="brand" className="font-mono text-sm">{group.short_code}</Badge> : null}
-              </h1>
-              <p className="app-page-description mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                {group.meeting_location ? (
-                  <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" aria-hidden />{group.meeting_location}</span>
-                ) : null}
-                {group.meeting_schedule ? <span>{group.meeting_schedule}</span> : null}
-                {!canManage ? <Badge variant="secondary">View only</Badge> : null}
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              href="/campuses"
+              className="-ml-1 inline-flex min-h-10 items-center gap-1 px-1 text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              Campuses
+            </Link>
             {data.isAdmin ? (
-              <Button asChild variant="outline" className="h-11 sm:h-10">
-                <Link href={`/groups/${group.id}`}>Group settings</Link>
-              </Button>
+              <Link
+                href={`/groups/${group.id}`}
+                className="inline-flex min-h-10 items-center px-1 text-sm font-medium text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+              >
+                Settings
+              </Link>
             ) : null}
           </div>
+          <h1 className="app-page-title mt-1 flex flex-wrap items-center gap-2">
+            {group.name}
+            {group.short_code ? <Badge variant="brand" className="font-mono text-sm">{group.short_code}</Badge> : null}
+            {!canManage ? <Badge variant="secondary">View only</Badge> : null}
+          </h1>
+          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{facts.join(' · ')}</p>
+          {group.description ? (
+            <p className="mt-2 line-clamp-2 max-w-2xl text-sm text-neutral-600 dark:text-neutral-400">{group.description}</p>
+          ) : null}
         </div>
 
-        <Tabs defaultValue="overview">
+        <Tabs value={tab} onValueChange={setTab}>
           <ScrollableTabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="leaders">Leaders &amp; executives</TabsTrigger>
+            <TabsTrigger value="leaders">Leaders</TabsTrigger>
             <TabsTrigger value="outreach">Outreach</TabsTrigger>
             <TabsTrigger value="forms">Forms</TabsTrigger>
-            {canManage ? <TabsTrigger value="onboarding">Onboarding</TabsTrigger> : null}
-            {data.canText ? <TabsTrigger value="text">Text the campus</TabsTrigger> : null}
+            {canManage ? <TabsTrigger value="onboarding">Add students</TabsTrigger> : null}
+            {data.canText ? <TabsTrigger value="text">Text</TabsTrigger> : null}
           </ScrollableTabsList>
-
-          <TabsContent value="overview" className="mt-4 space-y-6">
-            <section aria-label={`${label} totals`} className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-              <StatCard label="Members" value={memberships.length} icon={Users} sub="Active on this campus" />
-              <StatCard label="Leaders" value={leaders.length} icon={Crown} sub="Leaders and co-leaders" />
-              <StatCard label="Executives" value={executives.length} sub="Executive committee" />
-              <StatCard label="Form responses" value={responses} icon={ClipboardList} sub={`${data.forms.length} form${data.forms.length === 1 ? '' : 's'}`} />
-            </section>
-            <section className="dashboard-panel p-5">
-              <h2 className="app-section-title">Leadership</h2>
-              {leaders.length + executives.length === 0 ? (
-                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                  No leaders yet.{data.isAdmin ? ' Add someone on the Members tab and set their role to Leader.' : ''}
-                </p>
-              ) : (
-                <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {[...leaders, ...executives].map((m) => (
-                    <li key={m.id} className="flex items-center gap-3">
-                      <PersonAvatar name={m.member?.user?.full_name} seed={m.member_id} />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{m.member?.user?.full_name ?? 'Unknown'}</p>
-                        <div className="flex items-center gap-2 text-[13px] text-neutral-500 dark:text-neutral-400">
-                          <Badge variant={groupRoleTone(m.role)}>{GROUP_MEMBERSHIP_ROLE_LABELS[m.role]}</Badge>
-                          {m.member?.user?.phone ? <PhoneLink phone={m.member.user.phone} name={m.member.user.full_name} /> : null}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-            {group.description ? (
-              <section className="dashboard-panel p-5">
-                <h2 className="app-section-title">About</h2>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-700 dark:text-neutral-300">{group.description}</p>
-              </section>
-            ) : null}
-          </TabsContent>
 
           <TabsContent value="members" className="mt-4">
             <CampusMembersPanel
@@ -208,10 +174,7 @@ function CampusView({ data, reload }: { data: CampusPageData; reload: () => Prom
           {data.canText ? (
             <TabsContent value="text" className="mt-4">
               <section className="dashboard-panel p-5">
-                <h2 className="app-section-title mb-3 flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-neutral-400 dark:text-neutral-500" aria-hidden />
-                  Text everyone on {label}
-                </h2>
+                <h2 className="app-section-title mb-3">Text everyone on {label}</h2>
                 <GroupSmsComposer groupId={group.id} groupName={label} memberships={memberships} sendAction={sendCampusSmsAction} />
               </section>
             </TabsContent>

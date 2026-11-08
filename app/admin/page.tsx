@@ -26,9 +26,9 @@ const adminSections = [
     icon: Calendar,
   },
   {
-    href: '/admin/campus-activities',
-    title: 'Campus & Activities',
-    description: 'Campus fellowships and church-wide events with members and scoped forms.',
+    href: '/campuses',
+    title: 'Campuses',
+    description: 'Campus fellowships: members, leaders, outreach and forms.',
     icon: Building2,
   },
   {

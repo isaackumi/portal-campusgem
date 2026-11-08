@@ -130,9 +130,9 @@ export const landingSections: LandingSection[] = [
         accent: 'slate',
       },
       {
-        href: '/admin/campus-activities',
-        title: 'Campus activities',
-        description: 'Campus fellowships and church-wide events.',
+        href: '/campuses',
+        title: 'Campuses',
+        description: 'Campus fellowships, outreach and follow-up.',
         icon: Building2,
         accent: 'emerald',
         permission: 'groups.manage',

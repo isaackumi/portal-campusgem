@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink, FileText, MessageSquare, MoreHorizontal, Pencil, Plus, Power, Search, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
@@ -64,6 +64,13 @@ export default function GroupsManagementPage() {
   const [noLeaderOnly, setNoLeaderOnly] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Group | null>(null)
+  const queryClient = useQueryClient()
+
+  // /admin/groups?type=campus opens on that kind (and new groups default to it).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('type')
+    if (t && GROUP_TYPES.some((g) => g.value === t)) setType(t)
+  }, [])
 
   const { createGroup, loading: creating } = useCreateGroup()
   const { updateGroup, loading: updating } = useUpdateGroup()
@@ -134,6 +141,7 @@ export default function GroupsManagementPage() {
       setFormOpen(false)
       setEditing(null)
       await refetch()
+      void queryClient.invalidateQueries({ queryKey: ['workspace-campuses'] })
       if (!editing && id) router.push(`/groups/${id}`)
     } catch (e) {
       toast({ variant: 'destructive', title: 'Could not save the group', description: e instanceof Error ? e.message : undefined })
