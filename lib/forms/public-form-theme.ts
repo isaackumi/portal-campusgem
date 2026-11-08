@@ -122,6 +122,14 @@ export function resolvePublicFormTheme(form: Pick<ChurchForm, 'category' | 'acce
   return THEMES[normalized]
 }
 
+/** Every form's header painting unless the form sets its own image. */
+export const DEFAULT_FORM_COVER = '/forms/cover-painting.webp'
+
+/** The form's own header image, else the default painting. */
+export function formCoverUrl(url: string | undefined): string {
+  return isValidCoverImageUrl(url) ? url!.trim() : DEFAULT_FORM_COVER
+}
+
 export function isValidCoverImageUrl(url: string | undefined): boolean {
   if (!url?.trim()) return false
   try {

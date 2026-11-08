@@ -683,6 +683,9 @@ export const recordCallOutcomeWithSecret = mutation({
     count_attempt: v.optional(v.boolean()),
     /** Answer given by the registrant through their tap-to-confirm link. */
     via_link: v.optional(v.boolean()),
+    /** The calling session it was made in, and when the caller got this person. */
+    session_id: v.optional(v.string()),
+    started_at: v.optional(v.number()),
   },
   returns: v.any(),
   handler: async (ctx, args) => {
@@ -715,6 +718,10 @@ export const recordCallOutcomeWithSecret = mutation({
       ]
         .filter(Boolean)
         .join(' — '),
+      outcome: args.outcome,
+      ...(args.session_id ? { session_id: args.session_id } : {}),
+      ...(args.started_at && args.started_at < now ? { started_at: args.started_at } : {}),
+      ...(args.via_link ? { via_link: true } : {}),
       updated_at: now,
     })
     return await ctx.db.get(args.registration_id)

@@ -16,7 +16,6 @@ import {
   PublicFormSuccess,
 } from '@/components/forms/public-form-layout'
 import { PublicFormLocationCapture } from '@/components/forms/public-form-location'
-import { PublicFormToolbar } from '@/components/forms/public-form-toolbar'
 import { PublicFormPreviewBanner } from '@/components/forms/public-form-preview-banner'
 import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-phone'
 import { applyWhatsappSameAsPhone } from '@/lib/forms/whatsapp-phone'
@@ -62,7 +61,8 @@ export function PublicFormClassicView({ controller }: { controller: PublicFormCo
     handleSubmit,
   } = controller
 
-  const toolbar = <PublicFormToolbar form={form} campYearLabel={campYearLabel} previewMode={previewMode} />
+  // No share / responses bar on live forms: admins have those in the app. Keeps the top clean.
+  const toolbar = null
 
   if (submitted) {
     return (

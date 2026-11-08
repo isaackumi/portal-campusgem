@@ -10,12 +10,11 @@ import {
   PublicFormSteppedShell,
   SteppedQuestionCard,
 } from '@/components/forms/public-form-stepped-shell'
-import { PublicFormToolbar } from '@/components/forms/public-form-toolbar'
 import { WhatsappSameAsPhoneBlock } from '@/components/forms/whatsapp-same-as-phone'
 import { formatPublicCampYearLabel } from '@/lib/forms/camp-year-label'
 import { buildSteppedScreens, type SteppedScreen } from '@/lib/forms/public-form-steps'
 import { applyWhatsappSameAsPhone } from '@/lib/forms/whatsapp-phone'
-import { isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
+import { formCoverUrl } from '@/lib/forms/public-form-theme'
 import { isValidPhone } from '@/lib/phone'
 import type { PublicFormController } from '@/hooks/use-public-form'
 import type { ChurchFormField } from '@/lib/types'
@@ -114,7 +113,7 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
   const screen = screens[stepIndex] ?? screens[0]
   const totalSteps = screens.length
   const progress = totalSteps > 1 ? (stepIndex / (totalSteps - 1)) * 100 : 100
-  const coverUrl = isValidCoverImageUrl(form.cover_image_url) ? form.cover_image_url!.trim() : null
+  const coverUrl: string | null = formCoverUrl(form.cover_image_url)
   const encouragement = getEncouragement(stepIndex, totalSteps)
   const questionNumber =
     screen.kind === 'field'
@@ -262,7 +261,6 @@ export function PublicFormSteppedView({ controller }: { controller: PublicFormCo
     <PublicFormSteppedShell form={form} progress={progress}>
       {previewMode ? <PublicFormPreviewBanner /> : null}
 
-      <PublicFormToolbar form={form} campYearLabel={campYearLabel} previewMode={previewMode} />
 
       <div className="mb-4 flex items-center justify-between gap-3">
         {stepIndex > 0 ? (

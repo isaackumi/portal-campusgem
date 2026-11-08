@@ -331,19 +331,25 @@ export async function recordSessionCallAction(input: {
     if (!reg) throw new Error('This registration no longer exists.')
     const cc = await import('@/lib/convex/call-center-bridge')
     const canManage = hasPermission(user.role, 'camp.manage', user.permissions)
+    const claims = await cc.listClaims(listKey)
     if (!canManage) {
       // A result can be changed later (they called back, the WhatsApp reply came): only blocked
       // while another caller is on the phone with them right now.
-      const other = (await cc.listClaims(listKey)).find((c) => c.target_id === reg.id && c.caller_id !== user.id)
+      const other = claims.find((c) => c.target_id === reg.id && c.caller_id !== user.id)
       if (other) throw new Error('Someone else is calling them right now. Try again in a few minutes.')
     }
+    const live = await cc.getLiveSession(listKey)
+    // When this caller was given this person: the call's length in the history (ignored if stale).
+    const mine = claims.find((c) => c.target_id === reg.id && c.caller_id === user.id)
+    const startedAt = mine && Date.now() - mine.claimed_at < 60 * 60_000 ? mine.claimed_at : undefined
     await bridge.recordCallOutcomeInConvex({
       registration_id: reg.id,
       outcome: input.outcome,
       note: input.note?.trim().slice(0, 500) || undefined,
       performed_by: user.id,
+      ...(live ? { session_id: live.id } : {}),
+      ...(startedAt ? { started_at: startedAt } : {}),
     })
-    const live = await cc.getLiveSession(listKey)
     if (live) {
       await cc.recordSessionOutcome({ session_id: live.id, caller_id: user.id, target_id: reg.id, target_name: reg.full_name, outcome: input.outcome })
     }
@@ -799,5 +805,34 @@ export async function applyShareAction(input: { yearId?: string | null; source: 
     return { data: { assigned, callers: new Set(result.assignments.map((a) => a.callerId)).size }, error: null }
   } catch (error: unknown) {
     return { data: null, error: errorOf(error, 'Could not share out the calls') }
+  }
+}
+
+export type CallHistoryData = {
+  year: { id: string; year: number }
+  years: Array<{ id: string; year: number; is_active: boolean }>
+  calls: import('@/lib/calls/history').CallRow[]
+  sessions: import('@/lib/calls/history').CallSessionInfo[]
+  callers: Record<string, string>
+}
+
+/** Every call for a camp year with its sessions and callers' names: the call history page. Managers only. */
+export async function loadCallHistoryAction(yearId?: string | null): Promise<{ data: CallHistoryData | null; error: string | null }> {
+  try {
+    await guard('camp.manage')
+    const { bridge, year, listKey } = await campContext(yearId)
+    if (!year || !listKey) return { data: null, error: 'There is no camp year yet.' }
+    const cc = await import('@/lib/convex/call-center-bridge')
+    const [history, years] = await Promise.all([cc.callHistory(year.id, listKey), bridge.fetchAllCampYearsFromConvex()])
+    return {
+      data: {
+        year: { id: year.id, year: year.year },
+        years: [...years].sort((a, b) => b.year - a.year).map((y) => ({ id: y.id, year: y.year, is_active: Boolean(y.is_active) })),
+        ...history,
+      },
+      error: null,
+    }
+  } catch (error: unknown) {
+    return { data: null, error: errorOf(error, 'Could not load the call history') }
   }
 }

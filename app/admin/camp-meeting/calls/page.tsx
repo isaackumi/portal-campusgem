@@ -19,6 +19,7 @@ import {
   UserMinus,
   UserPlus,
   X,
+  History,
 } from 'lucide-react'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
@@ -267,7 +268,7 @@ function CallsWorkspace() {
     <div className="mx-auto max-w-7xl pb-28">
       <PageHeader
         eyebrow={`Camp meeting ${year.year}`}
-        title="Confirmation calls"
+        title="Call center"
         description={
           data.canManage
             ? 'Split registrants among callers, text them their lists, and watch confirmations come in.'
@@ -316,6 +317,12 @@ function CallsWorkspace() {
                 </DropdownMenuItem>
                 {data.canManage ? (
                   <>
+                    <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
+                      <Link href="/admin/camp-meeting/calls/history">
+                        <History className="h-4 w-4 text-neutral-500 dark:text-neutral-400" aria-hidden />
+                        Call history
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
                       <Link href="/admin/camp-meeting/calls/templates">
                         <MessageCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />

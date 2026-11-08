@@ -167,6 +167,7 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission | Permis
   { prefix: '/admin/camp-meeting/communications', permission: 'camp.manage' },
   { prefix: '/admin/camp-meeting/import', permission: 'camp.manage' },
   { prefix: '/admin/camp-meeting/follow-up', permission: 'camp.manage' },
+  { prefix: '/admin/camp-meeting/calls/history', permission: 'camp.manage' },
   { prefix: '/admin/camp-meeting/calls', permission: 'camp.calls' },
   { prefix: '/admin/camp-meeting/registrations', permission: 'camp.manage' },
   { prefix: '/admin/camp-meeting/scan', permission: 'camp.manage' },

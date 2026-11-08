@@ -435,3 +435,95 @@ export const removeCallTeamMemberWithSecret = mutation({
     return null
   },
 })
+
+// --- History -------------------------------------------------------------------------------------
+
+/** Old call rows kept only a label in `notes` ("Confirmed attending — …"); read the outcome back. */
+const LABEL_TO_OUTCOME: Array<[string, string]> = [
+  ['Confirmed attending', 'confirmed'],
+  ['Confirmed', 'confirmed'],
+  ['Not sure yet', 'maybe'],
+  ['Not coming', 'declined'],
+  ['No answer', 'unreachable'],
+  ['Not confirmed', 'unconfirmed'],
+]
+
+function readOutcome(notes: string | undefined): { outcome: string | null; note: string | null; viaLink: boolean } {
+  const text = (notes ?? '').trim()
+  for (const [label, outcome] of LABEL_TO_OUTCOME) {
+    if (text === label || text.startsWith(`${label} — `) || text.startsWith(`${label} via link`)) {
+      const viaLink = text.startsWith(`${label} via link`)
+      const rest = text.slice((viaLink ? `${label} via link` : label).length).replace(/^ — /, '').trim()
+      return { outcome, note: rest || null, viaLink }
+    }
+  }
+  return { outcome: null, note: text || null, viaLink: false }
+}
+
+/**
+ * Every call made for one camp year (from each registration's interactions, so calls made before
+ * sessions existed are included), every calling session, and the callers' names.
+ */
+export const callHistoryWithSecret = query({
+  args: { secret: v.string(), camp_year_id: v.string(), list_key: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { secret, camp_year_id, list_key }) => {
+    assertServerSecret(secret)
+    const regs = await ctx.db
+      .query('camp_registrations')
+      .withIndex('by_camp_year', (q) => q.eq('camp_year_id', camp_year_id))
+      .collect()
+    const calls: Array<Record<string, unknown>> = []
+    for (const reg of regs) {
+      const rows = await ctx.db
+        .query('camp_interactions')
+        .withIndex('by_registration', (q) => q.eq('registration_id', String(reg._id)))
+        .collect()
+      for (const r of rows) {
+        if (r.interaction_type !== 'call' && r.interaction_type !== 'status_change') continue
+        const parsed = readOutcome(r.notes)
+        const viaLink = Boolean(r.via_link) || parsed.viaLink || r.performed_by === 'self'
+        calls.push({
+          id: String(r._id),
+          registration_id: String(reg._id),
+          name: reg.full_name,
+          phone: reg.phone ?? null,
+          caller_id: viaLink ? null : r.performed_by,
+          kind: viaLink ? 'link' : r.interaction_type === 'call' ? 'call' : 'change',
+          outcome: r.outcome ?? parsed.outcome,
+          note: parsed.note,
+          at: r.updated_at ?? r._creationTime,
+          session_id: r.session_id ?? null,
+          started_at: r.started_at ?? null,
+        })
+      }
+    }
+    const sessions = await ctx.db
+      .query('call_sessions')
+      .withIndex('by_list_status', (q) => q.eq('list_key', list_key))
+      .collect()
+    const sessionInfo = []
+    for (const s of sessions) {
+      const people = await ctx.db
+        .query('call_session_people')
+        .withIndex('by_session', (q) => q.eq('session_id', s._id))
+        .collect()
+      sessionInfo.push({
+        id: String(s._id),
+        title: s.title,
+        started_at: s.started_at,
+        ended_at: s.ended_at ?? null,
+        status: s.status,
+        people: people.map((p) => p.user_id),
+      })
+    }
+    const callerIds = Array.from(new Set(calls.map((c) => c.caller_id).filter((id): id is string => typeof id === 'string')))
+    const callers: Record<string, string> = {}
+    for (const id of callerIds) {
+      const uid = ctx.db.normalizeId('users', id)
+      const user = uid ? await ctx.db.get(uid) : null
+      if (user) callers[id] = user.full_name
+    }
+    return { calls, sessions: sessionInfo, callers }
+  },
+})

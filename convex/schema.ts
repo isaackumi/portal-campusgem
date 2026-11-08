@@ -467,6 +467,12 @@ export default defineSchema({
       v.literal('email')
     ),
     notes: v.optional(v.string()),
+    /** Calls (from Nov 2026): the result, the calling session it was made in, when the caller got
+     * this person (so the call's length is known), and whether the person answered by link. */
+    outcome: v.optional(v.string()),
+    session_id: v.optional(v.string()),
+    started_at: v.optional(v.number()),
+    via_link: v.optional(v.boolean()),
     updated_at: v.number(),
   }).index('by_registration', ['registration_id']),
 

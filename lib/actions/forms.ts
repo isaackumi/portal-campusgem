@@ -132,8 +132,22 @@ export async function createForm(input: {
   await guard('forms.manage')
   requireConvexEnv()
   try {
+    // The creator is whoever is signed in, never what the browser says. Forms set up from a
+    // campus page or a template come through nested calls where guard() returns null, so read
+    // the session directly.
+    const { getSessionUser } = await import('@/lib/auth/server-session')
+    const me = await getSessionUser().catch(() => null)
     const { createFormInConvex } = await import('@/lib/convex/forms-bridge')
-    const data = await createFormInConvex(input)
+    const data = await createFormInConvex({ ...input, created_by: me?.id ?? input.created_by })
+    if (data) {
+      const { logActivity } = await import('@/lib/activity/log')
+      await logActivity({
+        category: 'groups',
+        action: 'form.create',
+        summary: `Created the form “${data.title}”`,
+        target: { type: 'form', id: data.id, label: data.title },
+      })
+    }
     return { data, error: null }
   } catch (error: unknown) {
     return {

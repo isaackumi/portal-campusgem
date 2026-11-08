@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, ExternalLink, FileText, UserPlus } from 'lucide-react'
+import { ArrowLeft, ExternalLink, FileText, QrCode, UserPlus } from 'lucide-react'
+import { QrSheet } from '@/components/ui/qr-sheet'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
@@ -19,6 +20,7 @@ import { useToast } from '@/hooks/use-toast'
 import { loadCampusPageAction, sendCampusSmsAction, setupCampusFormAction, type CampusPageData } from '@/lib/actions/campuses'
 import { CAMPUS_MEMBER_REGISTRATION_CATEGORY } from '@/lib/forms/campus-member-registration'
 import { STUDENT_REGISTRATION_CATEGORY } from '@/lib/constants/corporate-gem'
+import type { ChurchForm } from '@/lib/types'
 
 export default function CampusPage() {
   const params = useParams()
@@ -189,7 +191,11 @@ function CampusForms({ data, onChanged }: { data: CampusPageData; onChanged: () 
   const { toast } = useToast()
   const { can } = useAuth()
   const [busy, setBusy] = useState<'campus' | 'student' | null>(null)
+  const [qrForm, setQrForm] = useState<ChurchForm | null>(null)
+  const [origin, setOrigin] = useState('')
+  useEffect(() => setOrigin(window.location.origin), [])
   const canManage = data.access === 'manage'
+  const label = data.group.short_code || data.group.name
   const has = useMemo(
     () => ({
       campus: data.forms.some((f) => f.category === CAMPUS_MEMBER_REGISTRATION_CATEGORY),
@@ -253,16 +259,22 @@ function CampusForms({ data, onChanged }: { data: CampusPageData; onChanged: () 
                   <span className="tabular-nums">{f.response_count ?? 0} response{f.response_count === 1 ? '' : 's'}</span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto">
                 {f.status === 'published' ? (
-                  <Button asChild variant="outline" size="sm" className="h-11 sm:h-9">
-                    <a href={`/f/${f.slug}`} target="_blank" rel="noreferrer">
-                      <ExternalLink className="mr-1.5 h-4 w-4" aria-hidden />
-                      Open form
-                    </a>
-                  </Button>
+                  <>
+                    <Button variant="outline" size="sm" className="h-11 sm:h-9" onClick={() => setQrForm(f)}>
+                      <QrCode className="mr-1.5 h-4 w-4" aria-hidden />
+                      QR code
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className="h-11 sm:h-9">
+                      <a href={`/f/${f.slug}`} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-1.5 h-4 w-4" aria-hidden />
+                        Open
+                      </a>
+                    </Button>
+                  </>
                 ) : null}
-                <Button asChild size="sm" className="h-11 sm:h-9">
+                <Button asChild size="sm" className={f.status === 'published' ? 'h-11 sm:h-9' : 'col-span-3 h-11 sm:h-9'}>
                   <Link href={responsesHref(f.id)}>Responses</Link>
                 </Button>
               </div>
@@ -270,6 +282,16 @@ function CampusForms({ data, onChanged }: { data: CampusPageData; onChanged: () 
           ))}
         </ul>
       )}
+      <QrSheet
+        open={qrForm !== null}
+        onOpenChange={(o) => !o && setQrForm(null)}
+        url={qrForm && origin ? `${origin}/f/${qrForm.slug}` : null}
+        title={qrForm?.title ?? ''}
+        overline={`Campus GEM · ${label}`}
+        hint="Scan with your phone camera to fill in the form"
+        fileName={qrForm ? `${label}-${qrForm.slug}` : 'form'}
+        shareText={qrForm ? `${qrForm.title}:` : undefined}
+      />
     </section>
   )
 }

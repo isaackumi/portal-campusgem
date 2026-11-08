@@ -139,3 +139,16 @@ export async function saveCallTeamMember(member: CallTeamRecord, added_by: strin
 export async function removeCallTeamMember(user_id: string): Promise<void> {
   await client().mutation(api.callCenter.removeCallTeamMemberWithSecret, { secret: secret(), user_id })
 }
+
+export async function callHistory(camp_year_id: string, list_key: string): Promise<{
+  calls: import('@/lib/calls/history').CallRow[]
+  sessions: import('@/lib/calls/history').CallSessionInfo[]
+  callers: Record<string, string>
+}> {
+  // Rows are built by convex/callCenter.ts callHistoryWithSecret in exactly this shape.
+  return (await client().query(api.callCenter.callHistoryWithSecret, { secret: secret(), camp_year_id, list_key })) as unknown as {
+    calls: import('@/lib/calls/history').CallRow[]
+    sessions: import('@/lib/calls/history').CallSessionInfo[]
+    callers: Record<string, string>
+  }
+}

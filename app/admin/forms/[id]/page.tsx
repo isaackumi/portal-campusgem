@@ -39,8 +39,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FORM_PREFILL_KEY_GROUPS } from '@/lib/forms/prefill'
-import { PUBLIC_FORM_ACCENT_OPTIONS, isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
-import { FORM_DISPLAY_MODE_OPTIONS, type FormDisplayMode } from '@/lib/forms/display-mode'
+import { PUBLIC_FORM_ACCENT_OPTIONS, formCoverUrl, isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
+import { FORM_DISPLAY_MODE_OPTIONS, STEPPED_FORMS_ENABLED, type FormDisplayMode } from '@/lib/forms/display-mode'
 import {
   FieldOptionsEditor,
   fieldTypeUsesOptions,
@@ -331,7 +331,7 @@ export default function FormEditorPage() {
     setCaptureRespondentLocation(data.form.capture_respondent_location)
     setCoverImageUrl(data.form.cover_image_url ?? '')
     setAccentColor(data.form.accent_color ?? 'auto')
-    setDisplayMode(data.form.display_mode === 'classic' ? 'classic' : 'stepped')
+    setDisplayMode(data.form.display_mode === 'stepped' ? 'stepped' : 'classic')
     setCampYearId(data.form.camp_year_id ?? '')
     setFields(data.fields.map(toEditableField))
     setLoading(false)
@@ -598,7 +598,7 @@ export default function FormEditorPage() {
               <span className="inline-flex items-center gap-1.5">
                 <UserRound className="h-4 w-4 shrink-0" />
                 By{' '}
-                <span className="font-medium text-neutral-800 dark:text-neutral-100">{creatorName ?? 'Unknown user'}</span>
+                <span className="font-medium text-neutral-800 dark:text-neutral-100">{creatorName ?? 'Not recorded'}</span>
               </span>
             </div>
           </CardHeader>
@@ -632,13 +632,13 @@ export default function FormEditorPage() {
                 placeholder="https://… banner or flyer (shown at top on mobile)"
               />
               <p className="text-xs text-muted-foreground">
-                Paste a link to a banner, flyer, or photo. Leave empty for a colored gradient header.
+                Paste a link to a banner, flyer, or photo. Leave empty to use the default painting.
               </p>
-              {isValidCoverImageUrl(coverImageUrl) ? (
+              {coverImageUrl.trim() === '' || isValidCoverImageUrl(coverImageUrl) ? (
                 <div className="overflow-hidden rounded-lg border bg-neutral-50 dark:bg-white/[0.04]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={coverImageUrl.trim()}
+                    src={formCoverUrl(coverImageUrl)}
                     alt="Header preview"
                     className="max-h-36 w-full object-cover"
                   />
@@ -660,6 +660,7 @@ export default function FormEditorPage() {
                 </SelectContent>
               </Select>
             </div>
+            {STEPPED_FORMS_ENABLED ? (
             <div className="space-y-2">
               <Label htmlFor="display-mode">Public form layout</Label>
               <Select value={displayMode} onValueChange={(value) => setDisplayMode(value as FormDisplayMode)}>
@@ -678,6 +679,7 @@ export default function FormEditorPage() {
                 {FORM_DISPLAY_MODE_OPTIONS.find((option) => option.id === displayMode)?.description}
               </p>
             </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Input id="category" value={category} onChange={(event) => setCategory(event.target.value)} />

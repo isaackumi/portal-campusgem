@@ -38,8 +38,7 @@ function mapForm(doc: Record<string, unknown> | null | undefined): ChurchForm | 
       doc.module === 'rlc' || doc.module === 'camp_meeting' || doc.module === 'outreach'
         ? doc.module
         : undefined,
-    display_mode:
-      doc.display_mode === 'classic' ? 'classic' : 'stepped',
+    display_mode: doc.display_mode === 'stepped' ? 'stepped' : 'classic',
     created_by: doc.created_by != null ? String(doc.created_by) : undefined,
     created_at: iso(doc._creationTime as number | undefined),
     updated_at: iso(doc.updated_at as number | undefined),

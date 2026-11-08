@@ -8,6 +8,7 @@ import { getFormAdmin } from '@/lib/actions/forms'
 import { loadGroupById } from '@/lib/actions/core-data'
 import { getCampYearById } from '@/lib/actions/camp'
 import { PublicFormRenderer } from '@/components/forms/public-form-renderer'
+import { normalizeFormDisplayMode } from '@/lib/forms/display-mode'
 import { PublicFormLoadingState } from '@/components/forms/public-form-layout'
 import type { ChurchForm, ChurchFormField } from '@/lib/types'
 import { Button } from '@/components/ui/button'
@@ -100,7 +101,7 @@ export default function FormPreviewPage() {
         </Button>
         <div className="flex min-w-0 items-center gap-2">
           <span className="hidden truncate text-sm text-neutral-500 dark:text-neutral-400 sm:inline">
-            Preview · {form.display_mode === 'classic' ? 'Classic' : 'Step-by-step'}
+            Preview · {normalizeFormDisplayMode(form.display_mode) === 'classic' ? 'Classic' : 'Step-by-step'}
           </span>
           {form.status === 'published' ? (
             <Button variant="outline" size="sm" className="h-10" asChild>

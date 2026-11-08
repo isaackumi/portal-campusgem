@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { cn } from '@/lib/utils'
 import { formatPublicCampYearLabel } from '@/lib/forms/camp-year-label'
-import { isValidCoverImageUrl } from '@/lib/forms/public-form-theme'
+import { formCoverUrl } from '@/lib/forms/public-form-theme'
 import {
   PublicFormThemeProvider,
   usePublicFormTheme,
@@ -68,14 +68,14 @@ function PublicFormTitleCard({
   campYearLabel?: string | null
 }) {
   const theme = usePublicFormTheme()
-  const coverUrl = isValidCoverImageUrl(form.cover_image_url) ? form.cover_image_url!.trim() : null
+  const coverUrl: string | null = formCoverUrl(form.cover_image_url)
   const title = step === 'review' ? 'Review your answers' : form.title
   const fillActive = step === 'fill'
   const campMeta = formatPublicCampYearLabel(campYearLabel)
 
   return (
     <header className="mb-3 overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-sm">
-      <div className="h-2.5 w-full" style={{ backgroundColor: theme.accentHex }} />
+      {!coverUrl ? <div className="h-2.5 w-full" style={{ backgroundColor: theme.accentHex }} /> : null}
       {coverUrl ? (
         <div className="relative aspect-[21/9] max-h-56 w-full border-b border-slate-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -33,6 +33,44 @@ export const logWithSecret = mutation({
 })
 
 /**
+ * "Opened the app": at most one row per person per day (UTC, which is Ghana time). People stay
+ * signed in for weeks, so sign-ins alone don't show who is using the app. Returns whether it wrote.
+ */
+export const noteVisitWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    actor_id: v.string(),
+    actor_name: v.optional(v.string()),
+    ip: v.optional(v.string()),
+    device: v.optional(v.string()),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, { secret, actor_id, actor_name, ip, device }) => {
+    assertServerSecret(secret)
+    const now = Date.now()
+    const dayStart = now - (now % 86_400_000)
+    const seen = await ctx.db
+      .query('activity_log')
+      .withIndex('by_actor', (q) => q.eq('actor_id', actor_id).gte('at', dayStart))
+      .filter((q) => q.or(q.eq(q.field('action'), 'auth.visit'), q.eq(q.field('action'), 'auth.signin')))
+      .first()
+    if (seen) return false
+    await ctx.db.insert('activity_log', {
+      at: now,
+      category: 'auth',
+      action: 'auth.visit',
+      summary: 'Opened the app',
+      outcome: 'ok',
+      actor_id,
+      ...(actor_name ? { actor_name } : {}),
+      ...(ip ? { ip } : {}),
+      ...(device ? { device } : {}),
+    })
+    return true
+  },
+})
+
+/**
  * Newest first, a page at a time; by one person or one category when asked, and since a time.
  * `cursor` continues where the last page stopped.
  */

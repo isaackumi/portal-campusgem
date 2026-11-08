@@ -61,6 +61,30 @@ export async function logActivity(input: ActivityInput): Promise<void> {
   }
 }
 
+/**
+ * Note that a signed-in person opened the app (at most once a day each; Convex decides).
+ * Never throws. Called from /api/auth/session after the response is sent.
+ */
+export async function noteVisit(user: { id: string; full_name?: string | null }, h?: Headers): Promise<void> {
+  try {
+    const secret = process.env.CAMP_CONVEX_SERVER_SECRET
+    if (!secret || !process.env.NEXT_PUBLIC_CONVEX_URL || !user.id) return
+    const ip = h ? clientIp(h.get('x-forwarded-for'), h.get('x-real-ip')) : undefined
+    const device = h ? describeDevice(h.get('user-agent')) : undefined
+    const { getConvexHttpClient } = await import('@/lib/convex/http-client')
+    const { api } = await import('@/convex/_generated/api')
+    await getConvexHttpClient().mutation(api.activity.noteVisitWithSecret, {
+      secret,
+      actor_id: user.id,
+      ...(user.full_name ? { actor_name: user.full_name } : {}),
+      ...(ip ? { ip } : {}),
+      ...(device ? { device } : {}),
+    })
+  } catch (error) {
+    console.warn('Activity log: could not note visit', error)
+  }
+}
+
 /** A readable name from whatever came back (a person, a member with its user, a group). */
 export function labelOf(value: unknown): string | undefined {
   if (!value || typeof value !== 'object') return undefined

@@ -821,8 +821,8 @@ function FormsAdminContent() {
               const isCampMeeting = form.category === CAMP_MEETING_REGISTRATION_CATEGORY
               const formModule = inferFormModule(form)
               const creatorName = form.created_by
-                ? creatorsById[form.created_by] ?? 'Unknown user'
-                : 'Unknown'
+                ? creatorsById[form.created_by] ?? 'Not recorded'
+                : 'Not recorded'
               return (
                 <Card
                   key={form.id}

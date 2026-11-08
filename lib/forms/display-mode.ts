@@ -8,16 +8,23 @@ export const FORM_DISPLAY_MODE_OPTIONS: Array<{
   {
     id: 'stepped',
     label: 'Step-by-step',
-    description: 'One question per screen with transitions and progress (recommended).',
+    description: 'One question per screen with transitions and progress.',
   },
   {
     id: 'classic',
     label: 'Classic',
-    description: 'All questions on one scrollable page (Google Forms style).',
+    description: 'All questions on one scrollable page (recommended).',
   },
 ]
 
-/** Stepped is the default for new forms and legacy rows without display_mode. */
+/**
+ * For now every form shows as Classic (all questions on one page), whatever was saved. Set this
+ * back to true to bring back the per-form choice and step-by-step forms.
+ */
+export const STEPPED_FORMS_ENABLED = false
+
+/** Classic is the default for new forms and rows without display_mode. */
 export function normalizeFormDisplayMode(value: string | undefined): FormDisplayMode {
-  return value === 'classic' ? 'classic' : 'stepped'
+  if (!STEPPED_FORMS_ENABLED) return 'classic'
+  return value === 'stepped' ? 'stepped' : 'classic'
 }

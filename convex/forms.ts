@@ -299,7 +299,7 @@ export const createFormWithSecret = mutation({
       capture_respondent_location: args.capture_respondent_location ?? false,
       cover_image_url: args.cover_image_url?.trim() || undefined,
       accent_color: args.accent_color?.trim() || undefined,
-      display_mode: args.display_mode === 'classic' ? 'classic' : 'stepped',
+      display_mode: args.display_mode === 'stepped' ? 'stepped' : 'classic',
       response_count: 0,
       created_by: args.created_by,
       updated_at: now,

@@ -674,8 +674,8 @@ export const TOURS: Tour[] = [
   {
     id: 'camp-calls',
     group: 'camp',
-    title: 'Confirmation calls',
-    description: 'Call registrants and record whether they are coming.',
+    title: 'Call center',
+    description: 'Confirmation calls: call registrants and record whether they are coming.',
     permission: 'camp.calls',
     route: '/admin/camp-meeting/calls',
     steps: [

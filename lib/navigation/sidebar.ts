@@ -113,11 +113,11 @@ export const sidebarNavigationSections: SidebarNavSection[] = [
         icon: PersonIcon,
       },
       {
-        name: 'Confirmation calls',
+        name: 'Call center',
         href: '/admin/camp-meeting/calls',
         icon: MobileIcon,
         permission: 'camp.calls',
-        description: 'Call registrants to confirm they are coming',
+        description: 'Confirmation calls, calling sessions and call history',
       },
       {
         name: 'Directory',

@@ -166,7 +166,7 @@ function PanelLink({ href, children }: { href: string; children: ReactNode }) {
 }
 
 const QUICK_LINKS: Array<{ href: string; label: string; hint: string; icon: typeof Users; permission?: 'camp.manage' | 'camp.payments' | 'camp.settings' | 'camp.calls' }> = [
-  { href: '/admin/camp-meeting/calls', label: 'Confirmation calls', hint: 'Who is still coming', icon: PhoneCall, permission: 'camp.calls' },
+  { href: '/admin/camp-meeting/calls', label: 'Call center', hint: 'Confirmation calls', icon: PhoneCall, permission: 'camp.calls' },
   { href: '/admin/camp-meeting/rooms', label: 'Rooms', hint: 'Lodging and leaders', icon: BedDouble, permission: 'camp.manage' },
   { href: '/admin/camp-meeting/communications', label: 'Communications', hint: 'SMS, email, delivery', icon: MessageSquare, permission: 'camp.manage' },
   { href: '/admin/camp-meeting/analytics', label: 'Analytics', hint: 'Trends and exports', icon: BarChart3, permission: 'camp.manage' },

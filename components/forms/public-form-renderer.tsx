@@ -21,7 +21,7 @@ export function PublicFormRenderer({
   campYearLabel,
   previewMode = false,
 }: Props) {
-  const formKey = `${form.id}-${form.updated_at}-${form.accent_color ?? 'auto'}-${form.display_mode ?? 'stepped'}`
+  const formKey = `${form.id}-${form.updated_at}-${form.accent_color ?? 'auto'}-${form.display_mode ?? 'classic'}`
 
   const controller = usePublicForm({
     form,

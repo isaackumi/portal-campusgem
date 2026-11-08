@@ -431,6 +431,8 @@ export async function recordCallOutcomeInConvex(args: {
   count_attempt?: boolean
   /** Self-reported through the tap-to-confirm link. */
   via_link?: boolean
+  session_id?: string
+  started_at?: number
 }): Promise<CampRegistration> {
   const client = getConvexHttpClient()
   const doc = (await client.mutation(api.camp.recordCallOutcomeWithSecret, {
@@ -441,6 +443,8 @@ export async function recordCallOutcomeInConvex(args: {
     performed_by: args.performed_by,
     count_attempt: args.count_attempt,
     via_link: args.via_link,
+    session_id: args.session_id,
+    started_at: args.started_at,
   })) as Record<string, unknown>
   const r = convexRegistrationDocToCampRegistration(doc)
   if (!r) throw new Error('Could not save the call outcome')

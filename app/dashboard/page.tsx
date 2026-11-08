@@ -86,7 +86,7 @@ const QUICK_ACTIONS: Array<QuickAction & { permission: Permission }> = [
   { permission: 'members.manage', href: '/members/add', label: 'Add member', hint: 'New directory record', icon: UserPlus },
   { permission: 'attendance.record', href: '/attendance/manual', label: 'Take attendance', hint: 'Mark who is here', icon: ClipboardCheck },
   { permission: 'camp.manage', href: '/admin/camp-meeting/scan', label: 'Camp check-in', hint: 'Scan or search', icon: QrCode },
-  { permission: 'camp.calls', href: '/admin/camp-meeting/calls', label: 'Confirmation calls', hint: 'Who is still coming', icon: PhoneCall },
+  { permission: 'camp.calls', href: '/admin/camp-meeting/calls', label: 'Call center', hint: 'Confirmation calls', icon: PhoneCall },
   { permission: 'sms.send', href: '/admin/communications', label: 'Send message', hint: 'SMS or email', icon: Send },
   { permission: 'rlc.manage', href: '/admin/rlc/visitors/add', label: 'Welcome visitor', hint: 'Log a first-timer', icon: HeartHandshake },
   { permission: 'celebrations.view', href: '/celebrations', label: 'Celebrations', hint: 'Birthdays this week', icon: Cake },
