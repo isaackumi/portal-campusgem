@@ -71,6 +71,8 @@ export default defineSchema({
     /** Set when this record is a duplicate of another person; login follows the link. */
     merged_into: v.optional(v.id('users')),
     join_year: v.number(),
+    /** XS … 4XL, asked on camp confirmation calls (lib/camp/tshirt.ts). */
+    tshirt_size: v.optional(v.string()),
     occupation: v.optional(v.string()),
     place_of_work: v.optional(v.string()),
     marital_status: v.optional(
@@ -424,6 +426,8 @@ export default defineSchema({
     check_in_code: v.optional(v.string()),
     /** Assigned lodging room for this camp year. */
     room_id: v.optional(v.string()),
+    /** XS … 4XL, asked on the confirmation call; also copied to the person's profile. */
+    tshirt_size: v.optional(v.string()),
     /** Outcome of the "are you still coming?" confirmation call. */
     attendance_confirmation: v.optional(
       v.union(

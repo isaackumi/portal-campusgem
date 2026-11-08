@@ -30,6 +30,7 @@ export type CallTarget = Pick<
   | 'whatsapp'
   | 'residence'
   | 'sex'
+  | 'tshirt_size'
   | 'is_new_registrant'
   | 'times_attended'
   | 'attendance_confirmation'
@@ -69,6 +70,7 @@ function toTarget(r: CampRegistration): CallTarget {
     whatsapp: r.whatsapp,
     residence: r.residence,
     sex: r.sex,
+    tshirt_size: r.tshirt_size,
     is_new_registrant: r.is_new_registrant,
     times_attended: r.times_attended,
     attendance_confirmation: r.attendance_confirmation,
@@ -834,5 +836,28 @@ export async function loadCallHistoryAction(yearId?: string | null): Promise<{ d
     }
   } catch (error: unknown) {
     return { data: null, error: errorOf(error, 'Could not load the call history') }
+  }
+}
+
+/** T-shirt size the person gave on the call: saved on their registration and their profile. */
+export async function setCallTshirtSizeAction(input: { yearId?: string | null; registrationId: string; size: string | null }): Promise<{ error: string | null }> {
+  try {
+    const user = (await guard('camp.calls')) as AppUser | null
+    if (!user) throw new Error('Sign in to save this.')
+    const { isTshirtSize } = await import('@/lib/camp/tshirt')
+    if (input.size !== null && !isTshirtSize(input.size)) throw new Error('Choose a size from XS to 4XL.')
+    const { bridge, registrations } = await campContext(input.yearId)
+    const reg = registrations.find((r) => r.id === input.registrationId)
+    if (!reg) throw new Error('This registration no longer exists.')
+    await bridge.setRegistrationTshirtSizeInConvex(reg.id, input.size)
+    await logActivity({
+      category: 'calls',
+      action: 'calls.tshirt',
+      summary: input.size ? `Saved T-shirt size ${input.size} for ${reg.full_name}` : `Cleared ${reg.full_name}'s T-shirt size`,
+      target: { type: 'camp_registration', id: reg.id, label: reg.full_name },
+    })
+    return { error: null }
+  } catch (error: unknown) {
+    return { error: errorOf(error, 'Could not save the size') }
   }
 }

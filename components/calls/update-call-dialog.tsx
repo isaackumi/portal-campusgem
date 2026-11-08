@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { OutcomeBadge } from '@/components/camp/call-outcome'
 import { CallFeedbackPanel } from '@/components/calls/call-feedback'
 import { WhatsAppButton } from '@/components/calls/whatsapp-button'
+import { TshirtSizePicker } from '@/components/calls/tshirt-size-picker'
 import { telHref } from '@/lib/contact-links'
 import type { CallOutcome } from '@/lib/camp/call-campaign'
 import { findCallTargetsAction, type CallTarget } from '@/lib/actions/call-center'
@@ -56,6 +57,7 @@ export function UpdateCallDialog({
               )}
               <WhatsAppButton person={target} className="h-12" />
             </div>
+            <TshirtSizePicker registrationId={target.id} initial={target.tshirt_size} />
             <p className="app-overline mt-1">What did they say?</p>
             <CallFeedbackPanel saving={saving} onRecord={(o, n) => onRecord(target, o, n)} onNewNumber={(ph) => onNewNumber(target, ph)} />
           </>

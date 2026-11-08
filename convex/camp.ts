@@ -2066,3 +2066,34 @@ export const setCampRoomLeaderWithSecret = mutation({
     return await ctx.db.get('camp_rooms', room_id)
   },
 })
+
+/**
+ * T-shirt size asked on a confirmation call: saved on the registration and, when the registration is
+ * linked to a person, on their profile too (following merged duplicates). `null` clears it.
+ */
+export const setRegistrationTshirtSizeWithSecret = mutation({
+  args: {
+    secret: v.string(),
+    registration_id: v.id('camp_registrations'),
+    size: v.union(v.string(), v.null()),
+  },
+  returns: v.object({ profile: v.boolean() }),
+  handler: async (ctx, args) => {
+    assertServerSecret(args.secret)
+    const reg = await ctx.db.get(args.registration_id)
+    if (!reg) throw new Error('Registration not found')
+    const size = args.size?.trim().toUpperCase() || undefined
+    if (size && !/^(XS|S|M|L|XL|XXL|3XL|4XL)$/.test(size)) throw new Error('Choose a size from XS to 4XL.')
+    const now = Date.now()
+    await ctx.db.patch(reg._id, { tshirt_size: size, updated_at: now })
+    let profile = false
+    const uid = reg.user_id ? ctx.db.normalizeId('users', reg.user_id) : null
+    let user = uid ? await ctx.db.get(uid) : null
+    for (let i = 0; user?.merged_into && i < 5; i++) user = await ctx.db.get(user.merged_into)
+    if (user) {
+      await ctx.db.patch(user._id, { tshirt_size: size, updated_at: now })
+      profile = true
+    }
+    return { profile }
+  },
+})

@@ -38,6 +38,7 @@ import { WhatsAppButton } from '@/components/calls/whatsapp-button'
 import { useAfterCallPrompt } from '@/components/calls/use-after-call-prompt'
 import { InviteTeamDialog } from '@/components/calls/invite-team-dialog'
 import { FindPersonDialog, UpdateCallDialog } from '@/components/calls/update-call-dialog'
+import { TshirtSizePicker } from '@/components/calls/tshirt-size-picker'
 
 const SKIP_KEY = 'call-session-skipped'
 
@@ -407,6 +408,7 @@ function Session() {
                 )}
                 <WhatsAppButton person={current} className="h-14 text-base" />
               </div>
+              <TshirtSizePicker registrationId={current.id} initial={current.tshirt_size} className="mt-4 border-t border-neutral-200 pt-4 dark:border-neutral-700" />
               <div className="mt-4 border-t border-neutral-200 pt-4 dark:border-neutral-700">
                 <CallFeedbackPanel saving={busy === 'save'} onRecord={(o, n) => record(current, o, n)} onNewNumber={(ph) => newNumber(current, ph)} />
               </div>

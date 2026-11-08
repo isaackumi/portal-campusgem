@@ -657,6 +657,7 @@ export default function MemberProfilePage() {
                 <Field label="Gender" capitalize>{member.gender}</Field>
                 <Field label="Date of birth">{member.dob ? formatDate(member.dob) : null}</Field>
                 <Field label="Marital status" capitalize>{member.user?.marital_status}</Field>
+                <Field label="T-shirt size">{member.user?.tshirt_size}</Field>
               </dl>
             </Section>
 

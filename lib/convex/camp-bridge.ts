@@ -166,6 +166,7 @@ export function convexRegistrationDocToCampRegistration(
     phone: String(doc.phone ?? ''),
     facebook_username: doc.facebook_username != null ? String(doc.facebook_username) : undefined,
     sex: doc.sex as CampRegistration['sex'],
+    tshirt_size: doc.tshirt_size != null ? String(doc.tshirt_size) : undefined,
     date_of_birth: doc.date_of_birth != null ? String(doc.date_of_birth) : undefined,
     birth_month: doc.birth_month != null ? Number(doc.birth_month) : undefined,
     birth_day: doc.birth_day != null ? Number(doc.birth_day) : undefined,
@@ -1027,4 +1028,14 @@ export async function setCampRoomLeaderInConvex(args: {
   const room = convexCampRoomDocToCampRoom(doc)
   if (!room) throw new Error('Failed to set room leader')
   return room
+}
+
+/** T-shirt size on a registration (and the linked profile). Returns whether a profile was updated. */
+export async function setRegistrationTshirtSizeInConvex(registrationId: string, size: string | null): Promise<{ profile: boolean }> {
+  const client = getConvexHttpClient()
+  return (await client.mutation(api.camp.setRegistrationTshirtSizeWithSecret, {
+    secret: requireCampAdminSecret(),
+    registration_id: registrationId as Id<'camp_registrations'>,
+    size,
+  })) as { profile: boolean }
 }

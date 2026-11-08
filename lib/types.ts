@@ -69,6 +69,8 @@ export interface AppUser {
   /** This record is a duplicate; sign-in resolves to the linked user. */
   merged_into?: string
   join_year: number
+  /** XS … 4XL (lib/camp/tshirt.ts). */
+  tshirt_size?: string
   occupation?: string
   place_of_work?: string
   marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
@@ -948,6 +950,8 @@ export interface CampRegistration {
   phone: string
   facebook_username?: string
   sex?: 'Male' | 'Female'
+  /** XS … 4XL, asked on the confirmation call. */
+  tshirt_size?: string
   date_of_birth?: string
   birth_month?: number
   birth_day?: number

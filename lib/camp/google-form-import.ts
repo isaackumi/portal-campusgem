@@ -134,6 +134,7 @@ export const GOOGLE_FORM_EXPORT_COLUMNS: GoogleFormExportColumn[] = [
     header: "Parent's Contact Number",
     getValue: (registration) => registration.parent_contact ?? '',
   },
+  { header: 'T-shirt Size', getValue: (registration) => registration.tshirt_size ?? '' },
 ]
 
 function escapeCsvCell(value: string | number | boolean | null | undefined): string {

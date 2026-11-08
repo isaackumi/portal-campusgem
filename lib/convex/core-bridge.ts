@@ -96,6 +96,7 @@ export function convexUserDocToAppUser(
     permissions: Array.isArray(doc.permissions) ? (doc.permissions as string[]) : undefined,
     merged_into: doc.merged_into != null ? String(doc.merged_into) : undefined,
     join_year: Number(doc.join_year ?? new Date().getFullYear()),
+    tshirt_size: doc.tshirt_size != null ? String(doc.tshirt_size) : undefined,
     occupation: doc.occupation != null ? String(doc.occupation) : undefined,
     place_of_work: doc.place_of_work != null ? String(doc.place_of_work) : undefined,
     marital_status: doc.marital_status as AppUser['marital_status'],
