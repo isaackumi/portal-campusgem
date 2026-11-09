@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { checkInError } from '@/convex/lib/states/campRegistration'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CameraQrScanner } from '@/components/camera-qr-scanner'
@@ -85,10 +86,19 @@ export default function CampScannerPage() {
     data?: CampRegistration
   } | null>(null)
   const [registrations, setRegistrations] = useState<CampRegistration[]>([])
-  const [sessionAttendances, setSessionAttendances] = useState<CampSessionAttendance[]>([])
+  /**
+   * Who is already in a session, tagged with the session it was loaded for. Only the list for the
+   * selected session counts, so a slow or offline load can never pass one session's list off as
+   * another's ("Already checked in" for someone who isn't).
+   */
+  const [attendanceState, setAttendanceState] = useState<{ activityId: string; rows: CampSessionAttendance[] }>({ activityId: '', rows: [] })
   const [loading, setLoading] = useState(true)
   const [scanPaused, setScanPaused] = useState(false)
   const lastScannedRef = useRef<string | null>(null)
+  /** True while a scan is being saved: later reads wait their turn (no two check-ins at once). */
+  const scanBusyRef = useRef(false)
+  /** The current scan's "clear the result" timers, cancelled when the next scan starts. */
+  const scanTimersRef = useRef<number[]>([])
   /** Set when the desk data came from this phone's cache (loaded offline). */
   const [cachedAt, setCachedAt] = useState<number | null>(null)
   const refreshRef = useRef<() => void>(() => {})
@@ -139,6 +149,13 @@ export default function CampScannerPage() {
   )
 
   // Saved-on-this-phone check-ins count as present so nobody is queued twice.
+  const sessionAttendances = useMemo(
+    () => (attendanceState.activityId === selectedActivityId ? attendanceState.rows : []),
+    [attendanceState, selectedActivityId]
+  )
+  const selectedActivityRef = useRef(selectedActivityId)
+  selectedActivityRef.current = selectedActivityId
+
   const sessionCheckedInIds = useMemo(
     () => new Set([...sessionAttendances.map((row) => row.registration_id), ...Array.from(queuedIds)]),
     [sessionAttendances, queuedIds]
@@ -174,8 +191,9 @@ export default function CampScannerPage() {
 
   const loadSessionAttendances = useCallback(async (activityId: string) => {
     const { data, error } = await campService.getSessionAttendancesForActivity(activityId)
-    // Offline: keep what is on screen rather than wiping the list.
-    if (!error) setSessionAttendances(data ?? [])
+    // Offline: keep what is on screen for this session rather than wiping it. A reply for a
+    // session that is no longer selected is dropped.
+    if (!error && selectedActivityRef.current === activityId) setAttendanceState({ activityId, rows: data ?? [] })
   }, [])
 
   const loadRegistrations = useCallback(async (yearId: string) => {
@@ -333,11 +351,15 @@ export default function CampScannerPage() {
 
   useEffect(() => {
     if (!selectedActivityId) {
-      setSessionAttendances((prev) => (prev.length === 0 ? prev : []))
+      setAttendanceState((prev) => (prev.activityId === '' ? prev : { activityId: '', rows: [] }))
       return
     }
     void loadSessionAttendances(selectedActivityId)
   }, [selectedActivityId, loadSessionAttendances])
+
+  useEffect(() => () => {
+    for (const t of scanTimersRef.current) window.clearTimeout(t)
+  }, [])
 
   function playBeep(type: 'success' | 'error' | 'warning' = 'success') {
     try {
@@ -358,8 +380,14 @@ export default function CampScannerPage() {
   }
 
   async function onScanSuccess(decodedText: string) {
-    if (lastScannedRef.current === decodedText) return
+    // One scan at a time: ignore anything read while a check-in is still being saved, and the
+    // same code read again within a few seconds.
+    if (scanBusyRef.current || lastScannedRef.current === decodedText) return
+    scanBusyRef.current = true
     lastScannedRef.current = decodedText
+    const activityAtScan = selectedActivityId
+    for (const t of scanTimersRef.current) window.clearTimeout(t)
+    scanTimersRef.current = []
 
     setScanPaused(true)
 
@@ -381,6 +409,9 @@ export default function CampScannerPage() {
             success: false,
             message: 'Invalid QR code. Participant not found for this camp year.',
           })
+          playBeep('error')
+        } else if (checkInError(registration.status)) {
+          setScanResult({ success: false, message: checkInError(registration.status)!, data: registration })
           playBeep('error')
         } else if (sessionCheckedInIds.has(registration.id)) {
           setScanResult({
@@ -410,10 +441,11 @@ export default function CampScannerPage() {
             const updatedRegistration = (outcome.registration ?? registration) as CampRegistration
             const attendance = outcome.attendance
             if (attendance) {
-              setSessionAttendances((prev) => [
-                attendance,
-                ...prev.filter((row) => row.registration_id !== registration.id),
-              ])
+              setAttendanceState((prev) =>
+                prev.activityId === activityAtScan
+                  ? { activityId: activityAtScan, rows: [attendance, ...prev.rows.filter((row) => row.registration_id !== registration.id)] }
+                  : prev
+              )
             }
             setScanResult({
               success: true,
@@ -434,14 +466,16 @@ export default function CampScannerPage() {
       }
     }
 
-    setTimeout(() => {
-      lastScannedRef.current = null
-    }, 3000)
-
-    setTimeout(() => {
-      setScanResult(null)
-      setScanPaused(false)
-    }, 2500)
+    scanBusyRef.current = false
+    scanTimersRef.current = [
+      window.setTimeout(() => {
+        lastScannedRef.current = null
+      }, 3000),
+      window.setTimeout(() => {
+        setScanResult(null)
+        setScanPaused(false)
+      }, 2500),
+    ]
   }
 
   const recentCheckIns = useMemo((): RecentCheckIn[] => {

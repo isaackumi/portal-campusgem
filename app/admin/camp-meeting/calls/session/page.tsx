@@ -6,6 +6,7 @@
  * up. The board shows who is in the room and how the session is going, refreshed every few seconds.
  */
 import { Suspense, useCallback, useState } from 'react'
+import { useSingleFlight } from '@/lib/hooks/use-single-flight'
 import Link from 'next/link'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, History, MapPin, Pencil, Phone, PhoneCall, PhoneIncoming, Radio, SkipForward, Square, UserPlus, Users } from 'lucide-react'
@@ -61,7 +62,10 @@ function Session() {
   const { can } = useAuth()
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const [busy, setBusy] = useState<null | 'next' | 'save' | 'skip' | 'start' | 'end'>(null)
+  // What is running now; one action at a time, never stuck (lib/hooks/use-single-flight.ts).
+  const { busy, run } = useSingleFlight<'next' | 'save' | 'skip' | 'start' | 'end'>((error) =>
+    toast({ variant: 'destructive', title: 'Something went wrong', description: error instanceof Error ? error.message : 'Check your connection and try again.' })
+  )
   const [done, setDone] = useState(false)
   const [segment, setSegment] = useState<CallSegment>('all')
   const [sameGender, setSameGender] = useState(true)
@@ -86,27 +90,28 @@ function Session() {
   const current = data?.current ?? null
 
   const setCurrent = useCallback(
-    (target: CallTarget | null) => queryClient.setQueryData<SessionState>(['call-session'], (prev) => (prev ? { ...prev, current: target } : prev)),
+    async (target: CallTarget | null) => {
+      // Drop any refresh already on its way: an older snapshot must not replace who you're calling.
+      await queryClient.cancelQueries({ queryKey: ['call-session'] })
+      queryClient.setQueryData<SessionState>(['call-session'], (prev) => (prev ? { ...prev, current: target } : prev))
+    },
     [queryClient]
   )
 
   const next = useCallback(async () => {
-    setBusy('next')
-    setDone(false)
-    const res = await nextCallAction({ skip: readSkipped() })
-    setBusy(null)
+    const res = await run('next', () => nextCallAction({ skip: readSkipped() }))
+    if (!res) return
     if (res.error) {
       toast({ variant: 'destructive', title: 'No one loaded', description: res.error })
       return
     }
-    setCurrent(res.data)
-    if (res.done) setDone(true)
-  }, [setCurrent, toast])
+    await setCurrent(res.data)
+    setDone(Boolean(res.done))
+  }, [run, setCurrent, toast])
 
   async function record(target: CallTarget, outcome: Exclude<CallOutcome, 'unconfirmed'>, note: string) {
-    setBusy('save')
-    const res = await recordSessionCallAction({ registrationId: target.id, outcome, note })
-    setBusy(null)
+    const res = await run('save', () => recordSessionCallAction({ registrationId: target.id, outcome, note }))
+    if (!res) return
     if (res.error) {
       toast({ variant: 'destructive', title: 'Not saved', description: res.error })
       void state.refetch()
@@ -114,9 +119,9 @@ function Session() {
     }
     after.dismiss()
     toast({ title: `${target.full_name.split(' ')[0]}: ${callOutcomeMeta(outcome).label.toLowerCase()}`, description: note || undefined })
-    setCurrent(null)
-    void next()
+    await setCurrent(null)
     void queryClient.invalidateQueries({ queryKey: ['call-board'] })
+    await next()
   }
 
   /** Going back to someone (they called back): saves without moving you on to the next person. */
@@ -125,9 +130,8 @@ function Session() {
       setUpdating(null)
       return record(target, outcome, note)
     }
-    setBusy('save')
-    const res = await recordSessionCallAction({ registrationId: target.id, outcome, note })
-    setBusy(null)
+    const res = await run('save', () => recordSessionCallAction({ registrationId: target.id, outcome, note }))
+    if (!res) return
     if (res.error) {
       toast({ variant: 'destructive', title: 'Not saved', description: res.error })
       return
@@ -139,30 +143,32 @@ function Session() {
   }
 
   async function skip(target: CallTarget) {
-    setBusy('skip')
     try {
       sessionStorage.setItem(SKIP_KEY, JSON.stringify([...readSkipped().filter((id) => id !== target.id), target.id].slice(-200)))
     } catch {
       // Storage blocked: they may come round again sooner.
     }
-    await skipCallAction({ registrationId: target.id })
-    setBusy(null)
-    setCurrent(null)
-    void next()
+    const res = await run('skip', () => skipCallAction({ registrationId: target.id }))
+    if (!res) return
+    if (res.error) {
+      toast({ variant: 'destructive', title: 'Could not skip', description: res.error })
+      return
+    }
+    await setCurrent(null)
+    await next()
   }
 
   async function newNumber(target: CallTarget, phone: string): Promise<string | null> {
     const res = await setRegistrantNumberAction({ registrationId: target.id, phone })
     if (res.error) return res.error
-    setCurrent({ ...target, phone: res.phone ?? target.phone })
+    await setCurrent({ ...target, phone: res.phone ?? target.phone })
     toast({ title: 'New number saved', description: `Every text to ${target.full_name.split(' ')[0]} goes to ${res.phone} from now on.` })
     return null
   }
 
   async function start() {
-    setBusy('start')
-    const res = await startCallSessionAction({ segment, sameGender })
-    setBusy(null)
+    const res = await run('start', () => startCallSessionAction({ segment, sameGender }))
+    if (!res) return
     if (res.error) {
       toast({ variant: 'destructive', title: 'Could not start', description: res.error })
       return
@@ -172,6 +178,7 @@ function Session() {
     } catch {
       // Nothing to clear.
     }
+    setDone(false)
     await state.refetch()
     // Started: the next thing is getting everyone in.
     setInviteOpen(true)
@@ -179,10 +186,11 @@ function Session() {
 
   async function end() {
     if (!data?.session) return
-    setBusy('end')
-    const res = await endCallSessionAction({ sessionId: data.session.id })
-    setBusy(null)
+    const sessionId = data.session.id
+    const res = await run('end', () => endCallSessionAction({ sessionId }))
+    if (!res) return
     setConfirmEnd(false)
+    setDone(false)
     if (res.error) toast({ variant: 'destructive', title: 'Could not end', description: res.error })
     else toast({ title: 'Session ended', description: 'Thank you, team!' })
     void state.refetch()

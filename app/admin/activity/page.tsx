@@ -1,26 +1,28 @@
 'use client'
 
 /**
- * Activity: who did what, when, and from where. Sign-ins (and failed ones), access changes, people,
- * groups, camp meeting, calls and texts, newest first, grouped by day, colour-coded by area.
+ * Activity: who did what, when, and from where. One quiet line per entry (time, who, what), grouped
+ * by day; tap an entry for the full record (exact time, area, what it touched, device, IP and any
+ * saved details). Filters stay folded away until needed; active ones show as removable chips.
  */
 import { useMemo, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { AlertTriangle, Clock, Monitor, RefreshCw } from 'lucide-react'
+import { RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react'
+import { ActivityEntry as Entry } from '@/components/admin/activity-entry'
 import { useAuth } from '@/components/providers'
 import { AccessDenied } from '@/components/auth/access-denied'
-import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { cn } from '@/lib/utils'
 import { ACTIVITY_CATEGORIES, categoryMeta } from '@/lib/activity/describe'
 import { listActivityAction, listActivityPeopleAction, type ActivityRange, type ActivityRow } from '@/lib/actions/activity'
 
-const RANGES: Array<{ id: ActivityRange; label: string }> = [
-  { id: 'today', label: 'Today' },
-  { id: '7d', label: '7 days' },
-  { id: '30d', label: '30 days' },
-  { id: 'all', label: 'All' },
+const RANGES: Array<{ id: ActivityRange; label: string; phrase: string }> = [
+  { id: 'today', label: 'Today', phrase: 'today' },
+  { id: '7d', label: 'Last 7 days', phrase: 'in the last 7 days' },
+  { id: '30d', label: 'Last 30 days', phrase: 'in the last 30 days' },
+  { id: 'all', label: 'All time', phrase: 'in total' },
 ]
 
 function dayLabel(at: number): string {
@@ -32,14 +34,16 @@ function dayLabel(at: number): string {
   return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric' })
 }
 
-const time = (at: number) => new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
 export default function ActivityPage() {
   const { can } = useAuth()
-  const [category, setCategory] = useState<string | null>(null)
+  const [category, setCategory] = useState<string>('')
   const [range, setRange] = useState<ActivityRange>('7d')
   const [actorId, setActorId] = useState<string>('')
   const [failedOnly, setFailedOnly] = useState(false)
+  const [query, setQuery] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   const people = useQuery({
     queryKey: ['activity-people'],
@@ -51,16 +55,24 @@ export default function ActivityPage() {
   const log = useInfiniteQuery({
     queryKey: ['activity', category, range, actorId, failedOnly],
     enabled: can('users.manage'),
-    initialPageParam: null as string | null,
+    initialPageParam: null as { cursor: string; since: number } | null,
     queryFn: async ({ pageParam }) => {
-      const res = await listActivityAction({ category, range, actorId: actorId || null, failedOnly, cursor: pageParam })
+      const res = await listActivityAction({ category: category || null, range, actorId: actorId || null, failedOnly, cursor: pageParam?.cursor ?? null, since: pageParam?.since ?? null })
       if (res.error || !res.data) throw new Error(res.error ?? 'Could not load the activity')
       return res.data
     },
-    getNextPageParam: (last) => last.cursor,
+    // Every later page reuses the first page's start time, so its cursor stays valid.
+    getNextPageParam: (last) => (last.cursor ? { cursor: last.cursor, since: last.since } : undefined),
   })
 
-  const rows = useMemo(() => (log.data?.pages ?? []).flatMap((p) => p.rows), [log.data])
+  const loaded = useMemo(() => (log.data?.pages ?? []).flatMap((p) => p.rows), [log.data])
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return loaded
+    return loaded.filter((r) =>
+      [r.summary, r.actor_name, r.target_label, r.device, r.ip, ...(r.details ?? []).map((d) => d.value)].some((v) => v?.toLowerCase().includes(q))
+    )
+  }, [loaded, query])
   const days = useMemo(() => {
     const groups: Array<{ label: string; rows: ActivityRow[] }> = []
     for (const row of rows) {
@@ -74,146 +86,149 @@ export default function ActivityPage() {
 
   if (!can('users.manage')) return <AccessDenied permission="users.manage" />
 
-  return (
-    <div className="mx-auto max-w-4xl pb-24">
-      <PageHeader
-        title="Activity"
-        description="Who signed in and what changed across the app, newest first."
-        actions={
-          <Button variant="outline" onClick={() => void log.refetch()} disabled={log.isFetching} aria-label="Refresh">
-            <RefreshCw className={cn('h-4 w-4 sm:mr-2', log.isFetching && 'animate-spin')} aria-hidden />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-        }
-      />
+  const personName = (people.data ?? []).find((p) => p.id === actorId)?.name
+  const active: Array<{ key: string; label: string; clear: () => void }> = [
+    ...(category ? [{ key: 'area', label: categoryMeta(category).label, clear: () => setCategory('') }] : []),
+    ...(actorId ? [{ key: 'who', label: personName ?? 'One person', clear: () => setActorId('') }] : []),
+    ...(failedOnly ? [{ key: 'failed', label: 'Problems only', clear: () => setFailedOnly(false) }] : []),
+  ]
+  const rangeInfo = RANGES.find((r) => r.id === range)!
+  const failedCount = loaded.filter((r) => r.outcome === 'failed').length
 
-      <section className="dashboard-panel grid gap-3 p-3 sm:p-4" aria-label="Filters">
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="radiogroup" aria-label="Area">
-          <Chip active={category === null} onClick={() => setCategory(null)} dot="bg-neutral-400">All</Chip>
-          {ACTIVITY_CATEGORIES.map((c) => (
-            <Chip key={c.id} active={category === c.id} onClick={() => setCategory(category === c.id ? null : c.id)} dot={c.dot}>
-              {c.label}
-            </Chip>
+  const select =
+    'h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-[15px] text-neutral-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 sm:h-10 sm:text-sm'
+
+  return (
+    <div className="mx-auto max-w-3xl pb-24">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="app-page-title">Activity</h1>
+          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            {log.isLoading
+              ? 'Who signed in and what changed.'
+              : `${loaded.length}${log.hasNextPage ? '+' : ''} ${loaded.length === 1 ? 'entry' : 'entries'} ${rangeInfo.phrase}`}
+            {!log.isLoading && failedCount ? <span className="text-red-700 dark:text-red-300"> · {failedCount} failed</span> : null}
+          </p>
+        </div>
+        <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" onClick={() => void log.refetch()} disabled={log.isFetching} aria-label="Refresh">
+          <RefreshCw className={cn('h-4 w-4', log.isFetching && 'animate-spin')} aria-hidden />
+        </Button>
+      </div>
+
+      {/* Search and filters: one line until opened. */}
+      <div className="mt-4 flex gap-2">
+        <label className="relative block min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" aria-hidden />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search names, actions, devices" aria-label="Search activity" className="h-11 pl-9 sm:h-10" />
+        </label>
+        <Button variant="outline" className="h-11 shrink-0 sm:h-10" onClick={() => setFiltersOpen((o) => !o)} aria-expanded={filtersOpen} aria-controls="activity-filters">
+          <SlidersHorizontal className="h-4 w-4 sm:mr-2" aria-hidden />
+          <span className="sr-only sm:not-sr-only">Filters</span>
+          {active.length ? <span className="ml-1.5 rounded-full bg-neutral-900 px-1.5 text-[11px] font-semibold leading-5 text-white dark:bg-white dark:text-neutral-900">{active.length}</span> : null}
+        </Button>
+      </div>
+
+      {filtersOpen ? (
+        <div id="activity-filters" className="mt-2 grid grid-cols-1 gap-3 rounded-xl border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-neutral-900 sm:grid-cols-2">
+          <label className="grid gap-1.5 text-[13px] font-medium text-neutral-700 dark:text-neutral-300">
+            When
+            <select value={range} onChange={(e) => setRange(e.target.value as ActivityRange)} className={select}>
+              {RANGES.map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-[13px] font-medium text-neutral-700 dark:text-neutral-300">
+            Area
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className={select}>
+              <option value="">Everything</option>
+              {ACTIVITY_CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-[13px] font-medium text-neutral-700 dark:text-neutral-300">
+            Who
+            <select value={actorId} onChange={(e) => setActorId(e.target.value)} className={select}>
+              <option value="">Everyone</option>
+              {(people.data ?? []).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 self-end rounded-lg border border-neutral-200 px-3 text-sm text-neutral-800 dark:border-neutral-700 dark:text-neutral-200 sm:min-h-10">
+            <input type="checkbox" checked={failedOnly} onChange={(e) => setFailedOnly(e.target.checked)} className="h-4 w-4 accent-brand-600" />
+            Only problems (failed sign-ins, errors)
+          </label>
+        </div>
+      ) : null}
+
+      {active.length ? (
+        <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Active filters">
+          {active.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={f.clear}
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-neutral-200 bg-white pl-3 pr-2 text-[13px] text-neutral-800 hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-200"
+              aria-label={`Remove filter: ${f.label}`}
+            >
+              {f.label}
+              <X className="h-3.5 w-3.5 text-neutral-500" aria-hidden />
+            </button>
           ))}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div role="radiogroup" aria-label="When" className="inline-flex w-full rounded-lg bg-neutral-200/60 p-0.5 dark:bg-neutral-800 sm:w-auto">
-            {RANGES.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                role="radio"
-                aria-checked={range === r.id}
-                onClick={() => setRange(r.id)}
-                className={cn('h-9 flex-1 rounded-md px-3 text-[13px] font-medium sm:flex-none', range === r.id ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-white' : 'text-neutral-600 dark:text-neutral-400')}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-          <select
-            aria-label="Who"
-            value={actorId}
-            onChange={(e) => setActorId(e.target.value)}
-            className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
-          >
-            <option value="">Everyone</option>
-            {(people.data ?? []).map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={failedOnly}
-            onClick={() => setFailedOnly((v) => !v)}
-            className={cn(
-              'inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-[13px] font-medium',
-              failedOnly ? 'border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200' : 'border-neutral-200 text-neutral-700 dark:border-neutral-600 dark:text-neutral-300'
-            )}
-          >
-            <AlertTriangle className="h-4 w-4" aria-hidden />
-            Failed only
-          </button>
-        </div>
-      </section>
+      ) : null}
 
       {log.isLoading ? (
         <div className="flex min-h-[30vh] items-center justify-center"><LoadingSpinner /></div>
       ) : log.error ? (
         <p className="mt-8 text-sm text-red-700 dark:text-red-300">{log.error instanceof Error ? log.error.message : 'Could not load the activity.'}</p>
       ) : rows.length === 0 ? (
-        <div className="mt-6 flex flex-col items-center rounded-xl border border-dashed border-neutral-300 px-6 py-14 text-center dark:border-neutral-700">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-white/[0.06] dark:text-neutral-400">
-            <Clock className="h-5 w-5" aria-hidden />
-          </span>
-          <p className="app-section-title mt-4">Nothing here</p>
-          <p className="app-page-description mt-1 max-w-sm">Nothing matches these filters in this time. Widen the time or clear a filter.</p>
+        <div className="mt-10 text-center">
+          <p className="app-section-title">Nothing here</p>
+          <p className="app-page-description mt-1">
+            {query ? 'No loaded entry matches that search.' : 'Nothing matches these filters in this time. Try a longer time or clear a filter.'}
+          </p>
         </div>
       ) : (
         <div className="mt-6 grid gap-6">
           {days.map((day) => (
             <section key={day.label} aria-label={day.label}>
-              <h2 className="app-overline mb-2 px-1">{day.label}</h2>
-              <ol className="dashboard-panel divide-y divide-neutral-100 overflow-hidden dark:divide-neutral-700/70">
-                {day.rows.map((row) => {
-                  const meta = categoryMeta(row.category)
-                  const failed = row.outcome === 'failed'
-                  return (
-                    <li key={row.id} className={cn('flex gap-3 px-4 py-3', failed && 'bg-red-50/60 dark:bg-red-950/20')}>
-                      <span className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold', failed ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300' : meta.tone)} aria-hidden>
-                        {failed ? <AlertTriangle className="h-4 w-4" /> : meta.label.slice(0, 2)}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-neutral-800 dark:text-neutral-200">
-                          {row.actor_name ? <span className="font-semibold text-neutral-900 dark:text-neutral-50">{row.actor_name} </span> : null}
-                          <span>{row.actor_name ? lowerFirst(row.summary) : row.summary}</span>
-                        </p>
-                        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-neutral-500 dark:text-neutral-400">
-                          <span className="tabular-nums">{time(row.at)}</span>
-                          <span className={cn('rounded-full px-1.5 py-px text-[11px] font-medium', meta.tone)}>{meta.label}</span>
-                          {row.device ? (
-                            <span className="inline-flex items-center gap-1"><Monitor className="h-3 w-3" aria-hidden />{row.device}</span>
-                          ) : null}
-                          {row.ip ? <span className="font-mono">{row.ip}</span> : null}
-                        </p>
-                      </div>
-                    </li>
-                  )
-                })}
+              <h2 className="mb-1 flex items-baseline justify-between px-1">
+                <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">{day.label}</span>
+                <span className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400">{day.rows.length}</span>
+              </h2>
+              <ol className="dashboard-panel divide-y divide-neutral-100 overflow-hidden max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 dark:divide-white/[0.06]">
+                {day.rows.map((row) => (
+                  <Entry
+                    key={row.id}
+                    row={row}
+                    open={openId === row.id}
+                    onToggle={() => setOpenId(openId === row.id ? null : row.id)}
+                    onOnlyThisPerson={
+                      row.actor_id
+                        ? () => {
+                            setActorId(row.actor_id!)
+                            setOpenId(null)
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
               </ol>
             </section>
           ))}
           {log.hasNextPage ? (
-            <Button variant="outline" className="mx-auto h-11" onClick={() => void log.fetchNextPage()} disabled={log.isFetchingNextPage}>
-              {log.isFetchingNextPage ? 'Loading…' : 'Load more'}
+            <Button variant="outline" className="mx-auto h-11 px-6" onClick={() => void log.fetchNextPage()} disabled={log.isFetchingNextPage}>
+              {log.isFetchingNextPage ? 'Loading…' : 'Show older entries'}
             </Button>
-          ) : null}
+          ) : (
+            <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">That’s everything {rangeInfo.phrase}.</p>
+          )}
         </div>
       )}
     </div>
-  )
-}
-
-function lowerFirst(text: string): string {
-  // "Signed in" reads as "Kofi signed in"; names stay capitalised.
-  return text && /^[A-Z][a-z]/.test(text) ? text[0]!.toLowerCase() + text.slice(1) : text
-}
-
-function Chip({ active, onClick, dot, children }: { active: boolean; onClick: () => void; dot: string; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      onClick={onClick}
-      className={cn(
-        'inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium transition-colors',
-        active ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900' : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
-      )}
-    >
-      <span className={cn('h-2 w-2 rounded-full', dot)} aria-hidden />
-      {children}
-    </button>
   )
 }

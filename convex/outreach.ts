@@ -1,4 +1,5 @@
 import { v } from 'convex/values'
+import { isOutreachOutcome, statusAfterOutcome } from './lib/states/outreachContact'
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
@@ -278,9 +279,16 @@ export const recordContactWithSecret = mutation({
       patch.last_contact_at = now
       if (args.outcome) patch.last_outcome = args.outcome
     }
-    if (args.status) patch.status = args.status
+    // The status follows from the outcome and the contact as it is now (never from a status the
+    // caller worked out on an older copy): convex/lib/states/outreachContact.ts.
+    const nextStatus =
+      args.kind !== 'note' && isOutreachOutcome(args.outcome) ? statusAfterOutcome(contact.status, args.outcome) : undefined
+    if (nextStatus) patch.status = nextStatus
     if (args.bible_study) patch.bible_study = args.bible_study
     await ctx.db.patch(contact._id, patch)
+    if (nextStatus) {
+      await addEvent(ctx, contact._id, { kind: 'status', outcome: nextStatus, by_user_id: args.by_user_id, by_name: args.by_name, at: now })
+    }
     await addEvent(ctx, contact._id, {
       kind: args.kind,
       outcome: args.outcome,

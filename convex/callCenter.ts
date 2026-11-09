@@ -7,6 +7,7 @@
  * first free person without two callers ever getting the same one.
  */
 import { v } from 'convex/values'
+import { isLiveSession, sessionChangeError } from './lib/states/callSession'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { assertServerSecret } from './lib/serverSecret'
@@ -171,6 +172,8 @@ export const setSessionSegmentWithSecret = mutation({
   returns: v.null(),
   handler: async (ctx, { secret, session_id, segment, same_gender }) => {
     assertServerSecret(secret)
+    const refused = sessionChangeError(await ctx.db.get(session_id))
+    if (refused) throw new Error(refused)
     await ctx.db.patch(session_id, { segment, ...(same_gender !== undefined ? { same_gender } : {}) })
     return null
   },
@@ -198,6 +201,8 @@ export const heartbeatWithSecret = mutation({
   returns: v.null(),
   handler: async (ctx, { secret, session_id, user_id, name }) => {
     assertServerSecret(secret)
+    // Presence only counts while the session is live (a late heartbeat after "End" is ignored).
+    if (!isLiveSession(await ctx.db.get(session_id))) return null
     const now = Date.now()
     const row = await ctx.db
       .query('call_session_people')
@@ -269,6 +274,8 @@ const templateShape = v.object({
   audience: v.union(v.literal('camp'), v.literal('members'), v.literal('any')),
   position: v.number(),
   archived: v.optional(v.boolean()),
+  channel: v.optional(v.string()),
+  owner_id: v.optional(v.string()),
 })
 
 /** Templates managers have saved (the app's defaults live in code). */
@@ -285,6 +292,8 @@ export const listTemplatesWithSecret = query({
       audience: r.audience,
       position: r.position,
       ...(r.archived !== undefined ? { archived: r.archived } : {}),
+      ...(r.channel ? { channel: r.channel } : {}),
+      ...(r.owner_id ? { owner_id: r.owner_id } : {}),
     }))
   },
 })

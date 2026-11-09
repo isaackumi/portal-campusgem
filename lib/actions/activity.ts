@@ -21,6 +21,19 @@ export type ActivityRow = {
   target_label?: string
   ip?: string
   device?: string
+  /** Extra facts saved with the entry (a call note, counts…), as readable text. */
+  details?: Array<{ key: string; value: string }>
+}
+
+/** Saved details as short label / text pairs for the page (nested values flattened to text). */
+function plainDetails(details: Record<string, unknown>): Array<{ key: string; value: string }> {
+  return Object.entries(details)
+    .filter(([, v]) => v !== undefined && v !== null && v !== '')
+    .slice(0, 12)
+    .map(([k, v]) => ({
+      key: k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
+      value: (typeof v === 'object' ? JSON.stringify(v) : String(v)).slice(0, 300),
+    }))
 }
 
 export type ActivityRange = 'today' | '7d' | '30d' | 'all'
@@ -39,20 +52,28 @@ export async function listActivityAction(input: {
   range?: ActivityRange
   failedOnly?: boolean
   cursor?: string | null
-}): Promise<{ data: { rows: ActivityRow[]; cursor: string | null } | null; error: string | null }> {
+  /**
+   * The start time the first page used. Later pages must send it back: a cursor only works for the
+   * exact same query, and "7 days ago" computed again a minute later is a different query.
+   */
+  since?: number | null
+}): Promise<{ data: { rows: ActivityRow[]; cursor: string | null; since: number } | null; error: string | null }> {
   try {
     await guard('users.manage')
     const secret = process.env.CAMP_CONVEX_SERVER_SECRET
     if (!secret) throw new Error('The activity log needs CAMP_CONVEX_SERVER_SECRET.')
     const { getConvexHttpClient } = await import('@/lib/convex/http-client')
     const { api } = await import('@/convex/_generated/api')
+    const continuing = Boolean(input.cursor) && typeof input.since === 'number' && Number.isFinite(input.since)
+    const since = continuing ? (input.since as number) : sinceOf(input.range ?? '7d')
     const page = await getConvexHttpClient().query(api.activity.listWithSecret, {
       secret,
       ...(input.actorId ? { actor_id: input.actorId } : {}),
       ...(input.category && isActivityCategory(input.category) ? { category: input.category } : {}),
-      since: sinceOf(input.range ?? '7d'),
+      since,
       ...(input.failedOnly ? { failed_only: true } : {}),
-      cursor: input.cursor ?? null,
+      // A cursor without its start time can't be trusted to match: start from the top instead.
+      cursor: continuing ? input.cursor! : null,
       limit: 60,
     })
     const rows = (page.rows as Array<Record<string, unknown>>).map((r) => ({
@@ -69,8 +90,9 @@ export async function listActivityAction(input: {
       ...(r.target_label ? { target_label: String(r.target_label) } : {}),
       ...(r.ip ? { ip: String(r.ip) } : {}),
       ...(r.device ? { device: String(r.device) } : {}),
+      ...(r.details && typeof r.details === 'object' ? { details: plainDetails(r.details as Record<string, unknown>) } : {}),
     }))
-    return { data: { rows, cursor: page.cursor }, error: null }
+    return { data: { rows, cursor: page.cursor, since }, error: null }
   } catch (error: unknown) {
     return { data: null, error: error instanceof Error ? error.message : 'Could not load the activity' }
   }

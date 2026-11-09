@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { followUpStatusOf } from '@/convex/lib/states/campRegistration'
 import type { CampRegistration } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,12 +27,12 @@ export function CampMyFollowUpsCard({
       registrations.filter(
         (registration) =>
           registration.assigned_to === userId &&
-          registration.follow_up_status !== 'completed'
+          followUpStatusOf(registration) !== 'completed'
       ),
     [registrations, userId]
   )
 
-  const pending = assigned.filter((registration) => registration.follow_up_status === 'pending')
+  const pending = assigned.filter((registration) => followUpStatusOf(registration) === 'pending')
   const inProgress = assigned.filter((registration) => registration.follow_up_status === 'in_progress')
   const open = [...pending, ...inProgress]
 

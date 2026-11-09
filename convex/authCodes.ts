@@ -8,7 +8,12 @@ const MAX_ATTEMPTS = 5
 
 /**
  * Store a new sign-in code (already hashed by the server) unless the person is
- * asking too often. Older unused codes stop working.
+ * asking too often.
+ *
+ * Lifecycle: issued ──right code──▶ used · ──5 wrong──▶ locked · ──time──▶ expired.
+ * Only the newest code is ever checked (verify reads the latest), so a newer code replaces older
+ * ones without touching them. That matters when the text fails to send: the new code is discarded
+ * and the previous one, still unexpired, keeps working instead of leaving the person with none.
  */
 export const issueAuthCodeWithSecret = mutation({
   args: {
@@ -36,9 +41,6 @@ export const issueAuthCodeWithSecret = mutation({
     if (recent.length >= MAX_PER_HOUR) {
       const oldest = recent.reduce((min, c) => Math.min(min, c.created_at), now)
       return { ok: false as const, reason: 'too_many' as const, retry_after_ms: oldest + 60 * 60 * 1000 - now }
-    }
-    for (const c of recent) {
-      if (!c.used_at) await ctx.db.patch(c._id, { used_at: now })
     }
     const id = await ctx.db.insert('auth_codes', {
       user_id,

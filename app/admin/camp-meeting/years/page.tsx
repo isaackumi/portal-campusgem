@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { isPaid } from '@/convex/lib/states/campRegistration'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/components/providers'
@@ -158,7 +159,7 @@ export default function CampYearsPage() {
                     cancelled: registrations.filter(r => r.status === 'cancelled').length,
                     newRegistrants: registrations.filter(r => r.is_new_registrant).length,
                     returning: registrations.filter(r => !r.is_new_registrant).length,
-                    paid: registrations.filter(r => r.payment_status === 'paid' || r.payment_status === 'confirmed').length,
+                    paid: registrations.filter(r => isPaid(r.payment_status)).length,
                     pending: registrations.filter(r => r.payment_status === 'pending').length,
                 }
 

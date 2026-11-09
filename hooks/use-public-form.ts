@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { submitFormResponse } from '@/lib/actions/forms'
 import { lookupFormProfileByPhone } from '@/lib/actions/form-profile-lookup'
@@ -149,8 +149,16 @@ export function usePublicForm({
     }
 
     setLookupLoading(true)
-    const result = await lookupFormProfileByPhone(form.slug, phone, values)
-    setLookupLoading(false)
+    const sent = values
+    let result: Awaited<ReturnType<typeof lookupFormProfileByPhone>>
+    try {
+      result = await lookupFormProfileByPhone(form.slug, phone, values)
+    } catch {
+      toast({ variant: 'destructive', title: 'Lookup failed', description: 'Check your connection and try again.' })
+      return
+    } finally {
+      setLookupLoading(false)
+    }
 
     if (result.error) {
       toast({ variant: 'destructive', title: 'Lookup failed', description: result.error })
@@ -175,7 +183,13 @@ export function usePublicForm({
       return
     }
 
-    setValues(result.values)
+    // Keep anything typed while the lookup was running; fill the rest from their record.
+    const found = result.values
+    setValues((prev) => {
+      const merged = { ...found }
+      for (const key of Object.keys(prev)) if (prev[key] !== sent[key]) merged[key] = prev[key]
+      return merged
+    })
     if (!phoneField) setLookupPhone(phone)
     setProfileName(result.display_name ?? null)
     toast({
@@ -230,6 +244,8 @@ export function usePublicForm({
     const phone = getRespondentPhone()
     if (!previewMode && isValidPhone(phone)) {
       void lookupFormProfileByPhone(form.slug, phone, values).then((result) => {
+        // The number changed while checking: this answer is about someone else.
+        if (getRespondentPhone() !== phone) return
         setAlreadySubmitted(result.already_submitted)
         setSubmittedAt(result.submitted_at ?? null)
         if (result.already_submitted) {
@@ -241,6 +257,9 @@ export function usePublicForm({
           return
         }
         setClassicStep('review')
+      }).catch(() => {
+        // Couldn't check: let them review; the submit checks again.
+        setClassicStep('review')
       })
       return true
     }
@@ -249,7 +268,7 @@ export function usePublicForm({
     return true
   }, [blockedSubmitMessage, form.slug, getRespondentPhone, previewMode, toast, validateRequired, values])
 
-  const handleSubmit = useCallback(async () => {
+  const submitUnguarded = useCallback(async () => {
     if (alreadySubmitted) {
       toast({
         variant: 'destructive',
@@ -292,7 +311,6 @@ export function usePublicForm({
       }
     }
 
-    setSubmitting(true)
     const emailField = fields.find((f) => f.field_type === 'email')
     const nameField = fields.find(
       (f) => f.prefill_key === 'full_name' || f.label.toLowerCase().includes('name')
@@ -307,7 +325,6 @@ export function usePublicForm({
     })
 
     if (validationError) {
-      setSubmitting(false)
       toast({ variant: 'destructive', title: 'Missing information', description: validationError })
       return false
     }
@@ -324,7 +341,6 @@ export function usePublicForm({
       respondent_longitude: respondentLocation?.longitude,
       respondent_location_label: respondentLocation?.label,
     })
-    setSubmitting(false)
 
     if (error) {
       toast({ variant: 'destructive', title: 'Submission failed', description: error })
@@ -367,7 +383,34 @@ export function usePublicForm({
     whatsappSameAsPhone,
   ])
 
+  /**
+   * Submit, one at a time: later taps are ignored from the very first one (the button only
+   * disables a render later), and `submitting` always clears, even if the network drops.
+   */
+  const submitInFlight = useRef(false)
+  const handleSubmit = useCallback(async () => {
+    if (submitInFlight.current) return false
+    submitInFlight.current = true
+    setSubmitting(true)
+    try {
+      return await submitUnguarded()
+    } catch {
+      toast({ variant: 'destructive', title: 'Submission failed', description: 'Check your connection and try again.' })
+      return false
+    } finally {
+      submitInFlight.current = false
+      setSubmitting(false)
+    }
+  }, [submitUnguarded, toast])
+
   const phoneInputValue = phoneField ? String(values[phoneField.id] ?? '') : lookupPhone
+  const lastPhone = useRef(phoneInputValue)
+  useEffect(() => {
+    if (lastPhone.current === phoneInputValue) return
+    lastPhone.current = phoneInputValue
+    setAlreadySubmitted(false)
+    setSubmittedAt(null)
+  }, [phoneInputValue])
   const phoneLookupLabel = phoneField?.label ?? 'Phone number'
   const phoneLookupDescription =
     profileFieldDescription(phoneField?.description, profileLookupEnabled)

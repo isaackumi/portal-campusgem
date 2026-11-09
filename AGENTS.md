@@ -92,6 +92,26 @@ camp meeting, RLC (mother church), forms, SMS.
   (`gainedPermissions`, `lib/auth/access-welcome.ts`). `sendSignInDetailsSms` resends it. Links use
   `siteOrigin()` (`lib/site-url.ts`); set `NEXT_PUBLIC_SITE_URL` in production.
 
+## State machines
+
+Status fields are explicit state machines. The rules live in `convex/lib/states/*.ts` (pure, imported
+by Convex mutations, which enforce them, and by the app as `@/convex/lib/states/...`; tests in
+`lib/states/`). Change a status only through these rules; add a new machine there, not inline.
+
+- **Camp registration** (`campRegistration.ts`): registered ⇄ checked_in, either → cancelled,
+  cancelled → registered (reinstate). Cancelled is never checked in directly. Call answers only while
+  `registered`. Enforced in `patchCampRegistrationWithSecret`, session check-in and
+  `recordCallOutcomeWithSecret`. Read paid with `isPaid`, follow-up with `followUpStatusOf`.
+- **Calling session** (`callSession.ts`): live → ended (final); an ended session takes no presence or
+  settings.
+- **Outreach contact** (`outreachContact.ts`): the server derives status from a call outcome and
+  the contact as stored now; `joined` is sticky against outcomes.
+- **Sign-in codes** (`convex/authCodes.ts` header): only the newest code is checked; a failed send
+  leaves the previous code working.
+- **Client async flows**: one action at a time with `useSingleFlight` (`lib/hooks/use-single-flight.ts`):
+  no double submits, busy always clears. Drop async results that arrive for something no longer on
+  screen (session switched, query changed) instead of applying them.
+
 ## Convex
 
 - Server code talks to Convex through `lib/convex/*-bridge.ts` using `*WithSecret`

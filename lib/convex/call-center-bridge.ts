@@ -95,11 +95,20 @@ export async function listSavedTemplates(): Promise<CallTemplate[]> {
   return (await client().query(api.callCenter.listTemplatesWithSecret, { secret: secret() })) as CallTemplate[]
 }
 
-export async function saveTemplate(template: Omit<CallTemplate, 'isDefault'>, updated_by: string): Promise<void> {
-  const { key, name, body, audience, position, archived } = template
+export async function saveTemplate(template: Omit<CallTemplate, 'isDefault' | 'mine'>, updated_by: string): Promise<void> {
+  const { key, name, body, audience, position, archived, channel, owner_id } = template
   await client().mutation(api.callCenter.saveTemplateWithSecret, {
     secret: secret(),
-    template: { key, name, body, audience, position, ...(archived !== undefined ? { archived } : {}) },
+    template: {
+      key,
+      name,
+      body,
+      audience,
+      position,
+      ...(archived !== undefined ? { archived } : {}),
+      ...(channel && channel !== 'any' ? { channel } : {}),
+      ...(owner_id ? { owner_id } : {}),
+    },
     updated_by,
   })
 }

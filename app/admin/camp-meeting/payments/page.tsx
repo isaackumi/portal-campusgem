@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { isPaid } from '@/convex/lib/states/campRegistration'
 import { useRouter } from 'next/navigation'
 import { campService } from '@/lib/services/camp-service'
 import { getActiveCampYear } from '@/lib/actions/camp'
@@ -226,12 +227,12 @@ export default function PaymentManagementPage() {
 
     const stats = {
         total: registrations.length,
-        paid: registrations.filter(r => r.payment_status === 'paid' || r.payment_status === 'confirmed').length,
+        paid: registrations.filter(r => isPaid(r.payment_status)).length,
         pending: registrations.filter(r => r.payment_status === 'pending' || !r.payment_status).length,
         refunded: registrations.filter(r => r.payment_status === 'refunded').length,
         totalAmount: registrations.reduce((sum, r) => sum + (r.payment_amount || 0), 0),
         paidAmount: registrations
-            .filter(r => r.payment_status === 'paid' || r.payment_status === 'confirmed')
+            .filter(r => isPaid(r.payment_status))
             .reduce((sum, r) => sum + (r.payment_amount || 0), 0),
         pendingAmount: registrations
             .filter(r => r.payment_status === 'pending' || !r.payment_status)
@@ -415,7 +416,7 @@ export default function PaymentManagementPage() {
                             )}
                             {filteredRegistrations.map(reg => {
                                 const name = reg.full_name || `${reg.first_name} ${reg.last_name}`
-                                const paid = reg.payment_status === 'paid' || reg.payment_status === 'confirmed'
+                                const paid = isPaid(reg.payment_status)
                                 return (
                                     <div
                                         key={reg.id}
@@ -543,7 +544,7 @@ export default function PaymentManagementPage() {
                                                     <TableCell>
                                                         <Badge
                                                             variant={
-                                                                reg.payment_status === 'paid' || reg.payment_status === 'confirmed'
+                                                                isPaid(reg.payment_status)
                                                                     ? 'default'
                                                                     : reg.payment_status === 'refunded'
                                                                     ? 'destructive'

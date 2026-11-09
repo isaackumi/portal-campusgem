@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { isPaid } from '@/convex/lib/states/campRegistration'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
@@ -61,7 +62,7 @@ function buildInsights(registrations: CampRegistration[]) {
     newRegistrants: registrations.filter((row) => row.is_new_registrant).length,
     returning: registrations.filter((row) => !row.is_new_registrant).length,
     paid: registrations.filter(
-      (row) => row.payment_status === 'paid' || row.payment_status === 'confirmed'
+      (row) => isPaid(row.payment_status)
     ).length,
     pendingFollowUp: registrations.filter(
       (row) => !row.follow_up_status || row.follow_up_status === 'pending'

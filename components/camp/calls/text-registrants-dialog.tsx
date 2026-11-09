@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Send } from 'lucide-react'
 import {
   Dialog,
@@ -21,6 +22,18 @@ import { smsSegmentInfo } from '@/lib/comms/sms-segments'
 import { sendCampBulkSmsAction } from '@/lib/actions/camp'
 import { useSmsPreview } from '@/components/comms/sms-preview'
 import { campSmsPreview } from '@/components/camp/camp-sms-preview'
+import { SaveMyMessage } from '@/components/calls/save-my-message'
+import { useCallTemplates, useSharedTemplateVars } from '@/components/calls/use-call-templates'
+import { deleteMyMessageAction } from '@/lib/actions/call-center'
+import { smsReadyBody } from '@/lib/calls/templates'
+
+/** Details each person gets filled in for them when the text goes out. */
+const SMS_DETAILS = [
+  { key: 'firstName', label: 'First name' },
+  { key: 'fullName', label: 'Full name' },
+  { key: 'campYear', label: 'Camp year' },
+  { key: 'confirmLink', label: 'Tap-to-answer link' },
+]
 
 /** Ask the selected registrants themselves whether they are still coming. */
 export function TextRegistrantsDialog({
@@ -41,11 +54,48 @@ export function TextRegistrantsDialog({
   const { toast } = useToast()
   const jobs = useBackgroundJobs()
   const smsPreview = useSmsPreview()
+  const queryClient = useQueryClient()
   const [message, setMessage] = useState(CONFIRM_ATTENDANCE_SMS)
+  const [picked, setPicked] = useState('sms-confirm-link')
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const { templates, canEdit } = useCallTemplates('camp', 'sms')
+  const shared = useSharedTemplateVars()
+  const pickedTemplate = templates.find((t) => t.key === picked)
 
   useEffect(() => {
-    if (open) setMessage(CONFIRM_ATTENDANCE_SMS)
+    if (open) {
+      setMessage(CONFIRM_ATTENDANCE_SMS)
+      setPicked('sms-confirm-link')
+    }
   }, [open])
+
+  function choose(key: string) {
+    setPicked(key)
+    const t = templates.find((x) => x.key === key)
+    if (t) setMessage(smsReadyBody(t.body, shared))
+  }
+
+  function insert(key: string) {
+    const el = bodyRef.current
+    const token = `{{${key}}}`
+    const start = el?.selectionStart ?? message.length
+    const end = el?.selectionEnd ?? start
+    setMessage(message.slice(0, start) + token + message.slice(end))
+    requestAnimationFrame(() => {
+      el?.focus()
+      el?.setSelectionRange(start + token.length, start + token.length)
+    })
+  }
+
+  async function removePicked() {
+    if (!pickedTemplate?.mine || !window.confirm(`Delete “${pickedTemplate.name}”?`)) return
+    const res = await deleteMyMessageAction({ key: pickedTemplate.key })
+    if (res.error) toast({ variant: 'destructive', title: 'Not deleted', description: res.error })
+    else {
+      setPicked('')
+      void queryClient.invalidateQueries({ queryKey: ['call-templates'] })
+    }
+  }
 
   const withPhone = registrations.filter((r) => r.phone?.trim())
   const sample = withPhone[0]
@@ -107,18 +157,58 @@ export function TextRegistrantsDialog({
         <DialogHeader>
           <DialogTitle className="app-section-title">Text registrants</DialogTitle>
           <DialogDescription>
-            {withPhone.length} of {registrations.length} selected have a phone number. Use {'{{firstName}}'} and {'{{campYear}}'} to personalise.
-            {' '}{'{{confirmLink}}'} adds each person&apos;s own link to tap Yes / Not sure / No; answers show up here.
+            {withPhone.length} of {registrations.length} selected have a phone number. Pick a saved message or write your own; the
+            tap-to-answer link lets each person reply Yes / Not sure / No, and answers show up here.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="grid gap-1.5">
+            <label htmlFor="sms-saved" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Start from a saved message</label>
+            <div className="flex gap-2">
+              <select
+                id="sms-saved"
+                value={picked}
+                onChange={(e) => choose(e.target.value)}
+                className="h-11 min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
+              >
+                <option value="">Your own words</option>
+                {templates.map((t) => (
+                  <option key={t.key} value={t.key}>
+                    {t.mine ? `${t.name} (yours)` : t.name}
+                  </option>
+                ))}
+              </select>
+              {pickedTemplate?.mine ? (
+                <Button type="button" variant="ghost" className="h-11 shrink-0" onClick={() => void removePicked()}>
+                  Delete
+                </Button>
+              ) : null}
+            </div>
+          </div>
           <textarea
+            ref={bodyRef}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => {
+              setMessage(e.target.value)
+              setPicked('')
+            }}
             rows={5}
             aria-label="Message"
             className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
           />
+          <div className="flex flex-wrap gap-1.5" aria-label="Details you can add">
+            {SMS_DETAILS.map((v) => (
+              <button
+                key={v.key}
+                type="button"
+                onClick={() => insert(v.key)}
+                className="h-8 rounded-full border border-neutral-200 bg-neutral-50 px-3 text-[12px] font-medium text-neutral-700 hover:border-brand-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+              >
+                + {v.label}
+              </button>
+            ))}
+          </div>
+          <SaveMyMessage body={message} channel="sms" canShare={canEdit} />
           <div>
             <p className="app-overline mb-2">
               Preview{sample ? ` for ${sample.full_name}` : ''} · {preview.length} characters · {segments} SMS

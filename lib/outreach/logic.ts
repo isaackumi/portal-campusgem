@@ -1,3 +1,4 @@
+import { statusAfterOutcome } from '@/convex/lib/states/outreachContact'
 import type { OutreachOutcome } from '@/lib/outreach/options'
 import type { OutreachContact, OutreachStatus } from '@/lib/outreach/types'
 
@@ -125,7 +126,7 @@ export function filterContacts(
   })
 }
 
-const CLOSED: ReadonlySet<OutreachStatus> = new Set<OutreachStatus>(['joined', 'not_interested'])
+const CLOSED: ReadonlySet<OutreachStatus> = new Set<OutreachStatus>(['joined', 'not_interested']) // = isClosedOutreachStatus
 
 /**
  * My follow-ups: never-contacted first (oldest met first), then the rest by who was
@@ -183,17 +184,12 @@ export function applyOutcome(
   now: number
 ): OutcomePatch {
   const base: OutcomePatch = { attempts: (c.attempts ?? 0) + 1, last_contact_at: now, last_outcome: outcome }
-  switch (outcome) {
-    case 'reached':
-      return c.status === 'new' ? { ...base, status: 'contacted' } : base
-    case 'no_answer':
-      return base
-    case 'wants_bible_study':
-      return { ...base, status: c.status === 'joined' ? 'joined' : 'bible_study', bible_study: 'yes' }
-    case 'not_interested':
-      return { ...base, status: 'not_interested' }
-    case 'joined':
-      return { ...base, status: 'joined' }
+  // The rule itself lives with the server (convex/lib/states/outreachContact.ts), which applies it.
+  const status = statusAfterOutcome(c.status, outcome)
+  return {
+    ...base,
+    ...(status ? { status } : {}),
+    ...(outcome === 'wants_bible_study' ? { bible_study: 'yes' as const } : {}),
   }
 }
 

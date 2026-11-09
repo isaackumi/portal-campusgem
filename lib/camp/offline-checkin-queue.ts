@@ -174,7 +174,7 @@ export function isNetworkError(error: unknown, online: boolean = true): boolean 
 
 /** Server-side: data problems (camper or session gone) are not worth retrying. */
 export function isPermanentCheckInError(message: string): boolean {
-  return /not found|not registered|invalid|permission|validator|does not match/i.test(message)
+  return /not found|not registered|invalid|permission|validator|does not match|cancelled|reinstate/i.test(message)
 }
 
 /** Clamp a client-supplied check-in time to [now - 7 days, now]. */

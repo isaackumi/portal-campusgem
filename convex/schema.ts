@@ -919,6 +919,10 @@ export default defineSchema({
     audience: v.union(v.literal('camp'), v.literal('members'), v.literal('any')),
     position: v.number(),
     archived: v.optional(v.boolean()),
+    /** whatsapp | sms | any (unset = any). */
+    channel: v.optional(v.string()),
+    /** Someone's own saved message: only they see it. Unset = shared with the team. */
+    owner_id: v.optional(v.string()),
     updated_by: v.string(),
     updated_at: v.number(),
   }).index('by_key', ['key']),

@@ -15,7 +15,7 @@ import { hasPermission } from '@/lib/auth/roles'
 import type { AppUser, CampAttendanceConfirmation, CampRegistration, CampYear } from '@/lib/types'
 import { isCallOutcome, summarizeCallCampaign } from '@/lib/camp/call-campaign'
 import { CLAIM_TTL_MS, isCallSegment, orderQueue, remainingFor, tallySession, type CallSegment } from '@/lib/calls/queue'
-import { cleanTemplateInput, templatesFor, type CallTemplate, type TemplateAudience } from '@/lib/calls/templates'
+import { cleanTemplateInput, TEMPLATE_LIMITS, templatesFor, type CallTemplate, type TemplateAudience, type TemplateChannel } from '@/lib/calls/templates'
 import { logActivity } from '@/lib/activity/log'
 
 /** A session's board treats anyone seen within this as still in the room. */
@@ -394,7 +394,13 @@ export async function findCallTargetsAction(input: { yearId?: string | null; que
 // --- WhatsApp templates ------------------------------------------------------------------------
 
 /** The templates a caller picks from (defaults plus what managers changed), and whether they can edit. */
-export async function listCallTemplatesAction(input: { audience: TemplateAudience; includeArchived?: boolean }): Promise<{
+export async function listCallTemplatesAction(input: {
+  audience: TemplateAudience
+  includeArchived?: boolean
+  channel?: TemplateChannel
+  /** The managers' page: the team's messages only, not anyone's own. */
+  sharedOnly?: boolean
+}): Promise<{
   data: CallTemplate[] | null
   canEdit: boolean
   error: string | null
@@ -404,7 +410,13 @@ export async function listCallTemplatesAction(input: { audience: TemplateAudienc
     const canEdit = !!user && hasPermission(user.role, 'camp.manage', user.permissions)
     const cc = await import('@/lib/convex/call-center-bridge')
     const saved = await cc.listSavedTemplates()
-    return { data: templatesFor(input.audience, saved, { includeArchived: canEdit && input.includeArchived }), canEdit, error: null }
+    const data = templatesFor(input.audience, saved, {
+      includeArchived: canEdit && input.includeArchived,
+      channel: input.channel,
+      userId: user?.id ?? null,
+      sharedOnly: input.sharedOnly,
+    }).map(({ owner_id: _owner, ...t }) => t)
+    return { data, canEdit, error: null }
   } catch (error: unknown) {
     return { data: null, canEdit: false, error: errorOf(error, 'Could not load the templates') }
   }
@@ -418,6 +430,7 @@ export async function saveCallTemplateAction(input: {
   audience: TemplateAudience
   position?: number
   archived?: boolean
+  channel?: TemplateChannel
 }): Promise<{ error: string | null; key: string | null }> {
   try {
     const user = (await guard('camp.manage')) as AppUser | null
@@ -426,6 +439,7 @@ export async function saveCallTemplateAction(input: {
     if (!template) throw new Error(error ?? 'Check the template.')
     const cc = await import('@/lib/convex/call-center-bridge')
     const saved = await cc.listSavedTemplates()
+    if (saved.some((t) => t.key === template.key && t.owner_id)) throw new Error('That is someone’s own message.')
     if (!input.key && saved.filter((t) => t.audience === template.audience).length >= 40) {
       throw new Error('That is a lot of templates. Hide or reuse one first.')
     }
@@ -437,11 +451,60 @@ export async function saveCallTemplateAction(input: {
   }
 }
 
+/**
+ * Save a message of your own (written fresh or edited from another) to reuse later. Only you see it,
+ * unless a manager chooses to share it with the whole team.
+ */
+export async function saveMyMessageAction(input: {
+  name: string
+  body: string
+  channel: TemplateChannel
+  audience?: TemplateAudience
+  share?: boolean
+}): Promise<{ error: string | null; key: string | null }> {
+  try {
+    const user = (await guard('camp.calls')) as AppUser | null
+    if (!user) throw new Error('Sign in to save messages.')
+    const share = Boolean(input.share) && hasPermission(user.role, 'camp.manage', user.permissions)
+    const { template, error } = cleanTemplateInput({ name: input.name, body: input.body, audience: input.audience ?? 'camp', channel: input.channel, position: 1000 })
+    if (!template) throw new Error(error ?? 'Check the message.')
+    const cc = await import('@/lib/convex/call-center-bridge')
+    const saved = await cc.listSavedTemplates()
+    if (!share && saved.filter((t) => t.owner_id === user.id).length >= TEMPLATE_LIMITS.perPerson) {
+      throw new Error('You have a lot of saved messages. Delete one you no longer use first.')
+    }
+    const key = `${share ? 'custom' : 'mine'}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`
+    await cc.saveTemplate({ ...template, key, ...(share ? {} : { owner_id: user.id }) }, user.id)
+    await logActivity({ category: 'calls', action: 'calls.message_save', summary: `Saved ${share ? 'a team' : 'their own'} message "${template.name}"`, target: { type: 'message_template', id: key, label: template.name } })
+    return { error: null, key }
+  } catch (error: unknown) {
+    return { error: errorOf(error, 'Could not save the message'), key: null }
+  }
+}
+
+/** Delete one of your own saved messages. */
+export async function deleteMyMessageAction(input: { key: string }): Promise<{ error: string | null }> {
+  try {
+    const user = (await guard('camp.calls')) as AppUser | null
+    if (!user) throw new Error('Sign in first.')
+    const cc = await import('@/lib/convex/call-center-bridge')
+    const saved = await cc.listSavedTemplates()
+    const row = saved.find((t) => t.key === input.key)
+    if (!row || row.owner_id !== user.id) throw new Error('That message is not yours to delete.')
+    await cc.resetTemplate(row.key)
+    await logActivity({ category: 'calls', action: 'calls.message_delete', summary: `Deleted their own message "${row.name}"`, target: { type: 'message_template', id: row.key, label: row.name } })
+    return { error: null }
+  } catch (error: unknown) {
+    return { error: errorOf(error, 'Could not delete the message') }
+  }
+}
+
 /** Put one of the app's templates back as it ships (or remove a custom one). */
 export async function resetCallTemplateAction(input: { key: string }): Promise<{ error: string | null }> {
   try {
     await guard('camp.manage')
     const cc = await import('@/lib/convex/call-center-bridge')
+    if ((await cc.listSavedTemplates()).some((t) => t.key === input.key && t.owner_id)) throw new Error('That is someone’s own message.')
     await cc.resetTemplate(input.key)
     await logActivity({ category: 'calls', action: 'calls.template_reset', summary: 'Put a WhatsApp message back as it was', target: { type: 'message_template', id: input.key } })
     return { error: null }

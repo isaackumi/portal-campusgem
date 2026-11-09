@@ -12,6 +12,9 @@
 
 export type TemplateAudience = 'camp' | 'members' | 'any'
 
+/** Where a message is offered: WhatsApp, SMS, or both (unset = both). */
+export type TemplateChannel = 'whatsapp' | 'sms' | 'any'
+
 export type CallTemplate = {
   /** Stable id: a default's key, or `custom-…` for one a manager added. */
   key: string
@@ -24,6 +27,12 @@ export type CallTemplate = {
   archived?: boolean
   /** True for an app default nobody has changed. */
   isDefault?: boolean
+  /** Unset: both WhatsApp and SMS. */
+  channel?: TemplateChannel
+  /** Set for someone's own saved message: only they see it. */
+  owner_id?: string
+  /** This person's own message (filled in for the viewer). */
+  mine?: boolean
 }
 
 export type TemplateVariable = { key: string; label: string; example: string }
@@ -87,6 +96,14 @@ export const DEFAULT_CALL_TEMPLATES: CallTemplate[] = [
     body: `Thank you, {{firstName}}! We've noted that you're coming to Camp Meeting {{campYear}}. See you at {{venue}}. God bless you!`,
   },
   {
+    key: 'sms-confirm-link',
+    name: 'Are you still coming? (tap to answer)',
+    audience: 'camp',
+    channel: 'sms',
+    position: 5,
+    body: `Hi {{firstName}}, are you still coming to Eagles Camp Meeting {{campYear}}? Please tap to let us know: {{confirmLink}}`,
+  },
+  {
     key: 'members-welcome',
     name: 'Welcome',
     audience: 'members',
@@ -123,7 +140,28 @@ export const DEFAULT_CALL_TEMPLATES: CallTemplate[] = [
   },
 ]
 
-export const TEMPLATE_LIMITS = { name: 60, body: 1000, perAudience: 40 }
+export const TEMPLATE_LIMITS = { name: 60, body: 1000, perAudience: 40, perPerson: 30 }
+
+/** SMS-only detail: each person's own tap-to-answer link (filled in by the SMS sender). */
+export const SMS_ONLY_VARIABLES: TemplateVariable[] = [{ key: 'confirmLink', label: 'Tap-to-answer link', example: 'https://…/c/abc' }]
+
+export function isTemplateChannel(value: unknown): value is TemplateChannel {
+  return value === 'whatsapp' || value === 'sms' || value === 'any'
+}
+
+/**
+ * A template ready for the bulk SMS box: details that are the same for everyone (your name, camp
+ * dates, venue…) filled in now; each person's own details left as placeholders for the SMS sender.
+ */
+export function smsReadyBody(body: string, shared: TemplateVars): string {
+  return fillCallTemplate(body, {
+    ...shared,
+    firstName: '{{firstName}}',
+    name: '{{fullName}}',
+    campYear: '{{campYear}}',
+    confirmLink: '{{confirmLink}}',
+  })
+}
 
 /** Fill {{placeholders}}. Missing values drop out cleanly (no "{{venue}}", no ", ," left behind). */
 export function fillCallTemplate(body: string, vars: TemplateVars): string {
@@ -144,8 +182,9 @@ export function fillCallTemplate(body: string, vars: TemplateVars): string {
 }
 
 /** The placeholders a body uses that the app doesn't know (shown as a warning while editing). */
-export function unknownPlaceholders(body: string): string[] {
-  const known = new Set(TEMPLATE_VARIABLES.map((v) => v.key))
+export function unknownPlaceholders(body: string, channel: TemplateChannel = 'whatsapp'): string[] {
+  const known = new Set([...TEMPLATE_VARIABLES, ...(channel === 'whatsapp' ? [] : SMS_ONLY_VARIABLES)].map((v) => v.key))
+  if (channel !== 'whatsapp') known.add('fullName')
   const found = Array.from(body.matchAll(/\{\{\s*([a-zA-Z]+)\s*\}\}/g), (m) => m[1])
   return Array.from(new Set(found.filter((key) => !known.has(key))))
 }
@@ -162,7 +201,8 @@ export function cleanTemplateInput(input: {
   audience?: string | null
   position?: number | null
   archived?: boolean | null
-}): { template: Omit<CallTemplate, 'isDefault'> | null; error: string | null } {
+  channel?: string | null
+}): { template: Omit<CallTemplate, 'isDefault' | 'mine' | 'owner_id'> | null; error: string | null } {
   const name = (input.name ?? '').trim().slice(0, TEMPLATE_LIMITS.name)
   const body = (input.body ?? '').replace(/\r\n/g, '\n').trim()
   if (!name) return { template: null, error: 'Give the template a short name.' }
@@ -171,7 +211,8 @@ export function cleanTemplateInput(input: {
   const audience = isTemplateAudience(input.audience) ? input.audience : 'any'
   const key = input.key && /^[a-z0-9-]{3,60}$/.test(input.key) ? input.key : `custom-${Date.now().toString(36)}`
   const position = Number.isFinite(input.position) ? Number(input.position) : 1000
-  return { template: { key, name, body, audience, position, archived: Boolean(input.archived) }, error: null }
+  const channel = isTemplateChannel(input.channel) ? input.channel : 'any'
+  return { template: { key, name, body, audience, position, archived: Boolean(input.archived), channel }, error: null }
 }
 
 /**
@@ -181,13 +222,19 @@ export function cleanTemplateInput(input: {
 export function templatesFor(
   audience: TemplateAudience,
   saved: readonly CallTemplate[],
-  options: { includeArchived?: boolean } = {}
+  options: { includeArchived?: boolean; channel?: TemplateChannel; userId?: string | null; sharedOnly?: boolean } = {}
 ): CallTemplate[] {
   const byKey = new Map<string, CallTemplate>()
   for (const t of DEFAULT_CALL_TEMPLATES) byKey.set(t.key, { ...t, isDefault: true })
-  for (const t of saved) byKey.set(t.key, { ...t, isDefault: false })
+  for (const t of saved) {
+    // Someone's own messages: only for them (and never on the shared list).
+    if (t.owner_id && (options.sharedOnly || t.owner_id !== options.userId)) continue
+    byKey.set(t.key, { ...t, isDefault: false, mine: Boolean(t.owner_id) })
+  }
+  const channel = options.channel ?? 'any'
   return Array.from(byKey.values())
     .filter((t) => audience === 'any' || t.audience === audience || t.audience === 'any')
+    .filter((t) => channel === 'any' || (t.channel ?? 'any') === 'any' || t.channel === channel)
     .filter((t) => options.includeArchived || !t.archived)
-    .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name))
+    .sort((a, b) => Number(Boolean(b.mine)) - Number(Boolean(a.mine)) || a.position - b.position || a.name.localeCompare(b.name))
 }

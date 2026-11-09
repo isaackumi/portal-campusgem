@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect } from 'react'
+import { isPaid } from '@/convex/lib/states/campRegistration'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CampRegistration, CampYear } from '@/lib/types'
 import { campRegistrationsToGoogleFormCsv } from '@/lib/camp/google-form-import'
@@ -372,7 +373,7 @@ function RegistrationsPageContent() {
         total: registrations.length,
         checkedIn: registrations.filter(r => r.status === 'checked_in').length,
         newRegistrants: registrations.filter(r => r.is_new_registrant).length,
-        paid: registrations.filter(r => r.payment_status === 'paid').length,
+        paid: registrations.filter(r => isPaid(r.payment_status)).length,
     }
 
     if (loading) {
@@ -580,7 +581,7 @@ function RegistrationsPageContent() {
                                                             {reg.status === 'checked_in' ? 'Checked in' : reg.status}
                                                         </Badge>
                                                         <Badge
-                                                            variant={reg.payment_status === 'paid' || reg.payment_status === 'confirmed' ? 'success' : 'outline'}
+                                                            variant={isPaid(reg.payment_status) ? 'success' : 'outline'}
                                                             className="text-xs"
                                                         >
                                                             {reg.payment_status || 'pending'}

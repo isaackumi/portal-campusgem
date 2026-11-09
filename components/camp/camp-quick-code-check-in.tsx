@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { checkInError } from '@/convex/lib/states/campRegistration'
 import type { CampRegistration } from '@/lib/types'
 import { campService } from '@/lib/services/camp-service'
 import { recordCampCheckInOrQueue } from '@/components/camp/use-camp-offline-queue'
@@ -50,6 +51,13 @@ export function CampQuickCodeCheckIn({
         description: 'No camper matches that GEM code for this year.',
       })
       setLastMatch(null)
+      return
+    }
+
+    const refused = checkInError(reg.status)
+    if (refused) {
+      toast({ variant: 'destructive', title: `${campRegistrationDisplayName(reg)} cancelled`, description: refused })
+      setLastMatch(reg)
       return
     }
 

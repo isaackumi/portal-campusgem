@@ -6,23 +6,38 @@ import { useAuth } from '@/components/providers'
 import { useActiveCampYear } from '@/lib/hooks/use-camp'
 import { formatCampDate } from '@/lib/camp/camp-reminders'
 import { listCallTemplatesAction } from '@/lib/actions/call-center'
-import { fillCallTemplate, templatesFor, type CallTemplate, type TemplateAudience, type TemplateVars } from '@/lib/calls/templates'
+import { fillCallTemplate, templatesFor, type CallTemplate, type TemplateAudience, type TemplateChannel, type TemplateVars } from '@/lib/calls/templates'
 
-/** The WhatsApp templates callers pick from (the app's set until the server answers). */
-export function useCallTemplates(audience: TemplateAudience = 'camp') {
+/** The messages callers pick from: the team's, plus their own (the app's set until the server answers). */
+export function useCallTemplates(audience: TemplateAudience = 'camp', channel: TemplateChannel = 'whatsapp') {
   const query = useQuery({
-    queryKey: ['call-templates', audience],
+    queryKey: ['call-templates', audience, channel],
     queryFn: async () => {
-      const res = await listCallTemplatesAction({ audience })
+      const res = await listCallTemplatesAction({ audience, channel })
       if (res.error || !res.data) throw new Error(res.error ?? 'Could not load the templates')
       return { templates: res.data, canEdit: res.canEdit }
     },
     staleTime: 5 * 60_000,
   })
   return {
-    templates: query.data?.templates ?? templatesFor(audience, []),
+    templates: query.data?.templates ?? templatesFor(audience, [], { channel }),
     canEdit: query.data?.canEdit ?? false,
     loading: query.isLoading,
+  }
+}
+
+/** The details that are the same for every person (for bulk SMS, where names are filled per person). */
+export function useSharedTemplateVars(): TemplateVars {
+  const { user } = useAuth()
+  const { campYear } = useActiveCampYear()
+  const start = campYear?.start_date ? formatCampDate(campYear.start_date) : ''
+  const end = campYear?.end_date && campYear.end_date !== campYear.start_date ? formatCampDate(campYear.end_date) : ''
+  return {
+    callerName: user?.full_name?.trim().split(/\s+/)[0] ?? '',
+    ministry: 'Campus GEM',
+    campDates: end ? `${start} – ${end}` : start,
+    venue: campYear?.venue ?? null,
+    theme: campYear?.theme ?? null,
   }
 }
 

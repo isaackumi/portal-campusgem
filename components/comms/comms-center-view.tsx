@@ -146,17 +146,27 @@ export function CommsCenterView() {
 
   useEffect(() => {
     if (audienceMode !== 'single') return
+    // Only the latest search may show its results: an older, slower reply is dropped.
+    let current = true
     const timer = setTimeout(async () => {
       setSearching(true)
-      const { data } = await searchCommsRecipientsAction({
-        module,
-        query: searchQuery,
-        limit: 40,
-      })
-      setSearchResults(data ?? [])
-      setSearching(false)
+      try {
+        const { data } = await searchCommsRecipientsAction({
+          module,
+          query: searchQuery,
+          limit: 40,
+        })
+        if (current) setSearchResults(data ?? [])
+      } catch {
+        if (current) setSearchResults([])
+      } finally {
+        if (current) setSearching(false)
+      }
     }, 300)
-    return () => clearTimeout(timer)
+    return () => {
+      current = false
+      clearTimeout(timer)
+    }
   }, [module, searchQuery, audienceMode])
 
   useEffect(() => {

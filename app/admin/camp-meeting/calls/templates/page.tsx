@@ -20,20 +20,28 @@ import {
   DEFAULT_CALL_TEMPLATES,
   fillCallTemplate,
   TEMPLATE_LIMITS,
+  SMS_ONLY_VARIABLES,
   TEMPLATE_VARIABLES,
   unknownPlaceholders,
   type CallTemplate,
   type TemplateAudience,
+  type TemplateChannel,
 } from '@/lib/calls/templates'
 
-const SAMPLE = Object.fromEntries(TEMPLATE_VARIABLES.map((v) => [v.key, v.example]))
+const SAMPLE = Object.fromEntries([...TEMPLATE_VARIABLES, ...SMS_ONLY_VARIABLES].map((v) => [v.key, v.example]))
 const AUDIENCES: Array<{ id: TemplateAudience; label: string; hint: string }> = [
   { id: 'camp', label: 'Camp meeting', hint: 'Shown when calling camp registrants.' },
   { id: 'members', label: 'Members', hint: 'Shown when calling members: new, lapsed, groups.' },
   { id: 'any', label: 'Everyone', hint: 'Shown in every call list.' },
 ]
 
-type Draft = { key?: string; name: string; body: string; audience: TemplateAudience; position?: number; archived?: boolean; isDefault?: boolean }
+type Draft = { key?: string; name: string; body: string; audience: TemplateAudience; position?: number; archived?: boolean; isDefault?: boolean; channel?: TemplateChannel }
+
+const CHANNELS: Array<{ id: TemplateChannel; label: string }> = [
+  { id: 'any', label: 'WhatsApp and SMS' },
+  { id: 'whatsapp', label: 'WhatsApp only' },
+  { id: 'sms', label: 'SMS only' },
+]
 
 export default function CallTemplatesPage() {
   const { can } = useAuth()
@@ -46,7 +54,7 @@ export default function CallTemplatesPage() {
   const list = useQuery({
     queryKey: ['call-templates', 'all', 'manage'],
     queryFn: async () => {
-      const res = await listCallTemplatesAction({ audience: 'any', includeArchived: true })
+      const res = await listCallTemplatesAction({ audience: 'any', includeArchived: true, sharedOnly: true })
       if (res.error || !res.data) throw new Error(res.error ?? 'Could not load the templates')
       return res.data
     },
@@ -62,7 +70,7 @@ export default function CallTemplatesPage() {
 
   async function save(input: Draft) {
     setSaving(true)
-    const res = await saveCallTemplateAction({ key: input.key, name: input.name, body: input.body, audience: input.audience, position: input.position, archived: input.archived })
+    const res = await saveCallTemplateAction({ key: input.key, name: input.name, body: input.body, audience: input.audience, position: input.position, archived: input.archived, channel: input.channel ?? 'any' })
     setSaving(false)
     if (res.error) {
       toast({ variant: 'destructive', title: 'Not saved', description: res.error })
@@ -98,7 +106,7 @@ export default function CallTemplatesPage() {
 
   if (!can('camp.manage')) return <AccessDenied permission="camp.manage" />
 
-  const unknown = draft ? unknownPlaceholders(draft.body) : []
+  const unknown = draft ? unknownPlaceholders(draft.body, draft.channel ?? 'any') : []
 
   return (
     <div className="mx-auto max-w-4xl pb-28">
@@ -108,8 +116,8 @@ export default function CallTemplatesPage() {
       </Link>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="app-page-title">WhatsApp messages</h1>
-          <p className="app-page-description mt-1 max-w-xl">What callers pick from when they tap WhatsApp. They can still change the words before sending.</p>
+          <h1 className="app-page-title">Team messages</h1>
+          <p className="app-page-description mt-1 max-w-xl">What callers pick from on WhatsApp and SMS. They can change the words before sending, or save their own.</p>
         </div>
         <Button className="h-11" onClick={() => setDraft({ name: '', body: 'Hi {{firstName}}, this is {{callerName}} from {{ministry}}. ', audience: 'camp' })}>
           <Plus className="mr-2 h-4 w-4" aria-hidden />
@@ -133,6 +141,7 @@ export default function CallTemplatesPage() {
                     <p className="font-semibold text-neutral-900 dark:text-neutral-50">
                       {t.name}
                       {t.archived ? <span className="ml-2 text-xs font-medium text-neutral-500">Hidden</span> : null}
+                      {t.channel && t.channel !== 'any' ? <span className="ml-2 text-xs font-medium text-neutral-500">{t.channel === 'sms' ? 'SMS only' : 'WhatsApp only'}</span> : null}
                       {!t.isDefault && DEFAULT_CALL_TEMPLATES.some((d) => d.key === t.key) ? <span className="ml-2 text-xs font-medium text-brand-700 dark:text-brand-400">Edited</span> : null}
                     </p>
                   </div>
@@ -207,6 +216,26 @@ export default function CallTemplatesPage() {
                   ))}
                 </div>
               </div>
+              <div className="grid gap-1.5">
+                <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Used for</span>
+                <div role="radiogroup" aria-label="Used for" className="flex flex-wrap gap-2">
+                  {CHANNELS.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={(draft.channel ?? 'any') === c.id}
+                      onClick={() => setDraft({ ...draft, channel: c.id })}
+                      className={cn(
+                        'h-9 rounded-full border px-3.5 text-[13px] font-medium',
+                        (draft.channel ?? 'any') === c.id ? 'border-brand-600 bg-brand-600 text-white' : 'border-neutral-200 text-neutral-700 dark:border-neutral-700 dark:text-neutral-300'
+                      )}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <label className="grid gap-1.5 text-sm font-medium text-neutral-900 dark:text-neutral-100">
                 Message
                 <textarea
@@ -220,7 +249,7 @@ export default function CallTemplatesPage() {
                 />
               </label>
               <div className="flex flex-wrap gap-1.5" aria-label="Details you can add">
-                {TEMPLATE_VARIABLES.map((v) => (
+                {[...TEMPLATE_VARIABLES, ...(draft.channel === 'sms' ? SMS_ONLY_VARIABLES : [])].map((v) => (
                   <button
                     key={v.key}
                     type="button"

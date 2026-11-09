@@ -52,9 +52,15 @@ function AuthPageContent() {
     toast({ title: 'Welcome back', description: `Signed in as ${user.full_name}` })
   }
 
+  /** The code being checked right now: the SMS reader and the typed/autofilled box can both fire. */
+  const verifying = useRef<string | null>(null)
+
   const verifyCode = async (value: string) => {
     const digits = value.replace(/\D/g, '')
     if (digits.length !== 6) return
+    // A code is single-use: never send the same one twice, or a second check while one is running.
+    if (verifying.current !== null || redirecting) return
+    verifying.current = digits
     setLoading(true)
     setCodeError(null)
     try {
@@ -75,6 +81,7 @@ function AuthPageContent() {
     } catch {
       setCodeError('Could not reach the login service. Check your connection.')
     } finally {
+      verifying.current = null
       setLoading(false)
     }
   }

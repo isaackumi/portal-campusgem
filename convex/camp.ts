@@ -1,4 +1,5 @@
 import { v } from 'convex/values'
+import { callOutcomeError, checkInError, isSettledConfirmation, registrationStatusChangeError, type RegistrationStatus } from './lib/states/campRegistration'
 import { query, mutation, type MutationCtx } from './_generated/server'
 import { requireAuth } from './lib/access'
 import { assertServerSecret } from './lib/serverSecret'
@@ -692,10 +693,12 @@ export const recordCallOutcomeWithSecret = mutation({
     assertServerSecret(args.secret)
     const reg = await ctx.db.get(args.registration_id)
     if (!reg) throw new Error('Registration not found')
+    const refused = callOutcomeError(reg.status)
+    if (refused) throw new Error(refused)
     const now = Date.now()
     const countAttempt = args.via_link ? false : args.count_attempt !== false
     const note = args.note?.trim() || undefined
-    const settled = args.outcome === 'confirmed' || args.outcome === 'declined'
+    const settled = isSettledConfirmation(args.outcome)
     await ctx.db.patch(args.registration_id, {
       attendance_confirmation: args.outcome,
       confirmation_note: note ?? reg.confirmation_note,
@@ -852,6 +855,12 @@ export const patchCampRegistrationWithSecret = mutation({
     for (const [key, value] of Object.entries((patch ?? {}) as Record<string, unknown>)) {
       if (key === '_id' || key === '_creationTime') continue
       next[key] = value === null ? undefined : value
+    }
+    if (typeof next.status === 'string') {
+      const current = await ctx.db.get(id)
+      if (!current) throw new Error('Registration not found')
+      const refused = registrationStatusChangeError(current.status, next.status as RegistrationStatus)
+      if (refused) throw new Error(refused)
     }
     await ctx.db.patch(id, { ...next, updated_at: Date.now() })
     return await ctx.db.get('camp_registrations', id)
@@ -1174,6 +1183,8 @@ export const recordCampSessionCheckInWithSecret = mutation({
     if (reg.camp_year_id !== activity.camp_year_id) {
       throw new Error('This camper is not registered for this camp year.')
     }
+    const refused = checkInError(reg.status)
+    if (refused) throw new Error(refused)
 
     const existing = await ctx.db
       .query('camp_session_attendances')

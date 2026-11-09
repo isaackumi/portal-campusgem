@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { checkInError } from '@/convex/lib/states/campRegistration'
 import Link from 'next/link'
 import type { CampRegistration } from '@/lib/types'
 import { campService } from '@/lib/services/camp-service'
@@ -59,8 +60,9 @@ export function CampManualCheckInPanel({
     [registrations, query]
   )
 
-  const pendingResults = results.filter((r) =>
-    activityId ? !sessionCheckedInIds?.has(r.id) : r.status !== 'checked_in'
+  // Cancelled registrations are never checked in (they must be reinstated first).
+  const pendingResults = results.filter(
+    (r) => r.status !== 'cancelled' && (activityId ? !sessionCheckedInIds?.has(r.id) : r.status !== 'checked_in')
   )
 
   function isCheckedInForContext(reg: CampRegistration): boolean {
@@ -69,6 +71,11 @@ export function CampManualCheckInPanel({
   }
 
   async function checkInOne(reg: CampRegistration) {
+    const refused = checkInError(reg.status)
+    if (refused) {
+      toast({ variant: 'destructive', title: `${campRegistrationDisplayName(reg)} cancelled`, description: refused })
+      return
+    }
     if (isCheckedInForContext(reg)) {
       toast({
         title: activityId ? 'Already in this session' : 'Already checked in',

@@ -89,7 +89,6 @@ export default function BulkCommunicationsPage() {
     const [subject, setSubject] = useState('')
     const [messageBody, setMessageBody] = useState('')
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-    const [selectAll, setSelectAll] = useState(false)
     const [smsStatus, setSmsStatus] = useState<SmsProviderStatus | null>(null)
     const [dryRun, setDryRun] = useState(false)
     const [forceMock, setForceMock] = useState(false)
@@ -142,7 +141,6 @@ export default function BulkCommunicationsPage() {
         setInviteRows(data.rows)
         setRegistrationPath(data.registration_path)
         setSelectedIds(new Set())
-        setSelectAll(false)
     }
 
     useEffect(() => {
@@ -320,17 +318,14 @@ export default function BulkCommunicationsPage() {
         [selectableRows]
     )
 
-    // Auto-select all filtered when selectAll is true
-    useEffect(() => {
-        if (selectAll) {
-            setSelectedIds(new Set(selectableIds))
-        } else {
-            setSelectedIds(new Set())
-        }
-    }, [selectAll, selectableIds])
+    // One source of truth: the ticked ids. "All" is read from them, never stored beside them, so
+    // unticking one person (or changing a filter) can't wipe everyone else.
+    const selectAll = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id))
+    /** Ticked people in the current list (ticks on rows filtered out are kept but not counted or sent). */
+    const selectedCount = selectableIds.reduce((n, id) => (selectedIds.has(id) ? n + 1 : n), 0)
 
     const handleSelectAll = (checked: boolean) => {
-        setSelectAll(checked)
+        setSelectedIds(checked ? new Set(selectableIds) : new Set())
     }
 
     const handleSelectOne = (id: string, checked: boolean) => {
@@ -341,7 +336,6 @@ export default function BulkCommunicationsPage() {
             newSelected.delete(id)
         }
         setSelectedIds(newSelected)
-        setSelectAll(newSelected.size === selectableIds.length && selectableIds.length > 0)
     }
 
     const replaceTemplateVariables = (
@@ -402,7 +396,7 @@ export default function BulkCommunicationsPage() {
             return false
         }
 
-        if (selectedIds.size === 0) {
+        if (selectedCount === 0) {
             toast({
                 variant: 'destructive',
                 title: 'No Recipients',
@@ -576,7 +570,6 @@ export default function BulkCommunicationsPage() {
             })
         }
         setSelectedIds(new Set())
-        setSelectAll(false)
         if (audienceMode === 'registered') {
             setMessageBody('')
             setSubject('')
@@ -668,8 +661,7 @@ export default function BulkCommunicationsPage() {
                                     onClick={() => {
                                         setAudienceMode('registered')
                                         setSelectedIds(new Set())
-                                        setSelectAll(false)
-                                    }}
+                                                                    }}
                                 >
                                     Already registered
                                 </Button>
@@ -681,8 +673,7 @@ export default function BulkCommunicationsPage() {
                                     onClick={() => {
                                         setAudienceMode('unregistered')
                                         setSelectedIds(new Set())
-                                        setSelectAll(false)
-                                    }}
+                                                                    }}
                                 >
                                     Not yet registered
                                 </Button>
@@ -806,7 +797,7 @@ export default function BulkCommunicationsPage() {
                                     <div>
                                         <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                             {selectableRows.length} match
-                                            {selectedIds.size > 0 ? ` · ${selectedIds.size} selected` : ''}
+                                            {selectedCount > 0 ? ` · ${selectedCount} selected` : ''}
                                             {audienceMode === 'unregistered' && inviteLoading ? ' · loading…' : ''}
                                         </p>
                                     </div>
@@ -833,7 +824,7 @@ export default function BulkCommunicationsPage() {
                                         Select Recipients
                                     </CardTitle>
                                     <CardDescription>
-                                        Tap a row to select. {selectedIds.size} of {selectableRows.length} selected.
+                                        Tap a row to select. {selectedCount} of {selectableRows.length} selected.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -961,8 +952,8 @@ export default function BulkCommunicationsPage() {
                                     Compose Message
                                 </CardTitle>
                                 <CardDescription>
-                                    {selectedIds.size > 0
-                                        ? `Ready for ${selectedIds.size} recipient${selectedIds.size === 1 ? '' : 's'} — names and codes inject automatically.`
+                                    {selectedCount > 0
+                                        ? `Ready for ${selectedCount} recipient${selectedCount === 1 ? '' : 's'} — names and codes inject automatically.`
                                         : 'Pick a template, then select recipients above.'}
                                 </CardDescription>
                             </CardHeader>
@@ -984,7 +975,7 @@ export default function BulkCommunicationsPage() {
                                         >
                                             <Mail className="mr-2 h-4 w-4" aria-hidden />
                                             Email
-                                            {selectedIds.size > 0 ? (
+                                            {selectedCount > 0 ? (
                                                 <Badge variant="secondary" className="ml-2">
                                                     {canSendEmail}
                                                 </Badge>
@@ -999,7 +990,7 @@ export default function BulkCommunicationsPage() {
                                         >
                                             <MessageSquare className="mr-2 h-4 w-4" aria-hidden />
                                             SMS
-                                            {selectedIds.size > 0 ? (
+                                            {selectedCount > 0 ? (
                                                 <Badge variant="secondary" className="ml-2">
                                                     {canSendSMS}
                                                 </Badge>
@@ -1177,10 +1168,10 @@ export default function BulkCommunicationsPage() {
                                     </div>
                                 ) : null}
 
-                                {selectedIds.size > 0 ? (
+                                {selectedCount > 0 ? (
                                     <div className="rounded-lg border border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/[0.03] p-4">
                                         <p className="mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                                            Delivery check · {selectedIds.size} selected
+                                            Delivery check · {selectedCount} selected
                                         </p>
                                         <div className="space-y-1.5 text-sm text-neutral-700 dark:text-neutral-200">
                                             {communicationType === 'email' ? (
@@ -1200,16 +1191,16 @@ export default function BulkCommunicationsPage() {
                                                     {invalidSmsPhones} invalid phone format — will be skipped
                                                 </p>
                                             ) : null}
-                                            {communicationType === 'email' && canSendEmail < selectedIds.size ? (
+                                            {communicationType === 'email' && canSendEmail < selectedCount ? (
                                                 <p className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
                                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                                                    {selectedIds.size - canSendEmail} without email — will be skipped
+                                                    {selectedCount - canSendEmail} without email — will be skipped
                                                 </p>
                                             ) : null}
-                                            {communicationType === 'sms' && canSendSMS < selectedIds.size ? (
+                                            {communicationType === 'sms' && canSendSMS < selectedCount ? (
                                                 <p className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
                                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                                                    {selectedIds.size - canSendSMS} missing or invalid phone — will be
+                                                    {selectedCount - canSendSMS} missing or invalid phone — will be
                                                     skipped
                                                 </p>
                                             ) : null}
@@ -1221,7 +1212,7 @@ export default function BulkCommunicationsPage() {
                                     onClick={requestSend}
                                     disabled={
                                         sending ||
-                                        selectedIds.size === 0 ||
+                                        selectedCount === 0 ||
                                         !messageBody.trim() ||
                                         (communicationType === 'email' && !subject.trim())
                                     }
@@ -1238,8 +1229,8 @@ export default function BulkCommunicationsPage() {
                                         <>
                                             <Send className="mr-2 h-4 w-4" aria-hidden />
                                             {communicationType === 'sms'
-                                                ? `Review & send ${selectedIds.size || ''} SMS`
-                                                : `Send ${selectedIds.size || ''} email(s)`}
+                                                ? `Review & send ${selectedCount || ''} SMS`
+                                                : `Send ${selectedCount || ''} email(s)`}
                                         </>
                                     )}
                                 </Button>

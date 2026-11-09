@@ -40,6 +40,9 @@ export function CameraQrScanner({
   const queueRef = useRef<Promise<unknown>>(Promise.resolve())
   const onScanRef = useRef(onScan)
   onScanRef.current = onScan
+  // Codes read while paused (the camera keeps decoding until pause applies) never reach the page.
+  const pausedRef = useRef(paused)
+  pausedRef.current = paused
 
   const [facing, setFacing] = useState<Facing>('environment')
   const [status, setStatus] = useState<Status>('starting')
@@ -111,7 +114,9 @@ export function CameraQrScanner({
               advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
             },
           },
-          (text) => onScanRef.current(text),
+          (text) => {
+            if (!pausedRef.current) onScanRef.current(text)
+          },
           () => undefined
         )
         if (cancelled) {

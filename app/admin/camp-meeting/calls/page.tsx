@@ -326,7 +326,7 @@ function CallsWorkspace() {
                     <DropdownMenuItem asChild className="cursor-pointer gap-2.5 py-2">
                       <Link href="/admin/camp-meeting/calls/templates">
                         <MessageCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
-                        WhatsApp messages
+                        Team messages
                       </Link>
                     </DropdownMenuItem>
                   </>

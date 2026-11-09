@@ -184,7 +184,8 @@ export default function RegistrationDetailPage() {
         
         setUpdating(true)
         try {
-            const res = await campService.updateRegistration(data.id, { assigned_to: staffId ?? undefined })
+            // null clears the field (undefined would be dropped on the way and change nothing).
+            const res = await campService.updateRegistration(data.id, { assigned_to: staffId ?? null } as Record<string, unknown>)
             if (res.error) {
                 toast({
                     variant: 'destructive',
